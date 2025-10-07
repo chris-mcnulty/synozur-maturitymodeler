@@ -1,0 +1,565 @@
+# Synozur Multi‑Model Maturity Platform — **Full Vibe Code Specification**
+
+*(Replit-ready; Dark‑mode first; 100–500 scale default)*
+
+**Host:** <https://models.synozur.com>\
+**Brand:** Synozur (primary **#810FFB**, secondary **#E60CB3**; Avenir Next LT Pro)\
+**Prototype look & feel reference:** <https://ai-transform-chrismcnulty1.replit.app/>\
+**Privacy:** [Synozur Privacy Policy](https://www.synozur.com/privacy) [1](https://www.dnb.com/business-directory/company-profiles.synozur_alliance_llc.a50b370e041a2dbc83ca77808374d4c4.html)\
+**Ownership:** © The Synozur Alliance, LLC. All rights reserved. “Synozur” and “The Synozur Alliance” are trademarks of The Synozur Alliance, LLC. [2](https://www.crunchbase.com/organization/synozur-alliance)
+
+***
+
+## Table of Contents
+
+1.  Product Overview & Principles
+2.  User Journeys & Routing
+3.  Branding, Typography, and Theming
+4.  Data Model (ERD & Entities)
+5.  Scoring, Labels, and Benchmarking
+6.  Gating & Profile Completeness
+7.  CSV Schemas (Import/Export)
+8.  Admin Console (Models, Results, Benchmarks, Appearance, Audit)
+9.  API (Auth, Models, Sessions, Results, Admin)
+10. PDF & Email (SendGrid)
+11. SEO Titles, Favicon, and Meta
+12. Consent, Privacy, Legal & Restricted Countries
+13. Accessibility, Performance & Quality
+14. Analytics & KPIs
+15. Replit Architecture & Setup
+16. Security Hardening
+17. Theming Tokens & UI Components
+18. Example Model JSON (Canonical Server Format)
+19. Acceptance Criteria
+20. Deliverables Checklist
+
+***
+
+## 1) Product Overview & Principles
+
+**Goal**\
+A branded, extensible web app to host **multiple maturity models**—each at `/model-slug`—where users login, complete assessments, and receive gated, benchmarked **PDF results** by email. Admins can manage models via **CSV**, review results, and export data.
+
+**Experience principles (Synozur voice)**\
+Empathetic, people‑first, and business‑outcome focused; clear, conversational copy at a 12th‑grade level; mobile‑first, fast, and accessible.
+
+**Brand/Legal anchors**\
+Use Synozur colors, logos, and typography; include ownership and trademarks in footer and PDFs; link to the **Privacy** page from every screen. [2](https://www.crunchbase.com/organization/synozur-alliance)[1](https://www.dnb.com/business-directory/company-profiles.synozur_alliance_llc.a50b370e041a2dbc83ca77808374d4c4.html)
+
+***
+
+## 2) User Journeys & Routing
+
+**Public**
+
+*   `/` — Landing: what the platform is, featured models, “Start” CTA
+*   `/:modelSlug` — Model overview: description, opening graphic (optional), Start
+*   `/:modelSlug/start` — Pre‑survey (0–3 **optional** questions)
+*   `/:modelSlug/assessment` — Wizard (MC/Likert only), autosave
+*   `/:modelSlug/complete` — **Summary gate** (prompts for required profile fields if missing), then show results & links
+*   `/:modelSlug/pdf/:resultId` — Auth‑protected PDF viewer/download
+
+**Auth**
+
+*   `/:modelSlug/signin`, `/:modelSlug/signup`, `/:modelSlug/forgot`
+
+**Users**
+
+*   `/me` — Profile (name, email, company, job title, **industry**, **country**)
+*   `/me/results` — List of prior results with trends
+*   `/me/results/:resultId` — Detail + compare over time
+
+**Admins/Analysts**
+
+*   `/admin` — KPIs & quick links
+*   `/admin/models` — List, create, version, publish
+*   `/admin/models/:modelId` — Edit config, **CSV import/export**, assets, pre‑survey, theme preview
+*   `/admin/results` — Filtered review & export
+*   `/admin/benchmarks` — Thresholds, rebuild
+*   `/admin/appearance` — Global theme tokens, logos, favicons, copy blocks
+*   `/admin/audit` — Admin activity log
+
+> **Mobile**: All routes responsive; touch targets ≥ 44px; test on iOS Safari and Android Chrome.
+
+***
+
+## 3) Branding, Typography, and Theming
+
+**Colors (CSS variables)**
+
+```css
+:root {
+  /* Dark is default */
+  --syno-bg: #0B0B10;
+  --syno-surface: #15151E;
+  --syno-text: #EDEDF2;
+  --syno-muted: #B5B7C2;
+
+  /* Brand core */
+  --syno-primary: #810FFB;
+  --syno-secondary: #E60CB3;
+
+  /* States */
+  --syno-success: #1DB954;
+  --syno-warning: #FFC24A;
+  --syno-error:   #FF5A6E;
+
+  /* Gradient */
+  --syno-gradient-1: linear-gradient(135deg, #810FFB 0%, #E60CB3 100%);
+
+  /* Shape & space */
+  --radius-sm: 8px; --radius-md: 12px; --radius-lg: 20px;
+  --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px;
+  --space-6: 24px; --space-8: 32px;
+  --shadow-1: 0 4px 16px rgba(0,0,0,0.25);
+}
+.light {
+  --syno-bg: #FFFFFF;
+  --syno-surface: #F7F7FB;
+  --syno-text: #1A1B24;
+  --syno-muted: #4D5060;
+}
+```
+
+**Typography**
+
+```css
+@font-face {
+  font-family: "Avenir Next LT Pro";
+  src: url("/fonts/avenir-next-lt-pro.ttf") format("truetype");
+  font-weight: 400 800;
+  font-display: swap;
+}
+:root { --font-sans: "Avenir Next LT Pro", -apple-system, "Segoe UI", "Helvetica Neue", Arial, sans-serif; }
+body { font-family: var(--font-sans); }
+```
+
+**Graphics (optional per model; system defaults if omitted)**
+
+*   Opening graphic prompt: *“People‑first hero with **#810FFB→#E60CB3** gradient and subtle AI nodes.”*
+*   Closing graphic prompt: *“Optimistic ‘next steps’ scene with roadmap motif in Synozur gradient.”*
+
+***
+
+## 4) Data Model (ERD & Entities)
+
+**Entities**
+
+*   **User**: `id, email (unique), username (unique), password_hash, name, company, job_title, industry, country, role (user|analyst|admin), created_at`
+*   **Model**: `id, slug (unique), name, description, status (draft|published|archived), default_theme JSON, created_by, created_at`
+*   **ModelVersion**: `id, model_id, version (semver), is_current, scale_min=100, scale_max=500, created_at`
+*   **Dimension**: `id, model_version_id, dimension_key, label, weight (nullable), order`
+*   **Question**: `id, model_version_id, dimension_id, question_key, text, type (mc|likert), order, required bool`
+*   **AnswerOption**: `id, question_id, key, label, score (100–500), order`
+*   **PreSurveyQuestion**: `id, model_version_id, key, text, type (mc|likert), order`
+*   **Assets**: `id, model_version_id, opening_graphic_url, closing_graphic_url, resources JSON[{title,url}], cta JSON{label,url}`
+*   **AssessmentSession**: `id, user_id, model_version_id, started_at, completed_at, profile_complete bool`
+*   **Response**: `id, session_id, question_id, answer_option_id, answered_at`
+*   **PreSurveyResponse**: `id, session_id, presurvey_question_id, answer_option_id, answered_at`
+*   **Scorecard**: `id, session_id, overall_score, per_dimension JSON{dimKey:score}, label, benchmark_snapshot JSON, pdf_url`
+*   **BenchmarkAggregate**: `id, model_version_id, industry, country, n, mean_overall, mean_per_dimension JSON, last_updated`
+*   **AuditLog**: `id, actor_user_id, action, target_type, target_id, metadata JSON, created_at`
+
+> **Notes**\
+> • All scores and validation aligned to the **100–500 default** scale.\
+> • Future: `Dimension.weight` supports custom weighting.\
+> • Benchmarks require **n ≥ 30** per industry to display.
+
+***
+
+## 5) Scoring, Labels, and Benchmarking
+
+**Per‑question**: AnswerOption has a score in {100,200,300,400,500}.\
+**Per‑dimension**: Mean of its question scores (rounded to nearest 5).\
+**Overall**: Mean of dimension scores (weights later).\
+**Labels**
+
+*   **100–199**: Nascent
+*   **200–299**: Experimental
+*   **300–399**: Operational
+*   **400–449**: Strategic
+*   **450–500**: Transformational
+
+**Benchmarking**
+
+*   Aggregates computed per **industry** (and optionally country) nightly or on‑demand.
+*   Only shown when `n ≥ 30` to protect privacy.
+*   Display user vs. industry mean (overall and per‑dimension) with deltas.
+
+> **Model content alignment:** Based on the AI Maturity model’s dimensions and 100–500 scoring you provided; this platform generalizes those patterns across models. [3](https://www.synozur.com/)
+
+***
+
+## 6) Gating & Profile Completeness
+
+Users **do not** receive full results or PDF until required profile fields are present:
+
+*   Required: **name, email, company, job title, industry, country**
+*   Flow: Assessment → **Gate** (inline profile completion if needed) → Results screen → Email PDF.
+
+***
+
+## 7) CSV Schemas (Import/Export)
+
+**Model Definition CSV** (dimensions, questions, answers in one file)
+
+```csv
+model_slug,version,entity,dimension_key,dimension_label,question_key,question_text,question_type,answer_key,answer_label,answer_score,order
+ai-maturity,1.0.0,dimension,strategy,Strategy & Leadership,,,,,,1
+ai-maturity,1.0.0,question,strategy,,exec_priority,"Does leadership treat AI as a strategic priority?",likert,,,,1
+ai-maturity,1.0.0,answer,strategy,,exec_priority,,a1,"Not at all",100,1
+ai-maturity,1.0.0,answer,strategy,,exec_priority,,a2,"Somewhat",200,2
+ai-maturity,1.0.0,answer,strategy,,exec_priority,,a3,"Roadmap & sponsorship",300,3
+ai-maturity,1.0.0,answer,strategy,,exec_priority,,a4,"Strategic priority",400,4
+ai-maturity,1.0.0,answer,strategy,,exec_priority,,a5,"Core to business",500,5
+```
+
+**Assets CSV** (optional; otherwise use system defaults)
+
+```csv
+model_slug,version,opening_graphic_url,closing_graphic_url,resource_1_title,resource_1_url,resource_2_title,resource_2_url,resource_3_title,resource_3_url,cta_label,cta_url
+ai-maturity,1.0.0,https://cdn.synozur.com/open.png,https://cdn.synozur.com/close.png,"Responsible AI Guide",https://www.synozur.com/privacy,,,,"Talk to Synozur",https://www.synozur.com/join
+```
+
+**Results Export CSV**
+
+```csv
+submitted_at,user_email,user_name,company,job_title,industry,country,model_slug,version,overall_score,overall_label,dimension_key,dimension_score
+2025-10-06,alex@example.com,Alex Chen,Contoso,CTO,technology,US,ai-maturity,1.0.0,340,Operational,strategy,300
+```
+
+**Validation Rules**
+
+*   Scores must be within `[scale_min, scale_max]` (default 100–500).
+*   Unique `model_slug + version` on import.
+*   Required fields present; unknown `question_type` rejected (only `mc|likert`).
+
+***
+
+## 8) Admin Console
+
+**Models**
+
+*   Create → **CSV import** → Preview → Publish/Unpublish
+*   Versioning (semver); clone from previous; archive older versions
+*   Configure **0–3 pre‑survey** questions
+*   Add **assets** (opening/closing graphics, resources, CTA)
+*   Theme preview (dark/light) with brand tokens
+
+**Results**
+
+*   Filter by model, version, date, industry, country
+*   Row‑level view (PII visible to admins, masked for analysts if configured)
+*   Export **full** or **anonymized** CSV (strip name/email/company)
+
+**Benchmarks**
+
+*   Show sample sizes and dates
+*   Rebuild aggregates (on‑demand); nightly job
+
+**Appearance**
+
+*   Global logos (dark/light), favicon(s)
+*   Color tokens (global), button radii, hero copy blocks
+*   System defaults for models missing assets
+
+**Audit**
+
+*   Logged actions: imports, publishes, exports, theme changes, benchmark rebuilds
+
+***
+
+## 9) API (JSON over HTTPS)
+
+**Auth**
+
+    POST /api/auth/signup        { username, email, password }
+    POST /api/auth/signin        { usernameOrEmail, password }
+    POST /api/auth/forgot        { email }
+    GET  /api/me                 -> current profile
+    PUT  /api/me                 { name, company, job_title, industry, country }
+
+**Models**
+
+    GET  /api/models                     -> published models
+    GET  /api/models/:slug               -> model overview + current version
+    GET  /api/models/:slug/version/current
+
+**Sessions & Results**
+
+    POST /api/sessions                   { modelSlug } -> { sessionId }
+    PUT  /api/sessions/:id               { responses[] }   # autosave
+    POST /api/sessions/:id/complete      # compute scores, create Scorecard, queue PDF
+    GET  /api/results/my                 -> my results
+    GET  /api/results/:id                -> result + scorecard + benchmarks snapshot
+    GET  /api/results/:id/pdf            -> signed URL (auth‑protected)
+
+**Admin/Analyst**
+
+    GET  /api/admin/summary              (analyst|admin)
+    POST /api/admin/models/import-csv    (admin) multipart
+    GET  /api/admin/models/export-csv?model=:slug (analyst|admin)
+    PUT  /api/admin/models/:id           (admin)  # assets, presurvey, status
+    POST /api/admin/assets/upload        (admin)  # images to Replit storage
+    GET  /api/admin/results/export?...   (analyst|admin) # filters
+    GET  /api/admin/benchmarks           (analyst|admin)
+    PUT  /api/admin/benchmarks/rebuild   (admin)
+    GET  /api/admin/audit                (admin)
+
+**Responses**\
+All endpoints return `{ ok: boolean, data|error }`. Validation errors include field‑level messages.
+
+***
+
+## 10) PDF & Email (SendGrid)
+
+**Email**
+
+*   From: `no-reply@models.synozur.com`
+*   Subject: `Your Synozur [Model Name] Maturity Results`
+*   Body: brief summary, **download link** (expires), CTA, privacy link
+
+**PDF (A4/Letter)**
+
+1.  Cover: Logo, model, date, user/company
+2.  Overall score **dial** (100–500), label
+3.  Per‑dimension bars & quick insights
+4.  Benchmark compare (if `n≥30`)
+5.  3–5 prioritized recommendations (if defined by model)
+6.  Resources & CTA (if provided)
+7.  **Fine print**:
+    > © 2025 The Synozur Alliance, LLC. All rights reserved. “Synozur” and “The Synozur Alliance” are trademarks of The Synozur Alliance, LLC. Privacy: <https://www.synozur.com/privacy>
+
+**Tech**: Server renders HTML to PDF via `puppeteer` or `pdfkit`; stores to Replit storage; returns signed URL; attaches link in email.
+
+***
+
+## 11) SEO Titles, Favicon, and Meta
+
+**Title patterns**
+
+*   Home: `Synozur Maturity Models | The Synozur Alliance`
+*   Model: `[Model Name] Assessment | Synozur Alliance`
+*   Result: `Your [Model Name] Results | Synozur Alliance`
+*   Admin: `Admin Console | Synozur Alliance`
+
+**Head snippet (example)**
+
+
+
+**Favicon**\
+Use provided favicon (SVG/PNG). If not supplied, pull the same icon used on synozur.com for consistency. [2](https://www.crunchbase.com/organization/synozur-alliance)
+
+***
+
+## 12) Consent, Privacy, Legal & Restricted Countries
+
+**Implicit marketing consent** (per your direction):\
+Text on signup/completion:
+
+> *“We do not sell or transfer your personal data to third parties. By submitting, you consent to receive occasional marketing communications from The Synozur Alliance. You may unsubscribe at any time.”*\
+> (Include single acknowledgment line, no checkbox.)
+
+**Cookie banner**
+
+*   Analytics opt‑in/out; link to privacy policy.
+
+**Restricted countries**
+
+*   Block registration and PDF/email for users from **Russia, North Korea, Iran, etc.**
+*   Use IP geolocation and declared **country** (defense‑in‑depth).
+
+**Footer legal**
+
+> © 2025 The Synozur Alliance, LLC. All rights reserved. “Synozur” and “The Synozur Alliance” are trademarks of The Synozur Alliance, LLC. • [Privacy](https://www.synozur.com/privacy)
+
+[2](https://www.crunchbase.com/organization/synozur-alliance)[1](https://www.dnb.com/business-directory/company-profiles.synozur_alliance_llc.a50b370e041a2dbc83ca77808374d4c4.html)
+
+***
+
+## 13) Accessibility, Performance & Quality
+
+*   **WCAG 2.1 AA**: color contrast, keyboard nav, focus states, ARIA labels
+*   Forms: clear labels, inline validation, error summaries, `aria-live`
+*   Charts: text equivalents; high‑contrast mode; patterns not color alone
+*   Performance: route‑based code split, image lazy‑load, prefetch on hover/tap
+*   Mobile performance budget: LCP ≤ 2.0s on mid‑tier devices
+*   Uptime monitoring (ping); error logging with redaction
+
+***
+
+## 14) Analytics & KPIs
+
+*   Completion rate per model/version
+*   Drop‑off by step/question
+*   Score distribution (overall & per‑dimension)
+*   Benchmark readiness (n per industry)
+*   Industry & country coverage
+*   Email deliverability/open/click/download rates
+
+***
+
+## 15) Replit Architecture & Setup
+
+**Stack**
+
+*   **Frontend**: Vite + React + TypeScript; React Router; Zustand; Tailwind/CSS Modules; Recharts
+*   **Backend**: Node.js + Express (TypeScript); Prisma ORM → **PostgreSQL**
+*   **Storage**: Replit content storage (`/uploads`) for images/PDFs
+*   **Email**: **SendGrid**
+*   **Auth**: Username + password (`bcrypt`), JWT (access/refresh)
+
+**Monorepo**
+
+    /server   # Express + Prisma
+    /frontend # Vite + React
+    /uploads  # persisted assets & PDFs
+    .replit
+    replit.nix
+
+**.replit**
+
+```ini
+run = "npm --workspace server run dev"
+```
+
+**Environment variables**
+
+```bash
+DATABASE_URL=postgres://user:pass@host:5432/db
+JWT_SECRET=replace-with-long-random
+SENDGRID_API_KEY=sg.xxxxx
+APP_URL=https://models.synozur.com
+ASSET_STORAGE_DIR=/home/runner/<repl>/uploads
+EMAIL_FROM=no-reply@models.synozur.com
+```
+
+**Prisma migration**\
+Create all entities in §4; add indexes on `user.email`, `model.slug`, `model_version.is_current`.
+
+***
+
+## 16) Security Hardening
+
+*   Passwords: `bcrypt` with strong cost factor
+*   JWT: httpOnly refresh cookies; short‑lived access tokens; CSRF for state‑changing routes
+*   Rate limiting on auth and import/export routes; CAPTCHA on signup
+*   Input validation with Zod; strict CORS; MIME/type checks on uploads
+*   Daily encrypted backups; role‑based access control; **AuditLog** for admin actions
+
+***
+
+## 17) Theming Tokens & UI Components
+
+**Core components**
+
+*   AppHeader (logo, theme toggle)
+*   NavTabs (models/admin)
+*   Card, Modal, Toast
+*   ProgressBar (wizard), Stepper
+*   FormField, Select (industry list), CountrySelect
+*   ChartGauge (100–500 dial), ChartBars (benchmarks)
+*   ResourceList, CTAButton
+*   Footer (legal + privacy link + small logo)
+
+**Industry list (fixed)**\
+finance, retail, manufacturing, health care, energy, transportation, education, government, nonprofit, professional services, technology, other
+
+***
+
+## 18) Example Model JSON (Canonical)
+
+```json
+{
+  "slug": "ai-maturity",
+  "name": "AI Maturity",
+  "version": "1.0.0",
+  "scale": { "min": 100, "max": 500 },
+  "dimensions": [
+    { "key": "strategy", "label": "Strategy & Leadership" },
+    { "key": "talent",   "label": "Talent & Skills" },
+    { "key": "data",     "label": "Data & Infrastructure" },
+    { "key": "governance","label": "Governance & Responsible AI" },
+    { "key": "culture",  "label": "Culture & Change Management" }
+  ],
+  "questions": [
+    {
+      "dimension": "strategy",
+      "key": "exec_priority",
+      "type": "likert",
+      "text": "Does your executive team treat AI as a strategic priority?",
+      "options": [
+        { "key": "a1", "label": "Not at all",              "score": 100 },
+        { "key": "a2", "label": "Somewhat",                "score": 200 },
+        { "key": "a3", "label": "Roadmap & sponsorship",   "score": 300 },
+        { "key": "a4", "label": "Strategic priority",      "score": 400 },
+        { "key": "a5", "label": "Core to business",        "score": 500 }
+      ]
+    }
+  ],
+  "presurvey": [],
+  "assets": {
+    "opening_graphic_url": "",
+    "closing_graphic_url": "",
+    "resources": [
+      { "title": "Synozur Privacy", "url": "https://www.synozur.com/privacy" }
+    ],
+    "cta": { "label": "Talk to Synozur", "url": "https://www.synozur.com/join" }
+  }
+}
+```
+
+> Derived from your AI Maturity specification and generalized for multi‑model use. [3](https://www.synozur.com/)
+
+***
+
+## 19) Acceptance Criteria
+
+*   **Branding**: Dark mode by default; light toggle persists; colors #810FFB/#E60CB3; Avenir Next LT Pro loaded with fallbacks.
+*   **Models**: Admin imports a CSV to create a **ModelVersion**; can publish/unpublish; optional assets; pre‑survey 0–3 questions.
+*   **Assessment**: MC/Likert only; autosave; mobile UI; progress indicator.
+*   **Gating**: Results screen/PDF not shown until **name, email, company, job title, industry, country** provided.
+*   **Scoring**: Per‑dimension and overall computed server‑side; labels assigned; stored in `Scorecard`.
+*   **Benchmarks**: Display only when `n ≥ 30` per industry (and optionally country).
+*   **PDF/Email**: SendGrid email upon completion; PDF includes dial, bars, resources, CTA, and legal fine print.
+*   **Admin**: Results filterable and exportable (full/anonymized); benchmark rebuild; audit log present.
+*   **SEO**: Titles per §11; favicon applied; OG/Twitter meta present.
+*   **Privacy**: Cookie banner; implicit consent language shown; privacy link in footer and emails.
+*   **Legal**: Ownership/trademark notice on every page and PDF.
+*   **Security**: RBAC enforced; rate limiting; validation; backups configured.
+
+***
+
+## 20) Deliverables Checklist
+
+*   [ ] Monorepo in Replit (frontend + server)
+*   [ ] Prisma schema & initial migration (entities in §4)
+*   [ ] CSV import/export + admin UI
+*   [ ] Assessment wizard with autosave and gating
+*   [ ] Scoring engine + benchmarks aggregation
+*   [ ] PDF generation + SendGrid integration
+*   [ ] Theme tokens, dark/light switch, system defaults for assets
+*   [ ] Cookie banner; implicit consent copy
+*   [ ] SEO head management + favicon
+*   [ ] Accessibility pass (WCAG AA) + mobile QA
+*   [ ] Audit log & security hardening
+
+***
+
+### Graphic placeholders (drop‑in prompts)
+
+*   **Hero**: “Collaborative team illuminated by a **#810FFB→#E60CB3** gradient; abstract AI network; dark mode.”
+*   **Score dial**: “Radial gauge 100–500 with brand gradient, thin ticks, high contrast.”
+*   **Benchmark bars**: “Grouped bars for ‘You’ vs ‘Industry’; text labels; dark theme.”
+
+***
+
+### Legal & Ownership (footer text)
+
+> © 2025 The Synozur Alliance, LLC. All rights reserved. “Synozur” and “The Synozur Alliance” are trademarks of The Synozur Alliance, LLC. • [Privacy](https://www.synozur.com/privacy)
+
+*(Ownership language aligns with the site’s canonical footer conventions and trademark references.)* [2](https://www.crunchbase.com/organization/synozur-alliance)[1](https://www.dnb.com/business-directory/company-profiles.synozur_alliance_llc.a50b370e041a2dbc83ca77808374d4c4.html)
+
+***
+
+**All set.** This is the consolidated, current‑state spec. If you want, I can generate a **starter Replit scaffold** (folders, `tokens.css`, route stubs, Prisma schema, and API skeletons) you can paste in to accelerate build.
