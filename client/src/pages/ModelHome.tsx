@@ -95,45 +95,20 @@ export default function ModelHome() {
 
         <section className="py-16">
           <div className="container mx-auto px-4">
-            <div className="max-w-6xl mx-auto">
-              <div className="grid md:grid-cols-2 gap-12 items-center">
-                <div>
-                  <h2 className="text-3xl font-bold mb-6">What You'll Receive</h2>
-                  <ul className="space-y-4">
-                    {model.benefits.map((benefit, index) => (
-                      <li key={index} className="flex items-start gap-3" data-testid={`benefit-${index}`}>
-                        <CheckCircle2 className="h-6 w-6 text-primary flex-shrink-0 mt-0.5" />
-                        <span className="text-lg">{benefit}</span>
-                      </li>
-                    ))}
-                  </ul>
-                  <Button size="lg" className="mt-8" data-testid="button-get-started">
-                    Get Started
-                    <ArrowRight className="ml-2 h-5 w-5" />
-                  </Button>
-                </div>
-                <div className="relative">
-                  <Card className="p-8 bg-gradient-to-br from-primary/10 to-transparent">
-                    <div className="text-center">
-                      <TrendingUp className="h-16 w-16 text-primary mx-auto mb-4" />
-                      <h3 className="text-2xl font-bold mb-2">Science-Backed Framework</h3>
-                      <p className="text-muted-foreground mb-6">
-                        Our assessment is grounded in research and validated by leading enterprises across industries.
-                      </p>
-                      <div className="grid grid-cols-2 gap-4 text-center">
-                        <div>
-                          <div className="text-3xl font-bold text-primary">10k+</div>
-                          <div className="text-sm text-muted-foreground">Assessments</div>
-                        </div>
-                        <div>
-                          <div className="text-3xl font-bold text-primary">500+</div>
-                          <div className="text-sm text-muted-foreground">Organizations</div>
-                        </div>
-                      </div>
-                    </div>
-                  </Card>
-                </div>
-              </div>
+            <div className="max-w-4xl mx-auto text-center">
+              <h2 className="text-3xl font-bold mb-6">What You'll Receive</h2>
+              <ul className="space-y-4 text-left max-w-2xl mx-auto mb-8">
+                {model.benefits.map((benefit, index) => (
+                  <li key={index} className="flex items-start gap-3" data-testid={`benefit-${index}`}>
+                    <CheckCircle2 className="h-6 w-6 text-primary flex-shrink-0 mt-0.5" />
+                    <span className="text-lg">{benefit}</span>
+                  </li>
+                ))}
+              </ul>
+              <Button size="lg" className="mt-4" data-testid="button-get-started">
+                Get Started
+                <ArrowRight className="ml-2 h-5 w-5" />
+              </Button>
             </div>
           </div>
         </section>
