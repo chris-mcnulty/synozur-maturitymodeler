@@ -8,6 +8,9 @@ A comprehensive fullstack JavaScript application for multi-model maturity assess
 - **Accent Color**: Pink #E60CB3 (used sparingly in charts/data visualizations only)
 - **Theme**: Dark-mode-first UI
 - **Typography**: Inter font family
+- **Tagline**: "Find Your North Star"
+- **Alternative Tagline**: "Synozur - the Transformation Company"
+- **Website**: https://www.synozur.com
 
 ## Architecture
 - **Frontend**: React + Vite + TypeScript + Wouter routing + Shadcn UI
