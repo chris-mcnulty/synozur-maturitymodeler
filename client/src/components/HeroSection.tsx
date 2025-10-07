@@ -11,8 +11,8 @@ export function HeroSection() {
           alt="Team collaboration with AI technology" 
           className="w-full h-full object-cover"
         />
-        <div className="absolute inset-0 bg-gradient-to-r from-primary/90 to-secondary/90" />
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-background/20 to-background/80" />
+        <div className="absolute inset-0 bg-primary/85" />
+        <div className="absolute inset-0 bg-gradient-to-b from-primary/60 via-primary/80 to-background/95" />
       </div>
       
       <div className="container relative z-10 mx-auto px-4 py-20">

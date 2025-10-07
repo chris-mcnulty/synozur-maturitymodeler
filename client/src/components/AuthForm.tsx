@@ -33,7 +33,7 @@ export function AuthForm({ mode, onSubmit }: AuthFormProps) {
   return (
     <Card className="p-8 max-w-md mx-auto" data-testid={`card-auth-${mode}`}>
       <div className="text-center mb-6">
-        <div className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-3xl font-bold text-transparent mb-2">
+        <div className="text-3xl font-bold text-primary mb-2">
           Synozur
         </div>
         <h2 className="text-2xl font-bold">{titles[mode]}</h2>

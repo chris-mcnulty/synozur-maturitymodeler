@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import Landing from "@/pages/Landing";
+import ModelHome from "@/pages/ModelHome";
 import Assessment from "@/pages/Assessment";
 import Results from "@/pages/Results";
 import Profile from "@/pages/Profile";
@@ -19,6 +20,7 @@ function Router() {
       <Route path="/results" component={Results} />
       <Route path="/me" component={Profile} />
       <Route path="/admin" component={Admin} />
+      <Route path="/:modelSlug" component={ModelHome} />
       <Route component={NotFound} />
     </Switch>
   );
