@@ -208,8 +208,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Update assessment status
       await storage.updateAssessment(req.params.id, {
         status: "completed",
-        completedAt: new Date() as any,
-      });
+      } as any);
 
       res.json(result);
     } catch (error) {
@@ -314,8 +313,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             modelId: model.id,
             industry: bench.industry,
             country: bench.country,
-            averageScore: bench.averageScore,
-            participantCount: bench.participantCount,
+            meanScore: bench.averageScore,
+            sampleSize: bench.participantCount,
           });
         }
       }

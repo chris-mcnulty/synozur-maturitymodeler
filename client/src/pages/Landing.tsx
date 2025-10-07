@@ -2,29 +2,13 @@ import { HeroSection } from "@/components/HeroSection";
 import { ModelCard } from "@/components/ModelCard";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
-import openingGraphic from '@assets/generated_images/Opening_graphic_AI_transformation_bf033f89.png';
+import { useQuery } from "@tanstack/react-query";
+import type { Model } from "@shared/schema";
 
 export default function Landing() {
-  //todo: remove mock functionality - fetch from API
-  const models = [
-    {
-      slug: "ai-maturity",
-      name: "AI Maturity Assessment",
-      description: "Evaluate your organization's AI capabilities across strategy, data, technology, and culture dimensions.",
-      imageUrl: openingGraphic,
-    },
-    {
-      slug: "digital-transformation",
-      name: "Digital Transformation",
-      description: "Measure your digital maturity and identify opportunities for modernization and innovation.",
-      imageUrl: openingGraphic,
-    },
-    {
-      slug: "data-governance",
-      name: "Data Governance",
-      description: "Assess your data management practices and compliance readiness across your organization.",
-    },
-  ];
+  const { data: models = [], isLoading } = useQuery<Model[]>({
+    queryKey: ['/api/models'],
+  });
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -44,9 +28,25 @@ export default function Landing() {
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-7xl mx-auto">
-              {models.map((model) => (
-                <ModelCard key={model.slug} {...model} />
-              ))}
+              {isLoading ? (
+                <div data-testid="loading-models" className="col-span-full text-center text-muted-foreground">
+                  Loading assessments...
+                </div>
+              ) : models.length === 0 ? (
+                <div data-testid="no-models" className="col-span-full text-center text-muted-foreground">
+                  No assessments available yet.
+                </div>
+              ) : (
+                models.map((model) => (
+                  <ModelCard 
+                    key={model.slug} 
+                    slug={model.slug}
+                    name={model.name}
+                    description={model.description}
+                    imageUrl={model.imageUrl || undefined}
+                  />
+                ))
+              )}
             </div>
           </div>
         </section>
