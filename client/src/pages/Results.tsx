@@ -2,6 +2,7 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { ScoreCard } from "@/components/ScoreCard";
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { Download, Mail } from "lucide-react";
 import resultsImage from '@assets/generated_images/Results_roadmap_next_steps_ec45a8b6.png';
 
@@ -61,18 +62,45 @@ export default function Results() {
             </div>
           </div>
 
-          <div className="mt-12 text-center">
-            <h3 className="text-xl font-bold mb-4">Resources & Support</h3>
-            <div className="flex flex-wrap justify-center gap-4">
-              <Button variant="outline" data-testid="button-resource-1">
-                Responsible AI Guide
-              </Button>
-              <Button variant="outline" data-testid="button-resource-2">
-                Implementation Toolkit
-              </Button>
-              <Button data-testid="button-cta">
-                Talk to Synozur
-              </Button>
+          <div className="mt-12">
+            <h3 className="text-2xl font-bold mb-6 text-center">Explore More Assessments</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+              <Card className="p-6 hover-elevate transition-all" data-testid="card-model-suggestion-1">
+                <h4 className="font-bold text-lg mb-2">Digital Transformation</h4>
+                <p className="text-sm text-muted-foreground mb-4">Measure your digital maturity and modernization readiness</p>
+                <Button variant="outline" className="w-full" data-testid="button-model-digital">
+                  Start Assessment
+                </Button>
+              </Card>
+              <Card className="p-6 hover-elevate transition-all" data-testid="card-model-suggestion-2">
+                <h4 className="font-bold text-lg mb-2">Data Governance</h4>
+                <p className="text-sm text-muted-foreground mb-4">Assess your data management and compliance practices</p>
+                <Button variant="outline" className="w-full" data-testid="button-model-data">
+                  Start Assessment
+                </Button>
+              </Card>
+              <Card className="p-6 hover-elevate transition-all" data-testid="card-model-suggestion-3">
+                <h4 className="font-bold text-lg mb-2">Cloud Readiness</h4>
+                <p className="text-sm text-muted-foreground mb-4">Evaluate your organization's cloud adoption maturity</p>
+                <Button variant="outline" className="w-full" data-testid="button-model-cloud">
+                  Start Assessment
+                </Button>
+              </Card>
+            </div>
+
+            <div className="text-center">
+              <h3 className="text-xl font-bold mb-4">Resources & Support</h3>
+              <div className="flex flex-wrap justify-center gap-4">
+                <Button variant="outline" data-testid="button-resource-1">
+                  Responsible AI Guide
+                </Button>
+                <Button variant="outline" data-testid="button-resource-2">
+                  Implementation Toolkit
+                </Button>
+                <Button data-testid="button-cta">
+                  Talk to Synozur
+                </Button>
+              </div>
             </div>
           </div>
         </div>
