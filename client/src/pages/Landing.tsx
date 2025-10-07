@@ -39,7 +39,8 @@ export default function Landing() {
               ) : (
                 models.map((model) => (
                   <ModelCard 
-                    key={model.slug} 
+                    key={model.slug}
+                    id={model.id}
                     slug={model.slug}
                     name={model.name}
                     description={model.description}

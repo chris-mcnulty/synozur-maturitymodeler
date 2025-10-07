@@ -21,6 +21,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/models/by-id/:id", async (req, res) => {
+    try {
+      const model = await storage.getModel(req.params.id);
+      if (!model) {
+        return res.status(404).json({ error: "Model not found" });
+      }
+
+      const dimensions = await storage.getDimensionsByModelId(model.id);
+      res.json({ ...model, dimensions });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch model" });
+    }
+  });
+
   app.get("/api/models/:slug", async (req, res) => {
     try {
       const model = await storage.getModelBySlug(req.params.slug);
