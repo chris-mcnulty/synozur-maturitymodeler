@@ -1,7 +1,7 @@
-# Synozur Multi-Model Maturity Platform
+# Maturity Modeler - Synozur Multi-Model Maturity Platform
 
 ## Project Overview
-A comprehensive fullstack JavaScript application for multi-model maturity assessments with dynamic routing (/:modelSlug), CSV-driven model management, gated PDF results, benchmarking capabilities, and comprehensive admin controls.
+Maturity Modeler is a comprehensive fullstack JavaScript application for multi-model maturity assessments with dynamic routing (/:modelSlug), CSV-driven model management, gated PDF results, benchmarking capabilities, and comprehensive admin controls.
 
 ## Brand & Design
 - **Primary Color**: Purple #810FFB (emphasized throughout)

@@ -7,7 +7,7 @@ export function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div>
             <h3 className="text-lg font-bold mb-4 text-primary">
-              Synozur
+              Maturity Modeler
             </h3>
             <p className="text-sm text-muted-foreground">
               Science-backed maturity assessments trusted by leading enterprises.

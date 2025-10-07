@@ -21,7 +21,7 @@ export function Header() {
               <span className="text-white font-bold text-lg">S</span>
             </div>
             <div>
-              <div className="text-lg font-bold text-primary leading-tight">Synozur</div>
+              <div className="text-lg font-bold text-primary leading-tight">Maturity Modeler</div>
               <div className="text-xs text-muted-foreground leading-tight">Find Your North Star</div>
             </div>
           </div>
