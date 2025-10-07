@@ -23,7 +23,7 @@ export const models = pgTable("models", {
   slug: text("slug").notNull().unique(),
   name: text("name").notNull(),
   description: text("description").notNull(),
-  version: text("version").notNull(),
+  version: text("version").notNull().default("1.0"),
   estimatedTime: text("estimated_time"),
   status: text("status").notNull().default("draft"), // draft, published, archived
   imageUrl: text("image_url"),
@@ -54,8 +54,7 @@ export const questions = pgTable("questions", {
 export const answers = pgTable("answers", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   questionId: varchar("question_id").notNull().references(() => questions.id, { onDelete: "cascade" }),
-  key: text("key").notNull(),
-  label: text("label").notNull(),
+  text: text("text").notNull(),
   score: integer("score").notNull(),
   order: integer("order").notNull(),
 });

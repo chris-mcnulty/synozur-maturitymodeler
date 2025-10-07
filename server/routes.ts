@@ -1,7 +1,13 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertAssessmentSchema, insertAssessmentResponseSchema, insertResultSchema } from "@shared/schema";
+import { insertAssessmentSchema, insertAssessmentResponseSchema, insertResultSchema, insertModelSchema, insertDimensionSchema, insertQuestionSchema, insertAnswerSchema } from "@shared/schema";
+import { readFileSync } from "fs";
+import { join, dirname } from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Model routes
@@ -251,6 +257,114 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(benchmark);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch benchmark" });
+    }
+  });
+
+  // Admin routes for model management
+  app.post("/api/admin/models/seed/:modelSlug", async (req, res) => {
+    try {
+      const seedDataPath = join(__dirname, `seed-data/${req.params.modelSlug}.json`);
+      const seedData = JSON.parse(readFileSync(seedDataPath, 'utf-8'));
+
+      // Check if model already exists
+      const existingModel = await storage.getModelBySlug(seedData.model.slug);
+      if (existingModel) {
+        return res.status(400).json({ error: "Model already exists" });
+      }
+
+      // Create model
+      const model = await storage.createModel(seedData.model);
+
+      // Create dimensions
+      const dimensionMap: Record<string, string> = {};
+      for (const dim of seedData.dimensions) {
+        const dimension = await storage.createDimension({
+          modelId: model.id,
+          key: dim.key,
+          label: dim.name,
+          description: dim.description,
+          order: seedData.dimensions.indexOf(dim) + 1,
+        });
+        dimensionMap[dim.key] = dimension.id;
+      }
+
+      // Create questions and answers
+      for (const q of seedData.questions) {
+        const question = await storage.createQuestion({
+          modelId: model.id,
+          dimensionId: q.dimensionKey ? dimensionMap[q.dimensionKey] : null,
+          text: q.text,
+          order: q.order,
+        });
+
+        for (const a of q.answers) {
+          await storage.createAnswer({
+            questionId: question.id,
+            text: a.text,
+            score: a.score,
+            order: a.order,
+          });
+        }
+      }
+
+      // Create benchmarks
+      if (seedData.benchmarks) {
+        for (const bench of seedData.benchmarks) {
+          await storage.createBenchmark({
+            modelId: model.id,
+            industry: bench.industry,
+            country: bench.country,
+            averageScore: bench.averageScore,
+            participantCount: bench.participantCount,
+          });
+        }
+      }
+
+      res.json({ success: true, model });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: "Failed to seed model data" });
+    }
+  });
+
+  app.get("/api/admin/models", async (req, res) => {
+    try {
+      const models = await storage.getAllModels();
+      const modelsWithStats = await Promise.all(
+        models.map(async (model) => {
+          const dimensions = await storage.getDimensionsByModelId(model.id);
+          const questions = await storage.getQuestionsByModelId(model.id);
+          return {
+            ...model,
+            dimensionCount: dimensions.length,
+            questionCount: questions.length,
+          };
+        })
+      );
+      res.json(modelsWithStats);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch models" });
+    }
+  });
+
+  app.patch("/api/admin/models/:id", async (req, res) => {
+    try {
+      const model = await storage.updateModel(req.params.id, req.body);
+      if (!model) {
+        return res.status(404).json({ error: "Model not found" });
+      }
+      res.json(model);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update model" });
+    }
+  });
+
+  app.delete("/api/admin/models/:id", async (req, res) => {
+    try {
+      await storage.deleteModel(req.params.id);
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete model" });
     }
   });
 

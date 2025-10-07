@@ -1,0 +1,389 @@
+{
+  "model": {
+    "name": "Digital Transformation Maturity Model",
+    "slug": "digital-transformation",
+    "description": "Assess your organization's digital transformation readiness across key dimensions including strategy, technology, operations, and culture.",
+    "status": "active"
+  },
+  "dimensions": [
+    {
+      "key": "strategy",
+      "name": "Strategy & Vision",
+      "description": "Strategic planning and digital vision alignment"
+    },
+    {
+      "key": "technology",
+      "name": "Technology & Infrastructure",
+      "description": "Digital tools, platforms, and technical capabilities"
+    },
+    {
+      "key": "operations",
+      "name": "Operations & Processes",
+      "description": "Process digitization and operational excellence"
+    },
+    {
+      "key": "culture",
+      "name": "Culture & People",
+      "description": "Digital mindset, skills, and organizational culture"
+    },
+    {
+      "key": "customer",
+      "name": "Customer Experience",
+      "description": "Digital customer engagement and experience"
+    }
+  ],
+  "questions": [
+    {
+      "text": "How well-defined is your organization's digital transformation strategy?",
+      "order": 1,
+      "dimensionKey": "strategy",
+      "answers": [
+        {
+          "text": "No formal digital strategy exists",
+          "score": 100,
+          "order": 1
+        },
+        {
+          "text": "Strategy is being developed or discussed",
+          "score": 200,
+          "order": 2
+        },
+        {
+          "text": "Clear strategy exists but not fully implemented",
+          "score": 300,
+          "order": 3
+        },
+        {
+          "text": "Strategy is implemented across most areas",
+          "score": 400,
+          "order": 4
+        },
+        {
+          "text": "Comprehensive strategy fully embedded organization-wide",
+          "score": 500,
+          "order": 5
+        }
+      ]
+    },
+    {
+      "text": "How integrated are digital technologies into your core business operations?",
+      "order": 2,
+      "dimensionKey": "technology",
+      "answers": [
+        {
+          "text": "Minimal digital technology use, mostly manual processes",
+          "score": 100,
+          "order": 1
+        },
+        {
+          "text": "Some digital tools in isolated departments",
+          "score": 200,
+          "order": 2
+        },
+        {
+          "text": "Digital systems in place but limited integration",
+          "score": 300,
+          "order": 3
+        },
+        {
+          "text": "Well-integrated digital platforms across operations",
+          "score": 400,
+          "order": 4
+        },
+        {
+          "text": "Fully integrated, cloud-based ecosystem with automation",
+          "score": 500,
+          "order": 5
+        }
+      ]
+    },
+    {
+      "text": "How digitized are your core business processes?",
+      "order": 3,
+      "dimensionKey": "operations",
+      "answers": [
+        {
+          "text": "Primarily paper-based and manual processes",
+          "score": 100,
+          "order": 1
+        },
+        {
+          "text": "Some processes digitized, many still manual",
+          "score": 200,
+          "order": 2
+        },
+        {
+          "text": "Core processes digitized, optimization ongoing",
+          "score": 300,
+          "order": 3
+        },
+        {
+          "text": "Most processes automated with data analytics",
+          "score": 400,
+          "order": 4
+        },
+        {
+          "text": "End-to-end automation with AI/ML optimization",
+          "score": 500,
+          "order": 5
+        }
+      ]
+    },
+    {
+      "text": "How would you describe your organization's digital culture and mindset?",
+      "order": 4,
+      "dimensionKey": "culture",
+      "answers": [
+        {
+          "text": "Resistant to change, traditional mindset dominates",
+          "score": 100,
+          "order": 1
+        },
+        {
+          "text": "Awareness growing but limited digital adoption",
+          "score": 200,
+          "order": 2
+        },
+        {
+          "text": "Moderate digital mindset, mixed adoption levels",
+          "score": 300,
+          "order": 3
+        },
+        {
+          "text": "Strong digital culture in most teams",
+          "score": 400,
+          "order": 4
+        },
+        {
+          "text": "Innovation-driven, digital-first culture embedded",
+          "score": 500,
+          "order": 5
+        }
+      ]
+    },
+    {
+      "text": "How digitally enabled is your customer experience?",
+      "order": 5,
+      "dimensionKey": "customer",
+      "answers": [
+        {
+          "text": "Limited digital touchpoints, mainly offline interactions",
+          "score": 100,
+          "order": 1
+        },
+        {
+          "text": "Basic digital channels (website, email) available",
+          "score": 200,
+          "order": 2
+        },
+        {
+          "text": "Multi-channel presence with some personalization",
+          "score": 300,
+          "order": 3
+        },
+        {
+          "text": "Omnichannel experience with good personalization",
+          "score": 400,
+          "order": 4
+        },
+        {
+          "text": "Seamless, AI-powered, hyper-personalized experiences",
+          "score": 500,
+          "order": 5
+        }
+      ]
+    },
+    {
+      "text": "How data-driven is your decision-making process?",
+      "order": 6,
+      "dimensionKey": "strategy",
+      "answers": [
+        {
+          "text": "Decisions based primarily on intuition/experience",
+          "score": 100,
+          "order": 1
+        },
+        {
+          "text": "Limited use of data for specific decisions",
+          "score": 200,
+          "order": 2
+        },
+        {
+          "text": "Regular data analysis informs key decisions",
+          "score": 300,
+          "order": 3
+        },
+        {
+          "text": "Data analytics central to most strategic decisions",
+          "score": 400,
+          "order": 4
+        },
+        {
+          "text": "AI-driven insights guide all strategic initiatives",
+          "score": 500,
+          "order": 5
+        }
+      ]
+    },
+    {
+      "text": "What is the level of digital skills within your workforce?",
+      "order": 7,
+      "dimensionKey": "culture",
+      "answers": [
+        {
+          "text": "Limited digital skills, significant training needed",
+          "score": 100,
+          "order": 1
+        },
+        {
+          "text": "Basic digital literacy, advanced skills rare",
+          "score": 200,
+          "order": 2
+        },
+        {
+          "text": "Growing digital capabilities, training programs in place",
+          "score": 300,
+          "order": 3
+        },
+        {
+          "text": "Strong digital skills across most of workforce",
+          "score": 400,
+          "order": 4
+        },
+        {
+          "text": "Advanced digital expertise organization-wide",
+          "score": 500,
+          "order": 5
+        }
+      ]
+    },
+    {
+      "text": "How modern and scalable is your technology infrastructure?",
+      "order": 8,
+      "dimensionKey": "technology",
+      "answers": [
+        {
+          "text": "Legacy systems, limited scalability",
+          "score": 100,
+          "order": 1
+        },
+        {
+          "text": "Mix of legacy and modern systems",
+          "score": 200,
+          "order": 2
+        },
+        {
+          "text": "Modernization underway, cloud adoption started",
+          "score": 300,
+          "order": 3
+        },
+        {
+          "text": "Cloud-first approach, scalable architecture",
+          "score": 400,
+          "order": 4
+        },
+        {
+          "text": "Fully cloud-native, microservices, elastic infrastructure",
+          "score": 500,
+          "order": 5
+        }
+      ]
+    },
+    {
+      "text": "How effective is your organization at innovating with digital technologies?",
+      "order": 9,
+      "dimensionKey": "operations",
+      "answers": [
+        {
+          "text": "Little to no digital innovation activity",
+          "score": 100,
+          "order": 1
+        },
+        {
+          "text": "Occasional innovation projects, limited success",
+          "score": 200,
+          "order": 2
+        },
+        {
+          "text": "Regular innovation initiatives with mixed results",
+          "score": 300,
+          "order": 3
+        },
+        {
+          "text": "Structured innovation process with good outcomes",
+          "score": 400,
+          "order": 4
+        },
+        {
+          "text": "Continuous innovation engine, market leadership",
+          "score": 500,
+          "order": 5
+        }
+      ]
+    },
+    {
+      "text": "How personalized and responsive is your customer engagement?",
+      "order": 10,
+      "dimensionKey": "customer",
+      "answers": [
+        {
+          "text": "Generic, one-size-fits-all approach",
+          "score": 100,
+          "order": 1
+        },
+        {
+          "text": "Basic segmentation, limited personalization",
+          "score": 200,
+          "order": 2
+        },
+        {
+          "text": "Segment-based personalization across channels",
+          "score": 300,
+          "order": 3
+        },
+        {
+          "text": "Individual-level personalization with predictive insights",
+          "score": 400,
+          "order": 4
+        },
+        {
+          "text": "Real-time, AI-driven hyper-personalization at scale",
+          "score": 500,
+          "order": 5
+        }
+      ]
+    }
+  ],
+  "benchmarks": [
+    {
+      "industry": "Technology",
+      "country": null,
+      "averageScore": 380,
+      "participantCount": 150
+    },
+    {
+      "industry": "Financial Services",
+      "country": null,
+      "averageScore": 360,
+      "participantCount": 200
+    },
+    {
+      "industry": "Healthcare",
+      "country": null,
+      "averageScore": 320,
+      "participantCount": 180
+    },
+    {
+      "industry": "Retail",
+      "country": null,
+      "averageScore": 340,
+      "participantCount": 220
+    },
+    {
+      "industry": "Manufacturing",
+      "country": null,
+      "averageScore": 300,
+      "participantCount": 170
+    }
+  ]
+}
