@@ -573,7 +573,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Import/Export routes
+  // Import/Export routes (simplified CSV format)
   app.get("/api/models/:id/export", async (req, res) => {
     try {
       const model = await storage.getModel(req.params.id);
@@ -581,7 +581,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Model not found" });
       }
 
-      const dimensions = await storage.getDimensionsByModelId(model.id);
       const questions = await storage.getQuestionsByModelId(model.id);
       
       // Get all answers for all questions
@@ -591,21 +590,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         allAnswers.push(...answers);
       }
 
-      // Import CSV converter
-      const { modelToCSV } = await import('../client/src/utils/csvConverter');
-      
-      // Define default scoring levels
-      const scoringLevels = [
-        { id: '1', label: 'Initial', minScore: 100, maxScore: 199, color: '#ef4444' },
-        { id: '2', label: 'Developing', minScore: 200, maxScore: 299, color: '#f59e0b' },
-        { id: '3', label: 'Defined', minScore: 300, maxScore: 399, color: '#10b981' },
-        { id: '4', label: 'Optimized', minScore: 400, maxScore: 500, color: '#3b82f6' },
-      ];
-      
-      const csvContent = modelToCSV(model, dimensions, questions, allAnswers, scoringLevels);
+      // Import simplified CSV converter
+      const { questionsToSimpleCSV } = await import('../client/src/utils/csvConverterSimple');
+      const csvContent = questionsToSimpleCSV(questions, allAnswers);
 
       res.setHeader('Content-Type', 'text/csv');
-      res.setHeader('Content-Disposition', `attachment; filename="${model.slug}-export.csv"`);
+      res.setHeader('Content-Disposition', `attachment; filename="${model.slug}-questions.csv"`);
       res.send(csvContent);
     } catch (error) {
       console.error('Export error:', error);
@@ -613,80 +603,71 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/models/import", async (req, res) => {
+  app.post("/api/models/:id/import-questions", async (req, res) => {
     try {
+      const modelId = req.params.id;
       const { csvContent } = req.body;
       
-      // Import CSV converter
-      const { csvToModel } = await import('../client/src/utils/csvConverter');
-      const { model: modelData, dimensions, questions, answers: csvAnswers, scoringLevels } = csvToModel(csvContent);
-
-      // Create the model
-      const model = await storage.createModel({
-        name: modelData.name || '',
-        slug: modelData.slug || '',
-        description: modelData.description,
-        version: modelData.version || "1.0",
-        estimatedTime: modelData.estimatedTime,
-        status: modelData.status || "draft",
-      });
-
-      // Create dimensions
-      const dimensionMap = new Map<string, string>();
-      if (dimensions && Array.isArray(dimensions)) {
-        for (const dim of dimensions) {
-          const newDim = await storage.createDimension({
-            modelId: model.id,
-            key: dim.key || '',
-            label: dim.label || '',
-            description: dim.description,
-            order: dim.order || 0,
-          });
-          dimensionMap.set(dim.id || dim.key || '', newDim.id);
-        }
-      }
-
-      // Create questions
-      const questionMap = new Map<string, string>();
-      if (questions && Array.isArray(questions)) {
-        for (const q of questions) {
-          const question = await storage.createQuestion({
-            modelId: model.id,
-            dimensionId: q.dimensionId ? dimensionMap.get(q.dimensionId) : null,
-            text: q.text || '',
-            type: q.type || 'multiple_choice',
-            minValue: q.minValue,
-            maxValue: q.maxValue,
-            unit: q.unit,
-            placeholder: q.placeholder,
-            order: q.order || 0,
-            improvementStatement: q.improvementStatement,
-            resourceLink: q.resourceLink,
-          });
-          questionMap.set(q.id || '', question.id);
-        }
+      // Check if model exists
+      const model = await storage.getModel(modelId);
+      if (!model) {
+        return res.status(404).json({ error: "Model not found" });
       }
       
-      // Create answers from CSV answers array
-      if (csvAnswers && Array.isArray(csvAnswers)) {
-        for (const a of csvAnswers) {
-          if (a.questionId && questionMap.has(a.questionId)) {
-            await storage.createAnswer({
-              questionId: questionMap.get(a.questionId) || '',
-              text: a.text || '',
-              score: a.score || 0,
-              order: a.order || 0,
-              improvementStatement: a.improvementStatement,
-              resourceLink: a.resourceLink,
-            });
-          }
+      // Import simplified CSV converter
+      const { simpleCSVToQuestions } = await import('../client/src/utils/csvConverterSimple');
+      const { questions, answers } = simpleCSVToQuestions(csvContent, modelId);
+
+      // Delete existing questions and answers for this model
+      const existingQuestions = await storage.getQuestionsByModelId(modelId);
+      for (const q of existingQuestions) {
+        // Delete answers first
+        const existingAnswers = await storage.getAnswersByQuestionId(q.id);
+        for (const a of existingAnswers) {
+          await storage.deleteAnswer(a.id);
+        }
+        // Then delete question
+        await storage.deleteQuestion(q.id);
+      }
+
+      // Create new questions
+      const questionMap = new Map<string, string>();
+      for (const q of questions) {
+        const question = await storage.createQuestion({
+          modelId: modelId,
+          dimensionId: null, // Not using dimensions in simplified format
+          text: q.text || '',
+          type: q.type || 'multiple_choice',
+          minValue: q.minValue,
+          maxValue: q.maxValue,
+          unit: q.unit,
+          placeholder: q.placeholder,
+          order: q.order || 0,
+          improvementStatement: q.improvementStatement,
+          resourceLink: q.resourceLink,
+        });
+        questionMap.set(q.id, question.id);
+      }
+      
+      // Create answers
+      for (const a of answers) {
+        const actualQuestionId = questionMap.get(a.questionId);
+        if (actualQuestionId) {
+          await storage.createAnswer({
+            questionId: actualQuestionId,
+            text: a.text || '',
+            score: a.score || 0,
+            order: a.order || 0,
+            improvementStatement: a.improvementStatement,
+            resourceLink: a.resourceLink,
+          });
         }
       }
 
-      res.json({ success: true, model });
+      res.json({ success: true, questionsImported: questions.length, answersImported: answers.length });
     } catch (error) {
       console.error('Import error:', error);
-      res.status(400).json({ error: "Failed to import model" });
+      res.status(400).json({ error: "Failed to import questions" });
     }
   });
 

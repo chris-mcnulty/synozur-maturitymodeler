@@ -375,10 +375,10 @@ export default function Admin() {
     }
   };
 
-  const importModelFromCSV = async (file: File) => {
+  const importQuestionsFromCSV = async (file: File, modelId: string) => {
     try {
       const csvContent = await file.text();
-      const response = await fetch('/api/models/import', {
+      const response = await fetch(`/api/models/${modelId}/import-questions`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -388,29 +388,30 @@ export default function Admin() {
       
       if (!response.ok) throw new Error('Import failed');
       
-      await queryClient.invalidateQueries({ queryKey: ['/api/models'] });
+      const result = await response.json();
+      await queryClient.invalidateQueries({ queryKey: ['/api/questions', modelId] });
       
       toast({
         title: "Import successful",
-        description: `Model imported from CSV successfully.`,
+        description: `Imported ${result.questionsImported} questions with ${result.answersImported} answer options.`,
       });
     } catch (error) {
       toast({
         title: "Import failed",
-        description: "Failed to import model. Please check the CSV format.",
+        description: "Failed to import questions. Please check the CSV format.",
         variant: "destructive",
       });
     }
   };
 
-  const handleImportClick = () => {
+  const handleImportClick = (modelId: string) => {
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = '.csv';
     input.onchange = async (e) => {
       const file = (e.target as HTMLInputElement).files?.[0];
       if (file) {
-        await importModelFromCSV(file);
+        await importQuestionsFromCSV(file, modelId);
       }
     };
     input.click();
@@ -517,14 +518,6 @@ export default function Admin() {
                 <div className="flex justify-between items-center mb-6">
                   <h2 className="text-xl font-bold">Model Management</h2>
                   <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      onClick={handleImportClick}
-                      data-testid="button-import-csv"
-                    >
-                      <FileUp className="mr-2 h-4 w-4" />
-                      Import CSV
-                    </Button>
                     <Button 
                       onClick={() => {
                         resetModelForm();
@@ -581,8 +574,18 @@ export default function Admin() {
                               <Button
                                 variant="ghost"
                                 size="icon"
+                                onClick={() => handleImportClick(model.id)}
+                                data-testid={`button-import-${model.id}`}
+                                title="Import Questions CSV"
+                              >
+                                <FileUp className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
                                 onClick={() => exportModelToCSV(model.id)}
                                 data-testid={`button-export-${model.id}`}
+                                title="Export Questions CSV"
                               >
                                 <FileDown className="h-4 w-4" />
                               </Button>

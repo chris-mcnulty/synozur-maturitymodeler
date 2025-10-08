@@ -1,0 +1,173 @@
+// Simplified CSV converter for denormalized question/answer format
+// Format: Question#, Question Text, Answer, Score, Interpretation, Resource
+
+interface SimplifiedRow {
+  questionNumber: number;
+  questionText: string;
+  answer: string;
+  score: number;
+  interpretation?: string;
+  resource?: string;
+}
+
+export function questionsToSimpleCSV(questions: any[], answers: any[]): string {
+  const rows: string[] = [];
+  
+  // Header row
+  rows.push('Question#,Question Text,Answer,Score,Interpretation,Resource');
+  
+  questions.forEach((question, qIndex) => {
+    const questionNumber = qIndex + 1;
+    const questionAnswers = answers.filter(a => a.questionId === question.id);
+    
+    if (question.type === 'multiple_choice' && questionAnswers.length > 0) {
+      // For multiple choice, export each answer option
+      questionAnswers.forEach((answer) => {
+        const row = [
+          questionNumber.toString(),
+          `"${question.text.replace(/"/g, '""')}"`,
+          `"${answer.text.replace(/"/g, '""')}"`,
+          answer.score.toString(),
+          answer.improvementStatement ? `"${answer.improvementStatement.replace(/"/g, '""')}"` : '',
+          answer.resourceLink ? `"${answer.resourceLink.replace(/"/g, '""')}"` : ''
+        ];
+        rows.push(row.join(','));
+      });
+    } else {
+      // For other types (numeric, true/false, text), just export the question
+      const row = [
+        questionNumber.toString(),
+        `"${question.text.replace(/"/g, '""')}"`,
+        question.type === 'true_false' ? 'True/False' : 
+        question.type === 'numeric' ? `Numeric (${question.minValue || 0}-${question.maxValue || 100}${question.unit ? ' ' + question.unit : ''})` :
+        question.type === 'text' ? 'Text Input' : '',
+        '', // No score for non-multiple-choice
+        question.improvementStatement ? `"${question.improvementStatement.replace(/"/g, '""')}"` : '',
+        question.resourceLink ? `"${question.resourceLink.replace(/"/g, '""')}"` : ''
+      ];
+      rows.push(row.join(','));
+    }
+  });
+  
+  return rows.join('\n');
+}
+
+export function simpleCSVToQuestions(csvContent: string, modelId: string): { questions: any[], answers: any[] } {
+  const lines = csvContent.split('\n').filter(line => line.trim());
+  const questions: any[] = [];
+  const answers: any[] = [];
+  const questionMap = new Map<number, any>();
+  
+  // Skip header if it exists
+  let startIndex = 0;
+  if (lines[0] && lines[0].toLowerCase().includes('question#')) {
+    startIndex = 1;
+  }
+  
+  for (let i = startIndex; i < lines.length; i++) {
+    const values = parseCSVLine(lines[i]);
+    
+    if (values.length < 3) continue;
+    
+    const questionNumber = parseInt(values[0]);
+    const questionText = values[1];
+    const answerText = values[2];
+    const score = values[3] ? parseInt(values[3]) : 0;
+    const interpretation = values[4] || '';
+    const resource = values[5] || '';
+    
+    if (!questionNumber || !questionText) continue;
+    
+    // Check if we've seen this question before
+    if (!questionMap.has(questionNumber)) {
+      // Determine question type based on answer text
+      let questionType = 'multiple_choice';
+      let minValue, maxValue, unit;
+      
+      if (answerText === 'True/False') {
+        questionType = 'true_false';
+      } else if (answerText.startsWith('Numeric')) {
+        questionType = 'numeric';
+        // Parse numeric range if provided
+        const match = answerText.match(/Numeric \((\d+)-(\d+)(?:\s+(.+))?\)/);
+        if (match) {
+          minValue = parseInt(match[1]);
+          maxValue = parseInt(match[2]);
+          unit = match[3];
+        }
+      } else if (answerText === 'Text Input') {
+        questionType = 'text';
+      }
+      
+      const question = {
+        id: `q${questionNumber}`,
+        modelId,
+        text: questionText,
+        type: questionType,
+        order: questionNumber - 1,
+        minValue,
+        maxValue,
+        unit,
+        improvementStatement: interpretation || undefined,
+        resourceLink: resource || undefined,
+      };
+      
+      questions.push(question);
+      questionMap.set(questionNumber, question);
+    }
+    
+    // If this is a multiple choice answer (has answer text and it's not a type indicator)
+    if (answerText && 
+        answerText !== 'True/False' && 
+        answerText !== 'Text Input' && 
+        !answerText.startsWith('Numeric')) {
+      const question = questionMap.get(questionNumber);
+      if (question) {
+        answers.push({
+          id: `a${questionNumber}_${answers.length + 1}`,
+          questionId: question.id,
+          text: answerText,
+          score: score,
+          order: answers.filter(a => a.questionId === question.id).length,
+          improvementStatement: interpretation || undefined,
+          resourceLink: resource || undefined,
+        });
+      }
+    }
+  }
+  
+  return { questions, answers };
+}
+
+function parseCSVLine(line: string): string[] {
+  const values: string[] = [];
+  let current = '';
+  let inQuotes = false;
+  
+  for (let i = 0; i < line.length; i++) {
+    const char = line[i];
+    const nextChar = line[i + 1];
+    
+    if (char === '"') {
+      if (inQuotes && nextChar === '"') {
+        // Escaped quote
+        current += '"';
+        i++; // Skip next quote
+      } else {
+        // Toggle quote state
+        inQuotes = !inQuotes;
+      }
+    } else if (char === ',' && !inQuotes) {
+      // Field separator
+      values.push(current.trim());
+      current = '';
+    } else {
+      current += char;
+    }
+  }
+  
+  // Add last field
+  values.push(current.trim());
+  
+  return values;
+}
