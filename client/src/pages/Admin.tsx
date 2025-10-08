@@ -28,6 +28,8 @@ export default function Admin() {
   const { toast } = useToast();
   const [editingModel, setEditingModel] = useState<Model | null>(null);
   const [isModelDialogOpen, setIsModelDialogOpen] = useState(false);
+  const [isSettingsDialogOpen, setIsSettingsDialogOpen] = useState(false);
+  const [heroModelId, setHeroModelId] = useState<string>('');
   const [modelForm, setModelForm] = useState({
     name: '',
     slug: '',
@@ -43,6 +45,24 @@ export default function Admin() {
   // Fetch models
   const { data: models = [], isLoading: modelsLoading } = useQuery<Model[]>({
     queryKey: ['/api/models'],
+  });
+
+  // Fetch hero model setting
+  const { data: heroModelSetting } = useQuery({
+    queryKey: ['/api/settings/heroModel'],
+    queryFn: async () => {
+      try {
+        const response = await fetch('/api/settings/heroModel');
+        if (response.ok) {
+          const setting = await response.json();
+          setHeroModelId(setting.value as string);
+          return setting;
+        }
+        return null;
+      } catch {
+        return null;
+      }
+    },
   });
 
   // Fetch all assessments with results
@@ -122,6 +142,29 @@ export default function Admin() {
       toast({
         title: "Error",
         description: "Failed to update model. Backend support for this feature is coming soon.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Save hero model setting mutation
+  const saveHeroModelSetting = useMutation({
+    mutationFn: async (modelId: string) => {
+      const response = await apiRequest('POST', '/api/settings/heroModel', { value: modelId });
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/settings/heroModel'] });
+      setIsSettingsDialogOpen(false);
+      toast({
+        title: "Settings saved",
+        description: "Hero model has been updated successfully.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to save settings.",
         variant: "destructive",
       });
     },
@@ -270,7 +313,11 @@ export default function Admin() {
         <div className="container mx-auto px-4 max-w-7xl">
           <div className="flex justify-between items-center mb-8">
             <h1 className="text-4xl font-bold">Admin Console</h1>
-            <Button variant="outline" data-testid="button-settings">
+            <Button 
+              variant="outline" 
+              data-testid="button-settings"
+              onClick={() => setIsSettingsDialogOpen(true)}
+            >
               <Settings className="mr-2 h-4 w-4" />
               Settings
             </Button>
@@ -630,6 +677,54 @@ export default function Admin() {
               data-testid="button-save-model"
             >
               {createModel.isPending || updateModel.isPending ? 'Saving...' : editingModel ? 'Update Model' : 'Create Model'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Settings Dialog */}
+      <Dialog open={isSettingsDialogOpen} onOpenChange={setIsSettingsDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Admin Settings</DialogTitle>
+            <DialogDescription>
+              Configure global application settings
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="heroModel">Hero Model (Landing Page)</Label>
+              <p className="text-sm text-muted-foreground mb-2">
+                Select which model to feature on the landing page
+              </p>
+              <select
+                id="heroModel"
+                value={heroModelId}
+                onChange={(e) => setHeroModelId(e.target.value)}
+                className="w-full h-9 px-3 rounded-md border border-input bg-background"
+                data-testid="select-hero-model"
+              >
+                <option value="">Auto-detect (AI Model)</option>
+                {models.filter(m => m.status === 'published').map((model) => (
+                  <option key={model.id} value={model.id}>
+                    {model.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsSettingsDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={() => saveHeroModelSetting.mutate(heroModelId)}
+              disabled={saveHeroModelSetting.isPending}
+              data-testid="button-save-settings"
+            >
+              {saveHeroModelSetting.isPending ? 'Saving...' : 'Save Settings'}
             </Button>
           </DialogFooter>
         </DialogContent>
