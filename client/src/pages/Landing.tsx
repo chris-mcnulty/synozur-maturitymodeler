@@ -9,7 +9,7 @@ import { ArrowRight, Clock, FileText, BarChart3, CheckCircle } from "lucide-reac
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { Model, Assessment } from "@shared/schema";
-import heroBackground from '@assets/generated_images/Opening_graphic_AI_transformation_bf033f89.png';
+import heroBackground from '@assets/AI_network_hero_background.png';
 
 export default function Landing() {
   const [, setLocation] = useLocation();
