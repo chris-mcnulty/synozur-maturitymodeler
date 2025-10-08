@@ -991,14 +991,14 @@ export default function Admin() {
             <div>
               <Label htmlFor="dimension">Dimension (Optional)</Label>
               <Select
-                value={questionForm.dimensionId}
-                onValueChange={(value) => setQuestionForm({ ...questionForm, dimensionId: value })}
+                value={questionForm.dimensionId || 'none'}
+                onValueChange={(value) => setQuestionForm({ ...questionForm, dimensionId: value === 'none' ? '' : value })}
               >
                 <SelectTrigger id="dimension" data-testid="select-dimension">
                   <SelectValue placeholder="No dimension" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">No dimension</SelectItem>
+                  <SelectItem value="none">No dimension</SelectItem>
                   {dimensions.map((dimension) => (
                     <SelectItem key={dimension.id} value={dimension.id}>
                       {dimension.label}
@@ -1016,10 +1016,21 @@ export default function Admin() {
             <Button
               onClick={() => {
                 if (selectedModelId) {
-                  createQuestion.mutate({
+                  const dataToSend = {
                     ...questionForm,
                     modelId: selectedModelId,
-                  });
+                    // Convert 'none' back to null/undefined for the API
+                    dimensionId: questionForm.dimensionId === 'none' || !questionForm.dimensionId ? undefined : questionForm.dimensionId,
+                  };
+                  
+                  // Remove undefined numeric fields for non-numeric questions
+                  if (questionForm.type !== 'numeric') {
+                    delete dataToSend.minValue;
+                    delete dataToSend.maxValue;
+                    delete dataToSend.unit;
+                  }
+                  
+                  createQuestion.mutate(dataToSend);
                 }
               }}
               disabled={createQuestion.isPending}

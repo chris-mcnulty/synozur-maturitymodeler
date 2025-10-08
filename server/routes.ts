@@ -10,6 +10,69 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Question routes
+  app.get("/api/questions", async (req, res) => {
+    try {
+      const { modelId } = req.query;
+      if (!modelId || typeof modelId !== 'string') {
+        return res.status(400).json({ error: "Model ID is required" });
+      }
+      
+      const questions = await storage.getQuestionsByModelId(modelId);
+      res.json(questions);
+    } catch (error) {
+      console.error('Error fetching questions:', error);
+      res.status(500).json({ error: "Failed to fetch questions" });
+    }
+  });
+
+  app.post("/api/questions", async (req, res) => {
+    try {
+      // Get existing questions to determine the order
+      const existingQuestions = await storage.getQuestionsByModelId(req.body.modelId);
+      const maxOrder = existingQuestions.reduce((max, q) => Math.max(max, q.order || 0), 0);
+      
+      // Add order to the question data
+      const questionData = {
+        ...req.body,
+        order: maxOrder + 1,
+      };
+      
+      const validatedData = insertQuestionSchema.parse(questionData);
+      const question = await storage.createQuestion(validatedData);
+      
+      // Create default answers if it's a multiple choice question
+      if (validatedData.type === 'multiple_choice') {
+        const defaultAnswers = [
+          { questionId: question.id, text: 'Not Started', score: 100, order: 1 },
+          { questionId: question.id, text: 'Beginning', score: 200, order: 2 },
+          { questionId: question.id, text: 'Developing', score: 300, order: 3 },
+          { questionId: question.id, text: 'Advancing', score: 400, order: 4 },
+          { questionId: question.id, text: 'Leading', score: 500, order: 5 },
+        ];
+        
+        for (const answer of defaultAnswers) {
+          await storage.createAnswer(answer);
+        }
+      }
+      
+      res.json(question);
+    } catch (error) {
+      console.error('Error creating question:', error);
+      res.status(400).json({ error: "Invalid question data" });
+    }
+  });
+
+  app.delete("/api/questions/:id", async (req, res) => {
+    try {
+      await storage.deleteQuestion(req.params.id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Error deleting question:', error);
+      res.status(500).json({ error: "Failed to delete question" });
+    }
+  });
+
   // Model routes
   app.get("/api/models", async (req, res) => {
     try {

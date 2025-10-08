@@ -38,6 +38,7 @@ export interface IStorage {
   getQuestionsByModelId(modelId: string): Promise<Question[]>;
   getQuestion(id: string): Promise<Question | undefined>;
   createQuestion(question: InsertQuestion): Promise<Question>;
+  deleteQuestion(id: string): Promise<void>;
 
   // Answer methods
   getAnswersByQuestionId(questionId: string): Promise<Answer[]>;
@@ -154,6 +155,13 @@ export class DatabaseStorage implements IStorage {
   async createQuestion(insertQuestion: InsertQuestion): Promise<Question> {
     const [question] = await db.insert(schema.questions).values(insertQuestion).returning();
     return question;
+  }
+
+  async deleteQuestion(id: string): Promise<void> {
+    // First delete all answers associated with this question
+    await db.delete(schema.answers).where(eq(schema.answers.questionId, id));
+    // Then delete the question itself
+    await db.delete(schema.questions).where(eq(schema.questions.id, id));
   }
 
   // Answer methods
