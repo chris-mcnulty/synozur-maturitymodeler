@@ -150,16 +150,16 @@ export default function Admin() {
         description: "The new model has been created successfully.",
       });
     },
-    onError: () => {
+    onError: (error: Error) => {
       toast({
         title: "Error",
-        description: "Failed to create model. Backend support for this feature is coming soon.",
+        description: error.message || "Failed to create model",
         variant: "destructive",
       });
     },
   });
 
-  // Update model mutation (backend support needs to be added)
+  // Update model mutation
   const updateModel = useMutation({
     mutationFn: async (data: typeof modelForm & { id: string; dimensions: typeof dimensionForm }) => {
       return apiRequest(`/api/models/${data.id}`, 'PUT', data);
@@ -173,10 +173,10 @@ export default function Admin() {
         description: "The model has been updated successfully.",
       });
     },
-    onError: () => {
+    onError: (error: Error) => {
       toast({
         title: "Error",
-        description: "Failed to update model. Backend support for this feature is coming soon.",
+        description: error.message || "Failed to update model",
         variant: "destructive",
       });
     },
@@ -185,8 +185,7 @@ export default function Admin() {
   // Save hero model setting mutation
   const saveHeroModelSetting = useMutation({
     mutationFn: async (modelId: string) => {
-      const response = await apiRequest('POST', '/api/settings/heroModel', { value: modelId });
-      return response.json();
+      return apiRequest('/api/settings/heroModel', 'POST', { value: modelId });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/settings/heroModel'] });
@@ -205,7 +204,7 @@ export default function Admin() {
     },
   });
 
-  // Delete model mutation (backend support needs to be added)
+  // Delete model mutation
   const deleteModel = useMutation({
     mutationFn: async (modelId: string) => {
       return apiRequest(`/api/models/${modelId}`, 'DELETE');
@@ -217,10 +216,10 @@ export default function Admin() {
         description: "The model has been removed successfully.",
       });
     },
-    onError: () => {
+    onError: (error: Error) => {
       toast({
         title: "Error",
-        description: "Failed to delete model. Backend support for this feature is coming soon.",
+        description: error.message || "Failed to delete model",
         variant: "destructive",
       });
     },
@@ -229,7 +228,7 @@ export default function Admin() {
   // Create question mutation
   const createQuestion = useMutation({
     mutationFn: async (data: typeof questionForm & { modelId: string }) => {
-      return apiRequest('POST', '/api/questions', data);
+      return apiRequest('/api/questions', 'POST', data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/questions', selectedModelId] });
@@ -252,7 +251,7 @@ export default function Admin() {
   // Delete question mutation
   const deleteQuestion = useMutation({
     mutationFn: async (questionId: string) => {
-      return apiRequest('DELETE', `/api/questions/${questionId}`);
+      return apiRequest(`/api/questions/${questionId}`, 'DELETE');
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/questions', selectedModelId] });
@@ -821,7 +820,6 @@ export default function Admin() {
             <DialogDescription>
               {editingModel ? 'Update the model details below.' : 'Create a new maturity assessment model.'}
               <br/>
-              <span className="text-xs text-muted-foreground">Note: Backend support for model CRUD is coming soon.</span>
             </DialogDescription>
           </DialogHeader>
           
