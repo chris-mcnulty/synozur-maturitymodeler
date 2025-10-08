@@ -303,7 +303,7 @@ export default function Admin() {
   const averageScore = totalAssessments > 0 
     ? Math.round(results.reduce((acc, r) => acc + r.overallScore, 0) / totalAssessments)
     : 0;
-  const publishedModels = models.filter(m => m.status === 'published').length;
+  const publishedModels = models.filter(m => m.status !== 'draft').length;
   const completionRate = 89; // Would need to calculate from actual data
 
   return (
@@ -706,7 +706,7 @@ export default function Admin() {
                 data-testid="select-hero-model"
               >
                 <option value="">Auto-detect (AI Model)</option>
-                {models.filter(m => m.status === 'published').map((model) => (
+                {models.filter(m => m.status !== 'draft').map((model) => (
                   <option key={model.id} value={model.id}>
                     {model.name}
                   </option>
