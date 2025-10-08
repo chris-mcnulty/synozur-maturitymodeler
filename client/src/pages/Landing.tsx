@@ -18,8 +18,33 @@ export default function Landing() {
     queryKey: ['/api/models'],
   });
 
-  // Get the main AI model for primary CTA
-  const aiModel = models.find(m => m.slug === 'digital-transformation' || m.slug.includes('ai')) || models[0];
+  // Fetch hero model setting
+  const { data: heroModelSetting } = useQuery({
+    queryKey: ['/api/settings/heroModel'],
+    queryFn: async () => {
+      try {
+        const response = await fetch('/api/settings/heroModel');
+        if (response.ok) {
+          return await response.json();
+        }
+        return null;
+      } catch {
+        return null;
+      }
+    },
+  });
+
+  // Get the hero model based on admin selection or default to AI model
+  const getHeroModel = () => {
+    if (heroModelSetting?.value) {
+      const selectedModel = models.find(m => m.id === heroModelSetting.value);
+      if (selectedModel) return selectedModel;
+    }
+    // Default to AI model if no selection or model not found
+    return models.find(m => m.slug === 'digital-transformation' || m.slug.includes('ai')) || models[0];
+  };
+
+  const aiModel = getHeroModel();
 
   // Create assessment for the main AI model
   const createAssessment = useMutation({
