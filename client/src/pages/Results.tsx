@@ -117,11 +117,11 @@ export default function Results() {
                 <h3 className="text-2xl font-bold mb-4">Next Steps</h3>
                 <p className="text-muted-foreground mb-6">
                   Your maturity level is <strong>{result.label}</strong>. {' '}
-                  {result.label === 'Leading' && 'You are at the forefront of digital transformation!'}
-                  {result.label === 'Strategic' && 'You have strong foundations and strategic capabilities.'}
-                  {result.label === 'Operational' && 'You have good operational processes in place with room to grow.'}
-                  {result.label === 'Developing' && 'You are building momentum with focused improvement opportunities.'}
-                  {result.label === 'Initial' && 'You have significant opportunities to improve your maturity.'}
+                  {result.label === 'Transformational' && 'You are at the forefront of AI transformation, leading the industry!'}
+                  {result.label === 'Strategic' && 'You have strong strategic foundations and are well-positioned for AI success.'}
+                  {result.label === 'Operational' && 'You have good operational AI processes with clear opportunities to advance.'}
+                  {result.label === 'Experimental' && 'You are experimenting with AI and building momentum for transformation.'}
+                  {result.label === 'Nascent' && 'You are at the beginning of your AI journey with significant growth potential.'}
                 </p>
                 <div className="flex gap-4">
                   <Button data-testid="button-download-pdf" disabled>

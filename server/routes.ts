@@ -204,12 +204,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Calculate overall score
       const overallScore = Math.round(totalScore / responses.length);
 
-      // Determine label based on score
-      let label = "Initial";
-      if (overallScore >= 450) label = "Leading";
+      // Determine label based on score (matching prototype)
+      let label = "Nascent";
+      if (overallScore >= 450) label = "Transformational";
       else if (overallScore >= 400) label = "Strategic";
       else if (overallScore >= 300) label = "Operational";
-      else if (overallScore >= 200) label = "Developing";
+      else if (overallScore >= 200) label = "Experimental";
 
       // Create result
       const result = await storage.createResult({
