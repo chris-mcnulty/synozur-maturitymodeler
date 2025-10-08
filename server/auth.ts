@@ -91,3 +91,23 @@ export function setupAuth(app: Express) {
     res.json(req.user);
   });
 }
+
+// Middleware to ensure user is authenticated
+export function ensureAuthenticated(req: any, res: any, next: any) {
+  if (req.isAuthenticated()) {
+    return next();
+  }
+  res.status(401).json({ error: "Authentication required" });
+}
+
+// Middleware to ensure user is admin (can be expanded later for role-based access)
+export function ensureAdmin(req: any, res: any, next: any) {
+  if (req.isAuthenticated()) {
+    // For now, all authenticated users can access admin features
+    // In the future, you can check for admin role here
+    // if (req.user.role === 'admin') {
+    return next();
+    // }
+  }
+  res.status(401).json({ error: "Admin access required" });
+}

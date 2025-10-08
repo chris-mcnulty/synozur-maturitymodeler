@@ -8,7 +8,7 @@ import { insertAssessmentSchema, insertAssessmentResponseSchema, insertResultSch
 import { readFileSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
-import { setupAuth } from "./auth";
+import { setupAuth, ensureAuthenticated, ensureAdmin } from "./auth";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -32,7 +32,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/questions", async (req, res) => {
+  app.post("/api/questions", ensureAdmin, async (req, res) => {
     try {
       // Get existing questions to determine the order
       const existingQuestions = await storage.getQuestionsByModelId(req.body.modelId);
@@ -69,7 +69,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/questions/:id", async (req, res) => {
+  app.delete("/api/questions/:id", ensureAdmin, async (req, res) => {
     try {
       await storage.deleteQuestion(req.params.id);
       res.json({ success: true });
@@ -90,7 +90,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/models", async (req, res) => {
+  app.post("/api/models", ensureAdmin, async (req, res) => {
     try {
       const validatedData = insertModelSchema.parse(req.body);
       const model = await storage.createModel(validatedData);
@@ -116,7 +116,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/models/:id", async (req, res) => {
+  app.put("/api/models/:id", ensureAdmin, async (req, res) => {
     try {
       const model = await storage.updateModel(req.params.id, req.body);
       if (!model) {
@@ -128,7 +128,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/models/:id", async (req, res) => {
+  app.delete("/api/models/:id", ensureAdmin, async (req, res) => {
     try {
       await storage.deleteModel(req.params.id);
       res.json({ success: true });
@@ -441,7 +441,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Admin routes for model management
-  app.post("/api/admin/models/seed/:modelSlug", async (req, res) => {
+  app.post("/api/admin/models/seed/:modelSlug", ensureAdmin, async (req, res) => {
     try {
       const seedDataPath = join(__dirname, `seed-data/${req.params.modelSlug}.json`);
       const seedData = JSON.parse(readFileSync(seedDataPath, 'utf-8'));
@@ -507,7 +507,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/admin/models", async (req, res) => {
+  app.get("/api/admin/models", ensureAdmin, async (req, res) => {
     try {
       const models = await storage.getAllModels();
       const modelsWithStats = await Promise.all(
@@ -527,7 +527,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/admin/models/:id", async (req, res) => {
+  app.patch("/api/admin/models/:id", ensureAdmin, async (req, res) => {
     try {
       const model = await storage.updateModel(req.params.id, req.body);
       if (!model) {
@@ -539,7 +539,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/admin/models/:id", async (req, res) => {
+  app.delete("/api/admin/models/:id", ensureAdmin, async (req, res) => {
     try {
       await storage.deleteModel(req.params.id);
       res.json({ success: true });
@@ -570,7 +570,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/settings/:key", async (req, res) => {
+  app.post("/api/settings/:key", ensureAdmin, async (req, res) => {
     try {
       const setting = await storage.setSetting(req.params.key, req.body.value);
       res.json(setting);
@@ -609,7 +609,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/models/:id/import-questions", async (req, res) => {
+  app.post("/api/models/:id/import-questions", ensureAdmin, async (req, res) => {
     try {
       const modelId = req.params.id;
       const { csvContent } = req.body;
