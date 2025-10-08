@@ -76,18 +76,18 @@ export default function Landing() {
       
       <main className="flex-1">
         {/* Hero Section - Matching prototype */}
-        <section className="relative min-h-[600px] flex items-center bg-gradient-to-b from-primary/95 to-primary overflow-hidden">
+        <section className="relative min-h-[600px] flex items-center bg-gray-900 overflow-hidden">
           <div className="absolute inset-0">
             <img 
               src={heroBackground}
               alt="AI Network Background"
-              className="w-full h-full object-cover opacity-20"
+              className="w-full h-full object-cover opacity-60"
             />
-            <div className="absolute inset-0 bg-gradient-to-b from-primary/50 to-primary/90" />
+            <div className="absolute inset-0 bg-gradient-to-b from-black/40 to-black/60" />
           </div>
           
           <div className="container relative z-10 mx-auto px-4 py-20 text-center">
-            <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-white mb-6">
+            <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold mb-6 bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
               Discover Your AI Maturity
             </h1>
             <p className="text-xl md:text-2xl text-white/90 max-w-4xl mx-auto mb-8">
