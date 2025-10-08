@@ -1,5 +1,5 @@
 // Simplified CSV converter for denormalized question/answer format
-// Format: Question#, Question Text, Answer, Score, Interpretation, Resource
+// Format: Question#, Question Text, Answer, Score, Interpretation, Resource Title, Resource Link, Resource Description
 
 interface SimplifiedRow {
   questionNumber: number;
@@ -7,14 +7,16 @@ interface SimplifiedRow {
   answer: string;
   score: number;
   interpretation?: string;
-  resource?: string;
+  resourceTitle?: string;
+  resourceLink?: string;
+  resourceDescription?: string;
 }
 
 export function questionsToSimpleCSV(questions: any[], answers: any[]): string {
   const rows: string[] = [];
   
   // Header row
-  rows.push('Question#,Question Text,Answer,Score,Interpretation,Resource');
+  rows.push('Question#,Question Text,Answer,Score,Interpretation,Resource Title,Resource Link,Resource Description');
   
   questions.forEach((question, qIndex) => {
     const questionNumber = qIndex + 1;
@@ -29,7 +31,9 @@ export function questionsToSimpleCSV(questions: any[], answers: any[]): string {
           `"${answer.text.replace(/"/g, '""')}"`,
           answer.score.toString(),
           answer.improvementStatement ? `"${answer.improvementStatement.replace(/"/g, '""')}"` : '',
-          answer.resourceLink ? `"${answer.resourceLink.replace(/"/g, '""')}"` : ''
+          answer.resourceTitle ? `"${answer.resourceTitle.replace(/"/g, '""')}"` : '',
+          answer.resourceLink ? `"${answer.resourceLink.replace(/"/g, '""')}"` : '',
+          answer.resourceDescription ? `"${answer.resourceDescription.replace(/"/g, '""')}"` : ''
         ];
         rows.push(row.join(','));
       });
@@ -43,7 +47,9 @@ export function questionsToSimpleCSV(questions: any[], answers: any[]): string {
         question.type === 'text' ? 'Text Input' : '',
         '', // No score for non-multiple-choice
         question.improvementStatement ? `"${question.improvementStatement.replace(/"/g, '""')}"` : '',
-        question.resourceLink ? `"${question.resourceLink.replace(/"/g, '""')}"` : ''
+        question.resourceTitle ? `"${question.resourceTitle.replace(/"/g, '""')}"` : '',
+        question.resourceLink ? `"${question.resourceLink.replace(/"/g, '""')}"` : '',
+        question.resourceDescription ? `"${question.resourceDescription.replace(/"/g, '""')}"` : ''
       ];
       rows.push(row.join(','));
     }
@@ -74,7 +80,9 @@ export function simpleCSVToQuestions(csvContent: string, modelId: string): { que
     const answerText = values[2];
     const score = values[3] ? parseInt(values[3]) : 0;
     const interpretation = values[4] || '';
-    const resource = values[5] || '';
+    const resourceTitle = values[5] || '';
+    const resourceLink = values[6] || '';
+    const resourceDescription = values[7] || '';
     
     if (!questionNumber || !questionText) continue;
     
@@ -109,7 +117,9 @@ export function simpleCSVToQuestions(csvContent: string, modelId: string): { que
         maxValue,
         unit,
         improvementStatement: interpretation || undefined,
-        resourceLink: resource || undefined,
+        resourceTitle: resourceTitle || undefined,
+        resourceLink: resourceLink || undefined,
+        resourceDescription: resourceDescription || undefined,
       };
       
       questions.push(question);
@@ -130,7 +140,9 @@ export function simpleCSVToQuestions(csvContent: string, modelId: string): { que
           score: score,
           order: answers.filter(a => a.questionId === question.id).length,
           improvementStatement: interpretation || undefined,
-          resourceLink: resource || undefined,
+          resourceTitle: resourceTitle || undefined,
+          resourceLink: resourceLink || undefined,
+          resourceDescription: resourceDescription || undefined,
         });
       }
     }

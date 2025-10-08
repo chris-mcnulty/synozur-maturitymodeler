@@ -59,7 +59,9 @@ export const questions = pgTable("questions", {
   order: integer("order").notNull(),
   // Optional improvement guidance for PDF reports
   improvementStatement: text("improvement_statement"),
+  resourceTitle: text("resource_title"),
   resourceLink: text("resource_link"),
+  resourceDescription: text("resource_description"),
 });
 
 // Answers table
@@ -71,7 +73,9 @@ export const answers = pgTable("answers", {
   order: integer("order").notNull(),
   // Optional improvement guidance for PDF reports
   improvementStatement: text("improvement_statement"),
+  resourceTitle: text("resource_title"),
   resourceLink: text("resource_link"),
+  resourceDescription: text("resource_description"),
 });
 
 // Assessments table
