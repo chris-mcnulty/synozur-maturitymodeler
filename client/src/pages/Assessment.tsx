@@ -39,7 +39,13 @@ export default function Assessment() {
   });
 
   // Fetch existing responses
-  const { data: existingResponses = [] } = useQuery<{ questionId: string; answerId?: string; numericValue?: number }[]>({
+  const { data: existingResponses = [] } = useQuery<{ 
+    questionId: string; 
+    answerId?: string; 
+    numericValue?: number;
+    booleanValue?: boolean;
+    textValue?: string;
+  }[]>({
     queryKey: ['/api/assessments', assessmentId, 'responses'],
     enabled: !!assessmentId,
   });
@@ -51,6 +57,10 @@ export default function Assessment() {
       existingResponses.forEach(r => {
         if (r.numericValue !== undefined) {
           answers[r.questionId] = r.numericValue.toString();
+        } else if (r.booleanValue !== undefined) {
+          answers[r.questionId] = r.booleanValue.toString();
+        } else if (r.textValue !== undefined) {
+          answers[r.questionId] = r.textValue;
         } else if (r.answerId) {
           answers[r.questionId] = r.answerId;
         }
@@ -61,14 +71,20 @@ export default function Assessment() {
 
   // Save response mutation
   const saveResponse = useMutation({
-    mutationFn: async ({ questionId, answerId, numericValue }: { 
+    mutationFn: async ({ questionId, answerId, numericValue, booleanValue, textValue }: { 
       questionId: string; 
       answerId?: string;
       numericValue?: number;
+      booleanValue?: boolean;
+      textValue?: string;
     }) => {
       const body: any = { questionId };
       if (numericValue !== undefined) {
         body.numericValue = numericValue;
+      } else if (booleanValue !== undefined) {
+        body.booleanValue = booleanValue;
+      } else if (textValue !== undefined) {
+        body.textValue = textValue;
       } else {
         body.answerId = answerId;
       }
@@ -107,6 +123,10 @@ export default function Assessment() {
       } else {
         return; // Don't save invalid numeric values
       }
+    } else if (question.type === 'true_false') {
+      saveData.booleanValue = value === 'true';
+    } else if (question.type === 'text') {
+      saveData.textValue = value;
     } else {
       saveData.answerId = value;
     }
@@ -151,7 +171,7 @@ export default function Assessment() {
   const currentQuestion = questions[currentQuestionIndex];
   const currentAnswer = selectedAnswers[currentQuestion.id];
   
-  // For numeric questions, check if value is valid
+  // Check if user can go to next question based on question type
   let canGoNext = false;
   if (currentQuestion.type === 'numeric') {
     const numValue = parseFloat(currentAnswer);
@@ -162,7 +182,14 @@ export default function Assessment() {
     if (currentQuestion.maxValue !== undefined && currentQuestion.maxValue !== null) {
       canGoNext = canGoNext && numValue <= currentQuestion.maxValue;
     }
+  } else if (currentQuestion.type === 'text') {
+    // Text questions require some input
+    canGoNext = currentAnswer?.trim().length > 0;
+  } else if (currentQuestion.type === 'true_false') {
+    // True/false questions must have an answer selected
+    canGoNext = currentAnswer === 'true' || currentAnswer === 'false';
   } else {
+    // Multiple choice questions must have an answer selected
     canGoNext = !!currentAnswer;
   }
   
@@ -179,7 +206,7 @@ export default function Assessment() {
 
           <QuestionCard
             question={currentQuestion.text}
-            questionType={currentQuestion.type as 'multiple_choice' | 'numeric'}
+            questionType={currentQuestion.type as 'multiple_choice' | 'numeric' | 'true_false' | 'text'}
             answers={currentQuestion.type === 'multiple_choice' ? currentQuestion.answers.map(a => ({
               key: a.id,
               label: a.text,
@@ -188,6 +215,7 @@ export default function Assessment() {
             minValue={currentQuestion.minValue ?? undefined}
             maxValue={currentQuestion.maxValue ?? undefined}
             unit={currentQuestion.unit ?? undefined}
+            placeholder={currentQuestion.placeholder ?? undefined}
             onAnswer={handleAnswer}
             selectedAnswer={currentAnswer}
           />

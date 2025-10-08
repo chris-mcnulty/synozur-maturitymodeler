@@ -84,6 +84,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post("/api/models", async (req, res) => {
+    try {
+      const validatedData = insertModelSchema.parse(req.body);
+      const model = await storage.createModel(validatedData);
+      
+      // Create dimensions if provided
+      if (req.body.dimensions && Array.isArray(req.body.dimensions)) {
+        for (let i = 0; i < req.body.dimensions.length; i++) {
+          const dim = req.body.dimensions[i];
+          await storage.createDimension({
+            modelId: model.id,
+            key: dim.key,
+            label: dim.label,
+            description: dim.description,
+            order: i + 1
+          });
+        }
+      }
+      
+      res.json(model);
+    } catch (error) {
+      console.error('Error creating model:', error);
+      res.status(400).json({ error: "Invalid model data" });
+    }
+  });
+
+  app.put("/api/models/:id", async (req, res) => {
+    try {
+      const model = await storage.updateModel(req.params.id, req.body);
+      if (!model) {
+        return res.status(404).json({ error: "Model not found" });
+      }
+      res.json(model);
+    } catch (error) {
+      res.status(400).json({ error: "Failed to update model" });
+    }
+  });
+
+  app.delete("/api/models/:id", async (req, res) => {
+    try {
+      await storage.deleteModel(req.params.id);
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete model" });
+    }
+  });
+
   app.get("/api/models/by-id/:id", async (req, res) => {
     try {
       const model = await storage.getModel(req.params.id);
@@ -172,7 +219,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Assessment response routes
   app.post("/api/assessments/:id/responses", async (req, res) => {
     try {
-      const { questionId, answerId, numericValue } = req.body;
+      const { questionId, answerId, numericValue, booleanValue, textValue } = req.body;
       
       // Check if response already exists
       const existing = await storage.getAssessmentResponse(req.params.id, questionId);
@@ -181,12 +228,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (existing) {
         // Update existing response
         const updateData: any = {};
+        
+        // Clear all fields first
+        updateData.answerId = null;
+        updateData.numericValue = null;
+        updateData.booleanValue = null;
+        updateData.textValue = null;
+        
+        // Set the appropriate field based on what was provided
         if (numericValue !== undefined) {
           updateData.numericValue = numericValue;
-          updateData.answerId = null; // Clear answerId for numeric questions
-        } else {
+        } else if (booleanValue !== undefined) {
+          updateData.booleanValue = booleanValue;
+        } else if (textValue !== undefined) {
+          updateData.textValue = textValue;
+        } else if (answerId !== undefined) {
           updateData.answerId = answerId;
-          updateData.numericValue = null; // Clear numericValue for multiple choice
         }
         
         response = await storage.updateAssessmentResponse(existing.id, updateData);
@@ -197,9 +254,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           questionId,
         };
         
+        // Set the appropriate field based on what was provided
         if (numericValue !== undefined) {
           responseData.numericValue = numericValue;
-        } else {
+        } else if (booleanValue !== undefined) {
+          responseData.booleanValue = booleanValue;
+        } else if (textValue !== undefined) {
+          responseData.textValue = textValue;
+        } else if (answerId !== undefined) {
           responseData.answerId = answerId;
         }
         
@@ -508,6 +570,148 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(setting);
     } catch (error) {
       res.status(500).json({ error: "Failed to update setting" });
+    }
+  });
+
+  // Import/Export routes
+  app.get("/api/models/:id/export", async (req, res) => {
+    try {
+      const model = await storage.getModel(req.params.id);
+      if (!model) {
+        return res.status(404).json({ error: "Model not found" });
+      }
+
+      const dimensions = await storage.getDimensionsByModelId(model.id);
+      const questions = await storage.getQuestionsByModelId(model.id);
+      const questionsWithAnswers = await Promise.all(
+        questions.map(async (q) => {
+          const answers = await storage.getAnswersByQuestionId(q.id);
+          return { ...q, answers };
+        })
+      );
+
+      const exportData = {
+        model: {
+          name: model.name,
+          slug: model.slug,
+          description: model.description,
+          version: model.version,
+          estimatedTime: model.estimatedTime,
+          status: model.status,
+        },
+        dimensions,
+        questions: questionsWithAnswers,
+      };
+
+      res.setHeader('Content-Type', 'application/json');
+      res.setHeader('Content-Disposition', `attachment; filename="${model.slug}-export.json"`);
+      res.json(exportData);
+    } catch (error) {
+      console.error('Export error:', error);
+      res.status(500).json({ error: "Failed to export model" });
+    }
+  });
+
+  app.post("/api/models/import", async (req, res) => {
+    try {
+      const { model: modelData, dimensions, questions } = req.body;
+
+      // Create the model
+      const model = await storage.createModel({
+        name: modelData.name,
+        slug: modelData.slug,
+        description: modelData.description,
+        version: modelData.version || "1.0",
+        estimatedTime: modelData.estimatedTime,
+        status: modelData.status || "draft",
+      });
+
+      // Create dimensions
+      const dimensionMap = new Map();
+      if (dimensions && Array.isArray(dimensions)) {
+        for (const dim of dimensions) {
+          const newDim = await storage.createDimension({
+            modelId: model.id,
+            key: dim.key,
+            label: dim.label,
+            description: dim.description,
+            order: dim.order,
+          });
+          dimensionMap.set(dim.id || dim.key, newDim.id);
+        }
+      }
+
+      // Create questions and answers
+      if (questions && Array.isArray(questions)) {
+        for (const q of questions) {
+          const question = await storage.createQuestion({
+            modelId: model.id,
+            dimensionId: q.dimensionId ? dimensionMap.get(q.dimensionId) : null,
+            text: q.text,
+            type: q.type,
+            minValue: q.minValue,
+            maxValue: q.maxValue,
+            unit: q.unit,
+            placeholder: q.placeholder,
+            order: q.order,
+            improvementStatement: q.improvementStatement,
+            resourceLink: q.resourceLink,
+          });
+
+          // Create answers for multiple choice questions
+          if (q.answers && Array.isArray(q.answers)) {
+            for (const a of q.answers) {
+              await storage.createAnswer({
+                questionId: question.id,
+                text: a.text,
+                score: a.score,
+                order: a.order,
+                improvementStatement: a.improvementStatement,
+                resourceLink: a.resourceLink,
+              });
+            }
+          }
+        }
+      }
+
+      res.json({ success: true, model });
+    } catch (error) {
+      console.error('Import error:', error);
+      res.status(400).json({ error: "Failed to import model" });
+    }
+  });
+
+  // Export assessment results
+  app.get("/api/assessments/:id/export", async (req, res) => {
+    try {
+      const assessment = await storage.getAssessment(req.params.id);
+      if (!assessment) {
+        return res.status(404).json({ error: "Assessment not found" });
+      }
+
+      const responses = await storage.getAssessmentResponses(assessment.id);
+      const result = await storage.getResult(assessment.id);
+      const model = await storage.getModel(assessment.modelId);
+      
+      const exportData = {
+        assessment: {
+          id: assessment.id,
+          modelName: model?.name,
+          modelSlug: model?.slug,
+          status: assessment.status,
+          startedAt: assessment.startedAt,
+          completedAt: assessment.completedAt,
+        },
+        responses,
+        result,
+      };
+
+      res.setHeader('Content-Type', 'application/json');
+      res.setHeader('Content-Disposition', `attachment; filename="assessment-${assessment.id}-export.json"`);
+      res.json(exportData);
+    } catch (error) {
+      console.error('Export error:', error);
+      res.status(500).json({ error: "Failed to export assessment results" });
     }
   });
 

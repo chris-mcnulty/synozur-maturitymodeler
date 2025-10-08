@@ -5,6 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import type { Result, Assessment, Model } from "@shared/schema";
@@ -108,6 +109,23 @@ export default function Profile() {
                   <div>
                     <Label>Job Title</Label>
                     <Input defaultValue="CTO" data-testid="input-profile-title" />
+                  </div>
+                  <div>
+                    <Label>Company Size</Label>
+                    <Select defaultValue="50-249">
+                      <SelectTrigger data-testid="select-company-size">
+                        <SelectValue placeholder="Select company size" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="1">Sole Proprietor (1)</SelectItem>
+                        <SelectItem value="2-9">Small Team (2-9)</SelectItem>
+                        <SelectItem value="10-49">Small Business (10-49)</SelectItem>
+                        <SelectItem value="50-249">Medium Business (50-249)</SelectItem>
+                        <SelectItem value="250-999">Large Business (250-999)</SelectItem>
+                        <SelectItem value="1000-9999">Enterprise (1,000-9,999)</SelectItem>
+                        <SelectItem value="10000+">Large Enterprise (10,000+)</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                   <Button className="w-full" data-testid="button-save-profile" disabled>
                     Save Changes

@@ -11,6 +11,7 @@ export const users = pgTable("users", {
   email: text("email").unique(),
   name: text("name"),
   company: text("company"),
+  companySize: text("company_size"), // sole_proprietor, very_small, small, lower_mid, upper_mid, mid_enterprise, large_enterprise
   jobTitle: text("job_title"),
   industry: text("industry"),
   country: text("country"),
@@ -47,12 +48,14 @@ export const questions = pgTable("questions", {
   modelId: varchar("model_id").notNull().references(() => models.id, { onDelete: "cascade" }),
   dimensionId: varchar("dimension_id").references(() => dimensions.id, { onDelete: "set null" }),
   text: text("text").notNull(),
-  type: text("type").notNull().default("multiple_choice"), // multiple_choice or numeric
+  type: text("type").notNull().default("multiple_choice"), // multiple_choice, numeric, true_false, text
   // For numeric questions - the valid input range
   minValue: integer("min_value"),
   maxValue: integer("max_value"),
   // For numeric questions - optional unit label (e.g., "points", "%")
   unit: text("unit"),
+  // For text questions - optional placeholder text
+  placeholder: text("placeholder"),
   order: integer("order").notNull(),
   // Optional improvement guidance for PDF reports
   improvementStatement: text("improvement_statement"),
@@ -87,8 +90,10 @@ export const assessmentResponses = pgTable("assessment_responses", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   assessmentId: varchar("assessment_id").notNull().references(() => assessments.id, { onDelete: "cascade" }),
   questionId: varchar("question_id").notNull().references(() => questions.id, { onDelete: "cascade" }),
-  answerId: varchar("answer_id").references(() => answers.id, { onDelete: "cascade" }), // Nullable for numeric questions
+  answerId: varchar("answer_id").references(() => answers.id, { onDelete: "cascade" }), // Nullable for numeric, true/false, text questions
   numericValue: integer("numeric_value"), // For numeric questions
+  booleanValue: boolean("boolean_value"), // For true/false questions
+  textValue: text("text_value"), // For text input questions
   createdAt: timestamp("created_at").defaultNow().notNull(),
 }, (table) => ({
   uniqueAssessmentQuestion: unique().on(table.assessmentId, table.questionId),

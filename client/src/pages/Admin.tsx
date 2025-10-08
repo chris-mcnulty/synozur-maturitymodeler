@@ -47,11 +47,12 @@ export default function Admin() {
   ]);
   const [questionForm, setQuestionForm] = useState({
     text: '',
-    type: 'multiple_choice' as 'multiple_choice' | 'numeric',
+    type: 'multiple_choice' as 'multiple_choice' | 'numeric' | 'true_false' | 'text',
     dimensionId: '',
     minValue: 0,
     maxValue: 100,
     unit: '',
+    placeholder: '',
     improvementStatement: '',
     resourceLink: '',
   });
@@ -590,8 +591,16 @@ export default function Admin() {
                               <TableRow key={question.id} data-testid={`question-row-${question.id}`}>
                                 <TableCell className="font-medium">{question.text}</TableCell>
                                 <TableCell>
-                                  <Badge variant={question.type === 'numeric' ? 'secondary' : 'default'}>
-                                    {question.type === 'numeric' ? 'Numeric' : 'Multiple Choice'}
+                                  <Badge variant={
+                                    question.type === 'numeric' ? 'secondary' : 
+                                    question.type === 'true_false' ? 'outline' :
+                                    question.type === 'text' ? 'secondary' : 
+                                    'default'
+                                  }>
+                                    {question.type === 'numeric' ? 'Numeric' : 
+                                     question.type === 'true_false' ? 'True/False' :
+                                     question.type === 'text' ? 'Text Input' :
+                                     'Multiple Choice'}
                                   </Badge>
                                 </TableCell>
                                 <TableCell>{dimension?.label || 'None'}</TableCell>
@@ -941,7 +950,7 @@ export default function Admin() {
               <Label htmlFor="question-type">Question Type</Label>
               <Select
                 value={questionForm.type}
-                onValueChange={(value: 'multiple_choice' | 'numeric') => {
+                onValueChange={(value: 'multiple_choice' | 'numeric' | 'true_false' | 'text') => {
                   setQuestionForm({ ...questionForm, type: value });
                 }}
               >
@@ -951,6 +960,8 @@ export default function Admin() {
                 <SelectContent>
                   <SelectItem value="multiple_choice">Multiple Choice</SelectItem>
                   <SelectItem value="numeric">Numeric</SelectItem>
+                  <SelectItem value="true_false">True/False</SelectItem>
+                  <SelectItem value="text">Text Input</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -987,6 +998,19 @@ export default function Admin() {
                     data-testid="input-unit"
                   />
                 </div>
+              </div>
+            )}
+
+            {questionForm.type === 'text' && (
+              <div>
+                <Label htmlFor="placeholder">Placeholder Text (Optional)</Label>
+                <Input
+                  id="placeholder"
+                  value={questionForm.placeholder}
+                  onChange={(e) => setQuestionForm({ ...questionForm, placeholder: e.target.value })}
+                  placeholder="e.g., Enter your response..."
+                  data-testid="input-placeholder"
+                />
               </div>
             )}
 
