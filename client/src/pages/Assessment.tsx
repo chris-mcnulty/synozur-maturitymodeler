@@ -55,11 +55,11 @@ export default function Assessment() {
     if (existingResponses.length > 0) {
       const answers: Record<string, string> = {};
       existingResponses.forEach(r => {
-        if (r.numericValue !== undefined) {
+        if (r.numericValue !== undefined && r.numericValue !== null) {
           answers[r.questionId] = r.numericValue.toString();
-        } else if (r.booleanValue !== undefined) {
+        } else if (r.booleanValue !== undefined && r.booleanValue !== null) {
           answers[r.questionId] = r.booleanValue.toString();
-        } else if (r.textValue !== undefined) {
+        } else if (r.textValue !== undefined && r.textValue !== null) {
           answers[r.questionId] = r.textValue;
         } else if (r.answerId) {
           answers[r.questionId] = r.answerId;

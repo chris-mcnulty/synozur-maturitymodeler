@@ -583,29 +583,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const dimensions = await storage.getDimensionsByModelId(model.id);
       const questions = await storage.getQuestionsByModelId(model.id);
-      const questionsWithAnswers = await Promise.all(
-        questions.map(async (q) => {
-          const answers = await storage.getAnswersByQuestionId(q.id);
-          return { ...q, answers };
-        })
-      );
+      
+      // Get all answers for all questions
+      const allAnswers: Answer[] = [];
+      for (const q of questions) {
+        const answers = await storage.getAnswersByQuestionId(q.id);
+        allAnswers.push(...answers);
+      }
 
-      const exportData = {
-        model: {
-          name: model.name,
-          slug: model.slug,
-          description: model.description,
-          version: model.version,
-          estimatedTime: model.estimatedTime,
-          status: model.status,
-        },
-        dimensions,
-        questions: questionsWithAnswers,
-      };
+      // Import CSV converter
+      const { modelToCSV } = await import('../client/src/utils/csvConverter');
+      
+      // Define default scoring levels
+      const scoringLevels = [
+        { id: '1', label: 'Initial', minScore: 100, maxScore: 199, color: '#ef4444' },
+        { id: '2', label: 'Developing', minScore: 200, maxScore: 299, color: '#f59e0b' },
+        { id: '3', label: 'Defined', minScore: 300, maxScore: 399, color: '#10b981' },
+        { id: '4', label: 'Optimized', minScore: 400, maxScore: 500, color: '#3b82f6' },
+      ];
+      
+      const csvContent = modelToCSV(model, dimensions, questions, allAnswers, scoringLevels);
 
-      res.setHeader('Content-Type', 'application/json');
-      res.setHeader('Content-Disposition', `attachment; filename="${model.slug}-export.json"`);
-      res.json(exportData);
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', `attachment; filename="${model.slug}-export.csv"`);
+      res.send(csvContent);
     } catch (error) {
       console.error('Export error:', error);
       res.status(500).json({ error: "Failed to export model" });
@@ -614,12 +615,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/models/import", async (req, res) => {
     try {
-      const { model: modelData, dimensions, questions } = req.body;
+      const { csvContent } = req.body;
+      
+      // Import CSV converter
+      const { csvToModel } = await import('../client/src/utils/csvConverter');
+      const { model: modelData, dimensions, questions, answers: csvAnswers, scoringLevels } = csvToModel(csvContent);
 
       // Create the model
       const model = await storage.createModel({
-        name: modelData.name,
-        slug: modelData.slug,
+        name: modelData.name || '',
+        slug: modelData.slug || '',
         description: modelData.description,
         version: modelData.version || "1.0",
         estimatedTime: modelData.estimatedTime,
@@ -627,49 +632,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       // Create dimensions
-      const dimensionMap = new Map();
+      const dimensionMap = new Map<string, string>();
       if (dimensions && Array.isArray(dimensions)) {
         for (const dim of dimensions) {
           const newDim = await storage.createDimension({
             modelId: model.id,
-            key: dim.key,
-            label: dim.label,
+            key: dim.key || '',
+            label: dim.label || '',
             description: dim.description,
-            order: dim.order,
+            order: dim.order || 0,
           });
-          dimensionMap.set(dim.id || dim.key, newDim.id);
+          dimensionMap.set(dim.id || dim.key || '', newDim.id);
         }
       }
 
-      // Create questions and answers
+      // Create questions
+      const questionMap = new Map<string, string>();
       if (questions && Array.isArray(questions)) {
         for (const q of questions) {
           const question = await storage.createQuestion({
             modelId: model.id,
             dimensionId: q.dimensionId ? dimensionMap.get(q.dimensionId) : null,
-            text: q.text,
-            type: q.type,
+            text: q.text || '',
+            type: q.type || 'multiple_choice',
             minValue: q.minValue,
             maxValue: q.maxValue,
             unit: q.unit,
             placeholder: q.placeholder,
-            order: q.order,
+            order: q.order || 0,
             improvementStatement: q.improvementStatement,
             resourceLink: q.resourceLink,
           });
-
-          // Create answers for multiple choice questions
-          if (q.answers && Array.isArray(q.answers)) {
-            for (const a of q.answers) {
-              await storage.createAnswer({
-                questionId: question.id,
-                text: a.text,
-                score: a.score,
-                order: a.order,
-                improvementStatement: a.improvementStatement,
-                resourceLink: a.resourceLink,
-              });
-            }
+          questionMap.set(q.id || '', question.id);
+        }
+      }
+      
+      // Create answers from CSV answers array
+      if (csvAnswers && Array.isArray(csvAnswers)) {
+        for (const a of csvAnswers) {
+          if (a.questionId && questionMap.has(a.questionId)) {
+            await storage.createAnswer({
+              questionId: questionMap.get(a.questionId) || '',
+              text: a.text || '',
+              score: a.score || 0,
+              order: a.order || 0,
+              improvementStatement: a.improvementStatement,
+              resourceLink: a.resourceLink,
+            });
           }
         }
       }

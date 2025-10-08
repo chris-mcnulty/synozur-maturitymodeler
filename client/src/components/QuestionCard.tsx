@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { useState, useEffect } from "react";
 
 interface Answer {
@@ -13,11 +14,12 @@ interface Answer {
 
 interface QuestionCardProps {
   question: string;
-  questionType?: 'multiple_choice' | 'numeric';
+  questionType?: 'multiple_choice' | 'numeric' | 'true_false' | 'text';
   answers?: Answer[];
   minValue?: number;
   maxValue?: number;
   unit?: string;
+  placeholder?: string;
   onAnswer: (value: string) => void;
   selectedAnswer?: string;
 }
@@ -29,6 +31,7 @@ export function QuestionCard({
   minValue,
   maxValue,
   unit,
+  placeholder,
   onAnswer, 
   selectedAnswer 
 }: QuestionCardProps) {
@@ -39,7 +42,7 @@ export function QuestionCard({
   useEffect(() => {
     if (questionType === 'numeric' && selectedAnswer) {
       setNumericValue(selectedAnswer);
-    } else if (questionType === 'multiple_choice' && selectedAnswer) {
+    } else if ((questionType === 'multiple_choice' || questionType === 'true_false' || questionType === 'text') && selectedAnswer) {
       setSelected(selectedAnswer);
     }
   }, [selectedAnswer, questionType]);
@@ -106,7 +109,59 @@ export function QuestionCard({
             ))}
           </div>
         </RadioGroup>
-      ) : (
+      ) : questionType === 'true_false' ? (
+        <RadioGroup value={selected} onValueChange={handleSelect}>
+          <div className="space-y-3">
+            <div
+              className={`flex items-center space-x-3 p-4 rounded-lg border-2 transition-all hover-elevate ${
+                selected === 'true'
+                  ? "border-primary bg-primary/5"
+                  : "border-border"
+              }`}
+              data-testid="answer-option-true"
+            >
+              <RadioGroupItem value="true" id="true" />
+              <Label
+                htmlFor="true"
+                className="flex-1 cursor-pointer font-medium"
+              >
+                True
+              </Label>
+            </div>
+            <div
+              className={`flex items-center space-x-3 p-4 rounded-lg border-2 transition-all hover-elevate ${
+                selected === 'false'
+                  ? "border-primary bg-primary/5"
+                  : "border-border"
+              }`}
+              data-testid="answer-option-false"
+            >
+              <RadioGroupItem value="false" id="false" />
+              <Label
+                htmlFor="false"
+                className="flex-1 cursor-pointer font-medium"
+              >
+                False
+              </Label>
+            </div>
+          </div>
+        </RadioGroup>
+      ) : questionType === 'text' ? (
+        <div className="space-y-4">
+          <Textarea
+            value={selected}
+            onChange={(e) => handleSelect(e.target.value)}
+            placeholder={placeholder || "Enter your answer here..."}
+            className="min-h-[120px] resize-none"
+            data-testid="textarea-text-answer"
+          />
+          {selected.length > 0 && (
+            <p className="text-sm text-muted-foreground">
+              {selected.length} characters
+            </p>
+          )}
+        </div>
+      ) : questionType === 'numeric' ? (
         <div className="space-y-4">
           {minValue !== undefined && maxValue !== undefined && (
             <p className="text-sm text-muted-foreground">
@@ -152,7 +207,7 @@ export function QuestionCard({
             </div>
           )}
         </div>
-      )}
+      ) : null}
     </Card>
   );
 }
