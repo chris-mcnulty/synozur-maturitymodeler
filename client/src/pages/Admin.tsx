@@ -10,11 +10,12 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Download, Plus, Edit, Trash, FileSpreadsheet, Eye, BarChart3, Settings } from "lucide-react";
-import type { Model, Result, Assessment, Dimension } from "@shared/schema";
+import type { Model, Result, Assessment, Dimension, Question, Answer } from "@shared/schema";
 
 interface AdminResult extends Result {
   assessmentId: string;
@@ -29,6 +30,9 @@ export default function Admin() {
   const [editingModel, setEditingModel] = useState<Model | null>(null);
   const [isModelDialogOpen, setIsModelDialogOpen] = useState(false);
   const [isSettingsDialogOpen, setIsSettingsDialogOpen] = useState(false);
+  const [isQuestionDialogOpen, setIsQuestionDialogOpen] = useState(false);
+  const [selectedModelId, setSelectedModelId] = useState<string>('');
+  const [editingQuestion, setEditingQuestion] = useState<Question | null>(null);
   const [heroModelId, setHeroModelId] = useState<string>('');
   const [modelForm, setModelForm] = useState({
     name: '',
@@ -41,10 +45,38 @@ export default function Admin() {
   const [dimensionForm, setDimensionForm] = useState<{ label: string; key: string; description: string }[]>([
     { label: '', key: '', description: '' },
   ]);
+  const [questionForm, setQuestionForm] = useState({
+    text: '',
+    type: 'multiple_choice' as 'multiple_choice' | 'numeric',
+    dimensionId: '',
+    minValue: 0,
+    maxValue: 100,
+    unit: '',
+  });
 
   // Fetch models
   const { data: models = [], isLoading: modelsLoading } = useQuery<Model[]>({
     queryKey: ['/api/models'],
+  });
+
+  // Fetch questions for selected model
+  const { data: questions = [], isLoading: questionsLoading } = useQuery<Question[]>({
+    queryKey: ['/api/questions', selectedModelId],
+    queryFn: async () => {
+      if (!selectedModelId) return [];
+      return fetch(`/api/questions?modelId=${selectedModelId}`).then(r => r.json());
+    },
+    enabled: !!selectedModelId,
+  });
+
+  // Fetch dimensions for selected model
+  const { data: dimensions = [] } = useQuery<Dimension[]>({
+    queryKey: ['/api/dimensions', selectedModelId],
+    queryFn: async () => {
+      if (!selectedModelId) return [];
+      return fetch(`/api/models/${selectedModelId}/dimensions`).then(r => r.json());
+    },
+    enabled: !!selectedModelId,
   });
 
   // Fetch hero model setting
@@ -191,6 +223,50 @@ export default function Admin() {
     },
   });
 
+  // Create question mutation
+  const createQuestion = useMutation({
+    mutationFn: async (data: typeof questionForm & { modelId: string }) => {
+      return apiRequest('POST', '/api/questions', data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/questions', selectedModelId] });
+      setIsQuestionDialogOpen(false);
+      resetQuestionForm();
+      toast({
+        title: "Question created",
+        description: "The new question has been added successfully.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to create question.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Delete question mutation
+  const deleteQuestion = useMutation({
+    mutationFn: async (questionId: string) => {
+      return apiRequest('DELETE', `/api/questions/${questionId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/questions', selectedModelId] });
+      toast({
+        title: "Question deleted",
+        description: "The question has been removed.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to delete question.",
+        variant: "destructive",
+      });
+    },
+  });
+
   const resetModelForm = () => {
     setModelForm({
       name: '',
@@ -202,6 +278,18 @@ export default function Admin() {
     });
     setDimensionForm([{ label: '', key: '', description: '' }]);
     setEditingModel(null);
+  };
+
+  const resetQuestionForm = () => {
+    setQuestionForm({
+      text: '',
+      type: 'multiple_choice',
+      dimensionId: '',
+      minValue: 0,
+      maxValue: 100,
+      unit: '',
+    });
+    setEditingQuestion(null);
   };
 
   const handleEditModel = (model: Model) => {
@@ -343,8 +431,9 @@ export default function Admin() {
           </div>
 
           <Tabs defaultValue="models" className="w-full">
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className="grid w-full grid-cols-5">
               <TabsTrigger value="models" data-testid="tab-models">Models</TabsTrigger>
+              <TabsTrigger value="questions" data-testid="tab-questions">Questions</TabsTrigger>
               <TabsTrigger value="results" data-testid="tab-results">Results</TabsTrigger>
               <TabsTrigger value="benchmarks" data-testid="tab-benchmarks">Benchmarks</TabsTrigger>
               <TabsTrigger value="audit" data-testid="tab-audit">Audit Log</TabsTrigger>
@@ -435,6 +524,99 @@ export default function Admin() {
                     )}
                   </TableBody>
                 </Table>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="questions" className="space-y-4">
+              <Card className="p-6">
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center">
+                    <h2 className="text-xl font-bold">Question Management</h2>
+                  </div>
+                  
+                  <div className="flex items-center gap-4">
+                    <Label htmlFor="model-select">Select Model:</Label>
+                    <Select value={selectedModelId} onValueChange={setSelectedModelId}>
+                      <SelectTrigger id="model-select" className="w-64" data-testid="select-model-for-questions">
+                        <SelectValue placeholder="Choose a model" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {models.map((model) => (
+                          <SelectItem key={model.id} value={model.id}>
+                            {model.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {selectedModelId && (
+                      <Button
+                        onClick={() => {
+                          resetQuestionForm();
+                          setIsQuestionDialogOpen(true);
+                        }}
+                        data-testid="button-add-question"
+                      >
+                        <Plus className="mr-2 h-4 w-4" />
+                        Add Question
+                      </Button>
+                    )}
+                  </div>
+
+                  {selectedModelId ? (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Question</TableHead>
+                          <TableHead>Type</TableHead>
+                          <TableHead>Dimension</TableHead>
+                          <TableHead className="text-right">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {questionsLoading ? (
+                          <TableRow>
+                            <TableCell colSpan={4} className="text-center">Loading questions...</TableCell>
+                          </TableRow>
+                        ) : questions.length === 0 ? (
+                          <TableRow>
+                            <TableCell colSpan={4} className="text-center">No questions found</TableCell>
+                          </TableRow>
+                        ) : (
+                          questions.map((question) => {
+                            const dimension = dimensions.find(d => d.id === question.dimensionId);
+                            return (
+                              <TableRow key={question.id} data-testid={`question-row-${question.id}`}>
+                                <TableCell className="font-medium">{question.text}</TableCell>
+                                <TableCell>
+                                  <Badge variant={question.type === 'numeric' ? 'secondary' : 'default'}>
+                                    {question.type === 'numeric' ? 'Numeric' : 'Multiple Choice'}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell>{dimension?.label || 'None'}</TableCell>
+                                <TableCell className="text-right">
+                                  <div className="flex justify-end gap-2">
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      onClick={() => deleteQuestion.mutate(question.id)}
+                                      data-testid={`delete-question-${question.id}`}
+                                    >
+                                      <Trash className="h-4 w-4" />
+                                    </Button>
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            );
+                          })
+                        )}
+                      </TableBody>
+                    </Table>
+                  ) : (
+                    <div className="text-center py-8 text-muted-foreground">
+                      Select a model to manage its questions
+                    </div>
+                  )}
+                </div>
               </Card>
             </TabsContent>
 
@@ -725,6 +907,125 @@ export default function Admin() {
               data-testid="button-save-settings"
             >
               {saveHeroModelSetting.isPending ? 'Saving...' : 'Save Settings'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Question Dialog */}
+      <Dialog open={isQuestionDialogOpen} onOpenChange={setIsQuestionDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>{editingQuestion ? 'Edit Question' : 'Create Question'}</DialogTitle>
+            <DialogDescription>
+              Add or edit a question for the selected model
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="question-text">Question Text</Label>
+              <Textarea
+                id="question-text"
+                value={questionForm.text}
+                onChange={(e) => setQuestionForm({ ...questionForm, text: e.target.value })}
+                placeholder="Enter your question..."
+                rows={2}
+                data-testid="input-question-text"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="question-type">Question Type</Label>
+              <Select
+                value={questionForm.type}
+                onValueChange={(value: 'multiple_choice' | 'numeric') => {
+                  setQuestionForm({ ...questionForm, type: value });
+                }}
+              >
+                <SelectTrigger id="question-type" data-testid="select-question-type">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="multiple_choice">Multiple Choice</SelectItem>
+                  <SelectItem value="numeric">Numeric</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {questionForm.type === 'numeric' && (
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <Label htmlFor="min-value">Min Value</Label>
+                  <Input
+                    id="min-value"
+                    type="number"
+                    value={questionForm.minValue}
+                    onChange={(e) => setQuestionForm({ ...questionForm, minValue: Number(e.target.value) })}
+                    data-testid="input-min-value"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="max-value">Max Value</Label>
+                  <Input
+                    id="max-value"
+                    type="number"
+                    value={questionForm.maxValue}
+                    onChange={(e) => setQuestionForm({ ...questionForm, maxValue: Number(e.target.value) })}
+                    data-testid="input-max-value"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="unit">Unit</Label>
+                  <Input
+                    id="unit"
+                    value={questionForm.unit}
+                    onChange={(e) => setQuestionForm({ ...questionForm, unit: e.target.value })}
+                    placeholder="e.g., points, %"
+                    data-testid="input-unit"
+                  />
+                </div>
+              </div>
+            )}
+
+            <div>
+              <Label htmlFor="dimension">Dimension (Optional)</Label>
+              <Select
+                value={questionForm.dimensionId}
+                onValueChange={(value) => setQuestionForm({ ...questionForm, dimensionId: value })}
+              >
+                <SelectTrigger id="dimension" data-testid="select-dimension">
+                  <SelectValue placeholder="No dimension" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">No dimension</SelectItem>
+                  {dimensions.map((dimension) => (
+                    <SelectItem key={dimension.id} value={dimension.id}>
+                      {dimension.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsQuestionDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                if (selectedModelId) {
+                  createQuestion.mutate({
+                    ...questionForm,
+                    modelId: selectedModelId,
+                  });
+                }
+              }}
+              disabled={createQuestion.isPending}
+              data-testid="button-save-question"
+            >
+              {createQuestion.isPending ? 'Saving...' : 'Save Question'}
             </Button>
           </DialogFooter>
         </DialogContent>
