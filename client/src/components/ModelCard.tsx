@@ -40,7 +40,11 @@ export function ModelCard({ id, slug, name, description, imageUrl }: ModelCardPr
         </div>
       )}
       <div className="p-6">
-        <h3 className="text-xl font-bold mb-2" data-testid={`text-model-name-${slug}`}>
+        <h3 
+          className="text-xl font-bold mb-2 cursor-pointer hover:text-primary transition-colors" 
+          data-testid={`text-model-name-${slug}`}
+          onClick={() => setLocation(`/${slug}`)}
+        >
           {name}
         </h3>
         <p className="text-muted-foreground mb-4 line-clamp-2" data-testid={`text-model-description-${slug}`}>

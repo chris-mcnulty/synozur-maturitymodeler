@@ -68,7 +68,7 @@ export default function Admin() {
                 modelName: model?.name || 'Unknown Model',
                 userName: 'User', // Would come from auth
                 company: 'Company', // Would come from profile
-                date: assessment.createdAt || new Date().toISOString(),
+                date: assessment.startedAt?.toISOString() || new Date().toISOString(),
               };
             }
           } catch {
@@ -169,7 +169,7 @@ export default function Admin() {
       description: model.description || '',
       version: model.version || '1.0.0',
       estimatedTime: model.estimatedTime || '15-20 minutes',
-      status: model.status || 'draft',
+      status: (model.status || 'draft') as 'draft' | 'published',
     });
     // Would need to fetch dimensions here
     setDimensionForm([{ label: '', key: '', description: '' }]);
