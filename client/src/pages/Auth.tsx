@@ -50,9 +50,16 @@ export default function Auth() {
       {/* Left side - Forms */}
       <div className="flex-1 flex items-center justify-center p-8">
         <Card className="w-full max-w-md p-8">
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-primary">Maturity Modeler</h1>
+          <div className="mb-8 text-center">
+            <div className="flex items-center justify-center mb-4">
+              <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center">
+                <span className="text-3xl font-bold text-primary-foreground">S</span>
+              </div>
+            </div>
+            <h1 className="text-2xl font-bold text-primary">Synozur</h1>
+            <h2 className="text-xl font-semibold mt-2">Maturity Modeler</h2>
             <p className="text-muted-foreground mt-2">Find Your North Star</p>
+            <p className="text-xs text-muted-foreground mt-1">The Transformation Company</p>
           </div>
 
           <Tabs defaultValue="login" className="w-full">
@@ -200,6 +207,10 @@ export default function Auth() {
       {/* Right side - Hero */}
       <div className="flex-1 bg-gradient-to-br from-primary/10 via-primary/5 to-background p-8 hidden lg:flex flex-col justify-center">
         <div className="max-w-lg">
+          <div className="mb-8">
+            <h3 className="text-xl font-bold text-primary mb-2">Synozur</h3>
+            <p className="text-sm text-muted-foreground">The Transformation Company</p>
+          </div>
           <h2 className="text-4xl font-bold mb-6">
             Transform Your Organization
           </h2>

@@ -518,6 +518,19 @@ export default function Admin() {
                   <h2 className="text-xl font-bold">Model Management</h2>
                   <div className="flex gap-2">
                     <Button 
+                      variant="outline"
+                      onClick={() => {
+                        const link = document.createElement('a');
+                        link.href = '/csv-template.csv';
+                        link.download = 'maturity-model-questions-template.csv';
+                        link.click();
+                      }}
+                      data-testid="button-download-template"
+                    >
+                      <Download className="mr-2 h-4 w-4" />
+                      Download CSV Template
+                    </Button>
+                    <Button 
                       onClick={() => {
                         resetModelForm();
                         setIsModelDialogOpen(true);
