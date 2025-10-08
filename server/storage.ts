@@ -11,6 +11,7 @@ import type {
   AssessmentResponse, InsertAssessmentResponse,
   Result, InsertResult,
   Benchmark, InsertBenchmark,
+  Setting, InsertSetting,
 } from "@shared/schema";
 
 export interface IStorage {
@@ -64,6 +65,11 @@ export interface IStorage {
   getBenchmarksByModelId(modelId: string): Promise<Benchmark[]>;
   getBenchmark(modelId: string, industry?: string, country?: string): Promise<Benchmark | undefined>;
   createBenchmark(benchmark: InsertBenchmark): Promise<Benchmark>;
+
+  // Settings methods
+  getSetting(key: string): Promise<Setting | undefined>;
+  setSetting(key: string, value: any): Promise<Setting>;
+  getAllSettings(): Promise<Setting[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -262,6 +268,33 @@ export class DatabaseStorage implements IStorage {
   async createBenchmark(insertBenchmark: InsertBenchmark): Promise<Benchmark> {
     const [benchmark] = await db.insert(schema.benchmarks).values(insertBenchmark).returning();
     return benchmark;
+  }
+
+  // Settings methods
+  async getSetting(key: string): Promise<Setting | undefined> {
+    const [setting] = await db.select().from(schema.settings).where(eq(schema.settings.key, key)).limit(1);
+    return setting;
+  }
+
+  async setSetting(key: string, value: any): Promise<Setting> {
+    const [existing] = await db.select().from(schema.settings).where(eq(schema.settings.key, key)).limit(1);
+    
+    if (existing) {
+      const [updated] = await db.update(schema.settings)
+        .set({ value, updatedAt: new Date() })
+        .where(eq(schema.settings.key, key))
+        .returning();
+      return updated;
+    } else {
+      const [created] = await db.insert(schema.settings)
+        .values({ key, value })
+        .returning();
+      return created;
+    }
+  }
+
+  async getAllSettings(): Promise<Setting[]> {
+    return db.select().from(schema.settings);
   }
 }
 

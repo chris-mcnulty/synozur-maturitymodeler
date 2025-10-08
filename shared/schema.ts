@@ -104,6 +104,14 @@ export const benchmarks = pgTable("benchmarks", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+// Settings table for admin configurations
+export const settings = pgTable("settings", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  key: text("key").notNull().unique(),
+  value: json("value").notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
@@ -149,6 +157,11 @@ export const insertBenchmarkSchema = createInsertSchema(benchmarks).omit({
   updatedAt: true,
 });
 
+export const insertSettingSchema = createInsertSchema(settings).omit({
+  id: true,
+  updatedAt: true,
+});
+
 // Types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -176,3 +189,6 @@ export type InsertResult = z.infer<typeof insertResultSchema>;
 
 export type Benchmark = typeof benchmarks.$inferSelect;
 export type InsertBenchmark = z.infer<typeof insertBenchmarkSchema>;
+
+export type Setting = typeof settings.$inferSelect;
+export type InsertSetting = z.infer<typeof insertSettingSchema>;
