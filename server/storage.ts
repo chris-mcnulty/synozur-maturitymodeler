@@ -1,6 +1,8 @@
-import { db } from "./db";
+import { db, pool } from "./db";
 import { eq, and, desc } from "drizzle-orm";
 import * as schema from "@shared/schema";
+import session from "express-session";
+import connectPg from "connect-pg-simple";
 import type {
   User, InsertUser,
   Model, InsertModel,
@@ -14,7 +16,10 @@ import type {
   Setting, InsertSetting,
 } from "@shared/schema";
 
+const PostgresSessionStore = connectPg(session);
+
 export interface IStorage {
+  sessionStore: session.Store;
   // User methods
   getUser(id: string): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
@@ -75,6 +80,14 @@ export interface IStorage {
 }
 
 export class DatabaseStorage implements IStorage {
+  sessionStore: session.Store;
+  
+  constructor() {
+    this.sessionStore = new PostgresSessionStore({
+      pool,
+      createTableIfMissing: true,
+    });
+  }
   // User methods
   async getUser(id: string): Promise<User | undefined> {
     const [user] = await db.select().from(schema.users).where(eq(schema.users.id, id)).limit(1);

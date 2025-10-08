@@ -1,15 +1,21 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
+import { db } from "./db";
+import { eq } from "drizzle-orm";
+import * as schema from "@shared/schema";
 import { insertAssessmentSchema, insertAssessmentResponseSchema, insertResultSchema, insertModelSchema, insertDimensionSchema, insertQuestionSchema, insertAnswerSchema } from "@shared/schema";
 import { readFileSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
+import { setupAuth } from "./auth";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Set up authentication routes
+  setupAuth(app);
   // Question routes
   app.get("/api/questions", async (req, res) => {
     try {
