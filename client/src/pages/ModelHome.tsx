@@ -1,36 +1,83 @@
-import { useRoute } from "wouter";
+import { useRoute, useLocation } from "wouter";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowRight, CheckCircle2, Target, TrendingUp } from "lucide-react";
+import { ArrowRight, CheckCircle2, Target, TrendingUp, ArrowLeft } from "lucide-react";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import type { Model, Dimension, Assessment } from "@shared/schema";
 import openingGraphic from '@assets/generated_images/Opening_graphic_AI_transformation_bf033f89.png';
 
 export default function ModelHome() {
   const [, params] = useRoute("/:modelSlug");
+  const [, setLocation] = useLocation();
   const modelSlug = params?.modelSlug || "";
 
-  // TODO: Fetch model data from API based on modelSlug
-  const model = {
-    name: "AI Maturity Assessment",
-    slug: "ai-maturity",
-    description: "Evaluate your organization's readiness to harness the transformative power of artificial intelligence.",
-    version: "1.0.0",
-    estimatedTime: "15-20 minutes",
-    dimensions: [
-      { name: "Strategy & Leadership", description: "Executive vision and AI governance framework" },
-      { name: "Data & Infrastructure", description: "Data quality, accessibility, and technical capabilities" },
-      { name: "Talent & Culture", description: "Skills, mindset, and organizational readiness" },
-      { name: "Technology & Tools", description: "AI platforms, tools, and implementation maturity" },
-    ],
-    benefits: [
-      "Comprehensive assessment of AI capabilities",
-      "Benchmarking against industry peers",
-      "Personalized roadmap and recommendations",
-      "Executive-ready PDF report",
-    ],
+  // Fetch model data from API based on modelSlug
+  const { data: model, isLoading } = useQuery<Model & { dimensions: Dimension[] }>({
+    queryKey: ['/api/models', modelSlug],
+    enabled: !!modelSlug,
+  });
+
+  // Create assessment mutation
+  const createAssessment = useMutation({
+    mutationFn: async () => {
+      if (!model) throw new Error("Model not loaded");
+      return apiRequest('/api/assessments', 'POST', {
+        modelId: model.id,
+      });
+    },
+    onSuccess: (assessment: Assessment) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/assessments'] });
+      setLocation(`/assessment/${assessment.id}`);
+    },
+  });
+
+  const handleStartAssessment = () => {
+    createAssessment.mutate();
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Header />
+        <main className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <div className="text-lg text-muted-foreground">Loading model...</div>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
+  if (!model) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Header />
+        <main className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <div className="text-lg text-muted-foreground mb-4">Model not found</div>
+            <Button onClick={() => setLocation('/')}>
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back to Assessments
+            </Button>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
+  // Default benefits if none specified in the model
+  const benefits = [
+    "Comprehensive assessment of your maturity level",
+    "Benchmarking against industry peers",
+    "Personalized roadmap and recommendations",
+    "Executive-ready PDF report",
+  ];
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -48,7 +95,7 @@ export default function ModelHome() {
           <div className="container relative z-10 mx-auto px-4 py-16">
             <div className="max-w-4xl">
               <Badge variant="secondary" className="mb-4">
-                Version {model.version}
+                Version {model.version || '1.0.0'}
               </Badge>
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-4" data-testid="text-model-title">
                 {model.name}
@@ -60,14 +107,16 @@ export default function ModelHome() {
                 <Button 
                   size="lg" 
                   className="bg-white text-primary hover:bg-white/90 border-2 border-white"
+                  onClick={handleStartAssessment}
+                  disabled={createAssessment.isPending}
                   data-testid="button-start-assessment"
                 >
-                  Start Assessment
+                  {createAssessment.isPending ? 'Creating...' : 'Start Assessment'}
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
                 <div className="flex items-center gap-2 text-white/90">
                   <Target className="h-5 w-5" />
-                  <span>{model.estimatedTime}</span>
+                  <span>{model.estimatedTime || '15-20 minutes'}</span>
                 </div>
               </div>
             </div>
@@ -80,12 +129,12 @@ export default function ModelHome() {
               <h2 className="text-3xl font-bold mb-8 text-center">Assessment Dimensions</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {model.dimensions.map((dimension, index) => (
-                  <Card key={index} className="p-6 hover-elevate transition-all" data-testid={`dimension-card-${index}`}>
+                  <Card key={dimension.id} className="p-6 hover-elevate transition-all" data-testid={`dimension-card-${index}`}>
                     <h3 className="text-xl font-bold mb-2 flex items-center gap-2">
                       <CheckCircle2 className="h-5 w-5 text-primary" />
-                      {dimension.name}
+                      {dimension.label}
                     </h3>
-                    <p className="text-muted-foreground">{dimension.description}</p>
+                    <p className="text-muted-foreground">{dimension.description || `Evaluate your ${dimension.label.toLowerCase()} capabilities`}</p>
                   </Card>
                 ))}
               </div>
@@ -98,14 +147,20 @@ export default function ModelHome() {
             <div className="max-w-4xl mx-auto text-center">
               <h2 className="text-3xl font-bold mb-6">What You'll Receive</h2>
               <ul className="space-y-4 text-left max-w-2xl mx-auto mb-8">
-                {model.benefits.map((benefit, index) => (
+                {benefits.map((benefit, index) => (
                   <li key={index} className="flex items-start gap-3" data-testid={`benefit-${index}`}>
                     <CheckCircle2 className="h-6 w-6 text-primary flex-shrink-0 mt-0.5" />
                     <span className="text-lg">{benefit}</span>
                   </li>
                 ))}
               </ul>
-              <Button size="lg" className="mt-4" data-testid="button-get-started">
+              <Button 
+                size="lg" 
+                className="mt-4" 
+                onClick={handleStartAssessment}
+                disabled={createAssessment.isPending}
+                data-testid="button-get-started"
+              >
                 Get Started
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
@@ -117,11 +172,13 @@ export default function ModelHome() {
           <div className="container mx-auto px-4 text-center">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">Ready to Begin?</h2>
             <p className="text-lg text-white/90 mb-8 max-w-2xl mx-auto">
-              Take the first step toward AI excellence. Complete your assessment in {model.estimatedTime}.
+              Take the first step toward excellence. Complete your assessment in {model.estimatedTime || '15-20 minutes'}.
             </p>
             <Button 
               size="lg" 
               className="bg-white text-primary hover:bg-white/90 border-2 border-white"
+              onClick={handleStartAssessment}
+              disabled={createAssessment.isPending}
               data-testid="button-cta-start"
             >
               Start Your Assessment

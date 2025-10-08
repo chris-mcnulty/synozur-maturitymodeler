@@ -5,14 +5,81 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useQuery } from "@tanstack/react-query";
+import { useLocation } from "wouter";
+import type { Result, Assessment, Model } from "@shared/schema";
 
 export default function Profile() {
-  //todo: remove mock functionality - fetch from API
-  const results = [
-    { id: "1", modelName: "AI Maturity Assessment", date: "January 15, 2025", score: 348, label: "Operational", change: 28 },
-    { id: "2", modelName: "Digital Transformation", date: "January 10, 2025", score: 425, label: "Strategic", change: -15 },
-    { id: "3", modelName: "AI Maturity Assessment", date: "December 1, 2024", score: 320, label: "Operational" },
-  ];
+  const [, setLocation] = useLocation();
+  
+  // Fetch all assessments for current user (in a real app, this would be filtered by user)
+  const { data: assessments = [] } = useQuery<(Assessment & { model?: Model })[]>({
+    queryKey: ['/api/assessments'],
+    queryFn: async () => {
+      const assessments = await fetch('/api/assessments').then(r => r.json());
+      // Fetch model details for each assessment
+      const assessmentsWithModels = await Promise.all(
+        assessments.map(async (assessment: Assessment) => {
+          try {
+            const model = await fetch(`/api/models/by-id/${assessment.modelId}`).then(r => r.json());
+            return { ...assessment, model };
+          } catch {
+            return assessment;
+          }
+        })
+      );
+      return assessmentsWithModels;
+    },
+  });
+
+  // Fetch results for all assessments
+  const { data: results = [] } = useQuery<(Result & { modelName?: string })[]>({
+    queryKey: ['/api/results'],
+    queryFn: async () => {
+      if (!assessments.length) return [];
+      
+      const results = await Promise.all(
+        assessments.map(async (assessment) => {
+          try {
+            const result = await fetch(`/api/results/${assessment.id}`).then(r => {
+              if (!r.ok) return null;
+              return r.json();
+            });
+            if (result) {
+              return {
+                ...result,
+                assessmentId: assessment.id,
+                modelName: assessment.model?.name || 'Unknown Model',
+              };
+            }
+          } catch {
+            return null;
+          }
+        })
+      );
+      
+      return results.filter(Boolean);
+    },
+    enabled: assessments.length > 0,
+  });
+
+  // Transform results for display
+  const resultsHistory = results.map(result => ({
+    id: result.assessmentId,
+    modelName: result.modelName || 'Unknown Model',
+    date: new Date(result.createdAt || Date.now()).toLocaleDateString('en-US', { 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    }),
+    score: result.overallScore,
+    label: result.label,
+    change: 0, // Would need historical data to calculate
+  }));
+
+  const handleResultClick = (resultId: string) => {
+    setLocation(`/results/${resultId}`);
+  };
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -42,16 +109,26 @@ export default function Profile() {
                     <Label>Job Title</Label>
                     <Input defaultValue="CTO" data-testid="input-profile-title" />
                   </div>
-                  <Button className="w-full" data-testid="button-save-profile">
+                  <Button className="w-full" data-testid="button-save-profile" disabled>
                     Save Changes
                   </Button>
+                  <p className="text-xs text-muted-foreground">Profile editing coming soon</p>
                 </div>
               </Card>
             </div>
 
             <div className="md:col-span-2">
               <h2 className="text-2xl font-bold mb-6">Assessment History</h2>
-              <ResultsHistory results={results} />
+              {resultsHistory.length > 0 ? (
+                <ResultsHistory results={resultsHistory} />
+              ) : (
+                <Card className="p-8 text-center">
+                  <p className="text-muted-foreground mb-4">No assessments completed yet</p>
+                  <Button onClick={() => setLocation('/')}>
+                    Browse Assessments
+                  </Button>
+                </Card>
+              )}
             </div>
           </div>
         </div>
