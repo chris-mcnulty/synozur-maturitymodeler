@@ -2,10 +2,18 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Custom Font Definitions */
 @font-face {
   font-family: 'Avenir Next LT Pro';
-  src: url('@assets/25381880192_1759930950363.ttf') format('truetype');
-  font-weight: normal;
+  src: url('/src/assets/fonts/AvenirNextLTPro-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Avenir Next LT Pro';
+  src: url('/src/assets/fonts/AvenirNextLTPro-Bold.ttf') format('truetype');
+  font-weight: 700;
   font-style: normal;
 }
 
@@ -193,6 +201,39 @@
 
   body {
     @apply bg-background text-foreground font-sans antialiased;
+    font-weight: 400; /* Regular weight for body text */
+  }
+
+  /* Apply bold weight to all headings */
+  h1, h2, h3, h4, h5, h6 {
+    font-weight: 700; /* Bold weight for headings */
+  }
+
+  /* Ensure buttons and other UI elements use regular weight by default */
+  button, .btn {
+    font-weight: 400;
+  }
+
+  /* Navigation and menu items use regular weight */
+  nav, .menu-item {
+    font-weight: 400;
+  }
+
+  /* Explicit font weight classes for utility use */
+  .font-bold {
+    font-weight: 700 !important;
+  }
+
+  .font-semibold {
+    font-weight: 700 !important; /* Use bold since we only have regular and bold */
+  }
+
+  .font-medium {
+    font-weight: 400 !important; /* Use regular since we only have regular and bold */
+  }
+
+  .font-normal {
+    font-weight: 400 !important;
   }
 }
 
