@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, integer, timestamp, json, boolean, unique } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, integer, timestamp, json, boolean, unique, index } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -183,6 +183,16 @@ export const insertSettingSchema = createInsertSchema(settings).omit({
   id: true,
   updatedAt: true,
 });
+
+// Session table for connect-pg-simple
+// This table is managed by express-session and connect-pg-simple
+export const session = pgTable("session", {
+  sid: varchar("sid").primaryKey(),
+  sess: json("sess").notNull(),
+  expire: timestamp("expire", { withTimezone: true }).notNull(),
+}, (table) => ({
+  expireIdx: index("IDX_session_expire").on(table.expire),
+}));
 
 // Types
 export type User = typeof users.$inferSelect;
