@@ -39,7 +39,7 @@ export default function Assessment() {
   });
 
   // Fetch existing responses
-  const { data: existingResponses = [] } = useQuery<{ questionId: string; answerId: string }[]>({
+  const { data: existingResponses = [] } = useQuery<{ questionId: string; answerId?: string; numericValue?: number }[]>({
     queryKey: ['/api/assessments', assessmentId, 'responses'],
     enabled: !!assessmentId,
   });
@@ -49,7 +49,11 @@ export default function Assessment() {
     if (existingResponses.length > 0) {
       const answers: Record<string, string> = {};
       existingResponses.forEach(r => {
-        answers[r.questionId] = r.answerId;
+        if (r.numericValue !== undefined) {
+          answers[r.questionId] = r.numericValue.toString();
+        } else if (r.answerId) {
+          answers[r.questionId] = r.answerId;
+        }
       });
       setSelectedAnswers(answers);
     }
@@ -57,11 +61,19 @@ export default function Assessment() {
 
   // Save response mutation
   const saveResponse = useMutation({
-    mutationFn: async ({ questionId, answerId }: { questionId: string; answerId: string }) => {
-      const res = await apiRequest('POST', `/api/assessments/${assessmentId}/responses`, {
-        questionId,
-        answerId,
-      });
+    mutationFn: async ({ questionId, answerId, numericValue }: { 
+      questionId: string; 
+      answerId?: string;
+      numericValue?: number;
+    }) => {
+      const body: any = { questionId };
+      if (numericValue !== undefined) {
+        body.numericValue = numericValue;
+      } else {
+        body.answerId = answerId;
+      }
+      
+      const res = await apiRequest('POST', `/api/assessments/${assessmentId}/responses`, body);
       return res.json();
     },
     onSuccess: () => {
@@ -80,13 +92,28 @@ export default function Assessment() {
     },
   });
 
-  const handleAnswer = async (answerId: string) => {
-    const questionId = questions[currentQuestionIndex].id;
-    setSelectedAnswers({ ...selectedAnswers, [questionId]: answerId });
+  const handleAnswer = async (value: string) => {
+    const question = questions[currentQuestionIndex];
+    const questionId = question.id;
+    setSelectedAnswers({ ...selectedAnswers, [questionId]: value });
+    
+    // Prepare the save data based on question type
+    let saveData: any = { questionId };
+    
+    if (question.type === 'numeric') {
+      const numericValue = parseFloat(value);
+      if (!isNaN(numericValue)) {
+        saveData.numericValue = numericValue;
+      } else {
+        return; // Don't save invalid numeric values
+      }
+    } else {
+      saveData.answerId = value;
+    }
     
     // Wait for the save to complete before allowing next action
     await new Promise<void>((resolve) => {
-      saveResponse.mutate({ questionId, answerId }, {
+      saveResponse.mutate(saveData, {
         onSettled: () => resolve(),
       });
     });
@@ -123,7 +150,22 @@ export default function Assessment() {
 
   const currentQuestion = questions[currentQuestionIndex];
   const currentAnswer = selectedAnswers[currentQuestion.id];
-  const canGoNext = !!currentAnswer;
+  
+  // For numeric questions, check if value is valid
+  let canGoNext = false;
+  if (currentQuestion.type === 'numeric') {
+    const numValue = parseFloat(currentAnswer);
+    canGoNext = !isNaN(numValue) && currentAnswer !== "";
+    if (currentQuestion.minValue !== undefined && currentQuestion.minValue !== null) {
+      canGoNext = canGoNext && numValue >= currentQuestion.minValue;
+    }
+    if (currentQuestion.maxValue !== undefined && currentQuestion.maxValue !== null) {
+      canGoNext = canGoNext && numValue <= currentQuestion.maxValue;
+    }
+  } else {
+    canGoNext = !!currentAnswer;
+  }
+  
   const canGoPrev = currentQuestionIndex > 0;
 
   return (
@@ -137,11 +179,15 @@ export default function Assessment() {
 
           <QuestionCard
             question={currentQuestion.text}
-            answers={currentQuestion.answers.map(a => ({
+            questionType={currentQuestion.type as 'multiple_choice' | 'numeric'}
+            answers={currentQuestion.type === 'multiple_choice' ? currentQuestion.answers.map(a => ({
               key: a.id,
               label: a.text,
               score: a.score,
-            }))}
+            })) : undefined}
+            minValue={currentQuestion.minValue ?? undefined}
+            maxValue={currentQuestion.maxValue ?? undefined}
+            unit={currentQuestion.unit ?? undefined}
             onAnswer={handleAnswer}
             selectedAnswer={currentAnswer}
           />
