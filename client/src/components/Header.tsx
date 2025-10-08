@@ -2,6 +2,7 @@ import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Moon, Sun, User } from "lucide-react";
 import { useTheme } from "./ThemeProvider";
+import synozurLogo from '@assets/SA-Logo-Horizontal-color_1759930898755.png';
 
 export function Header() {
   const { theme, setTheme } = useTheme();
@@ -14,13 +15,14 @@ export function Header() {
             href="https://www.synozur.com" 
             target="_blank" 
             rel="noopener noreferrer" 
-            className="flex items-center gap-2 hover-elevate transition-all rounded-lg px-2 py-1 -ml-2"
+            className="flex items-center hover-elevate transition-all rounded-lg -ml-2"
             data-testid="link-synozur-website"
           >
-            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-              <span className="text-white font-bold text-lg">S</span>
-            </div>
-            <span className="text-sm font-semibold text-primary">Synozur</span>
+            <img 
+              src={synozurLogo} 
+              alt="Synozur" 
+              className="h-10 w-auto"
+            />
           </a>
           <div className="h-6 w-px bg-border"></div>
           <Link href="/" className="text-lg font-bold text-foreground hover:text-primary transition-colors">

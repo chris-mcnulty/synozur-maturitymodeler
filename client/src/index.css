@@ -2,6 +2,13 @@
 @tailwind components;
 @tailwind utilities;
 
+@font-face {
+  font-family: 'Avenir Next LT Pro';
+  src: url('@assets/25381880192_1759930950363.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+
 /* LIGHT MODE */
 :root {
   --button-outline: rgba(0,0,0, .10);
@@ -57,8 +64,8 @@
   --chart-4: 41 100% 64%;
   --chart-5: 0 84% 60%;
 
-  --font-sans: 'Inter', sans-serif;
-  --font-serif: 'Inter', sans-serif;
+  --font-sans: 'Avenir Next LT Pro', 'Inter', sans-serif;
+  --font-serif: 'Avenir Next LT Pro', 'Inter', sans-serif;
   --font-mono: 'Roboto', sans-serif;
   --radius: 1.3rem;
   --shadow-2xs: 0px 1px 2px 0px rgba(0,0,0,0.05);

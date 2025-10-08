@@ -238,30 +238,107 @@ export default function Landing() {
           </div>
         </section>
 
-        {/* Other Available Assessments */}
-        {models.length > 1 && (
-          <section className="py-20 bg-background">
-            <div className="container mx-auto px-4">
-              <div className="text-center mb-12">
-                <h2 className="text-4xl font-bold mb-4">Additional Assessments</h2>
-                <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-                  Explore our complete suite of maturity assessments
-                </p>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
-                {models.filter(m => m.id !== aiModel?.id).slice(0, 3).map((model) => (
-                  <ModelCard 
-                    key={model.id} 
-                    id={model.id}
-                    slug={model.slug}
-                    name={model.name}
-                    description={model.description || ''}
-                  />
+        {/* All Available Models - Graphically Interesting Display */}
+        <section className="py-20 bg-gradient-to-br from-background via-primary/5 to-background relative overflow-hidden">
+          <div className="absolute inset-0">
+            <div className="absolute top-20 left-20 w-72 h-72 bg-primary/10 rounded-full blur-3xl"></div>
+            <div className="absolute bottom-20 right-20 w-96 h-96 bg-accent/10 rounded-full blur-3xl"></div>
+          </div>
+          <div className="container mx-auto px-4 relative z-10">
+            <div className="text-center mb-16">
+              <Badge className="mb-4 px-4 py-1 text-sm" variant="outline">
+                Comprehensive Assessment Suite
+              </Badge>
+              <h2 className="text-5xl font-bold mb-4 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+                All Maturity Models
+              </h2>
+              <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
+                Choose from our complete collection of enterprise maturity assessments.
+                Each model provides tailored insights for your transformation journey.
+              </p>
+            </div>
+            
+            {isLoading ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 max-w-7xl mx-auto">
+                {[...Array(4)].map((_, i) => (
+                  <Card key={i} className="h-64 animate-pulse bg-muted" />
                 ))}
               </div>
-            </div>
-          </section>
-        )}
+            ) : models.length === 0 ? (
+              <Card className="max-w-2xl mx-auto p-12 text-center">
+                <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-xl font-semibold mb-2">No Models Available</h3>
+                <p className="text-muted-foreground">
+                  Check back soon for our maturity assessment models.
+                </p>
+              </Card>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 max-w-7xl mx-auto">
+                {models.map((model, index) => (
+                  <Card 
+                    key={model.id}
+                    className="group relative overflow-hidden hover-elevate transition-all duration-300 cursor-pointer border-2 hover:border-primary/50"
+                    onClick={() => setLocation(`/${model.slug}`)}
+                    data-testid={`card-model-${model.slug}`}
+                  >
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-primary/20 to-transparent rounded-bl-full"></div>
+                    <div className="p-6 relative z-10">
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+                          <BarChart3 className="h-6 w-6 text-primary" />
+                        </div>
+                        {model.id === aiModel?.id && (
+                          <Badge className="bg-primary/10 text-primary border-primary/20">
+                            Featured
+                          </Badge>
+                        )}
+                      </div>
+                      
+                      <h3 className="text-lg font-bold mb-2 group-hover:text-primary transition-colors">
+                        {model.name}
+                      </h3>
+                      
+                      <p className="text-sm text-muted-foreground mb-4 line-clamp-3">
+                        {model.description || 'Comprehensive assessment to evaluate your organization\'s maturity level'}
+                      </p>
+                      
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <Clock className="h-4 w-4" />
+                          <span>{model.estimatedTime || '10 mins'}</span>
+                        </div>
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          className="group-hover:text-primary"
+                          data-testid={`button-start-${model.slug}`}
+                        >
+                          Start
+                          <ArrowRight className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-1" />
+                        </Button>
+                      </div>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            )}
+            
+            {models.length > 0 && (
+              <div className="mt-12 text-center">
+                <p className="text-muted-foreground mb-4">
+                  Can't find the assessment you're looking for?
+                </p>
+                <Button 
+                  variant="outline" 
+                  onClick={() => window.open('https://www.synozur.com/contact', '_blank')}
+                  data-testid="button-request-custom"
+                >
+                  Request Custom Assessment
+                </Button>
+              </div>
+            )}
+          </div>
+        </section>
 
         {/* CTA Section */}
         <section className="py-20 bg-primary text-white">
