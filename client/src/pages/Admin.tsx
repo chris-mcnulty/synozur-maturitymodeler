@@ -52,6 +52,8 @@ export default function Admin() {
     minValue: 0,
     maxValue: 100,
     unit: '',
+    improvementStatement: '',
+    resourceLink: '',
   });
 
   // Fetch models
@@ -1006,6 +1008,30 @@ export default function Admin() {
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+
+            <div>
+              <Label htmlFor="improvement">How to Improve (Optional)</Label>
+              <Textarea
+                id="improvement"
+                value={questionForm.improvementStatement}
+                onChange={(e) => setQuestionForm({ ...questionForm, improvementStatement: e.target.value })}
+                placeholder="Guidance on how to improve in this area..."
+                rows={2}
+                data-testid="input-improvement-statement"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="resource">Resource Link (Optional)</Label>
+              <Input
+                id="resource"
+                type="url"
+                value={questionForm.resourceLink}
+                onChange={(e) => setQuestionForm({ ...questionForm, resourceLink: e.target.value })}
+                placeholder="https://www.example.com/resource"
+                data-testid="input-resource-link"
+              />
             </div>
           </div>
 

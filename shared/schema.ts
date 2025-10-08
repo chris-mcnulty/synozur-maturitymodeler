@@ -54,6 +54,9 @@ export const questions = pgTable("questions", {
   // For numeric questions - optional unit label (e.g., "points", "%")
   unit: text("unit"),
   order: integer("order").notNull(),
+  // Optional improvement guidance for PDF reports
+  improvementStatement: text("improvement_statement"),
+  resourceLink: text("resource_link"),
 });
 
 // Answers table
@@ -63,6 +66,9 @@ export const answers = pgTable("answers", {
   text: text("text").notNull(),
   score: integer("score").notNull(),
   order: integer("order").notNull(),
+  // Optional improvement guidance for PDF reports
+  improvementStatement: text("improvement_statement"),
+  resourceLink: text("resource_link"),
 });
 
 // Assessments table
