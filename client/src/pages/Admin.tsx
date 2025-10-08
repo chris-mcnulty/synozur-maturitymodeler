@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Download, Plus, Edit, Trash, FileSpreadsheet, Eye, BarChart3, Settings } from "lucide-react";
+import { Download, Plus, Edit, Trash, FileSpreadsheet, Eye, BarChart3, Settings, FileDown, FileUp } from "lucide-react";
 import type { Model, Result, Assessment, Dimension, Question, Answer } from "@shared/schema";
 
 interface AdminResult extends Result {
@@ -346,6 +346,76 @@ export default function Admin() {
     setDimensionForm(dimensionForm.filter((_, i) => i !== index));
   };
 
+  const exportModelToCSV = async (modelId: string) => {
+    try {
+      const response = await fetch(`/api/models/${modelId}/export`);
+      if (!response.ok) throw new Error('Export failed');
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const model = models.find(m => m.id === modelId);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${model?.slug || 'model'}-export.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+      
+      toast({
+        title: "Export successful",
+        description: `Model exported to CSV successfully.`,
+      });
+    } catch (error) {
+      toast({
+        title: "Export failed",
+        description: "Failed to export model. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const importModelFromCSV = async (file: File) => {
+    try {
+      const csvContent = await file.text();
+      const response = await fetch('/api/models/import', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ csvContent }),
+      });
+      
+      if (!response.ok) throw new Error('Import failed');
+      
+      await queryClient.invalidateQueries({ queryKey: ['/api/models'] });
+      
+      toast({
+        title: "Import successful",
+        description: `Model imported from CSV successfully.`,
+      });
+    } catch (error) {
+      toast({
+        title: "Import failed",
+        description: "Failed to import model. Please check the CSV format.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleImportClick = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.csv';
+    input.onchange = async (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (file) {
+        await importModelFromCSV(file);
+      }
+    };
+    input.click();
+  };
+
   const exportResultsToCSV = () => {
     if (!results.length) {
       toast({
@@ -447,6 +517,14 @@ export default function Admin() {
                 <div className="flex justify-between items-center mb-6">
                   <h2 className="text-xl font-bold">Model Management</h2>
                   <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      onClick={handleImportClick}
+                      data-testid="button-import-csv"
+                    >
+                      <FileUp className="mr-2 h-4 w-4" />
+                      Import CSV
+                    </Button>
                     <Button 
                       onClick={() => {
                         resetModelForm();
@@ -499,6 +577,14 @@ export default function Admin() {
                                 data-testid={`button-view-${model.id}`}
                               >
                                 <Eye className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => exportModelToCSV(model.id)}
+                                data-testid={`button-export-${model.id}`}
+                              >
+                                <FileDown className="h-4 w-4" />
                               </Button>
                               <Button 
                                 variant="ghost" 
