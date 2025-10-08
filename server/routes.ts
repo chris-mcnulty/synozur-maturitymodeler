@@ -109,7 +109,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Assessment response routes
   app.post("/api/assessments/:id/responses", async (req, res) => {
     try {
-      const { questionId, answerId } = req.body;
+      const { questionId, answerId, numericValue } = req.body;
       
       // Check if response already exists
       const existing = await storage.getAssessmentResponse(req.params.id, questionId);
@@ -117,21 +117,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let response;
       if (existing) {
         // Update existing response
-        response = await storage.updateAssessmentResponse(existing.id, {
-          answerId,
-        });
+        const updateData: any = {};
+        if (numericValue !== undefined) {
+          updateData.numericValue = numericValue;
+          updateData.answerId = null; // Clear answerId for numeric questions
+        } else {
+          updateData.answerId = answerId;
+          updateData.numericValue = null; // Clear numericValue for multiple choice
+        }
+        
+        response = await storage.updateAssessmentResponse(existing.id, updateData);
       } else {
         // Create new response
-        const validatedData = insertAssessmentResponseSchema.parse({
+        const responseData: any = {
           assessmentId: req.params.id,
           questionId,
-          answerId,
-        });
+        };
+        
+        if (numericValue !== undefined) {
+          responseData.numericValue = numericValue;
+        } else {
+          responseData.answerId = answerId;
+        }
+        
+        const validatedData = insertAssessmentResponseSchema.parse(responseData);
         response = await storage.createAssessmentResponse(validatedData);
       }
       
       res.json(response);
     } catch (error) {
+      console.error(error);
       res.status(400).json({ error: "Invalid response data" });
     }
   });
@@ -173,16 +188,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Calculate scores
       let totalScore = 0;
       const dimensionScores: Record<string, number[]> = {};
+      let questionCount = 0;
 
       for (const response of responses) {
         const question = questions.find(q => q.id === response.questionId);
         if (!question) continue;
 
-        const answers = await storage.getAnswersByQuestionId(question.id);
-        const answer = answers.find(a => a.id === response.answerId);
-        if (!answer) continue;
+        let score = 0;
+        
+        if (question.type === 'numeric' && response.numericValue !== undefined && response.numericValue !== null) {
+          // For numeric questions, scale the value to 100-500 range
+          const minValue = question.minValue || 0;
+          const maxValue = question.maxValue || 100;
+          const numericValue = response.numericValue;
+          
+          // Scale the numeric value to 100-500 range
+          // Formula: ((value - min) / (max - min)) * 400 + 100
+          const normalizedValue = (numericValue - minValue) / (maxValue - minValue);
+          score = Math.round(normalizedValue * 400 + 100);
+          
+          // Ensure score is within bounds
+          score = Math.max(100, Math.min(500, score));
+        } else {
+          // For multiple choice questions, use the answer's score
+          const answers = await storage.getAnswersByQuestionId(question.id);
+          const answer = answers.find(a => a.id === response.answerId);
+          if (!answer) continue;
+          score = answer.score;
+        }
 
-        totalScore += answer.score;
+        totalScore += score;
+        questionCount++;
 
         if (question.dimensionId) {
           const dimension = dimensions.find(d => d.id === question.dimensionId);
@@ -190,7 +226,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             if (!dimensionScores[dimension.key]) {
               dimensionScores[dimension.key] = [];
             }
-            dimensionScores[dimension.key].push(answer.score);
+            dimensionScores[dimension.key].push(score);
           }
         }
       }
@@ -202,7 +238,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Calculate overall score
-      const overallScore = Math.round(totalScore / responses.length);
+      const overallScore = questionCount > 0 ? Math.round(totalScore / questionCount) : 0;
 
       // Determine label based on score (matching prototype)
       let label = "Nascent";
