@@ -69,6 +69,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.put("/api/questions/:id", ensureAdmin, async (req, res) => {
+    try {
+      const questionData = {
+        ...req.body,
+        id: req.params.id
+      };
+      
+      const question = await storage.updateQuestion(questionData);
+      res.json(question);
+    } catch (error) {
+      console.error('Error updating question:', error);
+      res.status(500).json({ error: "Failed to update question" });
+    }
+  });
+
   app.delete("/api/questions/:id", ensureAdmin, async (req, res) => {
     try {
       await storage.deleteQuestion(req.params.id);

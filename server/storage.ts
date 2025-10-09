@@ -171,6 +171,15 @@ export class DatabaseStorage implements IStorage {
     return question;
   }
 
+  async updateQuestion(questionData: Question): Promise<Question> {
+    const { id, ...updateData } = questionData;
+    const [updatedQuestion] = await db.update(schema.questions)
+      .set(updateData)
+      .where(eq(schema.questions.id, id))
+      .returning();
+    return updatedQuestion;
+  }
+
   async deleteQuestion(id: string): Promise<void> {
     // First delete all answers associated with this question
     await db.delete(schema.answers).where(eq(schema.answers.questionId, id));

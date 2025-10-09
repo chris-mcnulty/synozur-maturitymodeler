@@ -248,6 +248,30 @@ export default function Admin() {
     },
   });
 
+  // Update question mutation
+  const updateQuestion = useMutation({
+    mutationFn: async (data: typeof questionForm & { modelId: string; id: string }) => {
+      return apiRequest(`/api/questions/${data.id}`, 'PUT', data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/questions', selectedModelId] });
+      setIsQuestionDialogOpen(false);
+      setEditingQuestion(null);
+      resetQuestionForm();
+      toast({
+        title: "Question updated",
+        description: "The question has been updated successfully.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to update question.",
+        variant: "destructive",
+      });
+    },
+  });
+
   // Delete question mutation
   const deleteQuestion = useMutation({
     mutationFn: async (questionId: string) => {
@@ -710,6 +734,32 @@ export default function Admin() {
                                     <Button
                                       variant="ghost"
                                       size="icon"
+                                      onClick={() => {
+                                        setEditingQuestion(question);
+                                        setQuestionForm({
+                                          modelId: question.modelId,
+                                          dimensionId: question.dimensionId ?? '',
+                                          text: question.text,
+                                          type: question.type,
+                                          order: question.order,
+                                          minValue: question.minValue ?? 1,
+                                          maxValue: question.maxValue ?? 10,
+                                          unit: question.unit ?? '',
+                                          placeholder: question.placeholder ?? '',
+                                          improvementStatement: question.improvementStatement ?? '',
+                                          resourceTitle: question.resourceTitle ?? '',
+                                          resourceLink: question.resourceLink ?? '',
+                                          resourceDescription: question.resourceDescription ?? ''
+                                        });
+                                        setIsQuestionDialogOpen(true);
+                                      }}
+                                      data-testid={`edit-question-${question.id}`}
+                                    >
+                                      <Edit className="h-4 w-4" />
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
                                       onClick={() => deleteQuestion.mutate(question.id)}
                                       data-testid={`delete-question-${question.id}`}
                                     >
@@ -1160,13 +1210,16 @@ export default function Admin() {
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsQuestionDialogOpen(false)}>
+            <Button variant="outline" onClick={() => {
+              setIsQuestionDialogOpen(false);
+              setEditingQuestion(null);
+            }}>
               Cancel
             </Button>
             <Button
               onClick={() => {
                 if (selectedModelId) {
-                  const dataToSend = {
+                  const dataToSend: any = {
                     ...questionForm,
                     modelId: selectedModelId,
                     // Convert 'none' back to null/undefined for the API
@@ -1180,13 +1233,18 @@ export default function Admin() {
                     delete dataToSend.unit;
                   }
                   
-                  createQuestion.mutate(dataToSend);
+                  if (editingQuestion) {
+                    updateQuestion.mutate({ ...dataToSend, id: editingQuestion.id });
+                  } else {
+                    createQuestion.mutate(dataToSend);
+                  }
                 }
               }}
-              disabled={createQuestion.isPending}
+              disabled={createQuestion.isPending || updateQuestion.isPending}
               data-testid="button-save-question"
             >
-              {createQuestion.isPending ? 'Saving...' : 'Save Question'}
+              {createQuestion.isPending || updateQuestion.isPending ? 'Saving...' : 
+               editingQuestion ? 'Update Question' : 'Save Question'}
             </Button>
           </DialogFooter>
         </DialogContent>
