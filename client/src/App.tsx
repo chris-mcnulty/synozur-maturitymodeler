@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { AuthProvider } from "@/hooks/use-auth";
 import { ProtectedRoute } from "@/lib/protected-route";
+import { Navigation } from "@/components/Navigation";
 import Landing from "@/pages/Landing";
 import ModelHome from "@/pages/ModelHome";
 import Assessment from "@/pages/Assessment";
@@ -36,8 +37,13 @@ function App() {
       <ThemeProvider defaultTheme="dark">
         <AuthProvider>
           <TooltipProvider>
+            <div className="min-h-screen flex flex-col">
+              <Navigation />
+              <main className="flex-1">
+                <Router />
+              </main>
+            </div>
             <Toaster />
-            <Router />
           </TooltipProvider>
         </AuthProvider>
       </ThemeProvider>

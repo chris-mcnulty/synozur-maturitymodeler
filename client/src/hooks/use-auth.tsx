@@ -54,10 +54,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     },
     onSuccess: (user: SelectUser) => {
       queryClient.setQueryData(["/api/user"], user);
+      queryClient.invalidateQueries({ queryKey: ["/api/user"] });
       toast({
         title: "Welcome back!",
         description: "You have successfully logged in.",
       });
+      // Force redirect after successful login
+      window.location.href = "/";
     },
     onError: (error: Error) => {
       toast({
@@ -80,10 +83,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     },
     onSuccess: (user: SelectUser) => {
       queryClient.setQueryData(["/api/user"], user);
+      queryClient.invalidateQueries({ queryKey: ["/api/user"] });
       toast({
         title: "Account created!",
         description: "Welcome to Maturity Modeler.",
       });
+      // Force redirect after successful registration
+      window.location.href = "/";
     },
     onError: (error: Error) => {
       toast({
