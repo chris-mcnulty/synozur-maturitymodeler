@@ -30,8 +30,10 @@ export default function Admin() {
   const [isModelDialogOpen, setIsModelDialogOpen] = useState(false);
   const [isSettingsDialogOpen, setIsSettingsDialogOpen] = useState(false);
   const [isQuestionDialogOpen, setIsQuestionDialogOpen] = useState(false);
+  const [isDimensionDialogOpen, setIsDimensionDialogOpen] = useState(false);
   const [selectedModelId, setSelectedModelId] = useState<string>('');
   const [editingQuestion, setEditingQuestion] = useState<Question | null>(null);
+  const [editingDimension, setEditingDimension] = useState<Dimension | null>(null);
   const [heroModelId, setHeroModelId] = useState<string>('');
   const [modelForm, setModelForm] = useState({
     name: '',
@@ -41,9 +43,12 @@ export default function Admin() {
     estimatedTime: '15-20 minutes',
     status: 'draft' as 'draft' | 'published',
   });
-  const [dimensionForm, setDimensionForm] = useState<{ label: string; key: string; description: string }[]>([
-    { label: '', key: '', description: '' },
-  ]);
+  const [dimensionForm, setDimensionForm] = useState({
+    label: '',
+    key: '',
+    description: '',
+    order: 1,
+  });
   const [questionForm, setQuestionForm] = useState({
     text: '',
     type: 'multiple_choice' as 'multiple_choice' | 'numeric' | 'true_false' | 'text',
@@ -76,7 +81,7 @@ export default function Admin() {
     queryKey: ['/api/dimensions', selectedModelId],
     queryFn: async () => {
       if (!selectedModelId) return [];
-      return fetch(`/api/models/${selectedModelId}/dimensions`).then(r => r.json());
+      return fetch(`/api/dimensions/${selectedModelId}`).then(r => r.json());
     },
     enabled: !!selectedModelId,
   });
@@ -292,6 +297,72 @@ export default function Admin() {
     },
   });
 
+  // Dimension mutations
+  const createDimension = useMutation({
+    mutationFn: async (data: typeof dimensionForm & { modelId: string }) => {
+      return apiRequest('/api/dimensions', 'POST', data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/dimensions', selectedModelId] });
+      setIsDimensionDialogOpen(false);
+      setDimensionForm({ label: '', key: '', description: '', order: 1 });
+      toast({
+        title: "Dimension created",
+        description: "The new dimension has been added successfully.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to create dimension.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const updateDimension = useMutation({
+    mutationFn: async (data: typeof dimensionForm & { id: string }) => {
+      return apiRequest(`/api/dimensions/${data.id}`, 'PUT', data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/dimensions', selectedModelId] });
+      setIsDimensionDialogOpen(false);
+      setEditingDimension(null);
+      setDimensionForm({ label: '', key: '', description: '', order: 1 });
+      toast({
+        title: "Dimension updated",
+        description: "The dimension has been updated successfully.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error", 
+        description: "Failed to update dimension.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const deleteDimension = useMutation({
+    mutationFn: async (dimensionId: string) => {
+      return apiRequest(`/api/dimensions/${dimensionId}`, 'DELETE');
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/dimensions', selectedModelId] });
+      toast({
+        title: "Dimension deleted",
+        description: "The dimension has been removed.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to delete dimension.",
+        variant: "destructive",
+      });
+    },
+  });
+
   const resetModelForm = () => {
     setModelForm({
       name: '',
@@ -301,7 +372,7 @@ export default function Admin() {
       estimatedTime: '15-20 minutes',
       status: 'draft',
     });
-    setDimensionForm([{ label: '', key: '', description: '' }]);
+
     setEditingModel(null);
   };
 
@@ -328,7 +399,7 @@ export default function Admin() {
       status: (model.status || 'draft') as 'draft' | 'published',
     });
     // Would need to fetch dimensions here
-    setDimensionForm([{ label: '', key: '', description: '' }]);
+
     setIsModelDialogOpen(true);
   };
 
@@ -526,8 +597,9 @@ export default function Admin() {
           </div>
 
           <Tabs defaultValue="models" className="w-full">
-            <TabsList className="grid w-full grid-cols-5">
+            <TabsList className="grid w-full grid-cols-6">
               <TabsTrigger value="models" data-testid="tab-models">Models</TabsTrigger>
+              <TabsTrigger value="dimensions" data-testid="tab-dimensions">Dimensions</TabsTrigger>
               <TabsTrigger value="questions" data-testid="tab-questions">Questions</TabsTrigger>
               <TabsTrigger value="results" data-testid="tab-results">Results</TabsTrigger>
               <TabsTrigger value="benchmarks" data-testid="tab-benchmarks">Benchmarks</TabsTrigger>
@@ -650,6 +722,108 @@ export default function Admin() {
                     )}
                   </TableBody>
                 </Table>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="dimensions" className="space-y-4">
+              <Card className="p-6">
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center">
+                    <h2 className="text-xl font-bold">Dimension Management</h2>
+                  </div>
+                  
+                  <div className="flex items-center gap-4">
+                    <Label htmlFor="dimension-model-select">Select Model:</Label>
+                    <Select value={selectedModelId} onValueChange={setSelectedModelId}>
+                      <SelectTrigger id="dimension-model-select" className="w-64" data-testid="select-model-for-dimensions">
+                        <SelectValue placeholder="Choose a model" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {models.map((model) => (
+                          <SelectItem key={model.id} value={model.id}>
+                            {model.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {selectedModelId && (
+                      <Button
+                        onClick={() => setIsDimensionDialogOpen(true)}
+                        data-testid="button-add-dimension"
+                      >
+                        <Plus className="mr-2 h-4 w-4" />
+                        Add Dimension
+                      </Button>
+                    )}
+                  </div>
+
+                  {selectedModelId ? (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Label</TableHead>
+                          <TableHead>Key</TableHead>
+                          <TableHead>Description</TableHead>
+                          <TableHead>Order</TableHead>
+                          <TableHead className="text-right">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {dimensions.length === 0 ? (
+                          <TableRow>
+                            <TableCell colSpan={5} className="text-center">No dimensions found</TableCell>
+                          </TableRow>
+                        ) : (
+                          dimensions.map((dimension) => (
+                            <TableRow key={dimension.id}>
+                              <TableCell>{dimension.label}</TableCell>
+                              <TableCell>{dimension.key}</TableCell>
+                              <TableCell>{dimension.description}</TableCell>
+                              <TableCell>{dimension.order}</TableCell>
+                              <TableCell className="text-right">
+                                <div className="flex justify-end gap-2">
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => {
+                                      setEditingDimension(dimension);
+                                      setDimensionForm({
+                                        label: dimension.label,
+                                        key: dimension.key,
+                                        description: dimension.description || '',
+                                        order: dimension.order
+                                      });
+                                      setIsDimensionDialogOpen(true);
+                                    }}
+                                    data-testid={`edit-dimension-${dimension.id}`}
+                                  >
+                                    <Edit className="h-4 w-4" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => {
+                                      if (confirm('Are you sure you want to delete this dimension?')) {
+                                        deleteDimension.mutate(dimension.id);
+                                      }
+                                    }}
+                                    data-testid={`delete-dimension-${dimension.id}`}
+                                  >
+                                    <Trash className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))
+                        )}
+                      </TableBody>
+                    </Table>
+                  ) : (
+                    <div className="text-center text-muted-foreground py-8">
+                      Select a model to manage its dimensions
+                    </div>
+                  )}
+                </div>
               </Card>
             </TabsContent>
 
@@ -1072,6 +1246,93 @@ export default function Admin() {
       </Dialog>
 
       {/* Question Dialog */}
+      <Dialog open={isDimensionDialogOpen} onOpenChange={setIsDimensionDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{editingDimension ? 'Edit Dimension' : 'Create Dimension'}</DialogTitle>
+            <DialogDescription>
+              Manage dimensions for the selected model
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="dimension-label">Label</Label>
+              <Input
+                id="dimension-label"
+                value={dimensionForm.label}
+                onChange={(e) => setDimensionForm({ ...dimensionForm, label: e.target.value })}
+                placeholder="e.g., Technology"
+                data-testid="input-dimension-label"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="dimension-key">Key</Label>
+              <Input
+                id="dimension-key"
+                value={dimensionForm.key}
+                onChange={(e) => setDimensionForm({ ...dimensionForm, key: e.target.value })}
+                placeholder="e.g., technology"
+                data-testid="input-dimension-key"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="dimension-description">Description</Label>
+              <Textarea
+                id="dimension-description"
+                value={dimensionForm.description}
+                onChange={(e) => setDimensionForm({ ...dimensionForm, description: e.target.value })}
+                placeholder="Enter dimension description..."
+                rows={3}
+                data-testid="input-dimension-description"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="dimension-order">Order</Label>
+              <Input
+                id="dimension-order"
+                type="number"
+                value={dimensionForm.order}
+                onChange={(e) => setDimensionForm({ ...dimensionForm, order: parseInt(e.target.value) || 1 })}
+                min={1}
+                data-testid="input-dimension-order"
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => {
+              setIsDimensionDialogOpen(false);
+              setEditingDimension(null);
+              setDimensionForm({ label: '', key: '', description: '', order: 1 });
+            }}>
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                if (selectedModelId) {
+                  if (editingDimension) {
+                    updateDimension.mutate({ ...dimensionForm, id: editingDimension.id });
+                  } else {
+                    // Find the highest order value and add 1
+                    const maxOrder = dimensions.reduce((max, d) => Math.max(max, d.order || 0), 0);
+                    createDimension.mutate({ ...dimensionForm, modelId: selectedModelId, order: maxOrder + 1 });
+                  }
+                }
+              }}
+              disabled={createDimension.isPending || updateDimension.isPending}
+              data-testid="button-save-dimension"
+            >
+              {createDimension.isPending || updateDimension.isPending ? 'Saving...' : 
+               editingDimension ? 'Update Dimension' : 'Save Dimension'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={isQuestionDialogOpen} onOpenChange={setIsQuestionDialogOpen}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>

@@ -180,6 +180,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Dimension routes
+  app.get("/api/dimensions/:modelId", async (req, res) => {
+    try {
+      const dimensions = await storage.getDimensionsByModelId(req.params.modelId);
+      res.json(dimensions);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch dimensions" });
+    }
+  });
+
+  app.post("/api/dimensions", ensureAdmin, async (req, res) => {
+    try {
+      const validatedData = insertDimensionSchema.parse(req.body);
+      const dimension = await storage.createDimension(validatedData);
+      res.json(dimension);
+    } catch (error) {
+      console.error('Error creating dimension:', error);
+      res.status(400).json({ error: "Invalid dimension data" });
+    }
+  });
+
+  app.put("/api/dimensions/:id", ensureAdmin, async (req, res) => {
+    try {
+      const dimension = await storage.updateDimension(req.params.id, req.body);
+      if (!dimension) {
+        return res.status(404).json({ error: "Dimension not found" });
+      }
+      res.json(dimension);
+    } catch (error) {
+      res.status(400).json({ error: "Failed to update dimension" });
+    }
+  });
+
+  app.delete("/api/dimensions/:id", ensureAdmin, async (req, res) => {
+    try {
+      await storage.deleteDimension(req.params.id);
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete dimension" });
+    }
+  });
+
   // Questions routes
   app.get("/api/models/:slug/questions", async (req, res) => {
     try {

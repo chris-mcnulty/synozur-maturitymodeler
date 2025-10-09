@@ -36,8 +36,11 @@ export interface IStorage {
   deleteModel(id: string): Promise<void>;
 
   // Dimension methods
+  getDimension(id: string): Promise<Dimension | undefined>;
   getDimensionsByModelId(modelId: string): Promise<Dimension[]>;
   createDimension(dimension: InsertDimension): Promise<Dimension>;
+  updateDimension(id: string, dimension: Partial<InsertDimension>): Promise<Dimension | undefined>;
+  deleteDimension(id: string): Promise<void>;
 
   // Question methods
   getQuestionsByModelId(modelId: string): Promise<Question[]>;
@@ -147,6 +150,11 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Dimension methods
+  async getDimension(id: string): Promise<Dimension | undefined> {
+    const [dimension] = await db.select().from(schema.dimensions).where(eq(schema.dimensions.id, id)).limit(1);
+    return dimension;
+  }
+
   async getDimensionsByModelId(modelId: string): Promise<Dimension[]> {
     return db.select().from(schema.dimensions).where(eq(schema.dimensions.modelId, modelId)).orderBy(schema.dimensions.order);
   }
@@ -154,6 +162,15 @@ export class DatabaseStorage implements IStorage {
   async createDimension(insertDimension: InsertDimension): Promise<Dimension> {
     const [dimension] = await db.insert(schema.dimensions).values(insertDimension).returning();
     return dimension;
+  }
+
+  async updateDimension(id: string, dimensionData: Partial<InsertDimension>): Promise<Dimension | undefined> {
+    const [dimension] = await db.update(schema.dimensions).set(dimensionData).where(eq(schema.dimensions.id, id)).returning();
+    return dimension;
+  }
+
+  async deleteDimension(id: string): Promise<void> {
+    await db.delete(schema.dimensions).where(eq(schema.dimensions.id, id));
   }
 
   // Question methods
