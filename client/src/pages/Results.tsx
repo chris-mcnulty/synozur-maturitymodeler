@@ -1,5 +1,4 @@
 import { useRoute, useLocation } from "wouter";
-import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { ScoreCard } from "@/components/ScoreCard";
 import { Button } from "@/components/ui/button";
@@ -50,7 +49,6 @@ export default function Results() {
   if (resultLoading || !result) {
     return (
       <div className="min-h-screen flex flex-col">
-        <Header />
         <main className="flex-1 flex items-center justify-center">
           <div className="text-center">
             <div className="text-lg text-muted-foreground" data-testid="loading-results">Loading results...</div>
@@ -64,7 +62,6 @@ export default function Results() {
   if (!model) {
     return (
       <div className="min-h-screen flex flex-col">
-        <Header />
         <main className="flex-1 flex items-center justify-center">
           <div className="text-center">
             <div className="text-lg text-muted-foreground">Unable to load model data</div>
@@ -84,7 +81,6 @@ export default function Results() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <Header />
       <main className="flex-1 py-12">
         <div className="container mx-auto px-4 max-w-5xl">
           <Button

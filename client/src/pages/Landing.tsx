@@ -1,5 +1,4 @@
 import { useLocation } from "wouter";
-import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { ModelCard } from "@/components/ModelCard";
 import { Button } from "@/components/ui/button";
@@ -72,8 +71,6 @@ export default function Landing() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <Header />
-      
       <main className="flex-1">
         {/* Hero Section - Matching prototype */}
         <section className="relative min-h-[600px] flex items-center bg-gray-900 overflow-hidden">

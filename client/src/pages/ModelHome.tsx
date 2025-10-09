@@ -1,5 +1,4 @@
 import { useRoute, useLocation } from "wouter";
-import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -42,7 +41,6 @@ export default function ModelHome() {
   if (isLoading) {
     return (
       <div className="min-h-screen flex flex-col">
-        <Header />
         <main className="flex-1 flex items-center justify-center">
           <div className="text-center">
             <div className="text-lg text-muted-foreground">Loading model...</div>
@@ -56,7 +54,6 @@ export default function ModelHome() {
   if (!model) {
     return (
       <div className="min-h-screen flex flex-col">
-        <Header />
         <main className="flex-1 flex items-center justify-center">
           <div className="text-center">
             <div className="text-lg text-muted-foreground mb-4">Model not found</div>
@@ -81,7 +78,6 @@ export default function ModelHome() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <Header />
       <main className="flex-1">
         <section className="relative min-h-[400px] flex items-center overflow-hidden bg-primary">
           <div className="absolute inset-0 z-0">

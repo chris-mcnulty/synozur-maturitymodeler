@@ -1,4 +1,4 @@
-import { Switch, Route } from "wouter";
+import { Switch, Route, useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -6,7 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { AuthProvider } from "@/hooks/use-auth";
 import { ProtectedRoute } from "@/lib/protected-route";
-import { Navigation } from "@/components/Navigation";
+import { Header } from "@/components/Header";
 import Landing from "@/pages/Landing";
 import ModelHome from "@/pages/ModelHome";
 import Assessment from "@/pages/Assessment";
@@ -17,17 +17,23 @@ import Auth from "@/pages/Auth";
 import NotFound from "@/pages/not-found";
 
 function Router() {
+  const [location] = useLocation();
+  const showHeader = location !== "/auth";
+
   return (
-    <Switch>
-      <Route path="/" component={Landing} />
-      <Route path="/auth" component={Auth} />
-      <Route path="/assessment/:assessmentId" component={Assessment} />
-      <Route path="/results/:assessmentId" component={Results} />
-      <ProtectedRoute path="/me" component={Profile} />
-      <ProtectedRoute path="/admin" component={Admin} />
-      <Route path="/:modelSlug" component={ModelHome} />
-      <Route component={NotFound} />
-    </Switch>
+    <>
+      {showHeader && <Header />}
+      <Switch>
+        <Route path="/" component={Landing} />
+        <Route path="/auth" component={Auth} />
+        <Route path="/assessment/:assessmentId" component={Assessment} />
+        <Route path="/results/:assessmentId" component={Results} />
+        <ProtectedRoute path="/me" component={Profile} />
+        <ProtectedRoute path="/admin" component={Admin} />
+        <Route path="/:modelSlug" component={ModelHome} />
+        <Route component={NotFound} />
+      </Switch>
+    </>
   );
 }
 
@@ -37,12 +43,7 @@ function App() {
       <ThemeProvider defaultTheme="dark">
         <AuthProvider>
           <TooltipProvider>
-            <div className="min-h-screen flex flex-col">
-              <Navigation />
-              <main className="flex-1">
-                <Router />
-              </main>
-            </div>
+            <Router />
             <Toaster />
           </TooltipProvider>
         </AuthProvider>

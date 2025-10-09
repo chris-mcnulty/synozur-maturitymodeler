@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { useRoute, useLocation } from "wouter";
-import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { ProgressBar } from "@/components/ProgressBar";
 import { QuestionCard } from "@/components/QuestionCard";
@@ -157,7 +156,6 @@ export default function Assessment() {
   if (isLoading || !questions.length) {
     return (
       <div className="min-h-screen flex flex-col">
-        <Header />
         <main className="flex-1 flex items-center justify-center">
           <div className="text-center">
             <div className="text-lg text-muted-foreground" data-testid="loading-assessment">Loading assessment...</div>
@@ -197,7 +195,6 @@ export default function Assessment() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <Header />
       <main className="flex-1 py-12">
         <div className="container mx-auto px-4 max-w-4xl">
           <div className="mb-8">

@@ -1,11 +1,26 @@
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
-import { Moon, Sun, User } from "lucide-react";
+import { Moon, Sun, User, LogOut } from "lucide-react";
 import { useTheme } from "./ThemeProvider";
+import { useAuth } from "@/hooks/use-auth";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import synozurLogo from '@assets/SA-Logo-Horizontal-color_1759930898755.png';
 
 export function Header() {
   const { theme, setTheme } = useTheme();
+  const { user, logout } = useAuth();
+  const [, setLocation] = useLocation();
+
+  const handleLogout = async () => {
+    await logout();
+    setLocation('/');
+  };
 
   return (
     <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -34,9 +49,16 @@ export function Header() {
           <Link href="/" className="text-sm font-medium hover:text-primary transition-colors" data-testid="link-home">
             Home
           </Link>
-          <Link href="/me" className="text-sm font-medium hover:text-primary transition-colors" data-testid="link-profile">
-            My Results
-          </Link>
+          {user && (
+            <>
+              <Link href="/admin" className="text-sm font-medium hover:text-primary transition-colors" data-testid="link-admin">
+                Admin
+              </Link>
+              <Link href="/me" className="text-sm font-medium hover:text-primary transition-colors" data-testid="link-profile">
+                Profile
+              </Link>
+            </>
+          )}
           <a href="https://www.synozur.com/privacy" target="_blank" rel="noopener noreferrer" className="text-sm font-medium hover:text-primary transition-colors" data-testid="link-privacy">
             Privacy
           </a>
@@ -53,13 +75,42 @@ export function Header() {
             {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
           </Button>
           
-          <Button variant="ghost" size="icon" data-testid="button-profile" className="hover-elevate active-elevate-2">
-            <User className="h-5 w-5" />
-          </Button>
-          
-          <Button variant="default" data-testid="button-signin">
-            Sign In
-          </Button>
+          {user ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="gap-2" data-testid="button-user-menu">
+                  <User className="h-5 w-5" />
+                  <span className="hidden md:inline">{user.name}</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem asChild>
+                  <Link href="/me">
+                    <User className="mr-2 h-4 w-4" />
+                    Profile
+                  </Link>
+                </DropdownMenuItem>
+                {user.isAdmin && (
+                  <DropdownMenuItem asChild>
+                    <Link href="/admin">
+                      Admin Panel
+                    </Link>
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleLogout}>
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Logout
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            <Link href="/auth">
+              <Button variant="default" data-testid="button-signin">
+                Sign In
+              </Button>
+            </Link>
+          )}
         </div>
       </div>
     </header>
