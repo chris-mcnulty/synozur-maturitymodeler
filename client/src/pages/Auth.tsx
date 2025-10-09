@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useLocation } from "wouter";
 import { Loader2 } from "lucide-react";
+import synozurLogo from "@assets/SynozurLogo_color 1400_1759973943542.png";
 
 export default function Auth() {
   const [, setLocation] = useLocation();
@@ -52,14 +53,14 @@ export default function Auth() {
         <Card className="w-full max-w-md p-8">
           <div className="mb-8 text-center">
             <div className="flex items-center justify-center mb-4">
-              <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center">
-                <span className="text-3xl font-bold text-primary-foreground">S</span>
-              </div>
+              <img 
+                src={synozurLogo} 
+                alt="Synozur Logo" 
+                className="w-24 h-24 object-contain"
+              />
             </div>
-            <h1 className="text-2xl font-bold text-primary">Synozur</h1>
             <h2 className="text-xl font-semibold mt-2">Maturity Modeler</h2>
             <p className="text-muted-foreground mt-2">Find Your North Star</p>
-            <p className="text-xs text-muted-foreground mt-1">The Transformation Company</p>
           </div>
 
           <Tabs defaultValue="login" className="w-full">
@@ -208,8 +209,11 @@ export default function Auth() {
       <div className="flex-1 bg-gradient-to-br from-primary/10 via-primary/5 to-background p-8 hidden lg:flex flex-col justify-center">
         <div className="max-w-lg">
           <div className="mb-8">
-            <h3 className="text-xl font-bold text-primary mb-2">Synozur</h3>
-            <p className="text-sm text-muted-foreground">The Transformation Company</p>
+            <img 
+              src={synozurLogo} 
+              alt="Synozur Logo" 
+              className="w-32 h-32 object-contain mb-4"
+            />
           </div>
           <h2 className="text-4xl font-bold mb-6">
             Transform Your Organization
