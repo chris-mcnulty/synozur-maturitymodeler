@@ -17,8 +17,7 @@ export default function Auth() {
     username: "",
     email: "",
     password: "",
-    firstName: "",
-    lastName: "",
+    name: "",
   });
 
   // Redirect if already logged in
@@ -117,33 +116,18 @@ export default function Auth() {
 
             <TabsContent value="register">
               <form onSubmit={handleRegister} className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="firstName">First Name</Label>
-                    <Input
-                      id="firstName"
-                      type="text"
-                      value={registerForm.firstName}
-                      onChange={(e) =>
-                        setRegisterForm({ ...registerForm, firstName: e.target.value })
-                      }
-                      required
-                      data-testid="input-firstname"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="lastName">Last Name</Label>
-                    <Input
-                      id="lastName"
-                      type="text"
-                      value={registerForm.lastName}
-                      onChange={(e) =>
-                        setRegisterForm({ ...registerForm, lastName: e.target.value })
-                      }
-                      required
-                      data-testid="input-lastname"
-                    />
-                  </div>
+                <div className="space-y-2">
+                  <Label htmlFor="name">Full Name</Label>
+                  <Input
+                    id="name"
+                    type="text"
+                    value={registerForm.name}
+                    onChange={(e) =>
+                      setRegisterForm({ ...registerForm, name: e.target.value })
+                    }
+                    required
+                    data-testid="input-name"
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="username">Username</Label>
