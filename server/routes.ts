@@ -228,6 +228,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.put("/api/models/:id/maturity-scale", ensureAdmin, async (req, res) => {
+    try {
+      const { maturityScale } = req.body;
+      const model = await storage.updateModel(req.params.id, { maturityScale });
+      if (!model) {
+        return res.status(404).json({ error: "Model not found" });
+      }
+      res.json(model);
+    } catch (error) {
+      res.status(400).json({ error: "Failed to update maturity scale" });
+    }
+  });
+
+  app.put("/api/models/:id/general-resources", ensureAdmin, async (req, res) => {
+    try {
+      const { generalResources } = req.body;
+      const model = await storage.updateModel(req.params.id, { generalResources });
+      if (!model) {
+        return res.status(404).json({ error: "Model not found" });
+      }
+      res.json(model);
+    } catch (error) {
+      res.status(400).json({ error: "Failed to update general resources" });
+    }
+  });
+
   app.delete("/api/models/:id", ensureAdmin, async (req, res) => {
     try {
       await storage.deleteModel(req.params.id);

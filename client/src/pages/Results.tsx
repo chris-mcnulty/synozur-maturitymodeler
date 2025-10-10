@@ -18,39 +18,43 @@ import { ProfileGate } from "@/components/ProfileGate";
 import { generateAssessmentPDF } from "@/services/pdfGenerator";
 import { useToast } from "@/hooks/use-toast";
 
-// Maturity level configurations (no emojis per design guidelines)
-const maturityLevels = {
-  'Nascent': {
-    color: 'text-red-500',
-    bgColor: 'bg-red-500/10',
-    borderColor: 'border-red-500/20',
-    description: 'You are at the beginning of your AI journey with significant growth potential.',
-  },
-  'Experimental': {
-    color: 'text-orange-500',
-    bgColor: 'bg-orange-500/10',
-    borderColor: 'border-orange-500/20',
-    description: 'You are experimenting with AI and building momentum for transformation.',
-  },
-  'Operational': {
-    color: 'text-yellow-500',
-    bgColor: 'bg-yellow-500/10',
-    borderColor: 'border-yellow-500/20',
-    description: 'You have good operational AI processes with clear opportunities to advance.',
-  },
-  'Strategic': {
-    color: 'text-blue-500',
-    bgColor: 'bg-blue-500/10',
-    borderColor: 'border-blue-500/20',
-    description: 'You have strong strategic foundations and are well-positioned for AI success.',
-  },
-  'Transformational': {
-    color: 'text-green-500',
-    bgColor: 'bg-green-500/10',
-    borderColor: 'border-green-500/20',
-    description: 'You are at the forefront of AI transformation, leading the industry!',
-  },
-};
+// Color palette for maturity levels (no emojis per design guidelines)
+const levelColors = [
+  { color: 'text-red-500', bgColor: 'bg-red-500/10', borderColor: 'border-red-500/20' },
+  { color: 'text-orange-500', bgColor: 'bg-orange-500/10', borderColor: 'border-orange-500/20' },
+  { color: 'text-yellow-500', bgColor: 'bg-yellow-500/10', borderColor: 'border-yellow-500/20' },
+  { color: 'text-blue-500', bgColor: 'bg-blue-500/10', borderColor: 'border-blue-500/20' },
+  { color: 'text-green-500', bgColor: 'bg-green-500/10', borderColor: 'border-green-500/20' },
+  { color: 'text-purple-500', bgColor: 'bg-purple-500/10', borderColor: 'border-purple-500/20' },
+  { color: 'text-pink-500', bgColor: 'bg-pink-500/10', borderColor: 'border-pink-500/20' },
+];
+
+// Get maturity level from custom scale or default
+function getMaturityLevel(score: number, maturityScale?: Array<{
+  id: string;
+  name: string;
+  description: string;
+  minScore: number;
+  maxScore: number;
+}>) {
+  const defaultScale = [
+    { id: '1', name: 'Nascent', description: 'Beginning AI journey', minScore: 100, maxScore: 199 },
+    { id: '2', name: 'Experimental', description: 'Experimenting with AI', minScore: 200, maxScore: 299 },
+    { id: '3', name: 'Operational', description: 'Operational AI processes', minScore: 300, maxScore: 399 },
+    { id: '4', name: 'Strategic', description: 'Strategic AI foundations', minScore: 400, maxScore: 449 },
+    { id: '5', name: 'Transformational', description: 'Leading AI transformation', minScore: 450, maxScore: 500 },
+  ];
+  
+  const scale = maturityScale || defaultScale;
+  const level = scale.find(l => score >= l.minScore && score <= l.maxScore) || scale[0];
+  const levelIndex = scale.findIndex(l => l.id === level.id);
+  const colors = levelColors[levelIndex % levelColors.length];
+  
+  return {
+    ...level,
+    ...colors,
+  };
+}
 
 export default function Results() {
   const [, params] = useRoute("/results/:assessmentId");
@@ -357,7 +361,7 @@ export default function Results() {
     );
   }
 
-  const maturityConfig = maturityLevels[result.label as keyof typeof maturityLevels] || maturityLevels['Nascent'];
+  const maturityLevel = getMaturityLevel(result.overallScore, model.maturityScale || undefined);
   const dimensionScores = model.dimensions.map(dim => ({
     key: dim.key,
     label: dim.label,
@@ -399,14 +403,14 @@ export default function Results() {
                   <div className="text-lg text-muted-foreground">out of 500</div>
                 </div>
                 
-                <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full ${maturityConfig.bgColor} ${maturityConfig.borderColor} border`}>
-                  <span className={`text-xl font-bold ${maturityConfig.color}`}>
-                    {result.label}
+                <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full ${maturityLevel.bgColor} ${maturityLevel.borderColor} border`}>
+                  <span className={`text-xl font-bold ${maturityLevel.color}`}>
+                    {maturityLevel.name}
                   </span>
                 </div>
                 
                 <p className="mt-4 text-muted-foreground">
-                  {maturityConfig.description}
+                  {maturityLevel.description}
                 </p>
               </div>
 
@@ -598,6 +602,43 @@ export default function Results() {
           </Button>
         </div>
       </section>
+
+      {/* General Resources */}
+      {model.generalResources && model.generalResources.length > 0 && (
+        <section className="py-12 bg-muted/30">
+          <div className="container mx-auto px-4 max-w-6xl">
+            <h2 className="text-3xl font-bold mb-8 text-center">Additional Resources</h2>
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {model.generalResources.map((resource) => (
+                <Card key={resource.id} className="p-6 hover-elevate">
+                  <div className="space-y-3">
+                    <div className="flex items-start justify-between">
+                      <h3 className="font-semibold text-lg">{resource.title}</h3>
+                      <ExternalLink className="h-5 w-5 text-muted-foreground flex-shrink-0 ml-2" />
+                    </div>
+                    {resource.description && (
+                      <p className="text-sm text-muted-foreground">
+                        {resource.description}
+                      </p>
+                    )}
+                    {resource.link && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => window.open(resource.link, '_blank')}
+                        className="w-full"
+                        data-testid={`button-resource-${resource.id}`}
+                      >
+                        Learn More
+                      </Button>
+                    )}
+                  </div>
+                </Card>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Profile Gate Modal */}
       <Dialog open={showProfileGate} onOpenChange={setShowProfileGate}>

@@ -83,6 +83,24 @@ export default function Admin() {
   const [csvImportMode, setCSVImportMode] = useState<'add' | 'replace'>('add');
   const [isCSVImportDialogOpen, setIsCSVImportDialogOpen] = useState(false);
   const [pendingCSVFile, setPendingCSVFile] = useState<{file: File; modelId: string} | null>(null);
+  
+  // Maturity scale and general resources state
+  const [isMaturityScaleDialogOpen, setIsMaturityScaleDialogOpen] = useState(false);
+  const [isGeneralResourcesDialogOpen, setIsGeneralResourcesDialogOpen] = useState(false);
+  const [editingModelForConfig, setEditingModelForConfig] = useState<Model | null>(null);
+  const [maturityScaleLevels, setMaturityScaleLevels] = useState<Array<{
+    id: string;
+    name: string;
+    description: string;
+    minScore: number;
+    maxScore: number;
+  }>>([]);
+  const [generalResourcesList, setGeneralResourcesList] = useState<Array<{
+    id: string;
+    title: string;
+    description?: string;
+    link?: string;
+  }>>([]);
 
   // Fetch models
   const { data: models = [], isLoading: modelsLoading } = useQuery<Model[]>({
@@ -262,6 +280,50 @@ export default function Admin() {
       toast({
         title: "Error",
         description: error.message || "Failed to update model",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Update maturity scale mutation
+  const updateMaturityScale = useMutation({
+    mutationFn: async ({ modelId, maturityScale }: { modelId: string; maturityScale: typeof maturityScaleLevels }) => {
+      return apiRequest(`/api/models/${modelId}/maturity-scale`, 'PUT', { maturityScale });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/models'] });
+      setIsMaturityScaleDialogOpen(false);
+      toast({
+        title: "Maturity scale updated",
+        description: "The maturity scale has been updated successfully.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update maturity scale",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Update general resources mutation
+  const updateGeneralResources = useMutation({
+    mutationFn: async ({ modelId, generalResources }: { modelId: string; generalResources: typeof generalResourcesList }) => {
+      return apiRequest(`/api/models/${modelId}/general-resources`, 'PUT', { generalResources });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/models'] });
+      setIsGeneralResourcesDialogOpen(false);
+      toast({
+        title: "General resources updated",
+        description: "The general resources have been updated successfully.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update general resources",
         variant: "destructive",
       });
     },
@@ -884,8 +946,42 @@ export default function Admin() {
                                 size="icon"
                                 onClick={() => handleEditModel(model)}
                                 data-testid={`button-edit-${model.id}`}
+                                title="Edit Model"
                               >
                                 <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button 
+                                variant="ghost" 
+                                size="icon"
+                                onClick={() => {
+                                  setEditingModelForConfig(model);
+                                  const defaultScale = [
+                                    { id: '1', name: 'Nascent', description: 'Beginning AI journey', minScore: 100, maxScore: 199 },
+                                    { id: '2', name: 'Experimental', description: 'Experimenting with AI', minScore: 200, maxScore: 299 },
+                                    { id: '3', name: 'Operational', description: 'Operational AI processes', minScore: 300, maxScore: 399 },
+                                    { id: '4', name: 'Strategic', description: 'Strategic AI foundations', minScore: 400, maxScore: 449 },
+                                    { id: '5', name: 'Transformational', description: 'Leading AI transformation', minScore: 450, maxScore: 500 },
+                                  ];
+                                  setMaturityScaleLevels(model.maturityScale || defaultScale);
+                                  setIsMaturityScaleDialogOpen(true);
+                                }}
+                                data-testid={`button-maturity-scale-${model.id}`}
+                                title="Edit Maturity Scale"
+                              >
+                                <BarChart3 className="h-4 w-4" />
+                              </Button>
+                              <Button 
+                                variant="ghost" 
+                                size="icon"
+                                onClick={() => {
+                                  setEditingModelForConfig(model);
+                                  setGeneralResourcesList(model.generalResources || []);
+                                  setIsGeneralResourcesDialogOpen(true);
+                                }}
+                                data-testid={`button-general-resources-${model.id}`}
+                                title="Edit General Resources"
+                              >
+                                <FileSpreadsheet className="h-4 w-4" />
                               </Button>
                               <Button 
                                 variant="ghost" 
@@ -896,6 +992,7 @@ export default function Admin() {
                                   }
                                 }}
                                 data-testid={`button-delete-${model.id}`}
+                                title="Delete Model"
                               >
                                 <Trash className="h-4 w-4" />
                               </Button>
@@ -2216,6 +2313,249 @@ export default function Admin() {
                 }
               }}
               data-testid="button-save-user"
+            >
+              Save Changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Maturity Scale Editor Dialog */}
+      <Dialog open={isMaturityScaleDialogOpen} onOpenChange={setIsMaturityScaleDialogOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Edit Maturity Scale</DialogTitle>
+            <DialogDescription>
+              Customize the maturity scale levels for {editingModelForConfig?.name}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            {maturityScaleLevels.map((level, index) => (
+              <Card key={level.id} className="p-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Level Name</Label>
+                    <Input
+                      value={level.name}
+                      onChange={(e) => {
+                        const newLevels = [...maturityScaleLevels];
+                        newLevels[index].name = e.target.value;
+                        setMaturityScaleLevels(newLevels);
+                      }}
+                      placeholder="e.g., Nascent"
+                      data-testid={`input-level-name-${index}`}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Score Range</Label>
+                    <div className="flex gap-2 items-center">
+                      <Input
+                        type="number"
+                        value={level.minScore}
+                        onChange={(e) => {
+                          const newLevels = [...maturityScaleLevels];
+                          newLevels[index].minScore = parseInt(e.target.value);
+                          setMaturityScaleLevels(newLevels);
+                        }}
+                        placeholder="Min"
+                        data-testid={`input-level-min-${index}`}
+                      />
+                      <span>-</span>
+                      <Input
+                        type="number"
+                        value={level.maxScore}
+                        onChange={(e) => {
+                          const newLevels = [...maturityScaleLevels];
+                          newLevels[index].maxScore = parseInt(e.target.value);
+                          setMaturityScaleLevels(newLevels);
+                        }}
+                        placeholder="Max"
+                        data-testid={`input-level-max-${index}`}
+                      />
+                    </div>
+                  </div>
+                  <div className="col-span-2 space-y-2">
+                    <Label>Description</Label>
+                    <Textarea
+                      value={level.description}
+                      onChange={(e) => {
+                        const newLevels = [...maturityScaleLevels];
+                        newLevels[index].description = e.target.value;
+                        setMaturityScaleLevels(newLevels);
+                      }}
+                      placeholder="Describe this maturity level"
+                      data-testid={`input-level-description-${index}`}
+                    />
+                  </div>
+                </div>
+              </Card>
+            ))}
+            
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setMaturityScaleLevels([
+                    ...maturityScaleLevels,
+                    {
+                      id: String(maturityScaleLevels.length + 1),
+                      name: '',
+                      description: '',
+                      minScore: maturityScaleLevels[maturityScaleLevels.length - 1]?.maxScore + 1 || 100,
+                      maxScore: 500,
+                    },
+                  ]);
+                }}
+                data-testid="button-add-level"
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                Add Level
+              </Button>
+              {maturityScaleLevels.length > 1 && (
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setMaturityScaleLevels(maturityScaleLevels.slice(0, -1));
+                  }}
+                  data-testid="button-remove-level"
+                >
+                  <Trash className="mr-2 h-4 w-4" />
+                  Remove Last Level
+                </Button>
+              )}
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsMaturityScaleDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                if (editingModelForConfig) {
+                  updateMaturityScale.mutate({
+                    modelId: editingModelForConfig.id,
+                    maturityScale: maturityScaleLevels,
+                  });
+                }
+              }}
+              data-testid="button-save-maturity-scale"
+            >
+              Save Changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* General Resources Editor Dialog */}
+      <Dialog open={isGeneralResourcesDialogOpen} onOpenChange={setIsGeneralResourcesDialogOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Edit General Resources</DialogTitle>
+            <DialogDescription>
+              Manage resources displayed at the end of results for {editingModelForConfig?.name}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            {generalResourcesList.map((resource, index) => (
+              <Card key={resource.id} className="p-4">
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label>Resource Title</Label>
+                    <Input
+                      value={resource.title}
+                      onChange={(e) => {
+                        const newResources = [...generalResourcesList];
+                        newResources[index].title = e.target.value;
+                        setGeneralResourcesList(newResources);
+                      }}
+                      placeholder="Resource title"
+                      data-testid={`input-resource-title-${index}`}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Description</Label>
+                    <Textarea
+                      value={resource.description || ''}
+                      onChange={(e) => {
+                        const newResources = [...generalResourcesList];
+                        newResources[index].description = e.target.value;
+                        setGeneralResourcesList(newResources);
+                      }}
+                      placeholder="Brief description of the resource"
+                      data-testid={`input-resource-description-${index}`}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Link</Label>
+                    <Input
+                      value={resource.link || ''}
+                      onChange={(e) => {
+                        const newResources = [...generalResourcesList];
+                        newResources[index].link = e.target.value;
+                        setGeneralResourcesList(newResources);
+                      }}
+                      placeholder="https://example.com/resource"
+                      data-testid={`input-resource-link-${index}`}
+                    />
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setGeneralResourcesList(generalResourcesList.filter((_, i) => i !== index));
+                    }}
+                    data-testid={`button-remove-resource-${index}`}
+                  >
+                    <Trash className="mr-2 h-4 w-4" />
+                    Remove Resource
+                  </Button>
+                </div>
+              </Card>
+            ))}
+            
+            {generalResourcesList.length === 0 && (
+              <div className="text-center py-8 text-muted-foreground">
+                No general resources added yet. Click "Add Resource" to get started.
+              </div>
+            )}
+            
+            <Button
+              variant="outline"
+              onClick={() => {
+                setGeneralResourcesList([
+                  ...generalResourcesList,
+                  {
+                    id: `resource-${Date.now()}`,
+                    title: '',
+                    description: '',
+                    link: '',
+                  },
+                ]);
+              }}
+              data-testid="button-add-resource"
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              Add Resource
+            </Button>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsGeneralResourcesDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                if (editingModelForConfig) {
+                  updateGeneralResources.mutate({
+                    modelId: editingModelForConfig.id,
+                    generalResources: generalResourcesList,
+                  });
+                }
+              }}
+              data-testid="button-save-general-resources"
             >
               Save Changes
             </Button>
