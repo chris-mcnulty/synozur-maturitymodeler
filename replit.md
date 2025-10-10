@@ -37,6 +37,10 @@ Maturity Modeler is a comprehensive fullstack JavaScript application for multi-m
 - ✅ Company size classification with 7 employee buckets in Profile
 - ✅ Model creation backend with JSON import/export
 - ✅ Database schema with support for all question/response types
+- ✅ Dimensions management (CRUD operations with order/reordering)
+- ✅ Answer options management for multiple choice questions
+- ✅ Questions grouped by dimension with manual ordering within groups
+- ✅ Single unified Header component with auth state management
 - ⏳ Authentication system (pending implementation)
 
 ## Backlog
