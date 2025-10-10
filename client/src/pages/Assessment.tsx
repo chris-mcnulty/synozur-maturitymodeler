@@ -19,7 +19,7 @@ export default function Assessment() {
   const assessmentId = params?.assessmentId;
 
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [selectedAnswers, setSelectedAnswers] = useState<Record<string, string>>({});
+  const [selectedAnswers, setSelectedAnswers] = useState<Record<string, string | string[]>>({});
 
   // Fetch assessment
   const { data: assessment } = useQuery<AssessmentType>({
@@ -52,14 +52,16 @@ export default function Assessment() {
   // Populate existing answers
   useEffect(() => {
     if (existingResponses.length > 0) {
-      const answers: Record<string, string> = {};
-      existingResponses.forEach(r => {
+      const answers: Record<string, string | string[]> = {};
+      existingResponses.forEach((r: any) => {
         if (r.numericValue !== undefined && r.numericValue !== null) {
           answers[r.questionId] = r.numericValue.toString();
         } else if (r.booleanValue !== undefined && r.booleanValue !== null) {
           answers[r.questionId] = r.booleanValue.toString();
         } else if (r.textValue !== undefined && r.textValue !== null) {
           answers[r.questionId] = r.textValue;
+        } else if (r.answerIds) {
+          answers[r.questionId] = r.answerIds; // Multi-select responses
         } else if (r.answerId) {
           answers[r.questionId] = r.answerId;
         }
@@ -110,7 +112,7 @@ export default function Assessment() {
     },
   });
 
-  const handleAnswer = async (value: string) => {
+  const handleAnswer = async (value: string | string[]) => {
     const question = questions[currentQuestionIndex];
     const questionId = question.id;
     setSelectedAnswers({ ...selectedAnswers, [questionId]: value });
@@ -119,18 +121,20 @@ export default function Assessment() {
     let saveData: any = { questionId };
     
     if (question.type === 'numeric') {
-      const numericValue = parseFloat(value);
+      const numericValue = parseFloat(value as string);
       if (!isNaN(numericValue)) {
         saveData.numericValue = numericValue;
       } else {
         return; // Don't save invalid numeric values
       }
     } else if (question.type === 'true_false') {
-      saveData.booleanValue = value === 'true';
+      saveData.booleanValue = (value as string) === 'true';
     } else if (question.type === 'text') {
-      saveData.textValue = value;
+      saveData.textValue = value as string;
+    } else if (question.type === 'multi_select') {
+      saveData.answerIds = value as string[]; // For multi-select questions
     } else {
-      saveData.answerId = value;
+      saveData.answerId = value as string;
     }
     
     // Wait for the save to complete before allowing next action
@@ -175,8 +179,8 @@ export default function Assessment() {
   // Check if user can go to next question based on question type
   let canGoNext = false;
   if (currentQuestion.type === 'numeric') {
-    const numValue = parseFloat(currentAnswer);
-    canGoNext = !isNaN(numValue) && currentAnswer !== "";
+    const numValue = parseFloat(currentAnswer as string);
+    canGoNext = !isNaN(numValue) && (currentAnswer as string) !== "";
     if (currentQuestion.minValue !== undefined && currentQuestion.minValue !== null) {
       canGoNext = canGoNext && numValue >= currentQuestion.minValue;
     }
@@ -185,10 +189,13 @@ export default function Assessment() {
     }
   } else if (currentQuestion.type === 'text') {
     // Text questions require some input
-    canGoNext = currentAnswer?.trim().length > 0;
+    canGoNext = typeof currentAnswer === 'string' && currentAnswer.trim().length > 0;
   } else if (currentQuestion.type === 'true_false') {
     // True/false questions must have an answer selected
     canGoNext = currentAnswer === 'true' || currentAnswer === 'false';
+  } else if (currentQuestion.type === 'multi_select') {
+    // Multi-select questions - allow proceeding even with 0 selections (scores as 100)
+    canGoNext = true;
   } else {
     // Multiple choice questions must have an answer selected
     canGoNext = !!currentAnswer;
@@ -206,8 +213,8 @@ export default function Assessment() {
 
           <QuestionCard
             question={currentQuestion.text}
-            questionType={currentQuestion.type as 'multiple_choice' | 'numeric' | 'true_false' | 'text'}
-            answers={currentQuestion.type === 'multiple_choice' ? currentQuestion.answers.map(a => ({
+            questionType={currentQuestion.type as 'multiple_choice' | 'multi_select' | 'numeric' | 'true_false' | 'text'}
+            answers={(currentQuestion.type === 'multiple_choice' || currentQuestion.type === 'multi_select') ? currentQuestion.answers.map(a => ({
               key: a.id,
               label: a.text,
               score: a.score,

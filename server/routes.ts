@@ -367,12 +367,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Assessment response routes
   app.post("/api/assessments/:id/responses", async (req, res) => {
     try {
-      const { questionId, answerId, numericValue, booleanValue, textValue } = req.body;
+      const { questionId, answerId, answerIds, numericValue, booleanValue, textValue } = req.body;
       
       console.log("Saving response:", { 
         assessmentId: req.params.id, 
         questionId, 
-        answerId, 
+        answerId,
+        answerIds, 
         numericValue, 
         booleanValue, 
         textValue 
@@ -388,6 +389,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // Clear all fields first
         updateData.answerId = null;
+        updateData.answerIds = null;
         updateData.numericValue = null;
         updateData.booleanValue = null;
         updateData.textValue = null;
@@ -399,6 +401,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           updateData.booleanValue = booleanValue;
         } else if (textValue !== undefined) {
           updateData.textValue = textValue;
+        } else if (answerIds !== undefined) {
+          updateData.answerIds = answerIds; // For multi-select questions
         } else if (answerId !== undefined) {
           updateData.answerId = answerId;
         }
@@ -418,6 +422,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           responseData.booleanValue = booleanValue;
         } else if (textValue !== undefined) {
           responseData.textValue = textValue;
+        } else if (answerIds !== undefined) {
+          responseData.answerIds = answerIds; // For multi-select questions
         } else if (answerId !== undefined) {
           responseData.answerId = answerId;
         }
@@ -491,6 +497,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           // Ensure score is within bounds
           score = Math.max(100, Math.min(500, score));
+        } else if (question.type === 'multi_select') {
+          // For multi-select questions, proportional scoring based on selections
+          const answers = await storage.getAnswersByQuestionId(question.id);
+          const totalOptions = answers.length;
+          const selectedCount = response.answerIds ? response.answerIds.length : 0;
+          
+          // Guard against division by zero
+          if (totalOptions > 0) {
+            // Formula: (selectedCount / totalOptions) * 400 + 100
+            // 0 selections = 100, max selections = 500
+            score = Math.round((selectedCount / totalOptions) * 400 + 100);
+            score = Math.max(100, Math.min(500, score));
+          } else {
+            score = 100; // Default if no options exist
+          }
         } else {
           // For multiple choice questions, use the answer's score
           const answers = await storage.getAnswersByQuestionId(question.id);
@@ -522,12 +543,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Calculate overall score
       const overallScore = questionCount > 0 ? Math.round(totalScore / questionCount) : 0;
 
-      // Determine label based on score (matching prototype)
-      let label = "Nascent";
-      if (overallScore >= 450) label = "Transformational";
-      else if (overallScore >= 400) label = "Strategic";
-      else if (overallScore >= 300) label = "Operational";
-      else if (overallScore >= 200) label = "Experimental";
+      // Determine label based on score using model's maturity scale
+      // Default scale if not configured
+      const defaultScale = [
+        { id: '1', name: 'Nascent', description: 'Beginning AI journey', minScore: 100, maxScore: 199 },
+        { id: '2', name: 'Experimental', description: 'Experimenting with AI', minScore: 200, maxScore: 299 },
+        { id: '3', name: 'Operational', description: 'Operational AI processes', minScore: 300, maxScore: 399 },
+        { id: '4', name: 'Strategic', description: 'Strategic AI foundations', minScore: 400, maxScore: 449 },
+        { id: '5', name: 'Transformational', description: 'Leading AI transformation', minScore: 450, maxScore: 500 },
+      ];
+      
+      const maturityScale = model.maturityScale || defaultScale;
+      let label = maturityScale[0]?.name || "Nascent";
+      
+      // Find the appropriate maturity level based on score
+      for (const level of maturityScale) {
+        if (overallScore >= level.minScore && overallScore <= level.maxScore) {
+          label = level.name;
+          break;
+        }
+      }
 
       // Create result
       const result = await storage.createResult({

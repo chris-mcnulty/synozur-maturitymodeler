@@ -37,6 +37,13 @@ export const models = pgTable("models", {
     minScore: number;
     maxScore: number;
   }>>(),
+  // General resources displayed at end of results (JSONB array)
+  generalResources: json("general_resources").$type<Array<{
+    id: string;
+    title: string;
+    description?: string;
+    link?: string;
+  }>>(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

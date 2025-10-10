@@ -1,6 +1,7 @@
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -14,14 +15,14 @@ interface Answer {
 
 interface QuestionCardProps {
   question: string;
-  questionType?: 'multiple_choice' | 'numeric' | 'true_false' | 'text';
+  questionType?: 'multiple_choice' | 'multi_select' | 'numeric' | 'true_false' | 'text';
   answers?: Answer[];
   minValue?: number;
   maxValue?: number;
   unit?: string;
   placeholder?: string;
-  onAnswer: (value: string) => void;
-  selectedAnswer?: string;
+  onAnswer: (value: string | string[]) => void;
+  selectedAnswer?: string | string[];
 }
 
 export function QuestionCard({ 
@@ -35,14 +36,17 @@ export function QuestionCard({
   onAnswer, 
   selectedAnswer 
 }: QuestionCardProps) {
-  const [selected, setSelected] = useState(selectedAnswer || "");
-  const [numericValue, setNumericValue] = useState(selectedAnswer || "");
+  const [selected, setSelected] = useState<string>(typeof selectedAnswer === 'string' ? selectedAnswer : "");
+  const [multiSelected, setMultiSelected] = useState<string[]>(Array.isArray(selectedAnswer) ? selectedAnswer : []);
+  const [numericValue, setNumericValue] = useState(typeof selectedAnswer === 'string' ? selectedAnswer : "");
   const [numericError, setNumericError] = useState<string>("");
 
   useEffect(() => {
-    if (questionType === 'numeric' && selectedAnswer) {
+    if (questionType === 'numeric' && typeof selectedAnswer === 'string') {
       setNumericValue(selectedAnswer);
-    } else if ((questionType === 'multiple_choice' || questionType === 'true_false' || questionType === 'text') && selectedAnswer) {
+    } else if (questionType === 'multi_select' && Array.isArray(selectedAnswer)) {
+      setMultiSelected(selectedAnswer);
+    } else if ((questionType === 'multiple_choice' || questionType === 'true_false' || questionType === 'text') && typeof selectedAnswer === 'string') {
       setSelected(selectedAnswer);
     }
   }, [selectedAnswer, questionType]);
@@ -50,6 +54,14 @@ export function QuestionCard({
   const handleSelect = (value: string) => {
     setSelected(value);
     onAnswer(value);
+  };
+
+  const handleMultiSelect = (answerId: string, checked: boolean) => {
+    const updated = checked
+      ? [...multiSelected, answerId]
+      : multiSelected.filter(id => id !== answerId);
+    setMultiSelected(updated);
+    onAnswer(updated);
   };
 
   const handleNumericChange = (value: string) => {
@@ -109,6 +121,38 @@ export function QuestionCard({
             ))}
           </div>
         </RadioGroup>
+      ) : questionType === 'multi_select' ? (
+        <div className="space-y-3">
+          <p className="text-sm text-muted-foreground mb-4">Select all that apply</p>
+          {answers.map((answer) => (
+            <div
+              key={answer.key}
+              className={`flex items-center space-x-3 p-4 rounded-lg border-2 transition-all hover-elevate ${
+                multiSelected.includes(answer.key)
+                  ? "border-primary bg-primary/5"
+                  : "border-border"
+              }`}
+              data-testid={`answer-option-${answer.key}`}
+            >
+              <Checkbox
+                id={answer.key}
+                checked={multiSelected.includes(answer.key)}
+                onCheckedChange={(checked) => handleMultiSelect(answer.key, checked === true)}
+              />
+              <Label
+                htmlFor={answer.key}
+                className="flex-1 cursor-pointer font-medium"
+              >
+                {answer.label}
+              </Label>
+            </div>
+          ))}
+          {multiSelected.length > 0 && (
+            <p className="text-sm text-muted-foreground mt-2">
+              {multiSelected.length} option{multiSelected.length !== 1 ? 's' : ''} selected
+            </p>
+          )}
+        </div>
       ) : questionType === 'true_false' ? (
         <RadioGroup value={selected} onValueChange={handleSelect}>
           <div className="space-y-3">

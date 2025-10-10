@@ -67,11 +67,20 @@ export function modelToCSV(
       question.unit || '',
       question.placeholder || '',
       question.improvementStatement || '',
-      question.resourceLink || ''
+      question.resourceTitle || ''
     ]);
     
-    // Add answers for multiple choice questions
-    if (question.type === 'multiple_choice') {
+    // Additional question resource fields (second row for same question)
+    rows.push([
+      'QUESTION_RESOURCES',
+      question.id,
+      question.resourceLink || '',
+      question.resourceDescription || '',
+      '', '', '', '', '', '', ''
+    ]);
+    
+    // Add answers for multiple choice and multi_select questions
+    if (question.type === 'multiple_choice' || question.type === 'multi_select') {
       const questionAnswers = answers.filter(a => a.questionId === question.id);
       questionAnswers.forEach(answer => {
         rows.push([
@@ -81,8 +90,10 @@ export function modelToCSV(
           answer.questionId,
           answer.score.toString(),
           answer.improvementStatement || '',
+          answer.resourceTitle || '',
           answer.resourceLink || '',
-          '', '', '', ''
+          answer.resourceDescription || '',
+          '', ''
         ]);
       });
     }
@@ -158,17 +169,28 @@ export function csvToModel(csvContent: string): {
         questions.push({
           id: row[1],
           text: row[2],
-          type: row[3] as 'multiple_choice' | 'numeric' | 'true_false' | 'text',
+          type: row[3] as 'multiple_choice' | 'multi_select' | 'numeric' | 'true_false' | 'text',
           dimensionId: row[4] || undefined,
           minValue: row[5] ? parseFloat(row[5]) : undefined,
           maxValue: row[6] ? parseFloat(row[6]) : undefined,
           unit: row[7] || undefined,
           placeholder: row[8] || undefined,
           improvementStatement: row[9] || undefined,
-          resourceLink: row[10] || undefined,
+          resourceTitle: row[10] || undefined,
           modelId: model.id,
           order: questions.length
         });
+        break;
+        
+      case 'QUESTION_RESOURCES':
+        // Find the last question and add resource fields
+        if (questions.length > 0) {
+          const lastQuestion = questions[questions.length - 1];
+          if (lastQuestion.id === row[1]) {
+            lastQuestion.resourceLink = row[2] || undefined;
+            lastQuestion.resourceDescription = row[3] || undefined;
+          }
+        }
         break;
         
       case 'ANSWER':
@@ -178,7 +200,9 @@ export function csvToModel(csvContent: string): {
           questionId: row[3],
           score: parseInt(row[4]) || 0,
           improvementStatement: row[5] || undefined,
-          resourceLink: row[6] || undefined
+          resourceTitle: row[6] || undefined,
+          resourceLink: row[7] || undefined,
+          resourceDescription: row[8] || undefined
         });
         break;
         
