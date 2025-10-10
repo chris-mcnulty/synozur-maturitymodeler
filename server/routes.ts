@@ -792,7 +792,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           placeholder: q.placeholder,
           order: q.order || 0,
           improvementStatement: q.improvementStatement,
+          resourceTitle: q.resourceTitle,
           resourceLink: q.resourceLink,
+          resourceDescription: q.resourceDescription,
         });
         questionMap.set(q.id, question.id);
       }
@@ -807,7 +809,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             score: a.score || 0,
             order: a.order || 0,
             improvementStatement: a.improvementStatement,
+            resourceTitle: a.resourceTitle,
             resourceLink: a.resourceLink,
+            resourceDescription: a.resourceDescription,
           });
         }
       }
