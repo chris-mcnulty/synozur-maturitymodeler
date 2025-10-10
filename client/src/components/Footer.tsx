@@ -4,7 +4,7 @@ export function Footer() {
   return (
     <footer className="border-t bg-card mt-auto">
       <div className="container mx-auto px-4 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
           <div>
             <h3 className="text-lg font-bold mb-4 text-primary">
               Maturity Modeler
@@ -30,16 +30,19 @@ export function Footer() {
               <li><a href="https://www.synozur.com" target="_blank" rel="noopener noreferrer" className="text-sm text-muted-foreground hover:text-primary transition-colors" data-testid="link-footer-website">Synozur.com</a></li>
             </ul>
           </div>
-          
-          <div>
-            <h4 className="font-semibold mb-4">Legal</h4>
-            <p className="text-xs text-muted-foreground mb-2">
-              © The Synozur Alliance, LLC. All rights reserved.
-            </p>
-            <p className="text-xs text-muted-foreground">
-              "Synozur" and "The Synozur Alliance" are trademarks of The Synozur Alliance, LLC.
-            </p>
-          </div>
+        </div>
+        
+        <div className="border-t pt-8">
+          <h4 className="font-semibold mb-4">Legal</h4>
+          <p className="text-xs text-muted-foreground mb-2">
+            © 2025 The Synozur Alliance, LLC. All rights reserved.
+          </p>
+          <p className="text-xs text-muted-foreground mb-3">
+            "Synozur" and "The Synozur Alliance" are trademarks of The Synozur Alliance, LLC.
+          </p>
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            <strong>Disclaimer:</strong> Information provided on this site is presented "as is" without any express or implied warranties. This is a preliminary release, and access or availability is not guaranteed. By using this site, you signify your consent to these terms and acknowledge that your usage is subject to Synozur's Data Gathering and Privacy Policy.
+          </p>
         </div>
       </div>
     </footer>
