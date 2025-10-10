@@ -33,12 +33,14 @@ Maturity Modeler is a comprehensive fullstack JavaScript application for multi-m
 - ✅ Core UI components built with examples
 - ✅ Page layouts created (Landing, ModelHome, Assessment, Results, Profile, Admin)
 - ✅ Dark mode implementation with theme toggle
-- ✅ All 4 question types supported (Multiple Choice, Numeric, True/False, Text Input)
+- ✅ All 5 question types supported (Multiple Choice, Multi-Select, Numeric, True/False, Text Input)
+- ✅ Multi-select questions with proportional scoring (100-500 scale)
 - ✅ Company size classification with 7 employee buckets in Profile
 - ✅ Model creation backend with JSON import/export
-- ✅ Database schema with support for all question/response types
+- ✅ Database schema with support for all question/response types including multi-select
 - ✅ Dimensions management (CRUD operations with order/reordering)
-- ✅ Answer options management for multiple choice questions
+- ✅ Answer options management for multiple choice and multi-select questions
+- ✅ Answer resource editing (title, description, link, improvement statement)
 - ✅ Questions grouped by dimension with manual ordering within groups
 - ✅ Single unified Header component with auth state management
 - ✅ Role-based authentication system with admin/user roles
@@ -51,16 +53,21 @@ Maturity Modeler is a comprehensive fullstack JavaScript application for multi-m
 - ✅ PDF generation with jsPDF matching sample format
 - ✅ Improvement resources display from CSV data
 - ✅ Dynamic recommendations based on assessment scores
+- ✅ CSV import/export with add vs replace mode
+- ✅ CSV schema supports multi-select and complete resource metadata
+- ✅ General resources column added to models (JSONB structure ready)
 
 ## Backlog
 
 ### Pending Implementation
 - [ ] **Email Delivery**: SendGrid integration ready - awaiting SENDGRID_API_KEY (expected next week)
 - [ ] **Science-Backed Framework Section**: Add metrics/statistics section to model home page showing research validation, assessment counts, and organizational adoption once real data is available
+- [ ] **Maturity Scale Editor**: Admin UI to customize maturity level names, descriptions, and score ranges per model
+- [ ] **General Resources Editor**: Admin UI to manage general resources shown at end of results (onscreen and PDF)
+- [ ] **Results Page Enhancement**: Display custom maturity scales and general resources from model configuration
 
 ### Technical Debt
 - [ ] Replace mock benchmark data with real calculations
-- [ ] Implement CSV model import/export functionality
 - [ ] Implement benchmark calculation engine
 - [ ] Add audit logging system
 
