@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { useRoute, useLocation } from "wouter";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
@@ -117,134 +117,65 @@ export default function Results() {
     enabled: !!model?.slug,
   });
 
-
-  if (resultLoading) {
-    return (
-      <div className="min-h-screen flex flex-col">
-        <main className="flex-1 flex items-center justify-center">
-          <div className="text-center">
-            <div className="text-lg text-muted-foreground" data-testid="loading-results">Calculating your results...</div>
-          </div>
-        </main>
-        <Footer />
-      </div>
-    );
-  }
-
-  if (resultError || !result) {
-    return (
-      <div className="min-h-screen flex flex-col">
-        <main className="flex-1 flex items-center justify-center">
-          <div className="text-center max-w-md mx-auto px-4">
-            <h2 className="text-2xl font-bold mb-4" data-testid="text-error-title">Results Not Available</h2>
-            <p className="text-muted-foreground mb-6" data-testid="text-error-message">
-              We couldn't find results for this assessment. This may happen if:
-            </p>
-            <ul className="text-sm text-muted-foreground text-left mb-8 space-y-2">
-              <li>• The assessment is incomplete</li>
-              <li>• Not all questions were answered</li>
-              <li>• There was an error calculating results</li>
-            </ul>
-            <div className="space-y-4">
-              <Button
-                onClick={() => setLocation(`/assessment/${assessmentId}`)}
-                className="w-full"
-                data-testid="button-return-assessment"
-              >
-                Return to Assessment
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => setLocation('/')}
-                className="w-full"
-                data-testid="button-home"
-              >
-                Back to Home
-              </Button>
-            </div>
-          </div>
-        </main>
-        <Footer />
-      </div>
-    );
-  }
-
-  if (!model) {
-    return (
-      <div className="min-h-screen flex flex-col">
-        <main className="flex-1 flex items-center justify-center">
-          <div className="text-center">
-            <div className="text-lg text-muted-foreground">Loading assessment details...</div>
-          </div>
-        </main>
-        <Footer />
-      </div>
-    );
-  }
-
-  const maturityConfig = maturityLevels[result.label as keyof typeof maturityLevels] || maturityLevels['Nascent'];
-  const dimensionScores = model.dimensions.map(dim => ({
-    key: dim.key,
-    label: dim.label,
-    score: (result.dimensionScores as Record<string, number>)[dim.key] || 0,
-  }));
-
-  // Generate personalized recommendations based on score and responses
-  const getRecommendations = () => {
-    const recommendations = [];
+  // Define all hooks before any conditional returns to ensure consistent hook order
+  const overallScore = result?.overallScore || 0;
+  
+  // Memoize recommendations to ensure consistent hook order
+  const recommendations = useMemo(() => {
+    if (!result || !model) return [];
+    const recs = [];
     
     // Overall score-based recommendations
     if (result.overallScore >= 450) {
-      recommendations.push({
+      recs.push({
         icon: <Award className="h-5 w-5" />,
-        title: "Join the AI Leaders Alliance",
-        description: "You're an AI leader! Consider joining Synozur's AI Alliance for peer benchmarking, innovation workshops, and thought leadership opportunities."
+        title: "Industry Leader",
+        description: "You're at the forefront of AI transformation. Focus on innovation and sharing best practices.",
       });
-    } else if (result.overallScore >= 400) {
-      recommendations.push({
-        icon: <Target className="h-5 w-5" />,
-        title: "Scale Your AI Initiatives",
-        description: "Focus on scaling successful pilots and establishing centers of excellence to drive enterprise-wide transformation."
-      });
-    } else if (result.overallScore >= 300) {
-      recommendations.push({
+    } else if (result.overallScore >= 350) {
+      recs.push({
         icon: <TrendingUp className="h-5 w-5" />,
-        title: "Build Strategic Capabilities",
-        description: "Develop a comprehensive AI strategy and invest in talent development to move from operational to strategic maturity."
+        title: "Strong Foundation",
+        description: "You have excellent AI capabilities. Focus on optimization and scaling successful initiatives.",
       });
-    } else if (result.overallScore >= 200) {
-      recommendations.push({
-        icon: <Users className="h-5 w-5" />,
-        title: "Expand Your AI Experiments",
-        description: "Identify high-value use cases and build cross-functional teams to accelerate your AI journey."
+    } else if (result.overallScore >= 250) {
+      recs.push({
+        icon: <Target className="h-5 w-5" />,
+        title: "Building Momentum",
+        description: "You're making progress. Prioritize high-impact areas and build systematic processes.",
       });
     } else {
-      recommendations.push({
-        icon: <BookOpen className="h-5 w-5" />,
-        title: "Start with AI Foundations",
-        description: "Begin with education and awareness programs, then identify quick wins to build momentum and demonstrate value."
+      recs.push({
+        icon: <Lightbulb className="h-5 w-5" />,
+        title: "Getting Started",
+        description: "Begin with pilot projects and focus on building foundational AI capabilities.",
       });
     }
 
-    // Add dimension-specific recommendations
-    dimensionScores.forEach(dim => {
-      if (dim.score < 300) {
-        recommendations.push({
-          icon: <ChevronRight className="h-5 w-5" />,
-          title: `Improve ${dim.label}`,
-          description: `Your ${dim.label} score is ${dim.score}. Focus on strengthening this area to improve overall maturity.`
-        });
-      }
-    });
+    // Dimension-specific recommendations
+    if (model?.dimensions && result?.dimensionScores) {
+      model.dimensions.forEach(dim => {
+        const score = (result.dimensionScores as Record<string, number>)[dim.key] || 0;
+        if (score < 60) {
+          recs.push({
+            icon: <Target className="h-5 w-5" />,
+            title: `Improve ${dim.label}`,
+            description: `Focus on strengthening your ${dim.label.toLowerCase()} capabilities to unlock greater AI value.`,
+          });
+        }
+      });
+    }
 
-    return recommendations.slice(0, 3); // Show top 3 recommendations
-  };
+    return recs.slice(0, 3); // Return top 3 recommendations
+  }, [result, model]);
 
-  // Get improvement statements and resources from user responses
-  const getImprovementResources = () => {
+  // Memoize improvement resources to ensure consistent hook order
+  const improvementResources = useMemo(() => {
+    if (!responses || !questions || responses.length === 0 || questions.length === 0) return [];
+    
     const resources: Array<{
       question: string;
-      answer?: string;
+      answer: string;
       improvementStatement?: string;
       resourceTitle?: string;
       resourceLink?: string;
@@ -255,12 +186,11 @@ export default function Results() {
       const question = questions.find(q => q.id === response.questionId);
       if (!question) return;
 
-      let selectedAnswer: Answer | undefined;
-      let answerText = '';
-
-      if (response.answerId) {
-        selectedAnswer = question.answers?.find(a => a.id === response.answerId);
-        answerText = selectedAnswer?.text || '';
+      const selectedAnswer = question.answers?.find(a => a.id === response.answerId);
+      let answerText = 'N/A';
+      
+      if (selectedAnswer) {
+        answerText = selectedAnswer.text;
       } else if (response.numericValue !== undefined) {
         answerText = response.numericValue.toString();
       } else if (response.booleanValue !== undefined) {
@@ -288,10 +218,7 @@ export default function Results() {
     });
 
     return resources.slice(0, 5); // Show top 5 resources
-  };
-
-  const recommendations = getRecommendations();
-  const improvementResources = getImprovementResources();
+  }, [responses, questions]);
 
   // PDF download function using useCallback for stable reference
   const generateAndDownloadPDF = useCallback(() => {
@@ -365,6 +292,77 @@ export default function Results() {
       });
     }
   }, [pdfAction, generateAndDownloadPDF, toast]);
+
+  if (resultLoading) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <main className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <div className="text-lg text-muted-foreground" data-testid="loading-results">Calculating your results...</div>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
+  if (resultError || !result) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <main className="flex-1 flex items-center justify-center">
+          <div className="text-center max-w-md mx-auto px-4">
+            <h2 className="text-2xl font-bold mb-4" data-testid="text-error-title">Results Not Available</h2>
+            <p className="text-muted-foreground mb-6" data-testid="text-error-message">
+              We couldn't find results for this assessment. This may happen if:
+            </p>
+            <ul className="text-sm text-muted-foreground text-left mb-8 space-y-2">
+              <li>• The assessment is incomplete</li>
+              <li>• Not all questions were answered</li>
+              <li>• There was an error calculating results</li>
+            </ul>
+            <div className="space-y-4">
+              <Button
+                onClick={() => setLocation(`/assessment/${assessmentId}`)}
+                className="w-full"
+                data-testid="button-return-assessment"
+              >
+                Return to Assessment
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => setLocation('/')}
+                className="w-full"
+                data-testid="button-home"
+              >
+                Back to Home
+              </Button>
+            </div>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
+  if (!model) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <main className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <div className="text-lg text-muted-foreground">Loading assessment details...</div>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
+  const maturityConfig = maturityLevels[result.label as keyof typeof maturityLevels] || maturityLevels['Nascent'];
+  const dimensionScores = model.dimensions.map(dim => ({
+    key: dim.key,
+    label: dim.label,
+    score: (result.dimensionScores as Record<string, number>)[dim.key] || 0,
+  }));
 
   return (
     <div className="min-h-screen flex flex-col bg-background">

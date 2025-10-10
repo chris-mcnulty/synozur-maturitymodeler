@@ -88,8 +88,7 @@ export default function Assessment() {
         body.answerId = answerId;
       }
       
-      const res = await apiRequest('POST', `/api/assessments/${assessmentId}/responses`, body);
-      return res.json();
+      return await apiRequest(`/api/assessments/${assessmentId}/responses`, 'POST', body);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/assessments', assessmentId, 'responses'] });
@@ -99,12 +98,7 @@ export default function Assessment() {
   // Calculate results mutation
   const calculateResults = useMutation({
     mutationFn: async () => {
-      const res = await apiRequest('POST', `/api/assessments/${assessmentId}/calculate`);
-      if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.error || 'Failed to calculate results');
-      }
-      return res.json();
+      return await apiRequest(`/api/assessments/${assessmentId}/calculate`, 'POST');
     },
     onSuccess: () => {
       setLocation(`/results/${assessmentId}`);
