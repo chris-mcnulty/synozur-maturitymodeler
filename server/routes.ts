@@ -4,7 +4,7 @@ import { storage } from "./storage";
 import { db } from "./db";
 import { eq } from "drizzle-orm";
 import * as schema from "@shared/schema";
-import { insertAssessmentSchema, insertAssessmentResponseSchema, insertResultSchema, insertModelSchema, insertDimensionSchema, insertQuestionSchema, insertAnswerSchema } from "@shared/schema";
+import { insertAssessmentSchema, insertAssessmentResponseSchema, insertResultSchema, insertModelSchema, insertDimensionSchema, insertQuestionSchema, insertAnswerSchema, Answer } from "@shared/schema";
 import { readFileSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";

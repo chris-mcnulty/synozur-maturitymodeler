@@ -22,10 +22,20 @@ async function hashPassword(password: string) {
 }
 
 async function comparePasswords(supplied: string, stored: string) {
-  const [hashed, salt] = stored.split(".");
-  const hashedBuf = Buffer.from(hashed, "hex");
-  const suppliedBuf = (await scryptAsync(supplied, salt, 64)) as Buffer;
-  return timingSafeEqual(hashedBuf, suppliedBuf);
+  try {
+    const [hashed, salt] = stored.split(".");
+    if (!hashed || !salt) {
+      // Malformed hash - missing salt or hash
+      return false;
+    }
+    const hashedBuf = Buffer.from(hashed, "hex");
+    const suppliedBuf = (await scryptAsync(supplied, salt, 64)) as Buffer;
+    return timingSafeEqual(hashedBuf, suppliedBuf);
+  } catch (error) {
+    // Handle any errors during password comparison gracefully
+    console.error('Password comparison error:', error);
+    return false;
+  }
 }
 
 export function setupAuth(app: Express) {
@@ -77,7 +87,9 @@ export function setupAuth(app: Express) {
 
       req.login(user, (err) => {
         if (err) return next(err);
-        res.status(201).json(user);
+        // Remove password from response
+        const { password: _, ...safeUser } = user;
+        res.status(201).json(safeUser);
       });
     } catch (error: any) {
       // Handle database constraint errors gracefully
@@ -96,7 +108,13 @@ export function setupAuth(app: Express) {
   });
 
   app.post("/api/login", passport.authenticate("local"), (req, res) => {
-    res.status(200).json(req.user);
+    // Remove password from response
+    if (req.user) {
+      const { password: _, ...safeUser } = req.user;
+      res.status(200).json(safeUser);
+    } else {
+      res.status(401).json({ error: "Authentication failed" });
+    }
   });
 
   app.post("/api/logout", (req, res, next) => {
@@ -108,7 +126,13 @@ export function setupAuth(app: Express) {
 
   app.get("/api/user", (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
-    res.json(req.user);
+    // Remove password from response
+    if (req.user) {
+      const { password: _, ...safeUser } = req.user;
+      res.json(safeUser);
+    } else {
+      res.sendStatus(401);
+    }
   });
 }
 

@@ -51,17 +51,21 @@ export default function Admin() {
     order: 1,
   });
   const [questionForm, setQuestionForm] = useState({
+    modelId: '',
     text: '',
     type: 'multiple_choice' as 'multiple_choice' | 'numeric' | 'true_false' | 'text',
     dimensionId: '',
+    order: 1,
     minValue: 0,
     maxValue: 100,
     unit: '',
     placeholder: '',
     improvementStatement: '',
     resourceLink: '',
+    resourceTitle: '',
+    resourceDescription: '',
   });
-  const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [editingUser, setEditingUser] = useState<Omit<User, 'password'> | null>(null);
   const [isUserDialogOpen, setIsUserDialogOpen] = useState(false);
   const [userForm, setUserForm] = useState({
     role: 'user' as 'user' | 'admin',
@@ -504,15 +508,19 @@ export default function Admin() {
 
   const resetQuestionForm = () => {
     setQuestionForm({
+      modelId: '',
       text: '',
       type: 'multiple_choice',
       dimensionId: '',
+      order: 1,
       minValue: 0,
       maxValue: 100,
       unit: '',
       placeholder: '',
       improvementStatement: '',
       resourceLink: '',
+      resourceTitle: '',
+      resourceDescription: '',
     });
     setEditingQuestion(null);
   };
