@@ -195,9 +195,9 @@ export default function Results() {
       
       if (selectedAnswer) {
         answerText = selectedAnswer.text;
-      } else if (response.numericValue !== undefined) {
+      } else if (response.numericValue != null) {
         answerText = response.numericValue.toString();
-      } else if (response.booleanValue !== undefined) {
+      } else if (response.booleanValue != null) {
         answerText = response.booleanValue ? 'True' : 'False';
       } else if (response.textValue) {
         answerText = response.textValue;
