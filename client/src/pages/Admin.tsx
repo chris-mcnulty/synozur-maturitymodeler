@@ -138,7 +138,7 @@ export default function Admin() {
                 modelName: model?.name || 'Unknown Model',
                 userName: 'User', // Would come from auth
                 company: 'Company', // Would come from profile
-                date: assessment.startedAt?.toISOString() || new Date().toISOString(),
+                date: assessment.startedAt ? new Date(assessment.startedAt).toISOString() : new Date().toISOString(),
               };
             }
           } catch {
