@@ -85,11 +85,11 @@ export default function Landing() {
           
           <div className="container relative z-10 mx-auto px-4 py-20 text-center">
             <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold mb-6 bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
-              Discover Your AI Maturity
+              Transform Your Organization Maturity
             </h1>
             <p className="text-xl md:text-2xl text-white/90 max-w-4xl mx-auto mb-8">
-              Take Synozur's comprehensive assessment to identify where your organization stands on the AI journey. 
-              Receive a precise AI Maturity Score (100-500) and personalized recommendations to advance your capabilities.
+              Take Synozur's comprehensive assessments to identify where your organization stands on your transformation journey. 
+              Receive a precise Maturity Score and personalized recommendations to advance your capabilities.
             </p>
             <p className="text-lg text-white/80 mb-12 max-w-3xl mx-auto">
               This is our beta version; signup to learn more when we release the full version with weights, 
@@ -131,7 +131,7 @@ export default function Landing() {
         {/* Maturity Journey Section - Matching prototype */}
         <section className="py-20 bg-background">
           <div className="container mx-auto px-4">
-            <h2 className="text-4xl font-bold text-center mb-16">Your AI Maturity Journey</h2>
+            <h2 className="text-4xl font-bold text-center mb-16">Your Maturity Journey</h2>
             
             <div className="max-w-6xl mx-auto mb-16">
               <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
@@ -149,88 +149,6 @@ export default function Landing() {
                   </div>
                 ))}
               </div>
-            </div>
-
-            {/* Statistics - Matching prototype */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
-              <Card className="p-8 text-center hover-elevate">
-                <div className="text-5xl font-bold text-primary mb-3">12</div>
-                <div className="text-lg font-semibold mb-2">Questions</div>
-                <div className="text-muted-foreground">
-                  Comprehensive assessment across six critical AI maturity dimensions
-                </div>
-              </Card>
-              <Card className="p-8 text-center hover-elevate">
-                <div className="text-5xl font-bold text-primary mb-3">10</div>
-                <div className="text-lg font-semibold mb-2">Minutes</div>
-                <div className="text-muted-foreground">
-                  Quick, focused evaluation designed for busy executives and leaders
-                </div>
-              </Card>
-              <Card className="p-8 text-center hover-elevate">
-                <div className="text-5xl font-bold text-primary mb-3">5</div>
-                <div className="text-lg font-semibold mb-2">Insights</div>
-                <div className="text-muted-foreground">
-                  Actionable recommendations tailored to your organization's needs
-                </div>
-              </Card>
-            </div>
-          </div>
-        </section>
-
-        {/* Assessment Dimensions */}
-        <section className="py-20 bg-muted/30">
-          <div className="container mx-auto px-4">
-            <div className="text-center mb-12">
-              <h2 className="text-4xl font-bold mb-4">Six Critical Dimensions</h2>
-              <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-                Our comprehensive assessment evaluates your organization across the key areas that matter most for AI success
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
-              <Card className="p-6 hover-elevate">
-                <CheckCircle className="h-8 w-8 text-primary mb-3" />
-                <h3 className="text-xl font-bold mb-2">Strategy & Vision</h3>
-                <p className="text-muted-foreground">
-                  Executive alignment and AI governance frameworks
-                </p>
-              </Card>
-              <Card className="p-6 hover-elevate">
-                <CheckCircle className="h-8 w-8 text-primary mb-3" />
-                <h3 className="text-xl font-bold mb-2">Technology & Infrastructure</h3>
-                <p className="text-muted-foreground">
-                  Technical capabilities and platform readiness
-                </p>
-              </Card>
-              <Card className="p-6 hover-elevate">
-                <CheckCircle className="h-8 w-8 text-primary mb-3" />
-                <h3 className="text-xl font-bold mb-2">Operations & Processes</h3>
-                <p className="text-muted-foreground">
-                  Operational integration and process optimization
-                </p>
-              </Card>
-              <Card className="p-6 hover-elevate">
-                <CheckCircle className="h-8 w-8 text-primary mb-3" />
-                <h3 className="text-xl font-bold mb-2">Culture & People</h3>
-                <p className="text-muted-foreground">
-                  Organizational readiness and talent development
-                </p>
-              </Card>
-              <Card className="p-6 hover-elevate">
-                <CheckCircle className="h-8 w-8 text-primary mb-3" />
-                <h3 className="text-xl font-bold mb-2">Customer Experience</h3>
-                <p className="text-muted-foreground">
-                  Customer-centric AI applications and engagement
-                </p>
-              </Card>
-              <Card className="p-6 hover-elevate">
-                <CheckCircle className="h-8 w-8 text-primary mb-3" />
-                <h3 className="text-xl font-bold mb-2">Data & Analytics</h3>
-                <p className="text-muted-foreground">
-                  Data quality, accessibility, and insights generation
-                </p>
-              </Card>
             </div>
           </div>
         </section>
@@ -341,10 +259,10 @@ export default function Landing() {
         <section className="py-20 bg-primary text-white">
           <div className="container mx-auto px-4 text-center">
             <h2 className="text-4xl md:text-5xl font-bold mb-6">
-              Ready to Discover Your AI Maturity?
+              Ready to Discover Your Maturity?
             </h2>
             <p className="text-xl text-white/90 mb-8 max-w-3xl mx-auto">
-              Join leading organizations that are using Synozur's assessment to accelerate their AI transformation journey
+              Join leading organizations that are using Synozur's assessment to accelerate their transformation journey
             </p>
             <div className="flex flex-wrap gap-4 justify-center">
               <Button 
