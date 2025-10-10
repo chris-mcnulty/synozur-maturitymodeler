@@ -80,9 +80,12 @@ export function setupAuth(app: Express) {
     }
 
     try {
+      // Explicitly set role to 'user' for all new registrations
+      // Admin users must be created through the admin panel
       const user = await storage.createUser({
         ...req.body,
         password: await hashPassword(req.body.password),
+        role: 'user', // Force all new registrations to be regular users
       });
 
       req.login(user, (err) => {
