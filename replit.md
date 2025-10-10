@@ -47,6 +47,7 @@ Maturity Modeler is a comprehensive fullstack JavaScript application for multi-m
 - ✅ User management in admin panel (view, edit roles, delete users)
 - ✅ Secure auth endpoints (passwords excluded from all responses)
 - ✅ Robust error handling for duplicate emails and malformed password hashes
+- ✅ Registration security: All self-registrations forced to 'user' role (admin must be granted via admin panel)
 - ✅ Assessment completion flow with comprehensive error handling
 - ✅ Results page redesigned to match prototype (immediate display, no login required)
 - ✅ Profile gating for PDF delivery (not for viewing results)
