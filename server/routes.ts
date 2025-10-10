@@ -16,6 +16,48 @@ const __dirname = dirname(__filename);
 export async function registerRoutes(app: Express): Promise<Server> {
   // Set up authentication routes
   setupAuth(app);
+  // Answer routes
+  app.get('/api/answers/:questionId', async (req, res) => {
+    try {
+      const { questionId } = req.params;
+      const answers = await storage.getAnswersByQuestionId(questionId);
+      res.json(answers);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch answers" });
+    }
+  });
+
+  app.post('/api/answers', ensureAdmin, async (req, res) => {
+    try {
+      const insertAnswerSchema = schema.insertAnswerSchema;
+      const parsed = insertAnswerSchema.parse(req.body);
+      const answer = await storage.createAnswer(parsed);
+      res.json(answer);
+    } catch (error) {
+      res.status(400).json({ error: "Failed to create answer" });
+    }
+  });
+
+  app.put('/api/answers/:id', ensureAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const answer = await storage.updateAnswer(id, req.body);
+      res.json(answer);
+    } catch (error) {
+      res.status(400).json({ error: "Failed to update answer" });
+    }
+  });
+
+  app.delete('/api/answers/:id', ensureAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      await storage.deleteAnswer(id);
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete answer" });
+    }
+  });
+
   // Question routes
   app.get("/api/questions", async (req, res) => {
     try {

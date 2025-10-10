@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Download, Plus, Edit, Trash, FileSpreadsheet, Eye, BarChart3, Settings, FileDown, FileUp } from "lucide-react";
+import { Download, Plus, Edit, Trash, FileSpreadsheet, Eye, BarChart3, Settings, FileDown, FileUp, ListOrdered } from "lucide-react";
 import type { Model, Result, Assessment, Dimension, Question, Answer } from "@shared/schema";
 
 interface AdminResult extends Result {
@@ -31,6 +31,7 @@ export default function Admin() {
   const [isSettingsDialogOpen, setIsSettingsDialogOpen] = useState(false);
   const [isQuestionDialogOpen, setIsQuestionDialogOpen] = useState(false);
   const [isDimensionDialogOpen, setIsDimensionDialogOpen] = useState(false);
+  const [isAnswerDialogOpen, setIsAnswerDialogOpen] = useState(false);
   const [selectedModelId, setSelectedModelId] = useState<string>('');
   const [editingQuestion, setEditingQuestion] = useState<Question | null>(null);
   const [editingDimension, setEditingDimension] = useState<Dimension | null>(null);
@@ -84,6 +85,16 @@ export default function Admin() {
       return fetch(`/api/dimensions/${selectedModelId}`).then(r => r.json());
     },
     enabled: !!selectedModelId,
+  });
+
+  // Fetch answers for selected question
+  const { data: answers = [], refetch: refetchAnswers } = useQuery<Answer[]>({
+    queryKey: ['/api/answers', editingQuestion?.id],
+    queryFn: async () => {
+      if (!editingQuestion?.id) return [];
+      return fetch(`/api/answers/${editingQuestion.id}`).then(r => r.json());
+    },
+    enabled: !!editingQuestion?.id && isAnswerDialogOpen,
   });
 
   // Fetch hero model setting
@@ -358,6 +369,68 @@ export default function Admin() {
       toast({
         title: "Error",
         description: "Failed to delete dimension.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Answer mutations
+  const createAnswer = useMutation({
+    mutationFn: async (data: { questionId: string; text: string; score: number; order: number }) => {
+      return apiRequest('/api/answers', 'POST', data);
+    },
+    onSuccess: () => {
+      refetchAnswers();
+      toast({
+        title: "Answer created",
+        description: "The answer option has been added successfully.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to create answer.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const updateAnswer = useMutation({
+    mutationFn: async (data: { id: string; text?: string; score?: number; order?: number }) => {
+      const { id, ...rest } = data;
+      return apiRequest(`/api/answers/${id}`, 'PUT', rest);
+    },
+    onSuccess: () => {
+      refetchAnswers();
+      toast({
+        title: "Answer updated",
+        description: "The answer option has been updated successfully.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to update answer.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const deleteAnswer = useMutation({
+    mutationFn: async (answerId: string) => {
+      return apiRequest(`/api/answers/${answerId}`, 'DELETE');
+    },
+    onSuccess: () => {
+      refetchAnswers();
+      toast({
+        title: "Answer deleted",
+        description: "The answer option has been removed.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to delete answer.",
         variant: "destructive",
       });
     },
@@ -903,6 +976,20 @@ export default function Admin() {
                                 <TableCell>{dimension?.label || 'None'}</TableCell>
                                 <TableCell className="text-right">
                                   <div className="flex justify-end gap-2">
+                                    {question.type === 'multiple_choice' && (
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={() => {
+                                          setEditingQuestion(question);
+                                          setIsAnswerDialogOpen(true);
+                                        }}
+                                        data-testid={`manage-answers-${question.id}`}
+                                        title="Manage answer options"
+                                      >
+                                        <ListOrdered className="h-4 w-4" />
+                                      </Button>
+                                    )}
                                     <Button
                                       variant="ghost"
                                       size="icon"
@@ -1504,6 +1591,135 @@ export default function Admin() {
             >
               {createQuestion.isPending || updateQuestion.isPending ? 'Saving...' : 
                editingQuestion ? 'Update Question' : 'Save Question'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Answer Management Dialog */}
+      <Dialog open={isAnswerDialogOpen} onOpenChange={setIsAnswerDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Manage Answer Options</DialogTitle>
+            <DialogDescription>
+              {editingQuestion?.text}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="flex justify-end">
+              <Button
+                onClick={() => {
+                  const newOrder = answers.length + 1;
+                  createAnswer.mutate({
+                    questionId: editingQuestion!.id,
+                    text: `Option ${newOrder}`,
+                    score: newOrder * 100,
+                    order: newOrder
+                  });
+                }}
+                disabled={!editingQuestion}
+                data-testid="button-add-answer"
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                Add Answer
+              </Button>
+            </div>
+
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Answer Text</TableHead>
+                  <TableHead className="w-24">Score</TableHead>
+                  <TableHead className="w-24">Order</TableHead>
+                  <TableHead className="w-24">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {answers.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={4} className="text-center">
+                      No answer options yet. Add your first answer option above.
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  answers.sort((a, b) => a.order - b.order).map((answer) => (
+                    <TableRow key={answer.id}>
+                      <TableCell>
+                        <Input
+                          value={answer.text}
+                          onChange={(e) => {
+                            updateAnswer.mutate({
+                              id: answer.id,
+                              text: e.target.value
+                            });
+                          }}
+                          onBlur={() => {
+                            // Ensure save on blur
+                            updateAnswer.mutate({
+                              id: answer.id,
+                              text: answer.text
+                            });
+                          }}
+                          data-testid={`input-answer-text-${answer.id}`}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Input
+                          type="number"
+                          value={answer.score}
+                          onChange={(e) => {
+                            updateAnswer.mutate({
+                              id: answer.id,
+                              score: parseInt(e.target.value) || 0
+                            });
+                          }}
+                          data-testid={`input-answer-score-${answer.id}`}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Input
+                          type="number"
+                          value={answer.order}
+                          onChange={(e) => {
+                            updateAnswer.mutate({
+                              id: answer.id,
+                              order: parseInt(e.target.value) || 1
+                            });
+                          }}
+                          data-testid={`input-answer-order-${answer.id}`}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => {
+                            if (confirm('Are you sure you want to delete this answer?')) {
+                              deleteAnswer.mutate(answer.id);
+                            }
+                          }}
+                          data-testid={`delete-answer-${answer.id}`}
+                        >
+                          <Trash className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+
+            <div className="text-sm text-muted-foreground">
+              <p>• Answer text will be shown to users during the assessment</p>
+              <p>• Score determines the maturity level (100-500 scale)</p>
+              <p>• Order determines display sequence</p>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsAnswerDialogOpen(false)}>
+              Close
             </Button>
           </DialogFooter>
         </DialogContent>

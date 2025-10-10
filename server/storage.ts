@@ -51,6 +51,7 @@ export interface IStorage {
   // Answer methods
   getAnswersByQuestionId(questionId: string): Promise<Answer[]>;
   createAnswer(answer: InsertAnswer): Promise<Answer>;
+  updateAnswer(id: string, answer: Partial<InsertAnswer>): Promise<Answer>;
   deleteAnswer(id: string): Promise<void>;
 
   // Assessment methods
@@ -216,6 +217,11 @@ export class DatabaseStorage implements IStorage {
   async createAnswer(insertAnswer: InsertAnswer): Promise<Answer> {
     const [answer] = await db.insert(schema.answers).values(insertAnswer).returning();
     return answer;
+  }
+
+  async updateAnswer(id: string, answer: Partial<InsertAnswer>): Promise<Answer> {
+    const [updated] = await db.update(schema.answers).set(answer).where(eq(schema.answers.id, id)).returning();
+    return updated;
   }
 
   // Assessment methods
