@@ -936,102 +936,218 @@ export default function Admin() {
                   </div>
 
                   {selectedModelId ? (
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Question</TableHead>
-                          <TableHead>Type</TableHead>
-                          <TableHead>Dimension</TableHead>
-                          <TableHead className="text-right">Actions</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {questionsLoading ? (
-                          <TableRow>
-                            <TableCell colSpan={4} className="text-center">Loading questions...</TableCell>
-                          </TableRow>
-                        ) : questions.length === 0 ? (
-                          <TableRow>
-                            <TableCell colSpan={4} className="text-center">No questions found</TableCell>
-                          </TableRow>
-                        ) : (
-                          questions.map((question) => {
-                            const dimension = dimensions.find(d => d.id === question.dimensionId);
-                            return (
-                              <TableRow key={question.id} data-testid={`question-row-${question.id}`}>
-                                <TableCell className="font-medium">{question.text}</TableCell>
-                                <TableCell>
-                                  <Badge variant={
-                                    question.type === 'numeric' ? 'secondary' : 
-                                    question.type === 'true_false' ? 'outline' :
-                                    question.type === 'text' ? 'secondary' : 
-                                    'default'
-                                  }>
-                                    {question.type === 'numeric' ? 'Numeric' : 
-                                     question.type === 'true_false' ? 'True/False' :
-                                     question.type === 'text' ? 'Text Input' :
-                                     'Multiple Choice'}
-                                  </Badge>
-                                </TableCell>
-                                <TableCell>{dimension?.label || 'None'}</TableCell>
-                                <TableCell className="text-right">
-                                  <div className="flex justify-end gap-2">
-                                    {question.type === 'multiple_choice' && (
-                                      <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        onClick={() => {
-                                          setEditingQuestion(question);
-                                          setIsAnswerDialogOpen(true);
-                                        }}
-                                        data-testid={`manage-answers-${question.id}`}
-                                        title="Manage answer options"
-                                      >
-                                        <ListOrdered className="h-4 w-4" />
-                                      </Button>
-                                    )}
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      onClick={() => {
-                                        setEditingQuestion(question);
-                                        setQuestionForm({
-                                          modelId: question.modelId,
-                                          dimensionId: question.dimensionId ?? '',
-                                          text: question.text,
-                                          type: question.type,
-                                          order: question.order,
-                                          minValue: question.minValue ?? 1,
-                                          maxValue: question.maxValue ?? 10,
-                                          unit: question.unit ?? '',
-                                          placeholder: question.placeholder ?? '',
-                                          improvementStatement: question.improvementStatement ?? '',
-                                          resourceTitle: question.resourceTitle ?? '',
-                                          resourceLink: question.resourceLink ?? '',
-                                          resourceDescription: question.resourceDescription ?? ''
-                                        });
-                                        setIsQuestionDialogOpen(true);
-                                      }}
-                                      data-testid={`edit-question-${question.id}`}
-                                    >
-                                      <Edit className="h-4 w-4" />
-                                    </Button>
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      onClick={() => deleteQuestion.mutate(question.id)}
-                                      data-testid={`delete-question-${question.id}`}
-                                    >
-                                      <Trash className="h-4 w-4" />
-                                    </Button>
-                                  </div>
-                                </TableCell>
-                              </TableRow>
-                            );
-                          })
-                        )}
-                      </TableBody>
-                    </Table>
+                    <div className="space-y-6">
+                      {questionsLoading ? (
+                        <div className="text-center py-4">Loading questions...</div>
+                      ) : questions.length === 0 ? (
+                        <div className="text-center py-4">No questions found</div>
+                      ) : (
+                        // Group questions by dimension
+                        dimensions.sort((a, b) => a.order - b.order).map((dimension) => {
+                          const dimensionQuestions = questions
+                            .filter(q => q.dimensionId === dimension.id)
+                            .sort((a, b) => a.order - b.order);
+                          
+                          if (dimensionQuestions.length === 0) return null;
+                          
+                          return (
+                            <div key={dimension.id} className="space-y-2">
+                              <h3 className="text-lg font-semibold text-purple-600 dark:text-purple-400">
+                                {dimension.label}
+                              </h3>
+                              {dimension.description && (
+                                <p className="text-sm text-muted-foreground mb-2">{dimension.description}</p>
+                              )}
+                              <Table>
+                                <TableHeader>
+                                  <TableRow>
+                                    <TableHead className="w-8">#</TableHead>
+                                    <TableHead>Question</TableHead>
+                                    <TableHead>Type</TableHead>
+                                    <TableHead className="text-right">Actions</TableHead>
+                                  </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                  {dimensionQuestions.map((question, index) => (
+                                    <TableRow key={question.id} data-testid={`question-row-${question.id}`}>
+                                      <TableCell className="font-medium">{index + 1}</TableCell>
+                                      <TableCell className="font-medium">{question.text}</TableCell>
+                                      <TableCell>
+                                        <Badge variant={
+                                          question.type === 'numeric' ? 'secondary' : 
+                                          question.type === 'true_false' ? 'outline' :
+                                          question.type === 'text' ? 'secondary' : 
+                                          'default'
+                                        }>
+                                          {question.type === 'numeric' ? 'Numeric' : 
+                                           question.type === 'true_false' ? 'True/False' :
+                                           question.type === 'text' ? 'Text Input' :
+                                           'Multiple Choice'}
+                                        </Badge>
+                                      </TableCell>
+                                      <TableCell className="text-right">
+                                        <div className="flex justify-end gap-2">
+                                          {question.type === 'multiple_choice' && (
+                                            <Button
+                                              variant="ghost"
+                                              size="icon"
+                                              onClick={() => {
+                                                setEditingQuestion(question);
+                                                setIsAnswerDialogOpen(true);
+                                              }}
+                                              data-testid={`manage-answers-${question.id}`}
+                                              title="Manage answer options"
+                                            >
+                                              <ListOrdered className="h-4 w-4" />
+                                            </Button>
+                                          )}
+                                          <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            onClick={() => {
+                                              setEditingQuestion(question);
+                                              setQuestionForm({
+                                                modelId: question.modelId,
+                                                dimensionId: question.dimensionId ?? '',
+                                                text: question.text,
+                                                type: question.type,
+                                                order: question.order,
+                                                minValue: question.minValue ?? 1,
+                                                maxValue: question.maxValue ?? 10,
+                                                unit: question.unit ?? '',
+                                                placeholder: question.placeholder ?? '',
+                                                improvementStatement: question.improvementStatement ?? '',
+                                                resourceTitle: question.resourceTitle ?? '',
+                                                resourceLink: question.resourceLink ?? '',
+                                                resourceDescription: question.resourceDescription ?? ''
+                                              });
+                                              setIsQuestionDialogOpen(true);
+                                            }}
+                                            data-testid={`edit-question-${question.id}`}
+                                          >
+                                            <Edit className="h-4 w-4" />
+                                          </Button>
+                                          <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            onClick={() => deleteQuestion.mutate(question.id)}
+                                            data-testid={`delete-question-${question.id}`}
+                                          >
+                                            <Trash className="h-4 w-4" />
+                                          </Button>
+                                        </div>
+                                      </TableCell>
+                                    </TableRow>
+                                  ))}
+                                </TableBody>
+                              </Table>
+                            </div>
+                          );
+                        })
+                      )}
+                      
+                      {/* Questions without dimensions */}
+                      {!questionsLoading && questions.length > 0 && (
+                        (() => {
+                          const orphanQuestions = questions
+                            .filter(q => !q.dimensionId || !dimensions.find(d => d.id === q.dimensionId))
+                            .sort((a, b) => a.order - b.order);
+                          
+                          if (orphanQuestions.length === 0) return null;
+                          
+                          return (
+                            <div className="space-y-2">
+                              <h3 className="text-lg font-semibold text-gray-600 dark:text-gray-400">
+                                Uncategorized Questions
+                              </h3>
+                              <Table>
+                                <TableHeader>
+                                  <TableRow>
+                                    <TableHead className="w-8">#</TableHead>
+                                    <TableHead>Question</TableHead>
+                                    <TableHead>Type</TableHead>
+                                    <TableHead className="text-right">Actions</TableHead>
+                                  </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                  {orphanQuestions.map((question, index) => (
+                                    <TableRow key={question.id} data-testid={`question-row-${question.id}`}>
+                                      <TableCell className="font-medium">{index + 1}</TableCell>
+                                      <TableCell className="font-medium">{question.text}</TableCell>
+                                      <TableCell>
+                                        <Badge variant={
+                                          question.type === 'numeric' ? 'secondary' : 
+                                          question.type === 'true_false' ? 'outline' :
+                                          question.type === 'text' ? 'secondary' : 
+                                          'default'
+                                        }>
+                                          {question.type === 'numeric' ? 'Numeric' : 
+                                           question.type === 'true_false' ? 'True/False' :
+                                           question.type === 'text' ? 'Text Input' :
+                                           'Multiple Choice'}
+                                        </Badge>
+                                      </TableCell>
+                                      <TableCell className="text-right">
+                                        <div className="flex justify-end gap-2">
+                                          {question.type === 'multiple_choice' && (
+                                            <Button
+                                              variant="ghost"
+                                              size="icon"
+                                              onClick={() => {
+                                                setEditingQuestion(question);
+                                                setIsAnswerDialogOpen(true);
+                                              }}
+                                              data-testid={`manage-answers-${question.id}`}
+                                              title="Manage answer options"
+                                            >
+                                              <ListOrdered className="h-4 w-4" />
+                                            </Button>
+                                          )}
+                                          <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            onClick={() => {
+                                              setEditingQuestion(question);
+                                              setQuestionForm({
+                                                modelId: question.modelId,
+                                                dimensionId: question.dimensionId ?? '',
+                                                text: question.text,
+                                                type: question.type,
+                                                order: question.order,
+                                                minValue: question.minValue ?? 1,
+                                                maxValue: question.maxValue ?? 10,
+                                                unit: question.unit ?? '',
+                                                placeholder: question.placeholder ?? '',
+                                                improvementStatement: question.improvementStatement ?? '',
+                                                resourceTitle: question.resourceTitle ?? '',
+                                                resourceLink: question.resourceLink ?? '',
+                                                resourceDescription: question.resourceDescription ?? ''
+                                              });
+                                              setIsQuestionDialogOpen(true);
+                                            }}
+                                            data-testid={`edit-question-${question.id}`}
+                                          >
+                                            <Edit className="h-4 w-4" />
+                                          </Button>
+                                          <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            onClick={() => deleteQuestion.mutate(question.id)}
+                                            data-testid={`delete-question-${question.id}`}
+                                          >
+                                            <Trash className="h-4 w-4" />
+                                          </Button>
+                                        </div>
+                                      </TableCell>
+                                    </TableRow>
+                                  ))}
+                                </TableBody>
+                              </Table>
+                            </div>
+                          );
+                        })()
+                      )}
+                    </div>
                   ) : (
                     <div className="text-center py-8 text-muted-foreground">
                       Select a model to manage its questions
