@@ -29,6 +29,14 @@ export const models = pgTable("models", {
   estimatedTime: text("estimated_time"),
   status: text("status").notNull().default("draft"), // draft, published, archived
   imageUrl: text("image_url"),
+  // Maturity scale configuration (JSONB array of levels)
+  maturityScale: json("maturity_scale").$type<Array<{
+    id: string;
+    name: string;
+    description: string;
+    minScore: number;
+    maxScore: number;
+  }>>(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -49,7 +57,7 @@ export const questions = pgTable("questions", {
   modelId: varchar("model_id").notNull().references(() => models.id, { onDelete: "cascade" }),
   dimensionId: varchar("dimension_id").references(() => dimensions.id, { onDelete: "set null" }),
   text: text("text").notNull(),
-  type: text("type").notNull().default("multiple_choice"), // multiple_choice, numeric, true_false, text
+  type: text("type").notNull().default("multiple_choice"), // multiple_choice, multi_select, numeric, true_false, text
   // For numeric questions - the valid input range
   minValue: integer("min_value"),
   maxValue: integer("max_value"),
@@ -95,7 +103,8 @@ export const assessmentResponses = pgTable("assessment_responses", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   assessmentId: varchar("assessment_id").notNull().references(() => assessments.id, { onDelete: "cascade" }),
   questionId: varchar("question_id").notNull().references(() => questions.id, { onDelete: "cascade" }),
-  answerId: varchar("answer_id").references(() => answers.id, { onDelete: "cascade" }), // Nullable for numeric, true/false, text questions
+  answerId: varchar("answer_id").references(() => answers.id, { onDelete: "cascade" }), // Nullable for numeric, true/false, text, multi-select questions
+  answerIds: text("answer_ids").array(), // For multi-select questions - stores array of answer IDs
   numericValue: integer("numeric_value"), // For numeric questions
   booleanValue: boolean("boolean_value"), // For true/false questions
   textValue: text("text_value"), // For text input questions
