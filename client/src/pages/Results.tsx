@@ -1,22 +1,77 @@
+import { useState } from "react";
 import { useRoute, useLocation } from "wouter";
 import { Footer } from "@/components/Footer";
-import { ScoreCard } from "@/components/ScoreCard";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Download, Mail, ArrowLeft } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
+import { Download, Mail, ArrowLeft, ChevronRight, Users, Target, TrendingUp, Award, BookOpen, Calendar, Phone } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import type { Result, Assessment, Model, Dimension } from "@shared/schema";
+import type { Result, Assessment, Model, Dimension, User } from "@shared/schema";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { ProfileGate } from "@/components/ProfileGate";
+
+// Maturity level configurations
+const maturityLevels = {
+  'Nascent': {
+    color: 'text-red-500',
+    bgColor: 'bg-red-500/10',
+    borderColor: 'border-red-500/20',
+    description: 'You are at the beginning of your AI journey with significant growth potential.',
+    icon: '🌱',
+  },
+  'Experimental': {
+    color: 'text-orange-500',
+    bgColor: 'bg-orange-500/10',
+    borderColor: 'border-orange-500/20',
+    description: 'You are experimenting with AI and building momentum for transformation.',
+    icon: '🔬',
+  },
+  'Operational': {
+    color: 'text-yellow-500',
+    bgColor: 'bg-yellow-500/10',
+    borderColor: 'border-yellow-500/20',
+    description: 'You have good operational AI processes with clear opportunities to advance.',
+    icon: '⚙️',
+  },
+  'Strategic': {
+    color: 'text-blue-500',
+    bgColor: 'bg-blue-500/10',
+    borderColor: 'border-blue-500/20',
+    description: 'You have strong strategic foundations and are well-positioned for AI success.',
+    icon: '🎯',
+  },
+  'Transformational': {
+    color: 'text-green-500',
+    bgColor: 'bg-green-500/10',
+    borderColor: 'border-green-500/20',
+    description: 'You are at the forefront of AI transformation, leading the industry!',
+    icon: '🚀',
+  },
+};
 
 export default function Results() {
   const [, params] = useRoute("/results/:assessmentId");
   const [, setLocation] = useLocation();
   const assessmentId = params?.assessmentId;
+  const [showProfileGate, setShowProfileGate] = useState(false);
+  const [pdfAction, setPdfAction] = useState<'download' | 'email' | null>(null);
+
+  // Fetch user data
+  const { data: user } = useQuery<User>({
+    queryKey: ['/api/user'],
+  });
 
   // Fetch result
   const { data: result, isLoading: resultLoading, error: resultError } = useQuery<Result>({
     queryKey: ['/api/results', assessmentId],
     enabled: !!assessmentId,
-    retry: false, // Don't retry on 404
+    retry: false,
   });
 
   // Fetch assessment to get model info
@@ -41,18 +96,41 @@ export default function Results() {
     enabled: !!assessment?.modelId,
   });
 
-  // Fetch other models for suggestions
-  const { data: otherModels = [] } = useQuery<Model[]>({
-    queryKey: ['/api/models'],
-    select: (models) => models.filter(m => m.id !== assessment?.modelId).slice(0, 3),
-  });
+  // Handle PDF/Email actions
+  const handlePdfAction = (action: 'download' | 'email') => {
+    setPdfAction(action);
+    if (!user) {
+      setShowProfileGate(true);
+    } else {
+      // User is logged in, proceed with action
+      if (action === 'download') {
+        // TODO: Implement PDF download
+        alert('PDF download will be implemented soon');
+      } else {
+        // TODO: Implement email sending
+        alert('Email delivery will be implemented soon');
+      }
+    }
+  };
+
+  const handleProfileComplete = (profile: any) => {
+    setShowProfileGate(false);
+    // After profile is complete, proceed with the action
+    if (pdfAction === 'download') {
+      // TODO: Implement PDF download
+      alert('PDF download will be implemented soon');
+    } else if (pdfAction === 'email') {
+      // TODO: Implement email sending with profile.email
+      alert(`PDF will be sent to ${profile.email}`);
+    }
+  };
 
   if (resultLoading) {
     return (
       <div className="min-h-screen flex flex-col">
         <main className="flex-1 flex items-center justify-center">
           <div className="text-center">
-            <div className="text-lg text-muted-foreground" data-testid="loading-results">Loading results...</div>
+            <div className="text-lg text-muted-foreground" data-testid="loading-results">Calculating your results...</div>
           </div>
         </main>
         <Footer />
@@ -103,7 +181,7 @@ export default function Results() {
       <div className="min-h-screen flex flex-col">
         <main className="flex-1 flex items-center justify-center">
           <div className="text-center">
-            <div className="text-lg text-muted-foreground">Unable to load model data</div>
+            <div className="text-lg text-muted-foreground">Loading assessment details...</div>
           </div>
         </main>
         <Footer />
@@ -111,111 +189,262 @@ export default function Results() {
     );
   }
 
-  // Transform dimension scores for display
+  const maturityConfig = maturityLevels[result.label as keyof typeof maturityLevels] || maturityLevels['Nascent'];
   const dimensionScores = model.dimensions.map(dim => ({
     key: dim.key,
     label: dim.label,
     score: (result.dimensionScores as Record<string, number>)[dim.key] || 0,
   }));
 
+  // Generate personalized recommendations based on score
+  const getRecommendations = () => {
+    const recommendations = [];
+    
+    if (result.overallScore >= 450) {
+      recommendations.push({
+        icon: <Award className="h-5 w-5" />,
+        title: "Join the AI Leaders Alliance",
+        description: "You're an AI leader! Consider joining Synozur's AI Alliance for peer benchmarking, innovation workshops, and thought leadership opportunities."
+      });
+    } else if (result.overallScore >= 400) {
+      recommendations.push({
+        icon: <Target className="h-5 w-5" />,
+        title: "Scale Your AI Initiatives",
+        description: "Focus on scaling successful pilots and establishing centers of excellence to drive enterprise-wide transformation."
+      });
+    } else if (result.overallScore >= 300) {
+      recommendations.push({
+        icon: <TrendingUp className="h-5 w-5" />,
+        title: "Build Strategic Capabilities",
+        description: "Develop a comprehensive AI strategy and invest in talent development to move from operational to strategic maturity."
+      });
+    } else if (result.overallScore >= 200) {
+      recommendations.push({
+        icon: <Users className="h-5 w-5" />,
+        title: "Expand Your AI Experiments",
+        description: "Identify high-value use cases and build cross-functional teams to accelerate your AI journey."
+      });
+    } else {
+      recommendations.push({
+        icon: <BookOpen className="h-5 w-5" />,
+        title: "Start with AI Foundations",
+        description: "Begin with education and awareness programs, then identify quick wins to build momentum and demonstrate value."
+      });
+    }
+
+    // Add dimension-specific recommendations
+    dimensionScores.forEach(dim => {
+      if (dim.score < 300) {
+        recommendations.push({
+          icon: <ChevronRight className="h-5 w-5" />,
+          title: `Improve ${dim.label}`,
+          description: `Your ${dim.label} score is ${dim.score}. Focus on strengthening this area to improve overall maturity.`
+        });
+      }
+    });
+
+    return recommendations.slice(0, 3); // Show top 3 recommendations
+  };
+
+  const recommendations = getRecommendations();
+
   return (
-    <div className="min-h-screen flex flex-col">
-      <main className="flex-1 py-12">
-        <div className="container mx-auto px-4 max-w-5xl">
+    <div className="min-h-screen flex flex-col bg-background">
+      {/* Hero Section */}
+      <section className="bg-gradient-to-b from-primary/5 to-background py-16">
+        <div className="container mx-auto px-4 max-w-6xl">
           <Button
             variant="ghost"
             onClick={() => setLocation('/')}
             className="mb-6"
-            data-testid="button-back-home"
+            data-testid="button-back"
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Assessments
           </Button>
 
           <div className="text-center mb-12">
-            <h1 className="text-4xl font-bold mb-4" data-testid="text-results-title">Your Assessment Results</h1>
-            <p className="text-lg text-muted-foreground">
-              Congratulations on completing the {model.name}!
+            <h1 className="text-5xl font-bold mb-4" data-testid="text-title">
+              Your {model.name} Results
+            </h1>
+            <p className="text-xl text-muted-foreground">
+              Assessment completed on {new Date().toLocaleDateString()}
             </p>
           </div>
 
-          <ScoreCard
-            overallScore={result.overallScore}
-            label={result.label}
-            dimensions={dimensionScores}
-            industryMean={benchmark?.meanScore}
-          />
-
-          <div className="mt-12 bg-muted/30 rounded-lg p-8">
+          {/* Overall Score Card */}
+          <Card className="p-8 mb-8">
             <div className="grid md:grid-cols-2 gap-8 items-center">
-              <div>
-                <h3 className="text-2xl font-bold mb-4">Next Steps</h3>
-                <p className="text-muted-foreground mb-6">
-                  Your maturity level is <strong>{result.label}</strong>. {' '}
-                  {result.label === 'Transformational' && 'You are at the forefront of AI transformation, leading the industry!'}
-                  {result.label === 'Strategic' && 'You have strong strategic foundations and are well-positioned for AI success.'}
-                  {result.label === 'Operational' && 'You have good operational AI processes with clear opportunities to advance.'}
-                  {result.label === 'Experimental' && 'You are experimenting with AI and building momentum for transformation.'}
-                  {result.label === 'Nascent' && 'You are at the beginning of your AI journey with significant growth potential.'}
+              <div className="text-center md:text-left">
+                <div className="mb-6">
+                  <div className="text-7xl font-bold text-primary mb-2" data-testid="text-score">
+                    {result.overallScore}
+                  </div>
+                  <div className="text-lg text-muted-foreground">out of 500</div>
+                </div>
+                
+                <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full ${maturityConfig.bgColor} ${maturityConfig.borderColor} border`}>
+                  <span className={`text-xl font-bold ${maturityConfig.color}`}>
+                    {result.label}
+                  </span>
+                </div>
+                
+                <p className="mt-4 text-muted-foreground">
+                  {maturityConfig.description}
                 </p>
-                <div className="flex gap-4">
-                  <Button data-testid="button-download-pdf" disabled>
-                    <Download className="mr-2 h-4 w-4" />
-                    Download PDF
-                  </Button>
-                  <Button variant="outline" data-testid="button-email-report" disabled>
-                    <Mail className="mr-2 h-4 w-4" />
-                    Email Report
-                  </Button>
-                </div>
-                <p className="text-xs text-muted-foreground mt-2">PDF generation coming soon</p>
               </div>
-              <div className="text-center">
-                <div className="text-6xl font-bold text-primary mb-2" data-testid="text-overall-score">
-                  {result.overallScore}
-                </div>
-                <div className="text-lg text-muted-foreground">Overall Score</div>
+
+              <div>
                 {benchmark && (
-                  <div className="mt-4 text-sm text-muted-foreground">
-                    Industry Average: {benchmark.meanScore} ({benchmark.sampleSize} organizations)
+                  <div className="bg-muted/30 rounded-lg p-6">
+                    <h3 className="font-semibold mb-4">Industry Benchmark</h3>
+                    <div className="space-y-3">
+                      <div>
+                        <div className="flex justify-between text-sm mb-1">
+                          <span>Your Score</span>
+                          <span className="font-medium">{result.overallScore}</span>
+                        </div>
+                        <Progress value={(result.overallScore / 500) * 100} className="h-2" />
+                      </div>
+                      <div>
+                        <div className="flex justify-between text-sm mb-1">
+                          <span>Industry Average</span>
+                          <span className="font-medium">{benchmark.meanScore}</span>
+                        </div>
+                        <Progress value={(benchmark.meanScore / 500) * 100} className="h-2" />
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-2">
+                        Based on {benchmark.sampleSize} organizations
+                      </p>
+                    </div>
                   </div>
                 )}
               </div>
             </div>
-          </div>
+          </Card>
+        </div>
+      </section>
 
-          {otherModels.length > 0 && (
-            <div className="mt-12">
-              <h3 className="text-2xl font-bold mb-6 text-center">Explore More Assessments</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-                {otherModels.map((otherModel, idx) => (
-                  <Card key={otherModel.id} className="p-6 hover-elevate transition-all" data-testid={`card-model-suggestion-${idx + 1}`}>
-                    <h4 className="font-bold text-lg mb-2">{otherModel.name}</h4>
-                    <p className="text-sm text-muted-foreground mb-4 line-clamp-2">{otherModel.description}</p>
-                    <Button 
-                      variant="outline" 
-                      className="w-full" 
-                      onClick={() => setLocation(`/${otherModel.slug}`)}
-                      data-testid={`button-model-${otherModel.slug}`}
-                    >
-                      Start Assessment
-                    </Button>
-                  </Card>
-                ))}
-              </div>
-            </div>
-          )}
-
-          <div className="text-center mt-8">
-            <Button 
-              onClick={() => setLocation('/')} 
-              data-testid="button-view-all-assessments"
-            >
-              View All Assessments
-            </Button>
+      {/* Dimension Breakdown */}
+      <section className="py-12">
+        <div className="container mx-auto px-4 max-w-6xl">
+          <h2 className="text-3xl font-bold mb-8 text-center">Dimension Breakdown</h2>
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {dimensionScores.map(dim => (
+              <Card key={dim.key} className="p-6" data-testid={`card-dimension-${dim.key}`}>
+                <h3 className="font-semibold mb-3">{dim.label}</h3>
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-3xl font-bold text-primary">{dim.score}</span>
+                  <span className="text-sm text-muted-foreground">/ 500</span>
+                </div>
+                <Progress value={(dim.score / 500) * 100} className="h-2" />
+              </Card>
+            ))}
           </div>
         </div>
-      </main>
+      </section>
+
+      {/* Personalized Recommendations */}
+      <section className="py-12 bg-muted/30">
+        <div className="container mx-auto px-4 max-w-6xl">
+          <h2 className="text-3xl font-bold mb-8 text-center">Personalized Recommendations</h2>
+          <div className="grid md:grid-cols-1 lg:grid-cols-3 gap-6">
+            {recommendations.map((rec, idx) => (
+              <Card key={idx} className="p-6" data-testid={`card-recommendation-${idx}`}>
+                <div className="flex items-start gap-4">
+                  <div className="p-2 rounded-lg bg-primary/10 text-primary">
+                    {rec.icon}
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="font-semibold mb-2">{rec.title}</h3>
+                    <p className="text-sm text-muted-foreground">{rec.description}</p>
+                  </div>
+                </div>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Actions Section */}
+      <section className="py-12">
+        <div className="container mx-auto px-4 max-w-6xl">
+          <Card className="p-8 bg-primary/5">
+            <div className="text-center mb-6">
+              <h2 className="text-2xl font-bold mb-2">Get Your Full Report</h2>
+              <p className="text-muted-foreground">
+                Download your comprehensive PDF report with detailed insights and action plans
+              </p>
+            </div>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Button 
+                size="lg" 
+                onClick={() => handlePdfAction('download')}
+                data-testid="button-download-pdf"
+              >
+                <Download className="mr-2 h-4 w-4" />
+                Download PDF Report
+              </Button>
+              <Button 
+                size="lg" 
+                variant="outline"
+                onClick={() => handlePdfAction('email')}
+                data-testid="button-email-pdf"
+              >
+                <Mail className="mr-2 h-4 w-4" />
+                Email Report
+              </Button>
+            </div>
+          </Card>
+        </div>
+      </section>
+
+      {/* CTA Section */}
+      <section className="py-16 bg-gradient-to-b from-background to-primary/5">
+        <div className="container mx-auto px-4 max-w-4xl text-center">
+          <h2 className="text-3xl font-bold mb-4">Ready to Transform Your AI Journey?</h2>
+          <p className="text-lg text-muted-foreground mb-8">
+            Connect with our AI experts to create a custom transformation roadmap
+          </p>
+          <div className="grid md:grid-cols-3 gap-4 mb-8">
+            <Card className="p-4 hover-elevate">
+              <Calendar className="h-8 w-8 mx-auto mb-2 text-primary" />
+              <h3 className="font-semibold">Schedule a Workshop</h3>
+            </Card>
+            <Card className="p-4 hover-elevate">
+              <BookOpen className="h-8 w-8 mx-auto mb-2 text-primary" />
+              <h3 className="font-semibold">Learn More About AI</h3>
+            </Card>
+            <Card className="p-4 hover-elevate">
+              <Phone className="h-8 w-8 mx-auto mb-2 text-primary" />
+              <h3 className="font-semibold">Contact Our Experts</h3>
+            </Card>
+          </div>
+          <Button
+            size="lg"
+            onClick={() => window.open('https://www.synozur.com', '_blank')}
+            data-testid="button-contact"
+          >
+            Visit Synozur.com
+          </Button>
+        </div>
+      </section>
+
+      {/* Profile Gate Modal */}
+      <Dialog open={showProfileGate} onOpenChange={setShowProfileGate}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Complete Your Profile to Get Your Report</DialogTitle>
+            <DialogDescription>
+              Please provide your information to receive your personalized PDF report
+            </DialogDescription>
+          </DialogHeader>
+          <ProfileGate
+            onComplete={handleProfileComplete}
+          />
+        </DialogContent>
+      </Dialog>
+
       <Footer />
     </div>
   );
