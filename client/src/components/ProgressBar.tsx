@@ -3,13 +3,21 @@ import { Progress } from "@/components/ui/progress";
 interface ProgressBarProps {
   current: number;
   total: number;
+  dimensionLabel?: string;
 }
 
-export function ProgressBar({ current, total }: ProgressBarProps) {
+export function ProgressBar({ current, total, dimensionLabel }: ProgressBarProps) {
   const percentage = Math.round((current / total) * 100);
   
   return (
     <div className="w-full" data-testid="progress-assessment">
+      {dimensionLabel && (
+        <div className="mb-3 text-center">
+          <span className="text-sm font-semibold text-primary" data-testid="text-dimension">
+            {dimensionLabel}
+          </span>
+        </div>
+      )}
       <div className="flex justify-between items-center mb-2">
         <span className="text-sm font-medium" data-testid="text-progress">
           Question {current} of {total}

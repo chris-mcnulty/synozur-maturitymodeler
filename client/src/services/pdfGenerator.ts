@@ -206,6 +206,67 @@ export function generateAssessmentPDF(data: PDFData): jsPDF {
     });
   }
 
+  // Improvement Resources
+  if (improvementResources.length > 0) {
+    // Check if we need a new page
+    if (yPosition > 220) {
+      doc.addPage();
+      yPosition = 20;
+    } else {
+      yPosition += 10;
+    }
+    
+    doc.setDrawColor(primaryColor.r, primaryColor.g, primaryColor.b);
+    doc.line(20, yPosition, 190, yPosition);
+    yPosition += 10;
+    
+    doc.setFontSize(14);
+    doc.setTextColor(textColor.r, textColor.g, textColor.b);
+    doc.text('Improvement Resources', 105, yPosition, { align: 'center' });
+    yPosition += 10;
+
+    improvementResources.slice(0, 5).forEach(resource => {
+      if (yPosition > 250) {
+        doc.addPage();
+        yPosition = 20;
+      }
+      
+      // Question text
+      doc.setFontSize(9);
+      doc.setTextColor(textColor.r, textColor.g, textColor.b);
+      doc.text(`Q: ${resource.question}`, 30, yPosition);
+      yPosition += 5;
+      
+      // Answer
+      if (resource.answer) {
+        doc.setTextColor(grayColor.r, grayColor.g, grayColor.b);
+        doc.text(`A: ${resource.answer}`, 30, yPosition);
+        yPosition += 5;
+      }
+      
+      // Improvement statement
+      if (resource.improvementStatement) {
+        doc.setTextColor(textColor.r, textColor.g, textColor.b);
+        const improvementLines = doc.splitTextToSize(resource.improvementStatement, 150);
+        improvementLines.forEach((line: string) => {
+          doc.text(line, 30, yPosition);
+          yPosition += 4;
+        });
+        yPosition += 3;
+      }
+      
+      // Resource link
+      if (resource.resourceLink) {
+        doc.setFontSize(8);
+        doc.setTextColor(primaryColor.r, primaryColor.g, primaryColor.b);
+        doc.text(`Resource: ${resource.resourceLink}`, 30, yPosition);
+        yPosition += 5;
+      }
+      
+      yPosition += 3;
+    });
+  }
+
   // Check if we need a new page for footer
   if (yPosition > 230) {
     doc.addPage();

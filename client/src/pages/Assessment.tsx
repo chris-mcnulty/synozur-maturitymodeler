@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import type { Assessment as AssessmentType, Question, Answer } from "@shared/schema";
+import type { Assessment as AssessmentType, Question, Answer, Dimension } from "@shared/schema";
 
 interface QuestionWithAnswers extends Question {
   answers: Answer[];
@@ -34,6 +34,17 @@ export default function Assessment() {
     queryFn: async () => {
       const model = await fetch(`/api/models/by-id/${assessment?.modelId}`).then(r => r.json());
       return fetch(`/api/models/${model.slug}/questions`).then(r => r.json());
+    },
+  });
+
+  // Fetch dimensions
+  const { data: dimensions = [] } = useQuery<Dimension[]>({
+    queryKey: ['/api/dimensions', assessment?.modelId],
+    enabled: !!assessment?.modelId,
+    queryFn: async () => {
+      const response = await fetch(`/api/dimensions/${assessment?.modelId}`);
+      if (!response.ok) throw new Error('Failed to fetch dimensions');
+      return response.json();
     },
   });
 
@@ -175,6 +186,7 @@ export default function Assessment() {
 
   const currentQuestion = questions[currentQuestionIndex];
   const currentAnswer = selectedAnswers[currentQuestion.id];
+  const currentDimension = dimensions.find(d => d.id === currentQuestion.dimensionId);
   
   // Check if user can go to next question based on question type
   let canGoNext = false;
@@ -208,7 +220,11 @@ export default function Assessment() {
       <main className="flex-1 py-12">
         <div className="container mx-auto px-4 max-w-4xl">
           <div className="mb-8">
-            <ProgressBar current={currentQuestionIndex + 1} total={questions.length} />
+            <ProgressBar 
+              current={currentQuestionIndex + 1} 
+              total={questions.length}
+              dimensionLabel={currentDimension?.label}
+            />
           </div>
 
           <QuestionCard
