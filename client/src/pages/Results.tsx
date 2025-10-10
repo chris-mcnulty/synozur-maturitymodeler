@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useRoute, useLocation } from "wouter";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
@@ -15,43 +15,40 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { ProfileGate } from "@/components/ProfileGate";
+import { generateAssessmentPDF } from "@/services/pdfGenerator";
+import { useToast } from "@/hooks/use-toast";
 
-// Maturity level configurations
+// Maturity level configurations (no emojis per design guidelines)
 const maturityLevels = {
   'Nascent': {
     color: 'text-red-500',
     bgColor: 'bg-red-500/10',
     borderColor: 'border-red-500/20',
     description: 'You are at the beginning of your AI journey with significant growth potential.',
-    icon: '🌱',
   },
   'Experimental': {
     color: 'text-orange-500',
     bgColor: 'bg-orange-500/10',
     borderColor: 'border-orange-500/20',
     description: 'You are experimenting with AI and building momentum for transformation.',
-    icon: '🔬',
   },
   'Operational': {
     color: 'text-yellow-500',
     bgColor: 'bg-yellow-500/10',
     borderColor: 'border-yellow-500/20',
     description: 'You have good operational AI processes with clear opportunities to advance.',
-    icon: '⚙️',
   },
   'Strategic': {
     color: 'text-blue-500',
     bgColor: 'bg-blue-500/10',
     borderColor: 'border-blue-500/20',
     description: 'You have strong strategic foundations and are well-positioned for AI success.',
-    icon: '🎯',
   },
   'Transformational': {
     color: 'text-green-500',
     bgColor: 'bg-green-500/10',
     borderColor: 'border-green-500/20',
     description: 'You are at the forefront of AI transformation, leading the industry!',
-    icon: '🚀',
   },
 };
 
@@ -61,6 +58,7 @@ export default function Results() {
   const assessmentId = params?.assessmentId;
   const [showProfileGate, setShowProfileGate] = useState(false);
   const [pdfAction, setPdfAction] = useState<'download' | 'email' | null>(null);
+  const { toast } = useToast();
 
   // Fetch user data
   const { data: user } = useQuery<User>({
@@ -119,34 +117,6 @@ export default function Results() {
     enabled: !!model?.slug,
   });
 
-  // Handle PDF/Email actions
-  const handlePdfAction = (action: 'download' | 'email') => {
-    setPdfAction(action);
-    if (!user) {
-      setShowProfileGate(true);
-    } else {
-      // User is logged in, proceed with action
-      if (action === 'download') {
-        // TODO: Implement PDF download
-        alert('PDF download will be implemented soon');
-      } else {
-        // TODO: Implement email sending
-        alert('Email delivery will be implemented soon');
-      }
-    }
-  };
-
-  const handleProfileComplete = (profile: any) => {
-    setShowProfileGate(false);
-    // After profile is complete, proceed with the action
-    if (pdfAction === 'download') {
-      // TODO: Implement PDF download
-      alert('PDF download will be implemented soon');
-    } else if (pdfAction === 'email') {
-      // TODO: Implement email sending with profile.email
-      alert(`PDF will be sent to ${profile.email}`);
-    }
-  };
 
   if (resultLoading) {
     return (
@@ -322,6 +292,79 @@ export default function Results() {
 
   const recommendations = getRecommendations();
   const improvementResources = getImprovementResources();
+
+  // PDF download function using useCallback for stable reference
+  const generateAndDownloadPDF = useCallback(() => {
+    try {
+      if (!model || !result) {
+        toast({
+          title: "Error",
+          description: "Unable to generate PDF. Missing assessment data.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      const pdf = generateAssessmentPDF({
+        result,
+        model,
+        benchmark: benchmark || undefined,
+        recommendations: recommendations.map(r => ({
+          title: r.title,
+          description: r.description
+        })),
+        improvementResources: improvementResources.slice(0, 3)
+      });
+
+      // Download the PDF
+      pdf.save(`${model.name.replace(/\s+/g, '_')}_Assessment_Report.pdf`);
+      
+      toast({
+        title: "Success",
+        description: "Your PDF report has been downloaded successfully!"
+      });
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      toast({
+        title: "Error",
+        description: "Failed to generate PDF. Please try again.",
+        variant: "destructive"
+      });
+    }
+  }, [model, result, benchmark, recommendations, improvementResources, toast]);
+
+  // Handle PDF/Email actions
+  const handlePdfAction = useCallback((action: 'download' | 'email') => {
+    setPdfAction(action);
+    if (!user) {
+      setShowProfileGate(true);
+    } else {
+      // User is logged in, proceed with action
+      if (action === 'download') {
+        generateAndDownloadPDF();
+      } else {
+        // TODO: Implement email sending
+        toast({
+          title: "Coming Soon",
+          description: "Email delivery will be available soon. Please download the PDF for now.",
+        });
+      }
+    }
+  }, [user, generateAndDownloadPDF, toast]);
+
+  const handleProfileComplete = useCallback((profile: any) => {
+    setShowProfileGate(false);
+    // After profile is complete, proceed with the action
+    if (pdfAction === 'download') {
+      generateAndDownloadPDF();
+    } else if (pdfAction === 'email') {
+      // TODO: Implement email sending with profile.email
+      toast({
+        title: "Coming Soon",
+        description: `Email delivery to ${profile.email} will be available soon. Please download the PDF for now.`,
+      });
+    }
+  }, [pdfAction, generateAndDownloadPDF, toast]);
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
