@@ -100,10 +100,19 @@ export default function Assessment() {
   const calculateResults = useMutation({
     mutationFn: async () => {
       const res = await apiRequest('POST', `/api/assessments/${assessmentId}/calculate`);
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || 'Failed to calculate results');
+      }
       return res.json();
     },
     onSuccess: () => {
       setLocation(`/results/${assessmentId}`);
+    },
+    onError: (error: Error) => {
+      console.error('Failed to calculate results:', error);
+      // Show error to user
+      alert(`Unable to complete assessment: ${error.message}. Please ensure you have answered all questions.`);
     },
   });
 

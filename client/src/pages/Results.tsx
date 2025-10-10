@@ -13,9 +13,10 @@ export default function Results() {
   const assessmentId = params?.assessmentId;
 
   // Fetch result
-  const { data: result, isLoading: resultLoading } = useQuery<Result>({
+  const { data: result, isLoading: resultLoading, error: resultError } = useQuery<Result>({
     queryKey: ['/api/results', assessmentId],
     enabled: !!assessmentId,
+    retry: false, // Don't retry on 404
   });
 
   // Fetch assessment to get model info
@@ -46,12 +47,50 @@ export default function Results() {
     select: (models) => models.filter(m => m.id !== assessment?.modelId).slice(0, 3),
   });
 
-  if (resultLoading || !result) {
+  if (resultLoading) {
     return (
       <div className="min-h-screen flex flex-col">
         <main className="flex-1 flex items-center justify-center">
           <div className="text-center">
             <div className="text-lg text-muted-foreground" data-testid="loading-results">Loading results...</div>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
+  if (resultError || !result) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <main className="flex-1 flex items-center justify-center">
+          <div className="text-center max-w-md mx-auto px-4">
+            <h2 className="text-2xl font-bold mb-4" data-testid="text-error-title">Results Not Available</h2>
+            <p className="text-muted-foreground mb-6" data-testid="text-error-message">
+              We couldn't find results for this assessment. This may happen if:
+            </p>
+            <ul className="text-sm text-muted-foreground text-left mb-8 space-y-2">
+              <li>• The assessment is incomplete</li>
+              <li>• Not all questions were answered</li>
+              <li>• There was an error calculating results</li>
+            </ul>
+            <div className="space-y-4">
+              <Button
+                onClick={() => setLocation(`/assessment/${assessmentId}`)}
+                className="w-full"
+                data-testid="button-return-assessment"
+              >
+                Return to Assessment
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => setLocation('/')}
+                className="w-full"
+                data-testid="button-home"
+              >
+                Back to Home
+              </Button>
+            </div>
           </div>
         </main>
         <Footer />
