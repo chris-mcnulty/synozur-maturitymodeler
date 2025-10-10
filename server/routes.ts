@@ -798,7 +798,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/models/:id/import-questions", ensureAdmin, async (req, res) => {
     try {
       const modelId = req.params.id;
-      const { csvContent } = req.body;
+      const { csvContent, mode = 'add' } = req.body;
       
       // Check if model exists
       const model = await storage.getModel(modelId);
@@ -810,16 +810,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { simpleCSVToQuestions } = await import('../client/src/utils/csvConverterSimple');
       const { questions, answers } = simpleCSVToQuestions(csvContent, modelId);
 
-      // Delete existing questions and answers for this model
-      const existingQuestions = await storage.getQuestionsByModelId(modelId);
-      for (const q of existingQuestions) {
-        // Delete answers first
-        const existingAnswers = await storage.getAnswersByQuestionId(q.id);
-        for (const a of existingAnswers) {
-          await storage.deleteAnswer(a.id);
+      // Delete existing questions and answers only if mode is 'replace'
+      if (mode === 'replace') {
+        const existingQuestions = await storage.getQuestionsByModelId(modelId);
+        for (const q of existingQuestions) {
+          // Delete answers first
+          const existingAnswers = await storage.getAnswersByQuestionId(q.id);
+          for (const a of existingAnswers) {
+            await storage.deleteAnswer(a.id);
+          }
+          // Then delete question
+          await storage.deleteQuestion(q.id);
         }
-        // Then delete question
-        await storage.deleteQuestion(q.id);
       }
 
       // Create new questions

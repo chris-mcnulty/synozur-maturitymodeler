@@ -53,7 +53,7 @@ export default function Admin() {
   const [questionForm, setQuestionForm] = useState({
     modelId: '',
     text: '',
-    type: 'multiple_choice' as 'multiple_choice' | 'numeric' | 'true_false' | 'text',
+    type: 'multiple_choice' as 'multiple_choice' | 'multi_select' | 'numeric' | 'true_false' | 'text',
     dimensionId: '',
     order: 1,
     minValue: 0,
@@ -65,11 +65,24 @@ export default function Admin() {
     resourceTitle: '',
     resourceDescription: '',
   });
+  const [editingAnswer, setEditingAnswer] = useState<Answer | null>(null);
+  const [isEditAnswerDialogOpen, setIsEditAnswerDialogOpen] = useState(false);
+  const [answerEditForm, setAnswerEditForm] = useState({
+    text: '',
+    score: 100,
+    improvementStatement: '',
+    resourceTitle: '',
+    resourceDescription: '',
+    resourceLink: '',
+  });
   const [editingUser, setEditingUser] = useState<Omit<User, 'password'> | null>(null);
   const [isUserDialogOpen, setIsUserDialogOpen] = useState(false);
   const [userForm, setUserForm] = useState({
     role: 'user' as 'user' | 'admin',
   });
+  const [csvImportMode, setCSVImportMode] = useState<'add' | 'replace'>('add');
+  const [isCSVImportDialogOpen, setIsCSVImportDialogOpen] = useState(false);
+  const [pendingCSVFile, setPendingCSVFile] = useState<{file: File; modelId: string} | null>(null);
 
   // Fetch models
   const { data: models = [], isLoading: modelsLoading } = useQuery<Model[]>({
@@ -453,7 +466,16 @@ export default function Admin() {
   });
 
   const updateAnswer = useMutation({
-    mutationFn: async (data: { id: string; text?: string; score?: number; order?: number }) => {
+    mutationFn: async (data: { 
+      id: string; 
+      text?: string; 
+      score?: number; 
+      order?: number;
+      improvementStatement?: string;
+      resourceTitle?: string;
+      resourceDescription?: string;
+      resourceLink?: string;
+    }) => {
       const { id, ...rest } = data;
       return apiRequest(`/api/answers/${id}`, 'PUT', rest);
     },
@@ -628,10 +650,47 @@ export default function Admin() {
     input.onchange = async (e) => {
       const file = (e.target as HTMLInputElement).files?.[0];
       if (file) {
-        await importQuestionsFromCSV(file, modelId);
+        setPendingCSVFile({ file, modelId });
+        setIsCSVImportDialogOpen(true);
       }
     };
     input.click();
+  };
+
+  const handleConfirmImport = async () => {
+    if (!pendingCSVFile) return;
+    
+    try {
+      const csvContent = await pendingCSVFile.file.text();
+      const response = await fetch(`/api/models/${pendingCSVFile.modelId}/import-questions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ csvContent, mode: csvImportMode }),
+      });
+      
+      if (!response.ok) throw new Error('Import failed');
+      
+      queryClient.invalidateQueries({ queryKey: ['/api/questions', pendingCSVFile.modelId] });
+      queryClient.invalidateQueries({ queryKey: ['/api/dimensions', pendingCSVFile.modelId] });
+      
+      toast({
+        title: "Import successful",
+        description: csvImportMode === 'replace' 
+          ? "All questions replaced with CSV data." 
+          : "New questions added from CSV.",
+      });
+      
+      setIsCSVImportDialogOpen(false);
+      setPendingCSVFile(null);
+    } catch (error) {
+      toast({
+        title: "Import failed",
+        description: "Failed to import questions. Please check the CSV format.",
+        variant: "destructive",
+      });
+    }
   };
 
   const exportResultsToCSV = () => {
@@ -1028,18 +1087,20 @@ export default function Admin() {
                                         <Badge variant={
                                           question.type === 'numeric' ? 'secondary' : 
                                           question.type === 'true_false' ? 'outline' :
-                                          question.type === 'text' ? 'secondary' : 
+                                          question.type === 'text' ? 'secondary' :
+                                          question.type === 'multi_select' ? 'default' :
                                           'default'
                                         }>
                                           {question.type === 'numeric' ? 'Numeric' : 
                                            question.type === 'true_false' ? 'True/False' :
                                            question.type === 'text' ? 'Text Input' :
+                                           question.type === 'multi_select' ? 'Multi-Select' :
                                            'Multiple Choice'}
                                         </Badge>
                                       </TableCell>
                                       <TableCell className="text-right">
                                         <div className="flex justify-end gap-2">
-                                          {question.type === 'multiple_choice' && (
+                                          {(question.type === 'multiple_choice' || question.type === 'multi_select') && (
                                             <Button
                                               variant="ghost"
                                               size="icon"
@@ -1130,18 +1191,20 @@ export default function Admin() {
                                         <Badge variant={
                                           question.type === 'numeric' ? 'secondary' : 
                                           question.type === 'true_false' ? 'outline' :
-                                          question.type === 'text' ? 'secondary' : 
+                                          question.type === 'text' ? 'secondary' :
+                                          question.type === 'multi_select' ? 'default' :
                                           'default'
                                         }>
                                           {question.type === 'numeric' ? 'Numeric' : 
                                            question.type === 'true_false' ? 'True/False' :
                                            question.type === 'text' ? 'Text Input' :
+                                           question.type === 'multi_select' ? 'Multi-Select' :
                                            'Multiple Choice'}
                                         </Badge>
                                       </TableCell>
                                       <TableCell className="text-right">
                                         <div className="flex justify-end gap-2">
-                                          {question.type === 'multiple_choice' && (
+                                          {(question.type === 'multiple_choice' || question.type === 'multi_select') && (
                                             <Button
                                               variant="ghost"
                                               size="icon"
@@ -1651,6 +1714,7 @@ export default function Admin() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="multiple_choice">Multiple Choice</SelectItem>
+                  <SelectItem value="multi_select">Multi-Select</SelectItem>
                   <SelectItem value="numeric">Numeric</SelectItem>
                   <SelectItem value="true_false">True/False</SelectItem>
                   <SelectItem value="text">Text Input</SelectItem>
@@ -1828,7 +1892,7 @@ export default function Admin() {
                   <TableHead>Answer Text</TableHead>
                   <TableHead className="w-24">Score</TableHead>
                   <TableHead className="w-24">Order</TableHead>
-                  <TableHead className="w-24">Actions</TableHead>
+                  <TableHead className="w-32">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -1887,18 +1951,40 @@ export default function Admin() {
                         />
                       </TableCell>
                       <TableCell>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => {
-                            if (confirm('Are you sure you want to delete this answer?')) {
-                              deleteAnswer.mutate(answer.id);
-                            }
-                          }}
-                          data-testid={`delete-answer-${answer.id}`}
-                        >
-                          <Trash className="h-4 w-4" />
-                        </Button>
+                        <div className="flex gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => {
+                              setEditingAnswer(answer);
+                              setAnswerEditForm({
+                                text: answer.text,
+                                score: answer.score,
+                                improvementStatement: answer.improvementStatement || '',
+                                resourceTitle: answer.resourceTitle || '',
+                                resourceDescription: answer.resourceDescription || '',
+                                resourceLink: answer.resourceLink || '',
+                              });
+                              setIsEditAnswerDialogOpen(true);
+                            }}
+                            data-testid={`edit-answer-resources-${answer.id}`}
+                            title="Edit resources and improvement guidance"
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => {
+                              if (confirm('Are you sure you want to delete this answer?')) {
+                                deleteAnswer.mutate(answer.id);
+                              }
+                            }}
+                            data-testid={`delete-answer-${answer.id}`}
+                          >
+                            <Trash className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))
@@ -1916,6 +2002,173 @@ export default function Admin() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsAnswerDialogOpen(false)}>
               Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Answer Resource Edit Dialog */}
+      <Dialog open={isEditAnswerDialogOpen} onOpenChange={setIsEditAnswerDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Edit Answer Resources & Guidance</DialogTitle>
+            <DialogDescription>
+              Configure improvement guidance and resources for: {answerEditForm.text}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="answer-improvement">Improvement Statement</Label>
+              <Textarea
+                id="answer-improvement"
+                value={answerEditForm.improvementStatement}
+                onChange={(e) => setAnswerEditForm({ ...answerEditForm, improvementStatement: e.target.value })}
+                placeholder="Guidance on how to improve from this response level..."
+                rows={3}
+                data-testid="input-answer-improvement"
+              />
+              <p className="text-sm text-muted-foreground mt-1">
+                Shown in results for users who selected this answer
+              </p>
+            </div>
+
+            <div className="space-y-4 p-4 border rounded-md">
+              <h4 className="font-medium">Resource Link</h4>
+              
+              <div>
+                <Label htmlFor="resource-title">Resource Title</Label>
+                <Input
+                  id="resource-title"
+                  value={answerEditForm.resourceTitle}
+                  onChange={(e) => setAnswerEditForm({ ...answerEditForm, resourceTitle: e.target.value })}
+                  placeholder="e.g., Guide to AI Implementation"
+                  data-testid="input-resource-title"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="resource-description">Resource Description</Label>
+                <Textarea
+                  id="resource-description"
+                  value={answerEditForm.resourceDescription}
+                  onChange={(e) => setAnswerEditForm({ ...answerEditForm, resourceDescription: e.target.value })}
+                  placeholder="Brief description of this resource..."
+                  rows={2}
+                  data-testid="input-resource-description"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="resource-link">Resource URL</Label>
+                <Input
+                  id="resource-link"
+                  type="url"
+                  value={answerEditForm.resourceLink}
+                  onChange={(e) => setAnswerEditForm({ ...answerEditForm, resourceLink: e.target.value })}
+                  placeholder="https://www.example.com/resource"
+                  data-testid="input-resource-url"
+                />
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsEditAnswerDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                if (editingAnswer) {
+                  updateAnswer.mutate({
+                    id: editingAnswer.id,
+                    improvementStatement: answerEditForm.improvementStatement || undefined,
+                    resourceTitle: answerEditForm.resourceTitle || undefined,
+                    resourceDescription: answerEditForm.resourceDescription || undefined,
+                    resourceLink: answerEditForm.resourceLink || undefined,
+                  });
+                  setIsEditAnswerDialogOpen(false);
+                }
+              }}
+              data-testid="button-save-answer-resources"
+            >
+              Save Changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* CSV Import Mode Dialog */}
+      <Dialog open={isCSVImportDialogOpen} onOpenChange={setIsCSVImportDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>CSV Import Options</DialogTitle>
+            <DialogDescription>
+              Choose how to import questions from the CSV file
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <div className="space-y-3">
+              <Label>Import Mode</Label>
+              <div className="space-y-2">
+                <div
+                  className={`p-4 border rounded-md cursor-pointer hover-elevate ${csvImportMode === 'add' ? 'border-primary bg-primary/5' : ''}`}
+                  onClick={() => setCSVImportMode('add')}
+                  data-testid="option-import-add"
+                >
+                  <div className="flex items-start gap-3">
+                    <input
+                      type="radio"
+                      checked={csvImportMode === 'add'}
+                      onChange={() => setCSVImportMode('add')}
+                      className="mt-1"
+                    />
+                    <div>
+                      <div className="font-medium">Add New Questions</div>
+                      <div className="text-sm text-muted-foreground">
+                        Import new questions and append them to existing questions. Existing questions will not be modified.
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div
+                  className={`p-4 border rounded-md cursor-pointer hover-elevate ${csvImportMode === 'replace' ? 'border-primary bg-primary/5' : ''}`}
+                  onClick={() => setCSVImportMode('replace')}
+                  data-testid="option-import-replace"
+                >
+                  <div className="flex items-start gap-3">
+                    <input
+                      type="radio"
+                      checked={csvImportMode === 'replace'}
+                      onChange={() => setCSVImportMode('replace')}
+                      className="mt-1"
+                    />
+                    <div>
+                      <div className="font-medium">Replace All Questions</div>
+                      <div className="text-sm text-muted-foreground">
+                        Delete all existing questions and replace them with the CSV data. This action cannot be undone.
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => {
+              setIsCSVImportDialogOpen(false);
+              setPendingCSVFile(null);
+            }}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleConfirmImport}
+              data-testid="button-confirm-import"
+            >
+              Import Questions
             </Button>
           </DialogFooter>
         </DialogContent>
