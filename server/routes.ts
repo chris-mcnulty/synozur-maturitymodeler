@@ -16,6 +16,49 @@ const __dirname = dirname(__filename);
 export async function registerRoutes(app: Express): Promise<Server> {
   // Set up authentication routes
   setupAuth(app);
+
+  // User management routes (admin only)
+  app.get('/api/users', ensureAdmin, async (req, res) => {
+    try {
+      const users = await storage.getAllUsers();
+      // Remove password from response
+      const safeUsers = users.map(({ password, ...user }) => user);
+      res.json(safeUsers);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch users" });
+    }
+  });
+
+  app.put('/api/users/:id', ensureAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { password, ...updateData } = req.body; // Don't allow password update through this route
+      const user = await storage.updateUser(id, updateData);
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+      // Remove password from response
+      const { password: _, ...safeUser } = user;
+      res.json(safeUser);
+    } catch (error) {
+      res.status(400).json({ error: "Failed to update user" });
+    }
+  });
+
+  app.delete('/api/users/:id', ensureAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      // Prevent deleting yourself
+      if (req.user?.id === id) {
+        return res.status(400).json({ error: "Cannot delete your own account" });
+      }
+      await storage.deleteUser(id);
+      res.json({ success: true });
+    } catch (error) {
+      res.status(400).json({ error: "Failed to delete user" });
+    }
+  });
+
   // Answer routes
   app.get('/api/answers/:questionId', async (req, res) => {
     try {

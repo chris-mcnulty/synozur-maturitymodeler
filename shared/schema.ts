@@ -15,6 +15,7 @@ export const users = pgTable("users", {
   jobTitle: text("job_title"),
   industry: text("industry"),
   country: text("country"),
+  role: text("role").notNull().default("user"), // 'user' or 'admin'
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

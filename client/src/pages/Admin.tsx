@@ -13,8 +13,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Download, Plus, Edit, Trash, FileSpreadsheet, Eye, BarChart3, Settings, FileDown, FileUp, ListOrdered } from "lucide-react";
-import type { Model, Result, Assessment, Dimension, Question, Answer } from "@shared/schema";
+import { Download, Plus, Edit, Trash, FileSpreadsheet, Eye, BarChart3, Settings, FileDown, FileUp, ListOrdered, Users } from "lucide-react";
+import type { Model, Result, Assessment, Dimension, Question, Answer, User } from "@shared/schema";
 
 interface AdminResult extends Result {
   assessmentId: string;
@@ -60,6 +60,11 @@ export default function Admin() {
     placeholder: '',
     improvementStatement: '',
     resourceLink: '',
+  });
+  const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [isUserDialogOpen, setIsUserDialogOpen] = useState(false);
+  const [userForm, setUserForm] = useState({
+    role: 'user' as 'user' | 'admin',
   });
 
   // Fetch models
@@ -148,6 +153,54 @@ export default function Admin() {
       );
       
       return resultsWithDetails.filter(Boolean);
+    },
+  });
+
+  // Fetch all users (admin only)
+  const { data: users = [], isLoading: usersLoading } = useQuery<Omit<User, 'password'>[]>({
+    queryKey: ['/api/users'],
+  });
+
+  // Update user mutation
+  const updateUser = useMutation({
+    mutationFn: async (data: { id: string; role: string }) => {
+      return apiRequest(`/api/users/${data.id}`, 'PUT', { role: data.role });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/users'] });
+      setIsUserDialogOpen(false);
+      toast({
+        title: "User updated",
+        description: "User role has been updated successfully.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update user",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Delete user mutation
+  const deleteUser = useMutation({
+    mutationFn: async (id: string) => {
+      return apiRequest(`/api/users/${id}`, 'DELETE');
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/users'] });
+      toast({
+        title: "User deleted",
+        description: "User has been deleted successfully.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete user",
+        variant: "destructive",
+      });
     },
   });
 
@@ -660,10 +713,11 @@ export default function Admin() {
           </div>
 
           <Tabs defaultValue="models" className="w-full">
-            <TabsList className="grid w-full grid-cols-6">
+            <TabsList className="grid w-full grid-cols-7">
               <TabsTrigger value="models" data-testid="tab-models">Models</TabsTrigger>
               <TabsTrigger value="dimensions" data-testid="tab-dimensions">Dimensions</TabsTrigger>
               <TabsTrigger value="questions" data-testid="tab-questions">Questions</TabsTrigger>
+              <TabsTrigger value="users" data-testid="tab-users">Users</TabsTrigger>
               <TabsTrigger value="results" data-testid="tab-results">Results</TabsTrigger>
               <TabsTrigger value="benchmarks" data-testid="tab-benchmarks">Benchmarks</TabsTrigger>
               <TabsTrigger value="audit" data-testid="tab-audit">Audit Log</TabsTrigger>
@@ -1144,6 +1198,85 @@ export default function Admin() {
                     </div>
                   )}
                 </div>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="users" className="space-y-4">
+              <Card className="p-6">
+                <div className="flex justify-between items-center mb-6">
+                  <div>
+                    <h3 className="text-xl font-semibold">User Management</h3>
+                    <p className="text-sm text-muted-foreground">Manage user accounts and permissions</p>
+                  </div>
+                </div>
+
+                {usersLoading ? (
+                  <div className="py-8 text-center text-muted-foreground">Loading users...</div>
+                ) : users.length === 0 ? (
+                  <div className="py-8 text-center text-muted-foreground">No users found</div>
+                ) : (
+                  <div className="rounded-md border">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Username</TableHead>
+                          <TableHead>Email</TableHead>
+                          <TableHead>Name</TableHead>
+                          <TableHead>Company</TableHead>
+                          <TableHead>Role</TableHead>
+                          <TableHead>Created</TableHead>
+                          <TableHead className="text-right">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {users.map((user) => (
+                          <TableRow key={user.id}>
+                            <TableCell className="font-medium">{user.username}</TableCell>
+                            <TableCell>{user.email || '-'}</TableCell>
+                            <TableCell>{user.name || '-'}</TableCell>
+                            <TableCell>{user.company || '-'}</TableCell>
+                            <TableCell>
+                              <Badge variant={user.role === 'admin' ? 'default' : 'secondary'}>
+                                {user.role || 'user'}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : '-'}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <div className="flex justify-end gap-2">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => {
+                                    setEditingUser(user);
+                                    setUserForm({ role: (user.role as 'user' | 'admin') || 'user' });
+                                    setIsUserDialogOpen(true);
+                                  }}
+                                  data-testid={`edit-user-${user.id}`}
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => {
+                                    if (confirm(`Are you sure you want to delete user "${user.username}"?`)) {
+                                      deleteUser.mutate(user.id);
+                                    }
+                                  }}
+                                  data-testid={`delete-user-${user.id}`}
+                                >
+                                  <Trash className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
               </Card>
             </TabsContent>
 
@@ -1775,6 +1908,55 @@ export default function Admin() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsAnswerDialogOpen(false)}>
               Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* User Edit Dialog */}
+      <Dialog open={isUserDialogOpen} onOpenChange={setIsUserDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit User Role</DialogTitle>
+            <DialogDescription>
+              Change the role for user: {editingUser?.username}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>User Role</Label>
+              <Select
+                value={userForm.role}
+                onValueChange={(value) => setUserForm({ ...userForm, role: value as 'user' | 'admin' })}
+              >
+                <SelectTrigger data-testid="select-user-role">
+                  <SelectValue placeholder="Select role" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="user">User</SelectItem>
+                  <SelectItem value="admin">Admin</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-sm text-muted-foreground">
+                Admins have full access to the admin panel and can manage all content.
+              </p>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsUserDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                if (editingUser) {
+                  updateUser.mutate({ id: editingUser.id, role: userForm.role });
+                }
+              }}
+              data-testid="button-save-user"
+            >
+              Save Changes
             </Button>
           </DialogFooter>
         </DialogContent>

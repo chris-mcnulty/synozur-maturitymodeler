@@ -64,15 +64,35 @@ export function setupAuth(app: Express) {
       return res.status(400).send("Username already exists");
     }
 
-    const user = await storage.createUser({
-      ...req.body,
-      password: await hashPassword(req.body.password),
-    });
+    const existingEmail = await storage.getUserByEmail(req.body.email);
+    if (existingEmail) {
+      return res.status(400).send("Email already exists");
+    }
 
-    req.login(user, (err) => {
-      if (err) return next(err);
-      res.status(201).json(user);
-    });
+    try {
+      const user = await storage.createUser({
+        ...req.body,
+        password: await hashPassword(req.body.password),
+      });
+
+      req.login(user, (err) => {
+        if (err) return next(err);
+        res.status(201).json(user);
+      });
+    } catch (error: any) {
+      // Handle database constraint errors gracefully
+      if (error.code === '23505') { // PostgreSQL unique constraint violation
+        if (error.constraint?.includes('email')) {
+          return res.status(400).send("Email already exists");
+        }
+        if (error.constraint?.includes('username')) {
+          return res.status(400).send("Username already exists");
+        }
+        return res.status(400).send("User already exists");
+      }
+      // For other errors, pass to error handler
+      next(error);
+    }
   });
 
   app.post("/api/login", passport.authenticate("local"), (req, res) => {
@@ -100,14 +120,10 @@ export function ensureAuthenticated(req: any, res: any, next: any) {
   res.status(401).json({ error: "Authentication required" });
 }
 
-// Middleware to ensure user is admin (can be expanded later for role-based access)
+// Middleware to ensure user is admin
 export function ensureAdmin(req: any, res: any, next: any) {
-  if (req.isAuthenticated()) {
-    // For now, all authenticated users can access admin features
-    // In the future, you can check for admin role here
-    // if (req.user.role === 'admin') {
+  if (req.isAuthenticated() && req.user.role === 'admin') {
     return next();
-    // }
   }
   res.status(401).json({ error: "Admin access required" });
 }
