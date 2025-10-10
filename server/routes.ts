@@ -369,6 +369,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { questionId, answerId, numericValue, booleanValue, textValue } = req.body;
       
+      console.log("Saving response:", { 
+        assessmentId: req.params.id, 
+        questionId, 
+        answerId, 
+        numericValue, 
+        booleanValue, 
+        textValue 
+      });
+      
       // Check if response already exists
       const existing = await storage.getAssessmentResponse(req.params.id, questionId);
       
@@ -419,7 +428,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.json(response);
     } catch (error) {
-      console.error(error);
+      console.error("Error saving response:", error);
       res.status(400).json({ error: "Invalid response data" });
     }
   });
