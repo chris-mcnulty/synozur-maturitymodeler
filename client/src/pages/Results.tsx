@@ -4,9 +4,9 @@ import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { Download, Mail, ArrowLeft, ChevronRight, Users, Target, TrendingUp, Award, BookOpen, Calendar, Phone } from "lucide-react";
+import { Download, Mail, ArrowLeft, ChevronRight, Users, Target, TrendingUp, Award, BookOpen, Calendar, Phone, ExternalLink, Lightbulb } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import type { Result, Assessment, Model, Dimension, User } from "@shared/schema";
+import type { Result, Assessment, Model, Dimension, User, Question, Answer } from "@shared/schema";
 import {
   Dialog,
   DialogContent,
@@ -94,6 +94,29 @@ export default function Results() {
   const { data: benchmark } = useQuery<{ meanScore: number; sampleSize: number }>({
     queryKey: ['/api/benchmarks', assessment?.modelId],
     enabled: !!assessment?.modelId,
+  });
+
+  // Fetch user's responses with questions and answers for resource display
+  const { data: responses = [] } = useQuery<Array<{
+    questionId: string;
+    answerId?: string;
+    numericValue?: number;
+    booleanValue?: boolean;
+    textValue?: string;
+  }>>({
+    queryKey: ['/api/assessments', assessmentId, 'responses'],
+    enabled: !!assessmentId,
+  });
+
+  // Fetch questions with answers to get improvement statements and resources
+  const { data: questions = [] } = useQuery<Array<Question & { answers: Answer[] }>>({
+    queryKey: ['/api/models', model?.slug, 'questions'],
+    queryFn: async () => {
+      if (!model?.slug) return [];
+      const res = await fetch(`/api/models/${model.slug}/questions`);
+      return res.json();
+    },
+    enabled: !!model?.slug,
   });
 
   // Handle PDF/Email actions
@@ -196,10 +219,11 @@ export default function Results() {
     score: (result.dimensionScores as Record<string, number>)[dim.key] || 0,
   }));
 
-  // Generate personalized recommendations based on score
+  // Generate personalized recommendations based on score and responses
   const getRecommendations = () => {
     const recommendations = [];
     
+    // Overall score-based recommendations
     if (result.overallScore >= 450) {
       recommendations.push({
         icon: <Award className="h-5 w-5" />,
@@ -246,7 +270,58 @@ export default function Results() {
     return recommendations.slice(0, 3); // Show top 3 recommendations
   };
 
+  // Get improvement statements and resources from user responses
+  const getImprovementResources = () => {
+    const resources: Array<{
+      question: string;
+      answer?: string;
+      improvementStatement?: string;
+      resourceTitle?: string;
+      resourceLink?: string;
+      resourceDescription?: string;
+    }> = [];
+
+    responses.forEach(response => {
+      const question = questions.find(q => q.id === response.questionId);
+      if (!question) return;
+
+      let selectedAnswer: Answer | undefined;
+      let answerText = '';
+
+      if (response.answerId) {
+        selectedAnswer = question.answers?.find(a => a.id === response.answerId);
+        answerText = selectedAnswer?.text || '';
+      } else if (response.numericValue !== undefined) {
+        answerText = response.numericValue.toString();
+      } else if (response.booleanValue !== undefined) {
+        answerText = response.booleanValue ? 'True' : 'False';
+      } else if (response.textValue) {
+        answerText = response.textValue;
+      }
+
+      // Get improvement statement and resource from answer if available, else from question
+      const improvementStatement = selectedAnswer?.improvementStatement || question.improvementStatement || undefined;
+      const resourceTitle = selectedAnswer?.resourceTitle || question.resourceTitle || undefined;
+      const resourceLink = selectedAnswer?.resourceLink || question.resourceLink || undefined;
+      const resourceDescription = selectedAnswer?.resourceDescription || question.resourceDescription || undefined;
+
+      if (improvementStatement || resourceLink) {
+        resources.push({
+          question: question.text,
+          answer: answerText,
+          improvementStatement,
+          resourceTitle,
+          resourceLink,
+          resourceDescription,
+        });
+      }
+    });
+
+    return resources.slice(0, 5); // Show top 5 resources
+  };
+
   const recommendations = getRecommendations();
+  const improvementResources = getImprovementResources();
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -365,6 +440,59 @@ export default function Results() {
           </div>
         </div>
       </section>
+
+      {/* Improvement Resources */}
+      {improvementResources.length > 0 && (
+        <section className="py-12">
+          <div className="container mx-auto px-4 max-w-6xl">
+            <h2 className="text-3xl font-bold mb-8 text-center">Improvement Resources</h2>
+            <div className="space-y-4">
+              {improvementResources.map((resource, idx) => (
+                <Card key={idx} className="p-6" data-testid={`card-resource-${idx}`}>
+                  <div className="space-y-3">
+                    <div>
+                      <h4 className="font-semibold text-sm text-muted-foreground">Question</h4>
+                      <p className="text-sm">{resource.question}</p>
+                    </div>
+                    {resource.answer && (
+                      <div>
+                        <h4 className="font-semibold text-sm text-muted-foreground">Your Answer</h4>
+                        <p className="text-sm">{resource.answer}</p>
+                      </div>
+                    )}
+                    {resource.improvementStatement && (
+                      <div className="flex items-start gap-3 bg-primary/5 p-4 rounded-lg">
+                        <Lightbulb className="h-5 w-5 text-primary mt-0.5" />
+                        <div className="flex-1">
+                          <h4 className="font-semibold text-sm mb-1">Improvement Recommendation</h4>
+                          <p className="text-sm text-muted-foreground">{resource.improvementStatement}</p>
+                        </div>
+                      </div>
+                    )}
+                    {resource.resourceLink && (
+                      <div className="flex items-center gap-2">
+                        <ExternalLink className="h-4 w-4 text-primary" />
+                        <a
+                          href={resource.resourceLink}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-sm text-primary hover:underline"
+                          data-testid={`link-resource-${idx}`}
+                        >
+                          {resource.resourceTitle || 'View Resource'}
+                        </a>
+                        {resource.resourceDescription && (
+                          <span className="text-sm text-muted-foreground">- {resource.resourceDescription}</span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </Card>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Actions Section */}
       <section className="py-12">
