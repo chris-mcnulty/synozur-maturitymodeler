@@ -28,16 +28,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     data: user,
     error,
     isLoading,
-  } = useQuery<SelectUser | undefined, Error>({
+  } = useQuery<SelectUser | null, Error>({
     queryKey: ["/api/user"],
     queryFn: async () => {
       try {
         const res = await fetch("/api/user");
-        if (res.status === 401) return undefined;
+        if (res.status === 401) return null;
         if (!res.ok) throw new Error("Failed to fetch user");
         return res.json();
       } catch {
-        return undefined;
+        return null;
       }
     },
   });

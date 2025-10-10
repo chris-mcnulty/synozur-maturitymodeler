@@ -17,6 +17,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Set up authentication routes
   setupAuth(app);
 
+  // Get current user
+  app.get('/api/user', (req, res) => {
+    if (!req.user) {
+      return res.status(401).json({ error: "Not authenticated" });
+    }
+    // Remove password from response
+    const { password, ...safeUser } = req.user;
+    res.json(safeUser);
+  });
+
   // User management routes (admin only)
   app.get('/api/users', ensureAdmin, async (req, res) => {
     try {
