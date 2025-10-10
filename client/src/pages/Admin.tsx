@@ -153,7 +153,7 @@ export default function Admin() {
 
   // Create model mutation (backend support needs to be added)
   const createModel = useMutation({
-    mutationFn: async (data: typeof modelForm & { dimensions: typeof dimensionForm }) => {
+    mutationFn: async (data: typeof modelForm) => {
       return apiRequest('/api/models', 'POST', data);
     },
     onSuccess: () => {
@@ -176,7 +176,7 @@ export default function Admin() {
 
   // Update model mutation
   const updateModel = useMutation({
-    mutationFn: async (data: typeof modelForm & { id: string; dimensions: typeof dimensionForm }) => {
+    mutationFn: async (data: typeof modelForm & { id: string }) => {
       return apiRequest(`/api/models/${data.id}`, 'PUT', data);
     },
     onSuccess: () => {
@@ -457,6 +457,9 @@ export default function Admin() {
       minValue: 0,
       maxValue: 100,
       unit: '',
+      placeholder: '',
+      improvementStatement: '',
+      resourceLink: '',
     });
     setEditingQuestion(null);
   };
@@ -487,29 +490,16 @@ export default function Admin() {
       return;
     }
 
-    // Filter out empty dimensions
-    const validDimensions = dimensionForm.filter(d => d.label && d.key);
-
     if (editingModel) {
       updateModel.mutate({
         ...modelForm,
         id: editingModel.id,
-        dimensions: validDimensions,
       });
     } else {
       createModel.mutate({
         ...modelForm,
-        dimensions: validDimensions,
       });
     }
-  };
-
-  const addDimension = () => {
-    setDimensionForm([...dimensionForm, { label: '', key: '', description: '' }]);
-  };
-
-  const removeDimension = (index: number) => {
-    setDimensionForm(dimensionForm.filter((_, i) => i !== index));
   };
 
   const exportModelToCSV = async (modelId: string) => {
@@ -1010,7 +1000,7 @@ export default function Admin() {
                                                 modelId: question.modelId,
                                                 dimensionId: question.dimensionId ?? '',
                                                 text: question.text,
-                                                type: question.type,
+                                                type: question.type as 'multiple_choice' | 'numeric' | 'true_false' | 'text',
                                                 order: question.order,
                                                 minValue: question.minValue ?? 1,
                                                 maxValue: question.maxValue ?? 10,
@@ -1112,7 +1102,7 @@ export default function Admin() {
                                                 modelId: question.modelId,
                                                 dimensionId: question.dimensionId ?? '',
                                                 text: question.text,
-                                                type: question.type,
+                                                type: question.type as 'multiple_choice' | 'numeric' | 'true_false' | 'text',
                                                 order: question.order,
                                                 minValue: question.minValue ?? 1,
                                                 maxValue: question.maxValue ?? 10,
@@ -1330,57 +1320,6 @@ export default function Admin() {
                   <option value="draft">Draft</option>
                   <option value="published">Published</option>
                 </select>
-              </div>
-            </div>
-
-            <div>
-              <div className="flex justify-between items-center mb-2">
-                <Label>Dimensions</Label>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={addDimension}
-                  data-testid="button-add-dimension"
-                >
-                  Add Dimension
-                </Button>
-              </div>
-              <div className="space-y-2">
-                {dimensionForm.map((dimension, index) => (
-                  <div key={index} className="flex gap-2">
-                    <Input
-                      value={dimension.label}
-                      onChange={(e) => {
-                        const newDimensions = [...dimensionForm];
-                        newDimensions[index].label = e.target.value;
-                        setDimensionForm(newDimensions);
-                      }}
-                      placeholder="Label (e.g., Strategy)"
-                      data-testid={`input-dimension-label-${index}`}
-                    />
-                    <Input
-                      value={dimension.key}
-                      onChange={(e) => {
-                        const newDimensions = [...dimensionForm];
-                        newDimensions[index].key = e.target.value.toLowerCase().replace(/\s+/g, '_');
-                        setDimensionForm(newDimensions);
-                      }}
-                      placeholder="Key (e.g., strategy)"
-                      data-testid={`input-dimension-key-${index}`}
-                    />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => removeDimension(index)}
-                      disabled={dimensionForm.length === 1}
-                      data-testid={`button-remove-dimension-${index}`}
-                    >
-                      <Trash className="h-4 w-4" />
-                    </Button>
-                  </div>
-                ))}
               </div>
             </div>
           </div>
