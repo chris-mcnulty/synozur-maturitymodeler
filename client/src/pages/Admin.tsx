@@ -75,6 +75,7 @@ export default function Admin() {
     resourceDescription: '',
     resourceLink: '',
   });
+  const [answerLocalState, setAnswerLocalState] = useState<Record<string, {text: string, score: number, order: number}>>({});
   const [editingUser, setEditingUser] = useState<Omit<User, 'password'> | null>(null);
   const [isUserDialogOpen, setIsUserDialogOpen] = useState(false);
   const [userForm, setUserForm] = useState({
@@ -2033,23 +2034,26 @@ export default function Admin() {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  answers.sort((a, b) => a.order - b.order).map((answer) => (
+                  answers.sort((a, b) => a.order - b.order).map((answer) => {
+                    const localState = answerLocalState[answer.id] || { text: answer.text, score: answer.score, order: answer.order };
+                    return (
                     <TableRow key={answer.id}>
                       <TableCell>
                         <Input
-                          value={answer.text}
+                          value={localState.text}
                           onChange={(e) => {
-                            updateAnswer.mutate({
-                              id: answer.id,
-                              text: e.target.value
+                            setAnswerLocalState({
+                              ...answerLocalState,
+                              [answer.id]: { ...localState, text: e.target.value }
                             });
                           }}
                           onBlur={() => {
-                            // Ensure save on blur
-                            updateAnswer.mutate({
-                              id: answer.id,
-                              text: answer.text
-                            });
+                            if (localState.text !== answer.text) {
+                              updateAnswer.mutate({
+                                id: answer.id,
+                                text: localState.text
+                              });
+                            }
                           }}
                           data-testid={`input-answer-text-${answer.id}`}
                         />
@@ -2057,12 +2061,20 @@ export default function Admin() {
                       <TableCell>
                         <Input
                           type="number"
-                          value={answer.score}
+                          value={localState.score}
                           onChange={(e) => {
-                            updateAnswer.mutate({
-                              id: answer.id,
-                              score: parseInt(e.target.value) || 0
+                            setAnswerLocalState({
+                              ...answerLocalState,
+                              [answer.id]: { ...localState, score: parseInt(e.target.value) || 0 }
                             });
+                          }}
+                          onBlur={() => {
+                            if (localState.score !== answer.score) {
+                              updateAnswer.mutate({
+                                id: answer.id,
+                                score: localState.score
+                              });
+                            }
                           }}
                           data-testid={`input-answer-score-${answer.id}`}
                         />
@@ -2070,12 +2082,20 @@ export default function Admin() {
                       <TableCell>
                         <Input
                           type="number"
-                          value={answer.order}
+                          value={localState.order}
                           onChange={(e) => {
-                            updateAnswer.mutate({
-                              id: answer.id,
-                              order: parseInt(e.target.value) || 1
+                            setAnswerLocalState({
+                              ...answerLocalState,
+                              [answer.id]: { ...localState, order: parseInt(e.target.value) || 1 }
                             });
+                          }}
+                          onBlur={() => {
+                            if (localState.order !== answer.order) {
+                              updateAnswer.mutate({
+                                id: answer.id,
+                                order: localState.order
+                              });
+                            }
                           }}
                           data-testid={`input-answer-order-${answer.id}`}
                         />
@@ -2117,7 +2137,8 @@ export default function Admin() {
                         </div>
                       </TableCell>
                     </TableRow>
-                  ))
+                    );
+                  })
                 )}
               </TableBody>
             </Table>
