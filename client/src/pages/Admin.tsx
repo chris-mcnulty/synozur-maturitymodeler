@@ -13,8 +13,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Download, Plus, Edit, Trash, FileSpreadsheet, Eye, BarChart3, Settings, FileDown, FileUp, ListOrdered, Users, Star } from "lucide-react";
+import { Download, Plus, Edit, Trash, FileSpreadsheet, Eye, BarChart3, Settings, FileDown, FileUp, ListOrdered, Users, Star, Upload, X } from "lucide-react";
 import type { Model, Result, Assessment, Dimension, Question, Answer, User } from "@shared/schema";
+import { ObjectUploader } from "@/components/ObjectUploader";
 
 interface AdminResult extends Result {
   assessmentId: string;
@@ -43,6 +44,7 @@ export default function Admin() {
     version: '1.0.0',
     estimatedTime: '15-20 minutes',
     status: 'draft' as 'draft' | 'published',
+    imageUrl: '',
   });
   const [dimensionForm, setDimensionForm] = useState({
     label: '',
@@ -281,6 +283,53 @@ export default function Admin() {
       toast({
         title: "Error",
         description: error.message || "Failed to update model",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Upload model image mutation
+  const uploadModelImage = useMutation({
+    mutationFn: async ({ modelId, imageUrl }: { modelId: string; imageUrl: string }) => {
+      return apiRequest(`/api/models/${modelId}/image`, 'PUT', { imageUrl });
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/models'] });
+      // Update the form with the normalized path from the response
+      if (data && data.imageUrl) {
+        setModelForm(prev => ({ ...prev, imageUrl: data.imageUrl }));
+      }
+      toast({
+        title: "Image uploaded",
+        description: "The model image has been uploaded successfully.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to upload image",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Remove model image mutation
+  const removeModelImage = useMutation({
+    mutationFn: async (modelId: string) => {
+      return apiRequest(`/api/models/${modelId}`, 'PUT', { imageUrl: '' });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/models'] });
+      setModelForm(prev => ({ ...prev, imageUrl: '' }));
+      toast({
+        title: "Image removed",
+        description: "The model image has been removed.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to remove image",
         variant: "destructive",
       });
     },
@@ -607,6 +656,7 @@ export default function Admin() {
       version: '1.0.0',
       estimatedTime: '15-20 minutes',
       status: 'draft',
+      imageUrl: '',
     });
 
     setEditingModel(null);
@@ -640,6 +690,7 @@ export default function Admin() {
       version: model.version || '1.0.0',
       estimatedTime: model.estimatedTime || '15-20 minutes',
       status: (model.status || 'draft') as 'draft' | 'published',
+      imageUrl: model.imageUrl || '',
     });
     // Would need to fetch dimensions here
 
@@ -1620,6 +1671,115 @@ export default function Admin() {
                 rows={3}
                 data-testid="input-model-description"
               />
+            </div>
+
+            {/* Image Upload Section */}
+            <div>
+              <Label>Model Image</Label>
+              <p className="text-sm text-muted-foreground mb-3">
+                Upload an image for this model (recommended: 1200px+ width, 16:9 or 21:9 aspect ratio, under 500KB)
+              </p>
+              
+              {modelForm.imageUrl ? (
+                <div className="space-y-3">
+                  <div className="relative rounded-lg overflow-hidden border border-border">
+                    <img 
+                      src={modelForm.imageUrl} 
+                      alt="Model preview" 
+                      className="w-full h-48 object-cover"
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    {editingModel && (
+                      <ObjectUploader
+                        maxNumberOfFiles={1}
+                        maxFileSize={524288} // 500KB
+                        allowedFileTypes={['image/jpeg', 'image/png', 'image/webp']}
+                        onGetUploadParameters={async () => {
+                          const response = await fetch('/api/objects/upload', {
+                            method: 'POST',
+                            credentials: 'include',
+                          });
+                          const data = await response.json();
+                          return {
+                            method: 'PUT' as const,
+                            url: data.uploadURL,
+                          };
+                        }}
+                        onComplete={(result) => {
+                          if (result.successful && result.successful[0] && editingModel) {
+                            const uploadURL = result.successful[0].uploadURL;
+                            if (uploadURL) {
+                              uploadModelImage.mutate({
+                                modelId: editingModel.id,
+                                imageUrl: uploadURL,
+                              });
+                            }
+                          }
+                        }}
+                        buttonVariant="outline"
+                      >
+                        <Upload className="h-4 w-4 mr-2" />
+                        Replace Image
+                      </ObjectUploader>
+                    )}
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        if (editingModel) {
+                          removeModelImage.mutate(editingModel.id);
+                        } else {
+                          setModelForm({ ...modelForm, imageUrl: '' });
+                        }
+                      }}
+                      disabled={removeModelImage.isPending}
+                      data-testid="button-remove-image"
+                    >
+                      <X className="h-4 w-4 mr-2" />
+                      {removeModelImage.isPending ? 'Removing...' : 'Remove Image'}
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div>
+                  {editingModel ? (
+                    <ObjectUploader
+                      maxNumberOfFiles={1}
+                      maxFileSize={524288} // 500KB
+                      allowedFileTypes={['image/jpeg', 'image/png', 'image/webp']}
+                      onGetUploadParameters={async () => {
+                        const response = await fetch('/api/objects/upload', {
+                          method: 'POST',
+                          credentials: 'include',
+                        });
+                        const data = await response.json();
+                        return {
+                          method: 'PUT' as const,
+                          url: data.uploadURL,
+                        };
+                      }}
+                      onComplete={(result) => {
+                        if (result.successful && result.successful[0] && editingModel) {
+                          const uploadURL = result.successful[0].uploadURL;
+                          if (uploadURL) {
+                            uploadModelImage.mutate({
+                              modelId: editingModel.id,
+                              imageUrl: uploadURL,
+                            });
+                          }
+                        }
+                      }}
+                    >
+                      <Upload className="h-4 w-4 mr-2" />
+                      Upload Image
+                    </ObjectUploader>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      Save the model first, then you can upload an image.
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
 
             <div className="grid grid-cols-3 gap-4">
