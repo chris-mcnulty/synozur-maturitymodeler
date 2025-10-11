@@ -1,5 +1,5 @@
 import { db, pool } from "./db";
-import { eq, and, desc, sql as sqlOp, count } from "drizzle-orm";
+import { eq, and, desc, sql } from "drizzle-orm";
 import * as schema from "@shared/schema";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
@@ -140,28 +140,47 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getAllModels(status?: string): Promise<(Model & { questionCount: number })[]> {
-    const query = db
-      .select({
-        ...schema.models,
-        questionCount: count(schema.questions.id),
-      })
-      .from(schema.models)
-      .leftJoin(schema.questions, eq(schema.models.id, schema.questions.modelId))
-      .groupBy(schema.models.id);
-
-    if (status) {
-      const results = await query.where(eq(schema.models.status, status));
-      return results.map(r => ({
-        ...r,
-        questionCount: Number(r.questionCount),
-      }));
-    }
+    const statusFilter = status ? sql`WHERE m.status = ${status}` : sql``;
     
-    const results = await query;
-    return results.map(r => ({
-      ...r,
-      questionCount: Number(r.questionCount),
-    }));
+    const result = await db.execute(sql`
+      SELECT 
+        m.id,
+        m.slug,
+        m.name,
+        m.description,
+        m.version,
+        m.estimated_time,
+        m.status,
+        m.featured,
+        m.image_url,
+        m.maturity_scale,
+        m.general_resources,
+        m.created_at,
+        m.updated_at,
+        COALESCE(COUNT(q.id), 0)::integer as question_count
+      FROM models m
+      LEFT JOIN questions q ON m.id = q.model_id
+      ${statusFilter}
+      GROUP BY m.id, m.slug, m.name, m.description, m.version, m.estimated_time, m.status, m.featured, m.image_url, m.maturity_scale::text, m.general_resources::text, m.created_at, m.updated_at
+      ORDER BY m.created_at DESC
+    `);
+
+    return result.rows.map((row: any) => ({
+      id: row.id,
+      slug: row.slug,
+      name: row.name,
+      description: row.description,
+      version: row.version,
+      estimatedTime: row.estimated_time,
+      status: row.status,
+      featured: row.featured,
+      imageUrl: row.image_url,
+      maturityScale: row.maturity_scale,
+      generalResources: row.general_resources,
+      createdAt: new Date(row.created_at.replace(' ', 'T') + 'Z'),
+      updatedAt: new Date(row.updated_at.replace(' ', 'T') + 'Z'),
+      questionCount: row.question_count,
+    })) as (Model & { questionCount: number })[];
   }
 
   async createModel(insertModel: InsertModel): Promise<Model> {

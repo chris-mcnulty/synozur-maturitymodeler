@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Download, Plus, Edit, Trash, FileSpreadsheet, Eye, BarChart3, Settings, FileDown, FileUp, ListOrdered, Users } from "lucide-react";
+import { Download, Plus, Edit, Trash, FileSpreadsheet, Eye, BarChart3, Settings, FileDown, FileUp, ListOrdered, Users, Star } from "lucide-react";
 import type { Model, Result, Assessment, Dimension, Question, Answer, User } from "@shared/schema";
 
 interface AdminResult extends Result {
@@ -280,6 +280,27 @@ export default function Admin() {
       toast({
         title: "Error",
         description: error.message || "Failed to update model",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Toggle featured status mutation
+  const toggleFeatured = useMutation({
+    mutationFn: async ({ modelId, featured }: { modelId: string; featured: boolean }) => {
+      return apiRequest('PUT', `/api/models/${modelId}`, { featured });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/models'] });
+      toast({
+        title: "Featured status updated",
+        description: "The model's featured status has been updated.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update featured status",
         variant: "destructive",
       });
     },
@@ -890,17 +911,18 @@ export default function Admin() {
                       <TableHead>Slug</TableHead>
                       <TableHead>Version</TableHead>
                       <TableHead>Status</TableHead>
+                      <TableHead>Featured</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {modelsLoading ? (
                       <TableRow>
-                        <TableCell colSpan={5} className="text-center">Loading models...</TableCell>
+                        <TableCell colSpan={6} className="text-center">Loading models...</TableCell>
                       </TableRow>
                     ) : models.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={5} className="text-center">No models found</TableCell>
+                        <TableCell colSpan={6} className="text-center">No models found</TableCell>
                       </TableRow>
                     ) : (
                       models.map((model) => (
@@ -912,6 +934,17 @@ export default function Admin() {
                             <Badge variant={model.status === 'published' ? 'default' : 'secondary'}>
                               {model.status || 'draft'}
                             </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => toggleFeatured.mutate({ modelId: model.id, featured: !model.featured })}
+                              data-testid={`button-toggle-featured-${model.id}`}
+                              title={model.featured ? "Remove from featured" : "Mark as featured"}
+                            >
+                              <Star className={`h-4 w-4 ${model.featured ? 'fill-yellow-500 text-yellow-500' : 'text-muted-foreground'}`} />
+                            </Button>
                           </TableCell>
                           <TableCell className="text-right">
                             <div className="flex justify-end gap-2">

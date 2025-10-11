@@ -211,6 +211,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const models = await storage.getAllModels(status);
       res.json(models);
     } catch (error) {
+      console.error("Error fetching models:", error);
       res.status(500).json({ error: "Failed to fetch models" });
     }
   });

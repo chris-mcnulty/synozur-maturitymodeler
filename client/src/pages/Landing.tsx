@@ -7,14 +7,33 @@ import { Badge } from "@/components/ui/badge";
 import { ArrowRight, Clock, FileText, BarChart3, CheckCircle } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import type { Model, Assessment } from "@shared/schema";
+import type { Model, Assessment, Dimension } from "@shared/schema";
+
+type ModelWithQuestionCount = Model & { questionCount: number };
 import heroBackground from '@assets/AI_network_hero_background.png';
 
 export default function Landing() {
   const [, setLocation] = useLocation();
   
-  const { data: models = [], isLoading } = useQuery<Model[]>({
+  const { data: models = [], isLoading } = useQuery<ModelWithQuestionCount[]>({
     queryKey: ['/api/models'],
+  });
+
+  // Separate featured and regular models
+  const featuredModels = models.filter(m => m.featured);
+  const regularModels = models.filter(m => !m.featured);
+  const featuredModel = featuredModels[0]; // Get first featured model
+
+  // Fetch dimensions for featured model
+  const { data: featuredDimensions = [] } = useQuery<Dimension[]>({
+    queryKey: ['/api/dimensions', featuredModel?.id],
+    queryFn: async () => {
+      if (!featuredModel) return [];
+      const response = await fetch(`/api/dimensions/${featuredModel.id}`);
+      if (!response.ok) return [];
+      return await response.json();
+    },
+    enabled: !!featuredModel,
   });
 
   // Fetch hero model setting
@@ -128,6 +147,87 @@ export default function Landing() {
           </div>
         </section>
 
+        {/* Featured Model Section */}
+        {featuredModel && (
+          <section className="py-20 bg-gradient-to-br from-primary/5 via-background to-accent/5">
+            <div className="container mx-auto px-4">
+              <div className="max-w-6xl mx-auto">
+                <Badge className="mb-6 px-4 py-1 text-sm bg-primary/10 text-primary border-primary/20">
+                  Featured Assessment
+                </Badge>
+                
+                <div className="grid lg:grid-cols-2 gap-12 items-center">
+                  {/* Left: Image and Key Info */}
+                  <div className="relative group">
+                    <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-accent/20 rounded-2xl blur-2xl group-hover:blur-3xl transition-all"></div>
+                    <Card className="relative overflow-hidden border-2 border-primary/20 hover-elevate">
+                      {featuredModel.imageUrl ? (
+                        <img 
+                          src={featuredModel.imageUrl} 
+                          alt={featuredModel.name}
+                          className="w-full h-80 object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-80 bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center">
+                          <BarChart3 className="h-24 w-24 text-primary/40" />
+                        </div>
+                      )}
+                      <div className="p-6 bg-gradient-to-t from-background to-transparent">
+                        <div className="flex items-center gap-6 text-sm">
+                          <div className="flex items-center gap-2">
+                            <FileText className="h-5 w-5 text-primary" />
+                            <span className="font-semibold">{featuredModel.questionCount} Questions</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Clock className="h-5 w-5 text-primary" />
+                            <span className="font-semibold">{featuredModel.estimatedTime || '10 mins'}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </Card>
+                  </div>
+
+                  {/* Right: Details */}
+                  <div>
+                    <h2 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+                      {featuredModel.name}
+                    </h2>
+                    <p className="text-lg text-muted-foreground mb-6">
+                      {featuredModel.description}
+                    </p>
+
+                    {featuredDimensions.length > 0 && (
+                      <div className="mb-6">
+                        <h3 className="text-sm font-semibold text-muted-foreground mb-3 uppercase tracking-wide">
+                          Assessment Dimensions
+                        </h3>
+                        <div className="grid grid-cols-2 gap-2">
+                          {featuredDimensions.slice(0, 6).map((dimension) => (
+                            <div key={dimension.id} className="flex items-center gap-2 text-sm">
+                              <CheckCircle className="h-4 w-4 text-primary flex-shrink-0" />
+                              <span>{dimension.label}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    <Button 
+                      size="lg"
+                      className="w-full sm:w-auto px-8"
+                      onClick={() => setLocation(`/${featuredModel.slug}`)}
+                      data-testid={`button-start-featured-${featuredModel.slug}`}
+                    >
+                      Start {featuredModel.name}
+                      <ArrowRight className="ml-2 h-5 w-5" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+        )}
+
         {/* Maturity Journey Section - Matching prototype */}
         <section className="py-20 bg-background">
           <div className="container mx-auto px-4">
@@ -179,7 +279,7 @@ export default function Landing() {
                   <Card key={i} className="h-64 animate-pulse bg-muted" />
                 ))}
               </div>
-            ) : models.length === 0 ? (
+            ) : regularModels.length === 0 ? (
               <Card className="max-w-2xl mx-auto p-12 text-center">
                 <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                 <h3 className="text-xl font-semibold mb-2">No Models Available</h3>
@@ -189,7 +289,7 @@ export default function Landing() {
               </Card>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 max-w-7xl mx-auto">
-                {models.map((model, index) => (
+                {regularModels.map((model, index) => (
                   <Card 
                     key={model.id}
                     className="group relative overflow-hidden hover-elevate transition-all duration-300 cursor-pointer border-2 hover:border-primary/50"
@@ -218,9 +318,15 @@ export default function Landing() {
                       </p>
                       
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <Clock className="h-4 w-4" />
-                          <span>{model.estimatedTime || '10 mins'}</span>
+                        <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                            <FileText className="h-4 w-4" />
+                            <span>{model.questionCount} questions</span>
+                          </div>
+                          <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                            <Clock className="h-4 w-4" />
+                            <span>{model.estimatedTime || '10 mins'}</span>
+                          </div>
                         </div>
                         <Button 
                           variant="ghost" 
@@ -238,7 +344,7 @@ export default function Landing() {
               </div>
             )}
             
-            {models.length > 0 && (
+            {regularModels.length > 0 && (
               <div className="mt-12 text-center">
                 <p className="text-muted-foreground mb-4">
                   Can't find the assessment you're looking for?
