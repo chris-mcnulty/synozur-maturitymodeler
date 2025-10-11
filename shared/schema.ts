@@ -28,6 +28,7 @@ export const models = pgTable("models", {
   version: text("version").notNull().default("1.0"),
   estimatedTime: text("estimated_time"),
   status: text("status").notNull().default("draft"), // draft, published, archived
+  featured: boolean("featured").notNull().default(false), // Whether model appears in featured section on homepage
   imageUrl: text("image_url"),
   // Maturity scale configuration (JSONB array of levels)
   maturityScale: json("maturity_scale").$type<Array<{
