@@ -104,8 +104,13 @@ export default function Landing() {
           
           <div className="container relative z-10 mx-auto px-4 py-20 text-center">
             <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold mb-6 bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
-              Transform Your Organization Maturity
+              {aiModel ? aiModel.name : 'Transform Your Organization Maturity'}
             </h1>
+            {aiModel && aiModel.description && (
+              <p className="text-xl md:text-2xl text-white/90 max-w-4xl mx-auto mb-8">
+                {aiModel.description}
+              </p>
+            )}
             <p className="text-xl md:text-2xl text-white/90 max-w-4xl mx-auto mb-8">
               Take Synozur's comprehensive assessments to identify where your organization stands on your transformation journey. 
               Receive a precise Maturity Score and personalized recommendations to advance your capabilities.
