@@ -79,3 +79,9 @@ Maturity Modeler is a comprehensive fullstack JavaScript application for multi-m
 - Uses SendGrid for email delivery (API key method, not Replit connector)
 - Prefers seeing metrics on home pages when data is available
 - Assessment dimensions are valuable and should be emphasized
+
+## Admin Test Account
+- **Username**: testadmin
+- **Password**: admin123
+- **Role**: admin
+- Use this account for testing admin functionality

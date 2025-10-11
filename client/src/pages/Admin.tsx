@@ -288,7 +288,7 @@ export default function Admin() {
   // Toggle featured status mutation
   const toggleFeatured = useMutation({
     mutationFn: async ({ modelId, featured }: { modelId: string; featured: boolean }) => {
-      return apiRequest('PUT', `/api/models/${modelId}`, { featured });
+      return apiRequest(`/api/models/${modelId}`, 'PUT', { featured });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/models'] });
