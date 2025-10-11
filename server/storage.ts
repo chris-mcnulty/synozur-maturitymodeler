@@ -1,5 +1,5 @@
 import { db, pool } from "./db";
-import { eq, and, desc } from "drizzle-orm";
+import { eq, and, desc, sql as sqlOp, count } from "drizzle-orm";
 import * as schema from "@shared/schema";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
@@ -32,7 +32,7 @@ export interface IStorage {
   // Model methods
   getModel(id: string): Promise<Model | undefined>;
   getModelBySlug(slug: string): Promise<Model | undefined>;
-  getAllModels(status?: string): Promise<Model[]>;
+  getAllModels(status?: string): Promise<(Model & { questionCount: number })[]>;
   createModel(model: InsertModel): Promise<Model>;
   updateModel(id: string, model: Partial<InsertModel>): Promise<Model | undefined>;
   deleteModel(id: string): Promise<void>;
@@ -139,11 +139,29 @@ export class DatabaseStorage implements IStorage {
     return model;
   }
 
-  async getAllModels(status?: string): Promise<Model[]> {
+  async getAllModels(status?: string): Promise<(Model & { questionCount: number })[]> {
+    const query = db
+      .select({
+        ...schema.models,
+        questionCount: count(schema.questions.id),
+      })
+      .from(schema.models)
+      .leftJoin(schema.questions, eq(schema.models.id, schema.questions.modelId))
+      .groupBy(schema.models.id);
+
     if (status) {
-      return db.select().from(schema.models).where(eq(schema.models.status, status));
+      const results = await query.where(eq(schema.models.status, status));
+      return results.map(r => ({
+        ...r,
+        questionCount: Number(r.questionCount),
+      }));
     }
-    return db.select().from(schema.models);
+    
+    const results = await query;
+    return results.map(r => ({
+      ...r,
+      questionCount: Number(r.questionCount),
+    }));
   }
 
   async createModel(insertModel: InsertModel): Promise<Model> {
