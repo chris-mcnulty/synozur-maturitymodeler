@@ -9,6 +9,7 @@ import { readFileSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 import { setupAuth, ensureAuthenticated, ensureAdmin } from "./auth";
+import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -286,6 +287,77 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ success: true });
     } catch (error) {
       res.status(500).json({ error: "Failed to delete model" });
+    }
+  });
+
+  // Object Storage routes for model images
+  app.post("/api/objects/upload", ensureAdmin, async (req, res) => {
+    try {
+      const objectStorageService = new ObjectStorageService();
+      const uploadURL = await objectStorageService.getObjectEntityUploadURL();
+      res.json({ uploadURL });
+    } catch (error) {
+      console.error("Error getting upload URL:", error);
+      res.status(500).json({ error: "Failed to get upload URL" });
+    }
+  });
+
+  app.put("/api/models/:id/image", ensureAdmin, async (req, res) => {
+    try {
+      const { imageUrl } = req.body;
+      if (!imageUrl) {
+        return res.status(400).json({ error: "imageUrl is required" });
+      }
+
+      const userId = req.user?.id;
+      const objectStorageService = new ObjectStorageService();
+      
+      // Set ACL policy for the uploaded image (public visibility)
+      const normalizedPath = await objectStorageService.trySetObjectEntityAclPolicy(
+        imageUrl,
+        {
+          owner: userId || 'admin',
+          visibility: "public",
+        }
+      );
+
+      // Update the model with the image URL
+      const model = await storage.updateModel(req.params.id, { imageUrl: normalizedPath });
+      if (!model) {
+        return res.status(404).json({ error: "Model not found" });
+      }
+
+      res.json(model);
+    } catch (error) {
+      console.error("Error updating model image:", error);
+      res.status(500).json({ error: "Failed to update model image" });
+    }
+  });
+
+  app.get("/objects/:objectPath(*)", async (req, res) => {
+    try {
+      const objectStorageService = new ObjectStorageService();
+      const objectFile = await objectStorageService.getObjectEntityFile(req.path);
+      
+      // Check ACL - only allow access to public objects or objects owned by the current user
+      const userId = req.user?.id;
+      const canAccess = await objectStorageService.canAccessObjectEntity({
+        objectFile,
+        userId,
+        requestedPermission: undefined, // defaults to READ
+      });
+      
+      if (!canAccess) {
+        return res.sendStatus(403);
+      }
+      
+      objectStorageService.downloadObject(objectFile, res);
+    } catch (error) {
+      console.error("Error serving object:", error);
+      if (error instanceof ObjectNotFoundError) {
+        return res.sendStatus(404);
+      }
+      return res.sendStatus(500);
     }
   });
 
