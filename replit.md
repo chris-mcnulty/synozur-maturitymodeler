@@ -57,6 +57,9 @@ Maturity Modeler is a comprehensive fullstack JavaScript application for multi-m
 - ✅ CSV import/export with add vs replace mode
 - ✅ CSV schema supports multi-select and complete resource metadata
 - ✅ General resources column added to models (JSONB structure ready)
+- ✅ Featured models system with prime homepage positioning
+- ✅ Question count display across all model cards and featured section
+- ✅ Admin toggle for marking/unmarking models as featured (star icon)
 
 ## Backlog
 
