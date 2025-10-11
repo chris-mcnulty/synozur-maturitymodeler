@@ -60,6 +60,10 @@ Maturity Modeler is a comprehensive fullstack JavaScript application for multi-m
 - ✅ Featured models system with prime homepage positioning
 - ✅ Question count display across all model cards and featured section
 - ✅ Admin toggle for marking/unmarking models as featured (star icon)
+- ✅ Object storage integration for model images (Google Cloud Storage via Replit)
+- ✅ Image upload in admin panel with Uppy (presigned URL flow, ACL enforcement)
+- ✅ Image preview, replace, and remove functionality in model editor
+- ✅ Hero model displays dynamic name and description from selected model
 
 ## Backlog
 
