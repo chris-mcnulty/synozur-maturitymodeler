@@ -162,8 +162,8 @@ export default function Admin() {
   const { data: results = [], isLoading: resultsLoading } = useQuery<AdminResult[]>({
     queryKey: ['/api/admin/results'],
     queryFn: async () => {
-      // Fetch all assessments
-      const assessments = await fetch('/api/assessments').then(r => r.json());
+      // Fetch all assessments (admin endpoint)
+      const assessments = await fetch('/api/admin/assessments').then(r => r.json());
       
       // Fetch results and models for each assessment
       const resultsWithDetails = await Promise.all(
@@ -867,7 +867,54 @@ export default function Admin() {
 
     toast({
       title: "Export successful",
-      description: `Exported ${results.length} results to CSV.`,
+      description: "Results exported to CSV file.",
+    });
+  };
+
+  const exportUsersToCSV = () => {
+    if (!users.length) {
+      toast({
+        title: "No data",
+        description: "No users to export.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Create CSV content
+    const headers = ['Username', 'Email', 'Name', 'Company', 'Job Title', 'Industry', 'Company Size', 'Country', 'Role', 'Created At'];
+    const rows = users.map(u => [
+      u.username || '',
+      u.email || '',
+      u.name || '',
+      u.company || '',
+      u.jobTitle || '',
+      u.industry || '',
+      u.companySize || '',
+      u.country || '',
+      u.role || '',
+      u.createdAt ? new Date(u.createdAt).toLocaleDateString() : '',
+    ]);
+
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => row.map(cell => `"${cell}"`).join(',')),
+    ].join('\n');
+
+    // Download CSV
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `user-accounts-${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+
+    toast({
+      title: "Export successful",
+      description: `Exported ${users.length} user accounts to CSV.`,
     });
   };
 
@@ -1461,6 +1508,10 @@ export default function Admin() {
                     <h3 className="text-xl font-semibold">User Management</h3>
                     <p className="text-sm text-muted-foreground">Manage user accounts and permissions</p>
                   </div>
+                  <Button variant="outline" onClick={exportUsersToCSV} data-testid="button-export-users">
+                    <FileSpreadsheet className="mr-2 h-4 w-4" />
+                    Export CSV
+                  </Button>
                 </div>
 
                 {usersLoading ? (
@@ -1534,6 +1585,26 @@ export default function Admin() {
             </TabsContent>
 
             <TabsContent value="results" className="space-y-4">
+              {/* Assessment Statistics */}
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <Card className="p-4">
+                  <div className="text-2xl font-bold text-primary">{totalAssessments}</div>
+                  <div className="text-sm text-muted-foreground">Total Assessments</div>
+                </Card>
+                <Card className="p-4">
+                  <div className="text-2xl font-bold text-secondary">{averageScore}</div>
+                  <div className="text-sm text-muted-foreground">Average Score</div>
+                </Card>
+                <Card className="p-4">
+                  <div className="text-2xl font-bold text-accent">{users.length}</div>
+                  <div className="text-sm text-muted-foreground">Registered Users</div>
+                </Card>
+                <Card className="p-4">
+                  <div className="text-2xl font-bold text-primary">{publishedModels}</div>
+                  <div className="text-sm text-muted-foreground">Published Models</div>
+                </Card>
+              </div>
+
               <Card className="p-6">
                 <div className="flex justify-between items-center mb-6">
                   <h2 className="text-xl font-bold">Assessment Results</h2>

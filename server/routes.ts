@@ -526,6 +526,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get all assessments (admin only)
+  app.get("/api/admin/assessments", ensureAdmin, async (req, res) => {
+    try {
+      // Fetch all assessments from storage
+      const allAssessments = await db.select().from(schema.assessments);
+      res.json(allAssessments);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch all assessments" });
+    }
+  });
+
   app.get("/api/assessments/:id", async (req, res) => {
     try {
       const assessment = await storage.getAssessment(req.params.id);
