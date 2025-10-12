@@ -73,6 +73,14 @@ Maturity Modeler is a comprehensive fullstack JavaScript application for multi-m
   - CSV export for user accounts (username, email, name, company, job title, industry, company size, country, role, created at)
   - Admin-only endpoint (GET /api/admin/assessments) to view all assessments system-wide
   - User profile shows only their own assessment history, while admin can see all assessments
+- ✅ Profile fields with standardized dropdown lists:
+  - Job Title dropdown with 20 standard roles (CEO, CTO, Manager, etc.) plus "Other" option
+  - Industry dropdown with 20 standard industries (Technology, Finance, Healthcare, etc.) plus "Other" option
+  - Country dropdown with 20 countries (United States, Canada, UK, etc.)
+  - Company Size dropdown with 7 employee size buckets
+  - All profile fields are required with frontend and backend validation
+  - ProfileGate and Profile page use identical dropdown options for consistency
+  - Backend validation with Zod schema (updateProfileSchema) enforcing required fields
 
 ## Backlog
 
