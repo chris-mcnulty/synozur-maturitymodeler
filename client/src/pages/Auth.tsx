@@ -183,6 +183,18 @@ export default function Auth() {
                     "Sign Up"
                   )}
                 </Button>
+                <p className="text-xs text-center text-muted-foreground mt-4">
+                  By signing up, you agree to our{" "}
+                  <a 
+                    href="https://www.synozur.com/privacy" 
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    className="text-primary hover:underline"
+                    data-testid="link-privacy-policy"
+                  >
+                    Privacy Policy
+                  </a>
+                </p>
               </form>
             </TabsContent>
           </Tabs>

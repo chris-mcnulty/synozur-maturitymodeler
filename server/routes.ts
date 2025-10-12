@@ -512,7 +512,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/assessments", async (req, res) => {
     try {
       const validatedData = insertAssessmentSchema.parse(req.body);
-      const assessment = await storage.createAssessment(validatedData);
+      // Add userId from authenticated user if available
+      const assessmentData = {
+        ...validatedData,
+        userId: req.isAuthenticated() ? req.user!.id : null,
+      };
+      const assessment = await storage.createAssessment(assessmentData);
       res.json(assessment);
     } catch (error) {
       res.status(400).json({ error: "Invalid assessment data" });

@@ -113,7 +113,7 @@ export default function Profile() {
     }
   }, [user]);
   
-  // Fetch all assessments for current user (in a real app, this would be filtered by user)
+  // Fetch all assessments for current user
   const { data: assessments = [] } = useQuery<(Assessment & { model?: Model })[]>({
     queryKey: ['/api/assessments'],
     queryFn: async () => {
@@ -131,6 +131,7 @@ export default function Profile() {
       );
       return assessmentsWithModels;
     },
+    enabled: !authLoading,
   });
 
   // Fetch results for all assessments
