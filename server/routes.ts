@@ -28,6 +28,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(safeUser);
   });
 
+  // Update current user's profile
+  app.put('/api/profile', ensureAuthenticated, async (req, res) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      // Only allow updating specific profile fields
+      const { email, name, company, companySize, jobTitle, industry, country } = req.body;
+      const updateData = { email, name, company, companySize, jobTitle, industry, country };
+      
+      const user = await storage.updateUser(req.user.id, updateData);
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+      
+      // Remove password from response
+      const { password, ...safeUser } = user;
+      res.json(safeUser);
+    } catch (error) {
+      res.status(400).json({ error: "Failed to update profile" });
+    }
+  });
+
   // User management routes (admin only)
   app.get('/api/users', ensureAdmin, async (req, res) => {
     try {
@@ -485,6 +509,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(assessment);
     } catch (error) {
       res.status(400).json({ error: "Invalid assessment data" });
+    }
+  });
+
+  // Get all assessments for current user
+  app.get("/api/assessments", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.json([]); // Return empty array for unauthenticated users
+      }
+      
+      const assessments = await storage.getAssessmentsByUserId(req.user!.id);
+      res.json(assessments);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch assessments" });
     }
   });
 

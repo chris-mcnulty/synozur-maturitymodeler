@@ -5,14 +5,43 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+import { useState, useEffect } from "react";
 import type { Result, Assessment, Model } from "@shared/schema";
 
 export default function Profile() {
   const [, setLocation] = useLocation();
   const { user, isLoading: authLoading } = useAuth();
+  const { toast } = useToast();
+  const [isEditing, setIsEditing] = useState(false);
+  const [profileForm, setProfileForm] = useState({
+    email: '',
+    name: '',
+    company: '',
+    companySize: '',
+    jobTitle: '',
+    industry: '',
+    country: '',
+  });
+
+  // Update form when user data loads
+  useEffect(() => {
+    if (user) {
+      setProfileForm({
+        email: user.email || '',
+        name: user.name || '',
+        company: user.company || '',
+        companySize: user.companySize || '',
+        jobTitle: user.jobTitle || '',
+        industry: user.industry || '',
+        country: user.country || '',
+      });
+    }
+  }, [user]);
   
   // Fetch all assessments for current user (in a real app, this would be filtered by user)
   const { data: assessments = [] } = useQuery<(Assessment & { model?: Model })[]>({
@@ -83,6 +112,28 @@ export default function Profile() {
     setLocation(`/results/${resultId}`);
   };
 
+  // Update profile mutation
+  const updateProfile = useMutation({
+    mutationFn: async () => {
+      return apiRequest('/api/profile', 'PUT', profileForm);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/user'] });
+      setIsEditing(false);
+      toast({
+        title: "Profile updated",
+        description: "Your profile has been updated successfully.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update profile",
+        variant: "destructive",
+      });
+    },
+  });
+
   return (
     <div className="min-h-screen flex flex-col">
       <main className="flex-1 py-12">
@@ -107,23 +158,60 @@ export default function Profile() {
                   <div className="space-y-4">
                     <div>
                       <Label>Username</Label>
-                      <Input value={user.username} data-testid="input-profile-name" disabled />
+                      <Input value={user.username} data-testid="input-profile-username" disabled />
                     </div>
                     <div>
                       <Label>Email</Label>
-                      <Input value={user.email || ''} data-testid="input-profile-email" disabled />
+                      <Input 
+                        value={isEditing ? profileForm.email : user.email || ''} 
+                        onChange={(e) => setProfileForm({ ...profileForm, email: e.target.value })}
+                        data-testid="input-profile-email" 
+                        disabled={!isEditing}
+                      />
+                    </div>
+                    <div>
+                      <Label>Name</Label>
+                      <Input 
+                        value={isEditing ? profileForm.name : user.name || ''} 
+                        onChange={(e) => setProfileForm({ ...profileForm, name: e.target.value })}
+                        data-testid="input-profile-name" 
+                        disabled={!isEditing}
+                      />
                     </div>
                     <div>
                       <Label>Company</Label>
-                      <Input value={user.company || ''} data-testid="input-profile-company" disabled />
+                      <Input 
+                        value={isEditing ? profileForm.company : user.company || ''} 
+                        onChange={(e) => setProfileForm({ ...profileForm, company: e.target.value })}
+                        data-testid="input-profile-company" 
+                        disabled={!isEditing}
+                      />
                     </div>
                     <div>
                       <Label>Job Title</Label>
-                      <Input value={user.jobTitle || ''} data-testid="input-profile-title" disabled />
+                      <Input 
+                        value={isEditing ? profileForm.jobTitle : user.jobTitle || ''} 
+                        onChange={(e) => setProfileForm({ ...profileForm, jobTitle: e.target.value })}
+                        data-testid="input-profile-title" 
+                        disabled={!isEditing}
+                      />
+                    </div>
+                    <div>
+                      <Label>Industry / Sector</Label>
+                      <Input 
+                        value={isEditing ? profileForm.industry : user.industry || ''} 
+                        onChange={(e) => setProfileForm({ ...profileForm, industry: e.target.value })}
+                        data-testid="input-profile-industry" 
+                        disabled={!isEditing}
+                      />
                     </div>
                     <div>
                       <Label>Company Size</Label>
-                      <Select value={user.companySize || undefined} disabled>
+                      <Select 
+                        value={isEditing ? profileForm.companySize : user.companySize || undefined} 
+                        onValueChange={(value) => setProfileForm({ ...profileForm, companySize: value })}
+                        disabled={!isEditing}
+                      >
                         <SelectTrigger data-testid="select-company-size">
                           <SelectValue placeholder="Select company size" />
                         </SelectTrigger>
@@ -138,10 +226,55 @@ export default function Profile() {
                         </SelectContent>
                       </Select>
                     </div>
-                    <Button className="w-full" data-testid="button-save-profile" disabled>
-                      Save Changes
-                    </Button>
-                    <p className="text-xs text-muted-foreground">Profile editing coming soon</p>
+                    <div>
+                      <Label>Country</Label>
+                      <Input 
+                        value={isEditing ? profileForm.country : user.country || ''} 
+                        onChange={(e) => setProfileForm({ ...profileForm, country: e.target.value })}
+                        data-testid="input-profile-country" 
+                        disabled={!isEditing}
+                      />
+                    </div>
+                    {isEditing ? (
+                      <div className="flex gap-2">
+                        <Button 
+                          className="flex-1" 
+                          onClick={() => updateProfile.mutate()}
+                          disabled={updateProfile.isPending}
+                          data-testid="button-save-profile"
+                        >
+                          {updateProfile.isPending ? 'Saving...' : 'Save Changes'}
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          className="flex-1" 
+                          onClick={() => {
+                            setIsEditing(false);
+                            setProfileForm({
+                              email: user.email || '',
+                              name: user.name || '',
+                              company: user.company || '',
+                              companySize: user.companySize || '',
+                              jobTitle: user.jobTitle || '',
+                              industry: user.industry || '',
+                              country: user.country || '',
+                            });
+                          }}
+                          disabled={updateProfile.isPending}
+                          data-testid="button-cancel-edit"
+                        >
+                          Cancel
+                        </Button>
+                      </div>
+                    ) : (
+                      <Button 
+                        className="w-full" 
+                        onClick={() => setIsEditing(true)}
+                        data-testid="button-edit-profile"
+                      >
+                        Edit Profile
+                      </Button>
+                    )}
                   </div>
                 )}
               </Card>
