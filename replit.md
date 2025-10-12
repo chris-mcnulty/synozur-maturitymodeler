@@ -67,6 +67,12 @@ Maturity Modeler is a comprehensive fullstack JavaScript application for multi-m
 - ✅ Assessment history filtered by logged-in user (GET /api/assessments endpoint)
 - ✅ Profile editing for users (email, name, company, job title, industry, company size, country)
 - ✅ Self-service profile update endpoint (PUT /api/profile)
+- ✅ Admin reporting with comprehensive dashboard:
+  - Statistics cards showing total assessments, average score, registered users, and published models
+  - CSV export for assessment results (all assessments with scores, models, users, dates)
+  - CSV export for user accounts (username, email, name, company, job title, industry, company size, country, role, created at)
+  - Admin-only endpoint (GET /api/admin/assessments) to view all assessments system-wide
+  - User profile shows only their own assessment history, while admin can see all assessments
 
 ## Backlog
 
