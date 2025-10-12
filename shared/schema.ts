@@ -158,6 +158,17 @@ export const insertUserSchema = createInsertSchema(users).omit({
   createdAt: true,
 });
 
+// Profile update schema with all fields required
+export const updateProfileSchema = z.object({
+  email: z.string().email("Valid email is required"),
+  name: z.string().min(1, "Name is required"),
+  company: z.string().min(1, "Company is required"),
+  companySize: z.string().min(1, "Company size is required"),
+  jobTitle: z.string().min(1, "Job title is required"),
+  industry: z.string().min(1, "Industry is required"),
+  country: z.string().min(1, "Country is required"),
+});
+
 export const insertModelSchema = createInsertSchema(models).omit({
   id: true,
   createdAt: true,

@@ -13,6 +13,76 @@ import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect } from "react";
 import type { Result, Assessment, Model } from "@shared/schema";
 
+// Standard dropdown options
+const JOB_ROLES = [
+  "Chief Executive Officer (CEO)",
+  "Chief Technology Officer (CTO)",
+  "Chief Financial Officer (CFO)",
+  "Chief Marketing Officer (CMO)",
+  "Chief Operating Officer (COO)",
+  "Vice President",
+  "Director",
+  "Senior Manager",
+  "Manager",
+  "Team Lead",
+  "Project Manager",
+  "Product Manager",
+  "Software Engineer",
+  "Data Analyst",
+  "Business Analyst",
+  "Sales Executive",
+  "Marketing Specialist",
+  "Human Resources Specialist",
+  "Customer Support Representative",
+  "Other",
+];
+
+const INDUSTRIES = [
+  "Technology",
+  "Finance",
+  "Healthcare",
+  "Education",
+  "Manufacturing",
+  "Retail",
+  "Transportation",
+  "Energy",
+  "Telecommunications",
+  "Media & Entertainment",
+  "Real Estate",
+  "Construction",
+  "Agriculture",
+  "Government",
+  "Nonprofit",
+  "Professional Services",
+  "Insurance",
+  "Automotive",
+  "Pharmaceuticals",
+  "Other",
+];
+
+const COUNTRIES = [
+  "United States",
+  "Canada",
+  "United Kingdom",
+  "Australia",
+  "Germany",
+  "France",
+  "Italy",
+  "Spain",
+  "Netherlands",
+  "Sweden",
+  "Switzerland",
+  "Japan",
+  "China",
+  "India",
+  "Brazil",
+  "Mexico",
+  "South Africa",
+  "Singapore",
+  "United Arab Emirates",
+  "New Zealand",
+];
+
 export default function Profile() {
   const [, setLocation] = useLocation();
   const { user, isLoading: authLoading } = useAuth();
@@ -112,9 +182,37 @@ export default function Profile() {
     setLocation(`/results/${resultId}`);
   };
 
+  // Validate all required fields
+  const validateProfile = () => {
+    const requiredFields = [
+      { field: 'email', label: 'Email' },
+      { field: 'name', label: 'Name' },
+      { field: 'company', label: 'Company' },
+      { field: 'jobTitle', label: 'Job Title' },
+      { field: 'industry', label: 'Industry' },
+      { field: 'companySize', label: 'Company Size' },
+      { field: 'country', label: 'Country' },
+    ];
+
+    for (const { field, label } of requiredFields) {
+      if (!profileForm[field as keyof typeof profileForm]?.trim()) {
+        toast({
+          title: "Required field missing",
+          description: `${label} is required`,
+          variant: "destructive",
+        });
+        return false;
+      }
+    }
+    return true;
+  };
+
   // Update profile mutation
   const updateProfile = useMutation({
     mutationFn: async () => {
+      if (!validateProfile()) {
+        throw new Error('Please fill in all required fields');
+      }
       return apiRequest('/api/profile', 'PUT', profileForm);
     },
     onSuccess: () => {
@@ -161,52 +259,71 @@ export default function Profile() {
                       <Input value={user.username} data-testid="input-profile-username" disabled />
                     </div>
                     <div>
-                      <Label>Email</Label>
+                      <Label>Email <span className="text-destructive">*</span></Label>
                       <Input 
                         value={isEditing ? profileForm.email : user.email || ''} 
                         onChange={(e) => setProfileForm({ ...profileForm, email: e.target.value })}
                         data-testid="input-profile-email" 
                         disabled={!isEditing}
+                        required
                       />
                     </div>
                     <div>
-                      <Label>Name</Label>
+                      <Label>Name <span className="text-destructive">*</span></Label>
                       <Input 
                         value={isEditing ? profileForm.name : user.name || ''} 
                         onChange={(e) => setProfileForm({ ...profileForm, name: e.target.value })}
                         data-testid="input-profile-name" 
                         disabled={!isEditing}
+                        required
                       />
                     </div>
                     <div>
-                      <Label>Company</Label>
+                      <Label>Company <span className="text-destructive">*</span></Label>
                       <Input 
                         value={isEditing ? profileForm.company : user.company || ''} 
                         onChange={(e) => setProfileForm({ ...profileForm, company: e.target.value })}
                         data-testid="input-profile-company" 
                         disabled={!isEditing}
+                        required
                       />
                     </div>
                     <div>
-                      <Label>Job Title</Label>
-                      <Input 
-                        value={isEditing ? profileForm.jobTitle : user.jobTitle || ''} 
-                        onChange={(e) => setProfileForm({ ...profileForm, jobTitle: e.target.value })}
-                        data-testid="input-profile-title" 
+                      <Label>Job Title <span className="text-destructive">*</span></Label>
+                      <Select 
+                        value={isEditing ? profileForm.jobTitle : user.jobTitle || undefined} 
+                        onValueChange={(value) => setProfileForm({ ...profileForm, jobTitle: value })}
                         disabled={!isEditing}
-                      />
+                      >
+                        <SelectTrigger data-testid="select-job-title">
+                          <SelectValue placeholder="Select job title" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {JOB_ROLES.map((role) => (
+                            <SelectItem key={role} value={role}>{role}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
                     <div>
-                      <Label>Industry / Sector</Label>
-                      <Input 
-                        value={isEditing ? profileForm.industry : user.industry || ''} 
-                        onChange={(e) => setProfileForm({ ...profileForm, industry: e.target.value })}
-                        data-testid="input-profile-industry" 
+                      <Label>Industry / Sector <span className="text-destructive">*</span></Label>
+                      <Select 
+                        value={isEditing ? profileForm.industry : user.industry || undefined} 
+                        onValueChange={(value) => setProfileForm({ ...profileForm, industry: value })}
                         disabled={!isEditing}
-                      />
+                      >
+                        <SelectTrigger data-testid="select-industry">
+                          <SelectValue placeholder="Select industry" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {INDUSTRIES.map((industry) => (
+                            <SelectItem key={industry} value={industry}>{industry}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
                     <div>
-                      <Label>Company Size</Label>
+                      <Label>Company Size <span className="text-destructive">*</span></Label>
                       <Select 
                         value={isEditing ? profileForm.companySize : user.companySize || undefined} 
                         onValueChange={(value) => setProfileForm({ ...profileForm, companySize: value })}
@@ -227,13 +344,21 @@ export default function Profile() {
                       </Select>
                     </div>
                     <div>
-                      <Label>Country</Label>
-                      <Input 
-                        value={isEditing ? profileForm.country : user.country || ''} 
-                        onChange={(e) => setProfileForm({ ...profileForm, country: e.target.value })}
-                        data-testid="input-profile-country" 
+                      <Label>Country <span className="text-destructive">*</span></Label>
+                      <Select 
+                        value={isEditing ? profileForm.country : user.country || undefined} 
+                        onValueChange={(value) => setProfileForm({ ...profileForm, country: value })}
                         disabled={!isEditing}
-                      />
+                      >
+                        <SelectTrigger data-testid="select-country">
+                          <SelectValue placeholder="Select country" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {COUNTRIES.map((country) => (
+                            <SelectItem key={country} value={country}>{country}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
                     {isEditing ? (
                       <div className="flex gap-2">

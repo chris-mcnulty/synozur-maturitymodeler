@@ -35,9 +35,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ error: "Not authenticated" });
       }
       
-      // Only allow updating specific profile fields
-      const { email, name, company, companySize, jobTitle, industry, country } = req.body;
-      const updateData = { email, name, company, companySize, jobTitle, industry, country };
+      // Validate all required profile fields
+      const validationResult = schema.updateProfileSchema.safeParse(req.body);
+      if (!validationResult.success) {
+        return res.status(400).json({ 
+          error: "Validation failed", 
+          details: validationResult.error.issues.map(i => i.message).join(", ")
+        });
+      }
+      
+      const updateData = validationResult.data;
       
       const user = await storage.updateUser(req.user.id, updateData);
       if (!user) {

@@ -3,17 +3,90 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
+
+// Standard dropdown options
+const JOB_ROLES = [
+  "Chief Executive Officer (CEO)",
+  "Chief Technology Officer (CTO)",
+  "Chief Financial Officer (CFO)",
+  "Chief Marketing Officer (CMO)",
+  "Chief Operating Officer (COO)",
+  "Vice President",
+  "Director",
+  "Senior Manager",
+  "Manager",
+  "Team Lead",
+  "Project Manager",
+  "Product Manager",
+  "Software Engineer",
+  "Data Analyst",
+  "Business Analyst",
+  "Sales Executive",
+  "Marketing Specialist",
+  "Human Resources Specialist",
+  "Customer Support Representative",
+  "Other",
+];
+
+const INDUSTRIES = [
+  "Technology",
+  "Finance",
+  "Healthcare",
+  "Education",
+  "Manufacturing",
+  "Retail",
+  "Transportation",
+  "Energy",
+  "Telecommunications",
+  "Media & Entertainment",
+  "Real Estate",
+  "Construction",
+  "Agriculture",
+  "Government",
+  "Nonprofit",
+  "Professional Services",
+  "Insurance",
+  "Automotive",
+  "Pharmaceuticals",
+  "Other",
+];
+
+const COUNTRIES = [
+  "United States",
+  "Canada",
+  "United Kingdom",
+  "Australia",
+  "Germany",
+  "France",
+  "Italy",
+  "Spain",
+  "Netherlands",
+  "Sweden",
+  "Switzerland",
+  "Japan",
+  "China",
+  "India",
+  "Brazil",
+  "Mexico",
+  "South Africa",
+  "Singapore",
+  "United Arab Emirates",
+  "New Zealand",
+];
 
 interface ProfileGateProps {
   onComplete: (profile: any) => void;
 }
 
 export function ProfileGate({ onComplete }: ProfileGateProps) {
+  const { toast } = useToast();
   const [formData, setFormData] = useState({
     name: "",
     email: "",
     company: "",
+    companySize: "",
     jobTitle: "",
     industry: "",
     country: "",
@@ -21,6 +94,29 @@ export function ProfileGate({ onComplete }: ProfileGateProps) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate all required fields
+    const requiredFields = [
+      { field: 'name', label: 'Name' },
+      { field: 'email', label: 'Email' },
+      { field: 'company', label: 'Company' },
+      { field: 'jobTitle', label: 'Job Title' },
+      { field: 'industry', label: 'Industry' },
+      { field: 'companySize', label: 'Company Size' },
+      { field: 'country', label: 'Country' },
+    ];
+
+    for (const { field, label } of requiredFields) {
+      if (!formData[field as keyof typeof formData]?.trim()) {
+        toast({
+          title: "Required field missing",
+          description: `${label} is required`,
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+    
     console.log('Profile submitted:', formData);
     onComplete(formData);
   };
@@ -69,13 +165,16 @@ export function ProfileGate({ onComplete }: ProfileGateProps) {
 
         <div>
           <Label htmlFor="jobTitle">Job Title *</Label>
-          <Input
-            id="jobTitle"
-            value={formData.jobTitle}
-            onChange={(e) => setFormData({ ...formData, jobTitle: e.target.value })}
-            required
-            data-testid="input-job-title"
-          />
+          <Select value={formData.jobTitle} onValueChange={(value) => setFormData({ ...formData, jobTitle: value })}>
+            <SelectTrigger id="jobTitle" data-testid="select-job-title">
+              <SelectValue placeholder="Select job title" />
+            </SelectTrigger>
+            <SelectContent>
+              {JOB_ROLES.map((role) => (
+                <SelectItem key={role} value={role}>{role}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         <div>
@@ -85,12 +184,27 @@ export function ProfileGate({ onComplete }: ProfileGateProps) {
               <SelectValue placeholder="Select industry" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="technology">Technology</SelectItem>
-              <SelectItem value="finance">Finance</SelectItem>
-              <SelectItem value="healthcare">Healthcare</SelectItem>
-              <SelectItem value="manufacturing">Manufacturing</SelectItem>
-              <SelectItem value="retail">Retail</SelectItem>
-              <SelectItem value="other">Other</SelectItem>
+              {INDUSTRIES.map((industry) => (
+                <SelectItem key={industry} value={industry}>{industry}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div>
+          <Label htmlFor="companySize">Company Size *</Label>
+          <Select value={formData.companySize} onValueChange={(value) => setFormData({ ...formData, companySize: value })}>
+            <SelectTrigger id="companySize" data-testid="select-company-size">
+              <SelectValue placeholder="Select company size" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="1">Sole Proprietor (1)</SelectItem>
+              <SelectItem value="2-9">Small Team (2-9)</SelectItem>
+              <SelectItem value="10-49">Small Business (10-49)</SelectItem>
+              <SelectItem value="50-249">Medium Business (50-249)</SelectItem>
+              <SelectItem value="250-999">Large Business (250-999)</SelectItem>
+              <SelectItem value="1000-9999">Enterprise (1,000-9,999)</SelectItem>
+              <SelectItem value="10000+">Large Enterprise (10,000+)</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -102,12 +216,9 @@ export function ProfileGate({ onComplete }: ProfileGateProps) {
               <SelectValue placeholder="Select country" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="US">United States</SelectItem>
-              <SelectItem value="UK">United Kingdom</SelectItem>
-              <SelectItem value="CA">Canada</SelectItem>
-              <SelectItem value="AU">Australia</SelectItem>
-              <SelectItem value="DE">Germany</SelectItem>
-              <SelectItem value="other">Other</SelectItem>
+              {COUNTRIES.map((country) => (
+                <SelectItem key={country} value={country}>{country}</SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
