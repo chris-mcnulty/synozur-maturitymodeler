@@ -81,6 +81,11 @@ Maturity Modeler is a comprehensive fullstack JavaScript application for multi-m
   - All profile fields are required with frontend and backend validation
   - ProfileGate and Profile page use identical dropdown options for consistency
   - Backend validation with Zod schema (updateProfileSchema) enforcing required fields
+- ✅ HubSpot tracking integration:
+  - Tracking script added to page header (client/index.html)
+  - Loads on all pages across the application
+  - HubSpot Account ID: 49076134
+  - Script loads asynchronously to avoid blocking page rendering
 
 ## Backlog
 
