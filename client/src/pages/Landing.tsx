@@ -91,6 +91,17 @@ export default function Landing() {
   return (
     <div className="min-h-screen flex flex-col">
       <main className="flex-1">
+        {/* Model Name Above Hero */}
+        {featuredModel && (
+          <div className="bg-background py-6">
+            <div className="container mx-auto px-4 text-center">
+              <h2 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+                {featuredModel.name}
+              </h2>
+            </div>
+          </div>
+        )}
+
         {/* Hero Section - Matching prototype */}
         <section className="relative min-h-[600px] flex items-center bg-gray-900 overflow-hidden">
           <div className="absolute inset-0">
@@ -115,25 +126,6 @@ export default function Landing() {
               industry benchmarks, and over-time comparisons.
             </p>
             <div className="flex flex-wrap gap-4 justify-center">
-              <Button 
-                size="lg" 
-                className="bg-white text-primary hover:bg-white/90 px-8 py-6 text-lg"
-                onClick={() => createAssessment.mutate()}
-                disabled={createAssessment.isPending || !aiModel}
-                data-testid="button-start-assessment-hero"
-              >
-                {createAssessment.isPending ? 'Starting...' : 'Start Assessment'}
-                <ArrowRight className="ml-2 h-5 w-5" />
-              </Button>
-              <Button 
-                size="lg" 
-                variant="outline" 
-                className="bg-white/10 text-white border-white/30 hover:bg-white/20 px-8 py-6 text-lg"
-                onClick={() => window.open('https://www.synozur.com/ai', '_blank')}
-                data-testid="button-learn-more"
-              >
-                Learn More
-              </Button>
               <Button 
                 size="lg" 
                 variant="outline" 
@@ -189,9 +181,6 @@ export default function Landing() {
 
                   {/* Right: Details */}
                   <div>
-                    <h2 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-                      {featuredModel.name}
-                    </h2>
                     <p className="text-lg text-muted-foreground mb-6">
                       {featuredModel.description}
                     </p>
