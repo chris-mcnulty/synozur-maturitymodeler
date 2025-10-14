@@ -264,6 +264,75 @@ export default function Results() {
     }
   }, [model, result, benchmark, recommendations, improvementResources, toast]);
 
+  // Send PDF via email
+  const sendPdfEmail = useCallback(async (recipientEmail: string, recipientName?: string) => {
+    try {
+      if (!model || !result) {
+        toast({
+          title: "Error",
+          description: "Unable to generate PDF. Missing assessment data.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Generate PDF
+      const pdf = generateAssessmentPDF({
+        result,
+        model,
+        benchmark: benchmark || undefined,
+        recommendations: recommendations.map(r => ({
+          title: r.title,
+          description: r.description
+        })),
+        improvementResources: improvementResources.slice(0, 3)
+      });
+
+      // Convert PDF to base64
+      const pdfBlob = pdf.output('blob');
+      const reader = new FileReader();
+      
+      reader.onloadend = async () => {
+        const base64data = reader.result as string;
+        const base64PDF = base64data.split(',')[1]; // Remove data:application/pdf;base64, prefix
+
+        // Send email via API
+        const response = await fetch('/api/send-pdf-email', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            pdfBase64: base64PDF,
+            fileName: `${model.name.replace(/\s+/g, '_')}_Assessment_Report.pdf`,
+            recipientEmail,
+            recipientName,
+            modelName: model.name,
+          }),
+        });
+
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.details || 'Failed to send email');
+        }
+
+        toast({
+          title: "Email Sent!",
+          description: `Your assessment report has been sent to ${recipientEmail}`,
+        });
+      };
+
+      reader.readAsDataURL(pdfBlob);
+    } catch (error) {
+      console.error('Error sending email:', error);
+      toast({
+        title: "Email Failed",
+        description: error instanceof Error ? error.message : "Failed to send email. Please try again.",
+        variant: "destructive"
+      });
+    }
+  }, [model, result, benchmark, recommendations, improvementResources, toast]);
+
   // Handle PDF/Email actions
   const handlePdfAction = useCallback((action: 'download' | 'email') => {
     setPdfAction(action);
@@ -274,14 +343,11 @@ export default function Results() {
       if (action === 'download') {
         generateAndDownloadPDF();
       } else {
-        // TODO: Implement email sending
-        toast({
-          title: "Coming Soon",
-          description: "Email delivery will be available soon. Please download the PDF for now.",
-        });
+        // Send email to logged-in user
+        sendPdfEmail(user.email, user.name);
       }
     }
-  }, [user, generateAndDownloadPDF, toast]);
+  }, [user, generateAndDownloadPDF, sendPdfEmail]);
 
   const handleProfileComplete = useCallback((profile: any) => {
     setShowProfileGate(false);
@@ -289,13 +355,10 @@ export default function Results() {
     if (pdfAction === 'download') {
       generateAndDownloadPDF();
     } else if (pdfAction === 'email') {
-      // TODO: Implement email sending with profile.email
-      toast({
-        title: "Coming Soon",
-        description: `Email delivery to ${profile.email} will be available soon. Please download the PDF for now.`,
-      });
+      // Send email to the email from profile
+      sendPdfEmail(profile.email, profile.name);
     }
-  }, [pdfAction, generateAndDownloadPDF, toast]);
+  }, [pdfAction, generateAndDownloadPDF, sendPdfEmail]);
 
   if (resultLoading) {
     return (
