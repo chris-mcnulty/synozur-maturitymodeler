@@ -91,17 +91,6 @@ export default function Landing() {
   return (
     <div className="min-h-screen flex flex-col">
       <main className="flex-1">
-        {/* Model Name Above Hero */}
-        {featuredModel && (
-          <div className="bg-background py-6">
-            <div className="container mx-auto px-4 text-center">
-              <h2 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-                {featuredModel.name}
-              </h2>
-            </div>
-          </div>
-        )}
-
         {/* Hero Section - Matching prototype */}
         <section className="relative min-h-[600px] flex items-center bg-gray-900 overflow-hidden">
           <div className="absolute inset-0">
@@ -114,6 +103,18 @@ export default function Landing() {
           </div>
           
           <div className="container relative z-10 mx-auto px-4 py-20 text-center">
+            {/* Featured Model Title and Description */}
+            {featuredModel && (
+              <>
+                <h2 className="text-3xl md:text-4xl font-bold mb-4 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+                  {featuredModel.name}
+                </h2>
+                <p className="text-lg md:text-xl text-white/90 max-w-3xl mx-auto mb-8">
+                  {featuredModel.description}
+                </p>
+              </>
+            )}
+            
             <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold mb-6 bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
               Digital Transformation Maturity Models
             </h1>
