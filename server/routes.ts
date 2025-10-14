@@ -11,6 +11,16 @@ import { fileURLToPath } from "url";
 import { setupAuth, ensureAuthenticated, ensureAdmin } from "./auth";
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
 import { z } from "zod";
+import { scrypt, randomBytes } from "crypto";
+import { promisify } from "util";
+
+const scryptAsync = promisify(scrypt);
+
+async function hashPassword(password: string) {
+  const salt = randomBytes(16).toString("hex");
+  const buf = (await scryptAsync(password, salt, 64)) as Buffer;
+  return `${buf.toString("hex")}.${salt}`;
+}
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -1195,6 +1205,150 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error('Email sending error:', error);
       res.status(500).json({ 
         error: "Failed to send email", 
+        details: error instanceof Error ? error.message : 'Unknown error' 
+      });
+    }
+  });
+
+  // Password reset request endpoint
+  app.post('/api/password-reset/request', async (req, res) => {
+    try {
+      const requestSchema = z.object({
+        email: z.string().email(),
+      });
+
+      const validationResult = requestSchema.safeParse(req.body);
+      if (!validationResult.success) {
+        return res.status(400).json({ 
+          error: "Invalid email", 
+          details: validationResult.error.issues.map((i: any) => i.message).join(", ")
+        });
+      }
+
+      const { email } = validationResult.data;
+
+      // Find user by email
+      const users = await db.select().from(schema.users).where(eq(schema.users.email, email));
+      
+      if (users.length === 0) {
+        // Don't reveal if email exists - return success anyway for security
+        return res.json({ success: true, message: 'If an account with that email exists, a password reset link has been sent.' });
+      }
+
+      const user = users[0];
+
+      // Create reset token (expires in 1 hour)
+      const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
+      const [resetToken] = await db.insert(schema.passwordResetTokens).values({
+        userId: user.id,
+        expiresAt,
+        used: false,
+      }).returning();
+
+      // Send email with reset link (with defensive error handling)
+      try {
+        const { getUncachableSendGridClient } = await import('./sendgrid.js');
+        const { client: sgMail, fromEmail } = await getUncachableSendGridClient();
+
+        const resetUrl = `${req.protocol}://${req.get('host')}/reset-password?token=${resetToken.token}`;
+
+        const msg = {
+          to: email,
+          from: fromEmail,
+          subject: 'Reset Your Password - Synozur Maturity Modeler',
+          text: `You requested a password reset. Click the link below to reset your password:\n\n${resetUrl}\n\nThis link will expire in 1 hour.\n\nIf you didn't request this, please ignore this email.`,
+          html: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+              <h2 style="color: #810FFB;">Reset Your Password</h2>
+              <p>You requested a password reset for your Synozur Maturity Modeler account.</p>
+              <p>Click the button below to reset your password:</p>
+              <div style="margin: 30px 0;">
+                <a href="${resetUrl}" style="background-color: #810FFB; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">Reset Password</a>
+              </div>
+              <p style="color: #666; font-size: 14px;">Or copy and paste this link into your browser:</p>
+              <p style="color: #810FFB; word-break: break-all;">${resetUrl}</p>
+              <p style="margin-top: 30px; color: #666;">This link will expire in <strong>1 hour</strong>.</p>
+              <p style="color: #666;">If you didn't request this password reset, please ignore this email. Your password will remain unchanged.</p>
+              <hr style="margin: 30px 0; border: none; border-top: 1px solid #eee;">
+              <p style="font-size: 12px; color: #666;">
+                Visit us at <a href="https://www.synozur.com" style="color: #810FFB;">www.synozur.com</a>
+              </p>
+            </div>
+          `,
+        };
+
+        await sgMail.send(msg);
+      } catch (emailError) {
+        // Log email delivery failure but don't block the user
+        console.error('Failed to send password reset email:', emailError);
+        // Token is still created and valid - user can contact support if needed
+      }
+
+      // Always return success to avoid revealing if email exists
+      res.json({ success: true, message: 'If an account with that email exists, a password reset link has been sent.' });
+    } catch (error) {
+      console.error('Password reset request error:', error);
+      res.status(500).json({ 
+        error: "Failed to process password reset request", 
+        details: error instanceof Error ? error.message : 'Unknown error' 
+      });
+    }
+  });
+
+  // Password reset confirmation endpoint
+  app.post('/api/password-reset/reset', async (req, res) => {
+    try {
+      const resetSchema = z.object({
+        token: z.string().uuid(),
+        newPassword: z.string().min(6, "Password must be at least 6 characters"),
+      });
+
+      const validationResult = resetSchema.safeParse(req.body);
+      if (!validationResult.success) {
+        return res.status(400).json({ 
+          error: "Invalid request", 
+          details: validationResult.error.issues.map((i: any) => i.message).join(", ")
+        });
+      }
+
+      const { token, newPassword } = validationResult.data;
+
+      // Find the reset token
+      const tokens = await db.select().from(schema.passwordResetTokens).where(eq(schema.passwordResetTokens.token, token));
+      
+      if (tokens.length === 0) {
+        return res.status(400).json({ error: "Invalid or expired reset token" });
+      }
+
+      const resetToken = tokens[0];
+
+      // Check if token is expired or used
+      if (resetToken.used) {
+        return res.status(400).json({ error: "This reset token has already been used" });
+      }
+
+      if (new Date() > resetToken.expiresAt) {
+        return res.status(400).json({ error: "Reset token has expired. Please request a new one." });
+      }
+
+      // Hash the new password
+      const hashedPassword = await hashPassword(newPassword);
+
+      // Update user password
+      await db.update(schema.users)
+        .set({ password: hashedPassword })
+        .where(eq(schema.users.id, resetToken.userId));
+
+      // Mark token as used
+      await db.update(schema.passwordResetTokens)
+        .set({ used: true })
+        .where(eq(schema.passwordResetTokens.token, token));
+
+      res.json({ success: true, message: 'Password reset successfully' });
+    } catch (error) {
+      console.error('Password reset error:', error);
+      res.status(500).json({ 
+        error: "Failed to reset password", 
         details: error instanceof Error ? error.message : 'Unknown error' 
       });
     }

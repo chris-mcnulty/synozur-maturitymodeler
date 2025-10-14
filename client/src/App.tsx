@@ -14,11 +14,13 @@ import Results from "@/pages/Results";
 import Profile from "@/pages/Profile";
 import Admin from "@/pages/Admin";
 import Auth from "@/pages/Auth";
+import ForgotPassword from "@/pages/ForgotPassword";
+import ResetPassword from "@/pages/ResetPassword";
 import NotFound from "@/pages/not-found";
 
 function Router() {
   const [location] = useLocation();
-  const showHeader = location !== "/auth";
+  const showHeader = location !== "/auth" && location !== "/forgot-password" && !location.startsWith("/reset-password");
 
   return (
     <>
@@ -26,6 +28,8 @@ function Router() {
       <Switch>
         <Route path="/" component={Landing} />
         <Route path="/auth" component={Auth} />
+        <Route path="/forgot-password" component={ForgotPassword} />
+        <Route path="/reset-password" component={ResetPassword} />
         <Route path="/assessment/:assessmentId" component={Assessment} />
         <Route path="/results/:assessmentId" component={Results} />
         <ProtectedRoute path="/me" component={Profile} />
