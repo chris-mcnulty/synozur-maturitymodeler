@@ -19,6 +19,15 @@ export const users = pgTable("users", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+// Password reset tokens table
+export const passwordResetTokens = pgTable("password_reset_tokens", {
+  token: varchar("token").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  expiresAt: timestamp("expires_at").notNull(),
+  used: boolean("used").notNull().default(false),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 // Models table
 export const models = pgTable("models", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
