@@ -1126,6 +1126,66 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Send PDF via email
+  app.post('/api/send-pdf-email', ensureAuthenticated, async (req, res) => {
+    try {
+      const { pdfBase64, fileName, recipientEmail, recipientName, modelName } = req.body;
+      
+      if (!pdfBase64 || !recipientEmail) {
+        return res.status(400).json({ error: "PDF data and recipient email are required" });
+      }
+
+      // Import SendGrid client
+      const { getUncachableSendGridClient } = await import('./sendgrid.js');
+      const { client: sgMail, fromEmail } = await getUncachableSendGridClient();
+
+      const msg = {
+        to: recipientEmail,
+        from: fromEmail,
+        subject: `Your ${modelName || 'Maturity Assessment'} Report`,
+        text: `Dear ${recipientName || 'Valued User'},\n\nThank you for completing the ${modelName || 'maturity assessment'}. Please find your comprehensive assessment report attached.\n\nBest regards,\nThe Synozur Team`,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2 style="color: #810FFB;">Your Assessment Report is Ready</h2>
+            <p>Dear ${recipientName || 'Valued User'},</p>
+            <p>Thank you for completing the <strong>${modelName || 'maturity assessment'}</strong>.</p>
+            <p>Your comprehensive assessment report is attached to this email. This report includes:</p>
+            <ul>
+              <li>Overall maturity score and level</li>
+              <li>Dimension-specific insights</li>
+              <li>Personalized recommendations</li>
+              <li>Improvement resources</li>
+            </ul>
+            <p>If you have any questions about your results, please don't hesitate to reach out.</p>
+            <p style="margin-top: 30px;">Best regards,<br><strong>The Synozur Team</strong></p>
+            <hr style="margin: 30px 0; border: none; border-top: 1px solid #eee;">
+            <p style="font-size: 12px; color: #666;">
+              Visit us at <a href="https://www.synozur.com" style="color: #810FFB;">www.synozur.com</a>
+            </p>
+          </div>
+        `,
+        attachments: [
+          {
+            content: pdfBase64,
+            filename: fileName || 'assessment-report.pdf',
+            type: 'application/pdf',
+            disposition: 'attachment',
+          },
+        ],
+      };
+
+      await sgMail.send(msg);
+
+      res.json({ success: true, message: 'Email sent successfully' });
+    } catch (error) {
+      console.error('Email sending error:', error);
+      res.status(500).json({ 
+        error: "Failed to send email", 
+        details: error instanceof Error ? error.message : 'Unknown error' 
+      });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
