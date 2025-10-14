@@ -252,7 +252,7 @@ export default function Landing() {
               <Badge className="mb-4 px-4 py-1 text-sm" variant="outline">
                 Comprehensive Assessment Suite
               </Badge>
-              <h2 className="text-5xl font-bold mb-4 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+              <h2 className="text-4xl md:text-5xl font-bold mb-4 text-white md:bg-gradient-to-r md:from-blue-400 md:via-purple-400 md:to-pink-400 md:bg-clip-text md:text-transparent">
                 All Maturity Models
               </h2>
               <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
