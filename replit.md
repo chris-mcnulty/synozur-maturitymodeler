@@ -88,6 +88,7 @@ Maturity Modeler is a comprehensive fullstack JavaScript application for multi-m
   - Loads on all pages across the application
   - HubSpot Account ID: 49076134
   - Script loads asynchronously to avoid blocking page rendering
+- ✅ Synozur logo favicon on all pages (browser tabs, bookmarks, mobile home screen)
 
 ## Backlog
 
