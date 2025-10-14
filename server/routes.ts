@@ -10,6 +10,7 @@ import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 import { setupAuth, ensureAuthenticated, ensureAdmin } from "./auth";
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
+import { z } from "zod";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -1129,11 +1130,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Send PDF via email
   app.post('/api/send-pdf-email', ensureAuthenticated, async (req, res) => {
     try {
-      const { pdfBase64, fileName, recipientEmail, recipientName, modelName } = req.body;
-      
-      if (!pdfBase64 || !recipientEmail) {
-        return res.status(400).json({ error: "PDF data and recipient email are required" });
+      // Validate payload with Zod
+      const emailPayloadSchema = z.object({
+        pdfBase64: z.string().min(1).max(10 * 1024 * 1024), // Max ~10MB base64
+        fileName: z.string().min(1).max(255),
+        recipientEmail: z.string().email(),
+        recipientName: z.string().optional(),
+        modelName: z.string().optional(),
+      });
+
+      const validationResult = emailPayloadSchema.safeParse(req.body);
+      if (!validationResult.success) {
+        return res.status(400).json({ 
+          error: "Invalid payload", 
+          details: validationResult.error.issues.map((i: any) => i.message).join(", ")
+        });
       }
+
+      const { pdfBase64, fileName, recipientEmail, recipientName, modelName } = validationResult.data;
 
       // Import SendGrid client
       const { getUncachableSendGridClient } = await import('./sendgrid.js');

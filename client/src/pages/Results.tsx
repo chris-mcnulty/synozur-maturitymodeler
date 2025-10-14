@@ -267,6 +267,16 @@ export default function Results() {
   // Send PDF via email
   const sendPdfEmail = useCallback(async (recipientEmail: string, recipientName?: string) => {
     try {
+      // Validate email address
+      if (!recipientEmail || recipientEmail.trim() === '') {
+        toast({
+          title: "Email Required",
+          description: "Please provide a valid email address to receive the report.",
+          variant: "destructive"
+        });
+        return;
+      }
+
       if (!model || !result) {
         toast({
           title: "Error",
@@ -288,41 +298,47 @@ export default function Results() {
         improvementResources: improvementResources.slice(0, 3)
       });
 
-      // Convert PDF to base64
+      // Convert PDF to base64 using Promise wrapper for proper error handling
       const pdfBlob = pdf.output('blob');
-      const reader = new FileReader();
-      
-      reader.onloadend = async () => {
-        const base64data = reader.result as string;
-        const base64PDF = base64data.split(',')[1]; // Remove data:application/pdf;base64, prefix
+      const base64PDF = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          try {
+            const base64data = reader.result as string;
+            const base64 = base64data.split(',')[1]; // Remove data:application/pdf;base64, prefix
+            resolve(base64);
+          } catch (error) {
+            reject(error);
+          }
+        };
+        reader.onerror = () => reject(new Error('Failed to read PDF file'));
+        reader.readAsDataURL(pdfBlob);
+      });
 
-        // Send email via API
-        const response = await fetch('/api/send-pdf-email', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            pdfBase64: base64PDF,
-            fileName: `${model.name.replace(/\s+/g, '_')}_Assessment_Report.pdf`,
-            recipientEmail,
-            recipientName,
-            modelName: model.name,
-          }),
-        });
+      // Send email via API
+      const response = await fetch('/api/send-pdf-email', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          pdfBase64: base64PDF,
+          fileName: `${model.name.replace(/\s+/g, '_')}_Assessment_Report.pdf`,
+          recipientEmail,
+          recipientName,
+          modelName: model.name,
+        }),
+      });
 
-        if (!response.ok) {
-          const error = await response.json();
-          throw new Error(error.details || 'Failed to send email');
-        }
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.details || error.error || 'Failed to send email');
+      }
 
-        toast({
-          title: "Email Sent!",
-          description: `Your assessment report has been sent to ${recipientEmail}`,
-        });
-      };
-
-      reader.readAsDataURL(pdfBlob);
+      toast({
+        title: "Email Sent!",
+        description: `Your assessment report has been sent to ${recipientEmail}`,
+      });
     } catch (error) {
       console.error('Error sending email:', error);
       toast({
@@ -344,7 +360,7 @@ export default function Results() {
         generateAndDownloadPDF();
       } else {
         // Send email to logged-in user
-        sendPdfEmail(user.email, user.name);
+        sendPdfEmail(user.email || '', user.name || undefined);
       }
     }
   }, [user, generateAndDownloadPDF, sendPdfEmail]);
