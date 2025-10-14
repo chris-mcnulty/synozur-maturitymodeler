@@ -103,7 +103,7 @@ export default function Landing() {
           </div>
           
           <div className="container relative z-10 mx-auto px-4 py-20 text-center">
-            <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold mb-6 bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
+            <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold mb-6 text-white md:bg-gradient-to-r md:from-blue-400 md:via-purple-400 md:to-pink-400 md:bg-clip-text md:text-transparent">
               Digital Transformation Maturity Models
             </h1>
             <p className="text-xl md:text-2xl text-white/90 max-w-4xl mx-auto mb-8">
@@ -132,7 +132,7 @@ export default function Landing() {
         {featuredModel && (
           <div className="bg-background py-12">
             <div className="container mx-auto px-4 text-center">
-              <h2 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+              <h2 className="text-4xl md:text-5xl font-bold mb-4 text-white md:bg-gradient-to-r md:from-blue-400 md:via-purple-400 md:to-pink-400 md:bg-clip-text md:text-transparent">
                 {featuredModel.name}
               </h2>
               <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto">
