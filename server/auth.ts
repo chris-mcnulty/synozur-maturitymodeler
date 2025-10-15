@@ -88,6 +88,20 @@ export function setupAuth(app: Express) {
         role: 'user', // Force all new registrations to be regular users
       });
 
+      // Send verification email (don't block registration if email fails)
+      if (user.email) {
+        try {
+          const { generateVerificationToken, sendVerificationEmail } = 
+            await import('./services/email-verification.js');
+          const token = await generateVerificationToken(user.id);
+          const baseUrl = `${req.protocol}://${req.get('host')}`;
+          await sendVerificationEmail(user.email, token, baseUrl);
+        } catch (emailError) {
+          console.error('Failed to send verification email:', emailError);
+          // Continue with registration even if email fails
+        }
+      }
+
       req.login(user, (err) => {
         if (err) return next(err);
         // Remove password from response
@@ -137,6 +151,64 @@ export function setupAuth(app: Express) {
       res.sendStatus(401);
     }
   });
+
+  // Email verification endpoint
+  app.post("/api/auth/verify-email", async (req, res) => {
+    try {
+      const { token } = req.body;
+      
+      if (!token) {
+        return res.status(400).json({ error: "Verification token is required" });
+      }
+
+      const { verifyEmailToken } = await import('./services/email-verification.js');
+      const result = await verifyEmailToken(token);
+
+      if (!result.success) {
+        return res.status(400).json({ error: result.error });
+      }
+
+      res.json({ success: true, message: "Email verified successfully" });
+    } catch (error) {
+      console.error('Email verification error:', error);
+      res.status(500).json({ error: "Failed to verify email" });
+    }
+  });
+
+  // Resend verification email endpoint
+  app.post("/api/auth/resend-verification", async (req, res) => {
+    try {
+      const { email } = req.body;
+      
+      if (!email) {
+        return res.status(400).json({ error: "Email is required" });
+      }
+
+      const { getUserByEmail, generateVerificationToken, sendVerificationEmail } = 
+        await import('./services/email-verification.js');
+      
+      const user = await getUserByEmail(email);
+      
+      if (!user) {
+        // Don't reveal if email exists for security
+        return res.json({ success: true, message: "If an account exists with that email, a verification link has been sent." });
+      }
+
+      if (user.emailVerified) {
+        return res.status(400).json({ error: "Email is already verified" });
+      }
+
+      const token = await generateVerificationToken(user.id);
+      const baseUrl = `${req.protocol}://${req.get('host')}`;
+      
+      await sendVerificationEmail(email, token, baseUrl);
+
+      res.json({ success: true, message: "Verification email sent" });
+    } catch (error) {
+      console.error('Resend verification error:', error);
+      res.status(500).json({ error: "Failed to send verification email" });
+    }
+  });
 }
 
 // Middleware to ensure user is authenticated
@@ -153,4 +225,12 @@ export function ensureAdmin(req: any, res: any, next: any) {
     return next();
   }
   res.status(401).json({ error: "Admin access required" });
+}
+
+// Middleware to ensure user is admin or modeler (can manage models but not users)
+export function ensureAdminOrModeler(req: any, res: any, next: any) {
+  if (req.isAuthenticated() && (req.user.role === 'admin' || req.user.role === 'modeler')) {
+    return next();
+  }
+  res.status(401).json({ error: "Admin or modeler access required" });
 }
