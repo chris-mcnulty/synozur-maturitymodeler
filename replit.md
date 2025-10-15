@@ -106,6 +106,15 @@ Maturity Modeler is a comprehensive fullstack JavaScript application for multi-m
   - Defensive error handling for email delivery failures
   - Integration with ProfileGate login tab ("Forgot password?" link)
   - Pages: /forgot-password (email input) and /reset-password (new password form)
+- ✅ Azure OpenAI GPT-5 Integration:
+  - AI service layer using Replit AI Integrations (no API key required)
+  - Backend recommendation generation with personalized prompts
+  - Admin AI content generation (interpretations, resources, improvements)
+  - AI Usage dashboard with cost tracking and charts
+  - Content caching in aiGeneratedContent table with MD5 hash keys
+  - Usage logging in aiUsageLog for budget monitoring
+  - Fallback recommendations when AI is unavailable
+  - Synozur content prioritization in resource suggestions
 
 ## Backlog
 
