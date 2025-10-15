@@ -355,7 +355,7 @@ export default function Results() {
         variant: "destructive"
       });
     }
-  }, [model, result, benchmark, recommendations, improvementResources, toast]);
+  }, [model, result, benchmark, recommendations, improvementResources, maturitySummary, recommendationsSummary, user, toast]);
 
   // Send PDF via email
   const sendPdfEmail = useCallback(async (recipientEmail: string, recipientName?: string) => {
@@ -425,7 +425,7 @@ export default function Results() {
         },
         body: JSON.stringify({
           pdfBase64: base64PDF,
-          fileName: `${model.name.replace(/\s+/g, '_')}_Assessment_Report.pdf`,
+          fileName: `${model.name.replace(/\s+/g, '-')}-Report-${new Date().toISOString().split('T')[0]}.pdf`,
           recipientEmail,
           recipientName,
           modelName: model.name,
@@ -449,7 +449,7 @@ export default function Results() {
         variant: "destructive"
       });
     }
-  }, [model, result, benchmark, recommendations, improvementResources, toast]);
+  }, [model, result, benchmark, recommendations, improvementResources, maturitySummary, recommendationsSummary, user, toast]);
 
   // Handle PDF/Email actions
   const handlePdfAction = useCallback((action: 'download' | 'email') => {

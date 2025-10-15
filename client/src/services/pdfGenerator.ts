@@ -87,7 +87,7 @@ export function generateAssessmentPDF(data: PDFData): jsPDF {
   
   doc.setFontSize(9);
   doc.setTextColor(grayColor.r, grayColor.g, grayColor.b);
-  doc.text('Transformation Experts | Find Your North Star', 105, yPosition, { align: 'center' });
+  doc.text('The Transformation Company | Find Your North Star', 105, yPosition, { align: 'center' });
   
   yPosition += 15;
 
@@ -453,12 +453,17 @@ export function generateAssessmentPDF(data: PDFData): jsPDF {
   doc.text('  https://www.synozur.com/services-overview/default', 30, yPosition);
   yPosition += 7;
   
-  // Contact Our Experts with subject line
+  // Contact Our Experts
   doc.setTextColor(textColor.r, textColor.g, textColor.b);
-  doc.text(`• Contact Our Experts (Email subject: "Followup on ${model.name}"):`, 30, yPosition);
+  doc.text('• Contact Our Experts:', 30, yPosition);
   yPosition += 5;
   doc.setTextColor(primaryColor.r, primaryColor.g, primaryColor.b);
-  doc.text('  contactus@synozur.com', 30, yPosition);
+  doc.text('  ContactUs@synozur.com', 30, yPosition);
+  yPosition += 5;
+  doc.setFontSize(8);
+  doc.setTextColor(grayColor.r, grayColor.g, grayColor.b);
+  doc.text(`  (Email subject: "Followup on ${model.name}")`, 30, yPosition);
+  doc.setFontSize(9);
   
   yPosition += 12;
   
