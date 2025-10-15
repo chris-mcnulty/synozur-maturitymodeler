@@ -16,11 +16,12 @@ import Admin from "@/pages/Admin";
 import Auth from "@/pages/Auth";
 import ForgotPassword from "@/pages/ForgotPassword";
 import ResetPassword from "@/pages/ResetPassword";
+import VerifyEmail from "@/pages/VerifyEmail";
 import NotFound from "@/pages/not-found";
 
 function Router() {
   const [location] = useLocation();
-  const showHeader = location !== "/auth" && location !== "/forgot-password" && !location.startsWith("/reset-password");
+  const showHeader = location !== "/auth" && location !== "/forgot-password" && !location.startsWith("/reset-password") && location !== "/verify-email";
 
   return (
     <>
@@ -30,6 +31,7 @@ function Router() {
         <Route path="/auth" component={Auth} />
         <Route path="/forgot-password" component={ForgotPassword} />
         <Route path="/reset-password" component={ResetPassword} />
+        <Route path="/verify-email" component={VerifyEmail} />
         <Route path="/assessment/:assessmentId" component={Assessment} />
         <Route path="/results/:assessmentId" component={Results} />
         <ProtectedRoute path="/me" component={Profile} />
