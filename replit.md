@@ -43,11 +43,22 @@ Maturity Modeler is a comprehensive fullstack JavaScript application for multi-m
 - ✅ Answer resource editing (title, description, link, improvement statement)
 - ✅ Questions grouped by dimension with manual ordering within groups
 - ✅ Single unified Header component with auth state management
-- ✅ Role-based authentication system with admin/user roles
-- ✅ User management in admin panel (view, edit roles, delete users)
+- ✅ Role-based authentication system with admin/modeler/user roles:
+  - **admin**: Full system access including user management
+  - **modeler**: Model management access without user administration
+  - **user**: Basic assessment and profile access
+- ✅ User management in admin panel (view, edit roles, delete users, manual email verification)
+- ✅ Email verification system:
+  - Automatic verification emails sent on registration (24-hour token expiry)
+  - Email verification page (/verify-email) for token validation
+  - Profile page shows verification status with resend option
+  - Admin manual verification capability (PUT /api/admin/users/:id/verify-email)
+  - PDF email delivery requires verified email address
+  - Helpful error messaging for unverified users
+  - Admin UI displays verification status badges (verified/unverified)
 - ✅ Secure auth endpoints (passwords excluded from all responses)
 - ✅ Robust error handling for duplicate emails and malformed password hashes
-- ✅ Registration security: All self-registrations forced to 'user' role (admin must be granted via admin panel)
+- ✅ Registration security: All self-registrations forced to 'user' role (admin/modeler must be granted via admin panel)
 - ✅ Assessment completion flow with comprehensive error handling
 - ✅ Results page redesigned to match prototype (immediate display, no login required)
 - ✅ Profile gating for PDF delivery with dual-mode authentication:
