@@ -8,7 +8,7 @@ import { insertAssessmentSchema, insertAssessmentResponseSchema, insertResultSch
 import { readFileSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
-import { setupAuth, ensureAuthenticated, ensureAdmin } from "./auth";
+import { setupAuth, ensureAuthenticated, ensureAdmin, ensureAdminOrModeler } from "./auth";
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
 import { aiService } from "./services/ai-service";
 import { z } from "zod";
@@ -124,7 +124,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/answers', ensureAdmin, async (req, res) => {
+  app.post('/api/answers', ensureAdminOrModeler, async (req, res) => {
     try {
       const insertAnswerSchema = schema.insertAnswerSchema;
       const parsed = insertAnswerSchema.parse(req.body);
@@ -135,7 +135,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put('/api/answers/:id', ensureAdmin, async (req, res) => {
+  app.put('/api/answers/:id', ensureAdminOrModeler, async (req, res) => {
     try {
       const { id } = req.params;
       const answer = await storage.updateAnswer(id, req.body);
@@ -145,7 +145,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete('/api/answers/:id', ensureAdmin, async (req, res) => {
+  app.delete('/api/answers/:id', ensureAdminOrModeler, async (req, res) => {
     try {
       const { id } = req.params;
       await storage.deleteAnswer(id);
@@ -180,7 +180,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/questions", ensureAdmin, async (req, res) => {
+  app.post("/api/questions", ensureAdminOrModeler, async (req, res) => {
     try {
       // Get existing questions to determine the order
       const existingQuestions = await storage.getQuestionsByModelId(req.body.modelId);
@@ -217,7 +217,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/questions/:id", ensureAdmin, async (req, res) => {
+  app.put("/api/questions/:id", ensureAdminOrModeler, async (req, res) => {
     try {
       const questionData = {
         ...req.body,
@@ -232,7 +232,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/questions/:id", ensureAdmin, async (req, res) => {
+  app.delete("/api/questions/:id", ensureAdminOrModeler, async (req, res) => {
     try {
       await storage.deleteQuestion(req.params.id);
       res.json({ success: true });
@@ -260,7 +260,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/models", ensureAdmin, async (req, res) => {
+  app.post("/api/models", ensureAdminOrModeler, async (req, res) => {
     try {
       const validatedData = insertModelSchema.parse(req.body);
       const model = await storage.createModel(validatedData);
@@ -286,7 +286,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/models/:id", ensureAdmin, async (req, res) => {
+  app.put("/api/models/:id", ensureAdminOrModeler, async (req, res) => {
     try {
       const model = await storage.updateModel(req.params.id, req.body);
       if (!model) {
@@ -298,7 +298,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/models/:id/maturity-scale", ensureAdmin, async (req, res) => {
+  app.put("/api/models/:id/maturity-scale", ensureAdminOrModeler, async (req, res) => {
     try {
       const { maturityScale } = req.body;
       const model = await storage.updateModel(req.params.id, { maturityScale });
@@ -311,7 +311,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/models/:id/general-resources", ensureAdmin, async (req, res) => {
+  app.put("/api/models/:id/general-resources", ensureAdminOrModeler, async (req, res) => {
     try {
       const { generalResources } = req.body;
       const model = await storage.updateModel(req.params.id, { generalResources });
@@ -324,7 +324,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/models/:id", ensureAdmin, async (req, res) => {
+  app.delete("/api/models/:id", ensureAdminOrModeler, async (req, res) => {
     try {
       await storage.deleteModel(req.params.id);
       res.json({ success: true });
@@ -334,7 +334,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Object Storage routes for model images
-  app.post("/api/objects/upload", ensureAdmin, async (req, res) => {
+  app.post("/api/objects/upload", ensureAdminOrModeler, async (req, res) => {
     try {
       const objectStorageService = new ObjectStorageService();
       const uploadURL = await objectStorageService.getObjectEntityUploadURL();
@@ -345,7 +345,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/models/:id/image", ensureAdmin, async (req, res) => {
+  app.put("/api/models/:id/image", ensureAdminOrModeler, async (req, res) => {
     try {
       const { imageUrl } = req.body;
       if (!imageUrl) {
@@ -461,7 +461,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/dimensions", ensureAdmin, async (req, res) => {
+  app.post("/api/dimensions", ensureAdminOrModeler, async (req, res) => {
     try {
       const validatedData = insertDimensionSchema.parse(req.body);
       const dimension = await storage.createDimension(validatedData);
@@ -472,7 +472,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/dimensions/:id", ensureAdmin, async (req, res) => {
+  app.put("/api/dimensions/:id", ensureAdminOrModeler, async (req, res) => {
     try {
       const dimension = await storage.updateDimension(req.params.id, req.body);
       if (!dimension) {
@@ -484,7 +484,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/dimensions/:id", ensureAdmin, async (req, res) => {
+  app.delete("/api/dimensions/:id", ensureAdminOrModeler, async (req, res) => {
     try {
       await storage.deleteDimension(req.params.id);
       res.json({ success: true });
@@ -937,7 +937,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Admin routes for model management
-  app.post("/api/admin/models/seed/:modelSlug", ensureAdmin, async (req, res) => {
+  app.post("/api/admin/models/seed/:modelSlug", ensureAdminOrModeler, async (req, res) => {
     try {
       const seedDataPath = join(__dirname, `seed-data/${req.params.modelSlug}.json`);
       const seedData = JSON.parse(readFileSync(seedDataPath, 'utf-8'));
@@ -1003,7 +1003,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/admin/models", ensureAdmin, async (req, res) => {
+  app.get("/api/admin/models", ensureAdminOrModeler, async (req, res) => {
     try {
       const models = await storage.getAllModels();
       const modelsWithStats = await Promise.all(
@@ -1026,7 +1026,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // AI-assisted content generation endpoints for admin
   
   // Generate score interpretations for a model
-  app.post("/api/admin/ai/generate-interpretations", ensureAdmin, async (req, res) => {
+  app.post("/api/admin/ai/generate-interpretations", ensureAdminOrModeler, async (req, res) => {
     try {
       const { modelId, maturityLevel, score } = req.body;
       
@@ -1099,7 +1099,7 @@ Respond in JSON format:
   });
 
   // Generate resource suggestions for a dimension
-  app.post("/api/admin/ai/generate-resources", ensureAdmin, async (req, res) => {
+  app.post("/api/admin/ai/generate-resources", ensureAdminOrModeler, async (req, res) => {
     try {
       const { modelId, dimensionId, scoreLevel } = req.body;
       
@@ -1181,7 +1181,7 @@ Respond in JSON format:
   });
 
   // Generate improvement statement for an answer option
-  app.post("/api/admin/ai/generate-improvement", ensureAdmin, async (req, res) => {
+  app.post("/api/admin/ai/generate-improvement", ensureAdminOrModeler, async (req, res) => {
     try {
       const { questionText, answerText, answerScore } = req.body;
       
@@ -1250,7 +1250,7 @@ Respond in JSON format:
   });
 
   // Rewrite answer option to be more contextual to the specific question
-  app.post("/api/admin/ai/rewrite-answer", ensureAdmin, async (req, res) => {
+  app.post("/api/admin/ai/rewrite-answer", ensureAdminOrModeler, async (req, res) => {
     try {
       const { questionText, answerText, answerScore, modelContext } = req.body;
       
@@ -1417,7 +1417,7 @@ Respond in JSON format:
   });
 
   // Get AI usage statistics for admin dashboard
-  app.get("/api/admin/ai/usage", ensureAdmin, async (req, res) => {
+  app.get("/api/admin/ai/usage", ensureAdminOrModeler, async (req, res) => {
     try {
       const logs = await storage.getAiUsageLogs();
       
@@ -1453,7 +1453,7 @@ Respond in JSON format:
     }
   });
 
-  app.patch("/api/admin/models/:id", ensureAdmin, async (req, res) => {
+  app.patch("/api/admin/models/:id", ensureAdminOrModeler, async (req, res) => {
     try {
       const model = await storage.updateModel(req.params.id, req.body);
       if (!model) {
@@ -1465,7 +1465,7 @@ Respond in JSON format:
     }
   });
 
-  app.delete("/api/admin/models/:id", ensureAdmin, async (req, res) => {
+  app.delete("/api/admin/models/:id", ensureAdminOrModeler, async (req, res) => {
     try {
       await storage.deleteModel(req.params.id);
       res.json({ success: true });
@@ -1540,7 +1540,7 @@ Respond in JSON format:
     }
   });
 
-  app.post("/api/models/:id/import-questions", ensureAdmin, async (req, res) => {
+  app.post("/api/models/:id/import-questions", ensureAdminOrModeler, async (req, res) => {
     try {
       const modelId = req.params.id;
       const { csvContent, mode = 'add' } = req.body;
@@ -1671,7 +1671,7 @@ Respond in JSON format:
       const { pdfBase64, fileName, recipientEmail, recipientName, modelName } = validationResult.data;
 
       // Check if user's email is verified
-      if (!req.user.emailVerified) {
+      if (!req.user?.emailVerified) {
         return res.status(403).json({ 
           error: "Email not verified", 
           message: "Please verify your email address before downloading PDF reports. Check your inbox for a verification link or request a new one from your profile." 
