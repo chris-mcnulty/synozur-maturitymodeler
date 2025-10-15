@@ -122,6 +122,13 @@ Maturity Modeler is a comprehensive fullstack JavaScript application for multi-m
 ## Backlog
 
 ### Pending Implementation
+- [ ] **Email Confirmation Cycle**: Implement email verification flow to ensure valid email addresses before allowing PDF downloads
+  - Add email confirmation after registration
+  - Restrict PDF downloads to users with confirmed email addresses
+  - Guide users to login/register when trying to download PDFs
+  - Show reminder notifications for users who haven't confirmed their email
+  - Add resend confirmation email functionality
+  - Track email confirmation status in user profile
 - [ ] **Science-Backed Framework Section**: Add metrics/statistics section to model home page showing research validation, assessment counts, and organizational adoption once real data is available
 - [ ] **Maturity Scale Editor**: Admin UI to customize maturity level names, descriptions, and score ranges per model
 - [ ] **General Resources Editor**: Admin UI to manage general resources shown at end of results (onscreen and PDF)
