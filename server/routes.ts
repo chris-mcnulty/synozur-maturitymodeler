@@ -10,8 +10,9 @@ import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 import { setupAuth, ensureAuthenticated, ensureAdmin } from "./auth";
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
+import { aiService } from "./services/ai-service";
 import { z } from "zod";
-import { scrypt, randomBytes } from "crypto";
+import { scrypt, randomBytes, createHash } from "crypto";
 import { promisify } from "util";
 
 const scryptAsync = promisify(scrypt);
@@ -1019,6 +1020,269 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(modelsWithStats);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch models" });
+    }
+  });
+
+  // AI-assisted content generation endpoints for admin
+  
+  // Generate score interpretations for a model
+  app.post("/api/admin/ai/generate-interpretations", ensureAdmin, async (req, res) => {
+    try {
+      const { modelId, maturityLevel, score } = req.body;
+      
+      // Validate input
+      if (!modelId || maturityLevel === undefined || !score) {
+        return res.status(400).json({ error: "Model ID, maturity level, and score are required" });
+      }
+
+      const model = await storage.getModel(modelId);
+      if (!model) {
+        return res.status(404).json({ error: "Model not found" });
+      }
+
+      // Generate cache key
+      const contextHash = createHash('md5')
+        .update(JSON.stringify({ modelId, maturityLevel, score }))
+        .digest('hex');
+
+      // Check cache first
+      const cached = await storage.getAiGeneratedContent('interpretation', contextHash);
+      if (cached && cached.expiresAt && cached.expiresAt > new Date()) {
+        return res.json(cached.content);
+      }
+
+      // Generate using AI
+      const prompt = `Generate a maturity level interpretation for a ${model.name} assessment.
+
+Maturity Level: ${maturityLevel}
+Score: ${score}/500
+
+Please provide:
+1. A clear, concise title for this maturity level (2-3 words)
+2. A detailed interpretation (2-3 sentences) explaining what this score means
+3. Key characteristics of organizations at this level (3-4 bullet points)
+
+Respond in JSON format:
+{
+  "title": "Level Title",
+  "interpretation": "Detailed interpretation...",
+  "characteristics": ["Characteristic 1", "Characteristic 2", "Characteristic 3"]
+}`;
+
+      const interpretation = await aiService.generateText(prompt, { outputFormat: 'json' });
+
+      // Cache the result for 30 days
+      const expiresAt = new Date();
+      expiresAt.setDate(expiresAt.getDate() + 30);
+      
+      await storage.createAiGeneratedContent({
+        type: 'interpretation',
+        contextHash,
+        content: interpretation as any,
+        metadata: { modelId, maturityLevel, score },
+        expiresAt
+      });
+
+      // Log usage
+      await storage.createAiUsageLog({
+        userId: req.user!.id,
+        modelName: 'gpt-5-mini-2025-08-07',
+        operation: 'generate-interpretation',
+        estimatedCost: 3
+      });
+
+      res.json(interpretation);
+    } catch (error) {
+      console.error('Failed to generate interpretation:', error);
+      res.status(500).json({ error: "Failed to generate interpretation" });
+    }
+  });
+
+  // Generate resource suggestions for a dimension
+  app.post("/api/admin/ai/generate-resources", ensureAdmin, async (req, res) => {
+    try {
+      const { modelId, dimensionId, scoreLevel } = req.body;
+      
+      // Validate input
+      if (!modelId || !dimensionId || !scoreLevel) {
+        return res.status(400).json({ error: "Model ID, dimension ID, and score level are required" });
+      }
+
+      const model = await storage.getModel(modelId);
+      const dimension = await storage.getDimension(dimensionId);
+      
+      if (!model || !dimension) {
+        return res.status(404).json({ error: "Model or dimension not found" });
+      }
+
+      // Generate cache key
+      const contextHash = createHash('md5')
+        .update(JSON.stringify({ modelId, dimensionId, scoreLevel }))
+        .digest('hex');
+
+      // Check cache first
+      const cached = await storage.getAiGeneratedContent('resources', contextHash);
+      if (cached && cached.expiresAt && cached.expiresAt > new Date()) {
+        return res.json(cached.content);
+      }
+
+      // Generate using AI
+      const prompt = `Generate improvement resources for the ${dimension.label} dimension of the ${model.name} assessment.
+
+Current score level: ${scoreLevel} (low/medium/high)
+
+Generate 3-5 relevant resources that would help improve in this area. Prioritize Synozur.com content and methodologies where applicable, but also include external authoritative sources.
+
+For each resource, provide:
+1. Title (clear and actionable)
+2. Description (1-2 sentences explaining the value)
+3. Link (prefer Synozur.com content when available, otherwise authoritative external sources)
+4. Type (article/guide/webinar/tool/framework)
+
+Respond in JSON format:
+{
+  "resources": [
+    {
+      "title": "Resource Title",
+      "description": "Brief description of the resource and its value...",
+      "link": "https://synozur.com/... or external URL",
+      "type": "article"
+    }
+  ]
+}`;
+
+      const resources = await aiService.generateText(prompt, { outputFormat: 'json' });
+
+      // Cache the result for 30 days
+      const expiresAt = new Date();
+      expiresAt.setDate(expiresAt.getDate() + 30);
+      
+      await storage.createAiGeneratedContent({
+        type: 'resources',
+        contextHash,
+        content: resources as any,
+        metadata: { modelId, dimensionId, scoreLevel },
+        expiresAt
+      });
+
+      // Log usage
+      await storage.createAiUsageLog({
+        userId: req.user!.id,
+        modelName: 'gpt-5-mini-2025-08-07',
+        operation: 'generate-resources',
+        estimatedCost: 4
+      });
+
+      res.json(resources);
+    } catch (error) {
+      console.error('Failed to generate resources:', error);
+      res.status(500).json({ error: "Failed to generate resources" });
+    }
+  });
+
+  // Generate improvement statement for an answer option
+  app.post("/api/admin/ai/generate-improvement", ensureAdmin, async (req, res) => {
+    try {
+      const { questionText, answerText, answerScore } = req.body;
+      
+      // Validate input
+      if (!questionText || !answerText || answerScore === undefined) {
+        return res.status(400).json({ error: "Question text, answer text, and answer score are required" });
+      }
+
+      // Generate cache key
+      const contextHash = createHash('md5')
+        .update(JSON.stringify({ questionText, answerText, answerScore }))
+        .digest('hex');
+
+      // Check cache first
+      const cached = await storage.getAiGeneratedContent('improvement', contextHash);
+      if (cached && cached.expiresAt && cached.expiresAt > new Date()) {
+        return res.json(cached.content);
+      }
+
+      // Generate using AI
+      const prompt = `Generate an improvement statement for an assessment answer option.
+
+Question: "${questionText}"
+Selected Answer: "${answerText}"
+Answer Score: ${answerScore}/100
+
+Based on this answer selection, generate:
+1. A specific improvement statement (1-2 sentences) that explains what needs to be improved
+2. A priority level (high/medium/low) based on the score
+3. A quick win action item that can be implemented immediately
+
+Respond in JSON format:
+{
+  "improvementStatement": "Specific improvement needed...",
+  "priority": "high",
+  "quickWin": "Immediate action that can be taken..."
+}`;
+
+      const improvement = await aiService.generateText(prompt, { outputFormat: 'json' });
+
+      // Cache the result for 30 days
+      const expiresAt = new Date();
+      expiresAt.setDate(expiresAt.getDate() + 30);
+      
+      await storage.createAiGeneratedContent({
+        type: 'improvement',
+        contextHash,
+        content: improvement as any,
+        metadata: { questionText, answerText, answerScore },
+        expiresAt
+      });
+
+      // Log usage
+      await storage.createAiUsageLog({
+        userId: req.user!.id,
+        modelName: 'gpt-5-mini-2025-08-07',
+        operation: 'generate-improvement',
+        estimatedCost: 2
+      });
+
+      res.json(improvement);
+    } catch (error) {
+      console.error('Failed to generate improvement statement:', error);
+      res.status(500).json({ error: "Failed to generate improvement statement" });
+    }
+  });
+
+  // Get AI usage statistics for admin dashboard
+  app.get("/api/admin/ai/usage", ensureAdmin, async (req, res) => {
+    try {
+      const logs = await storage.getAiUsageLogs();
+      
+      // Calculate statistics
+      const totalRequests = logs.length;
+      const totalEstimatedCost = logs.reduce((sum, log) => sum + (log.estimatedCost || 0), 0);
+      const requestsByOperation = logs.reduce((acc, log) => {
+        acc[log.operation] = (acc[log.operation] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>);
+      
+      // Get usage over time (last 30 days)
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      
+      const recentLogs = logs.filter(log => log.createdAt > thirtyDaysAgo);
+      const dailyUsage = recentLogs.reduce((acc, log) => {
+        const date = log.createdAt.toISOString().split('T')[0];
+        acc[date] = (acc[date] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>);
+
+      res.json({
+        totalRequests,
+        totalEstimatedCost: totalEstimatedCost / 100, // Convert cents to dollars
+        requestsByOperation,
+        dailyUsage,
+        recentLogs: logs.slice(0, 20) // Last 20 logs
+      });
+    } catch (error) {
+      console.error('Failed to fetch AI usage:', error);
+      res.status(500).json({ error: "Failed to fetch AI usage statistics" });
     }
   });
 
