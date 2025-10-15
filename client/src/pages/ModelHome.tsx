@@ -68,14 +68,6 @@ export default function ModelHome() {
     );
   }
 
-  // Default benefits if none specified in the model
-  const benefits = [
-    "Comprehensive assessment of your maturity level",
-    "Benchmarking against industry peers",
-    "Personalized roadmap and recommendations",
-    "Executive-ready PDF report",
-  ];
-
   return (
     <div className="min-h-screen flex flex-col">
       <main className="flex-1">
@@ -143,12 +135,31 @@ export default function ModelHome() {
             <div className="max-w-4xl mx-auto text-center">
               <h2 className="text-3xl font-bold mb-6">What You'll Receive</h2>
               <ul className="space-y-4 text-left max-w-2xl mx-auto mb-8">
-                {benefits.map((benefit, index) => (
-                  <li key={index} className="flex items-start gap-3" data-testid={`benefit-${index}`}>
-                    <CheckCircle2 className="h-6 w-6 text-primary flex-shrink-0 mt-0.5" />
-                    <span className="text-lg">{benefit}</span>
-                  </li>
-                ))}
+                <li className="flex items-start gap-3" data-testid="benefit-0">
+                  <CheckCircle2 className="h-6 w-6 text-primary flex-shrink-0 mt-0.5" />
+                  <span className="text-lg">Comprehensive assessment of your maturity level</span>
+                </li>
+                <li className="flex items-start gap-3" data-testid="benefit-1">
+                  <CheckCircle2 className="h-6 w-6 text-primary flex-shrink-0 mt-0.5" />
+                  <span className="text-lg">Benchmarking against industry peers</span>
+                </li>
+                
+                <li className="mt-6 mb-2">
+                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide pl-9">With Free Account</h3>
+                </li>
+                
+                <li className="flex items-start gap-3" data-testid="benefit-2">
+                  <CheckCircle2 className="h-6 w-6 text-primary flex-shrink-0 mt-0.5" />
+                  <span className="text-lg">Personalized roadmap and recommendations</span>
+                </li>
+                <li className="flex items-start gap-3" data-testid="benefit-3">
+                  <CheckCircle2 className="h-6 w-6 text-primary flex-shrink-0 mt-0.5" />
+                  <span className="text-lg">Executive-ready PDF report</span>
+                </li>
+                <li className="flex items-start gap-3" data-testid="benefit-4">
+                  <CheckCircle2 className="h-6 w-6 text-primary flex-shrink-0 mt-0.5" />
+                  <span className="text-lg">Save and compare assessments over time</span>
+                </li>
               </ul>
               <Button 
                 size="lg" 
