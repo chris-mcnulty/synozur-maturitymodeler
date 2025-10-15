@@ -1,5 +1,7 @@
 import jsPDF from 'jspdf';
 import type { Result, Model, Dimension } from '@shared/schema';
+// @ts-ignore
+import logoImage from '@assets/SA-Logo-Horizontal-color_1760530252980.png';
 
 interface PDFData {
   result: Result;
@@ -45,11 +47,23 @@ export function generateAssessmentPDF(data: PDFData): jsPDF {
   
   let yPosition = 15;
 
-  // Synozur Branding Header
-  doc.setFontSize(12);
-  doc.setTextColor(primaryColor.r, primaryColor.g, primaryColor.b);
-  doc.text('THE SYNOZUR ALLIANCE LLC', 105, yPosition, { align: 'center' });
-  yPosition += 6;
+  // Add Synozur logo to header
+  try {
+    // Add logo image (centered, width: 60mm to fit nicely)
+    const logoWidth = 60;
+    const logoHeight = 20; // Adjust based on aspect ratio
+    const logoX = (210 - logoWidth) / 2; // Center on A4 width (210mm)
+    doc.addImage(logoImage, 'PNG', logoX, yPosition, logoWidth, logoHeight);
+    yPosition += logoHeight + 8;
+  } catch (error) {
+    console.error('Failed to add logo to PDF:', error);
+    // Fallback to text header if logo fails
+    doc.setFontSize(12);
+    doc.setTextColor(primaryColor.r, primaryColor.g, primaryColor.b);
+    doc.text('THE SYNOZUR ALLIANCE LLC', 105, yPosition, { align: 'center' });
+    yPosition += 6;
+  }
+  
   doc.setFontSize(9);
   doc.setTextColor(grayColor.r, grayColor.g, grayColor.b);
   doc.text('Transformation Experts | Find Your North Star', 105, yPosition, { align: 'center' });
@@ -265,7 +279,7 @@ export function generateAssessmentPDF(data: PDFData): jsPDF {
       yPosition += 8;
     }
 
-    recommendations.slice(0, 3).forEach(rec => {
+    recommendations.forEach((rec, index) => {
       if (yPosition > 250) {
         doc.addPage();
         yPosition = 20;
@@ -306,7 +320,7 @@ export function generateAssessmentPDF(data: PDFData): jsPDF {
     doc.text('Improvement Resources', 105, yPosition, { align: 'center' });
     yPosition += 10;
 
-    improvementResources.slice(0, 5).forEach(resource => {
+    improvementResources.forEach((resource, index) => {
       if (yPosition > 250) {
         doc.addPage();
         yPosition = 20;

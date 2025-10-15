@@ -326,7 +326,7 @@ export default function Results() {
           title: r.title,
           description: r.description
         })),
-        improvementResources: improvementResources.slice(0, 3),
+        improvementResources: improvementResources,
         maturitySummary,
         recommendationsSummary,
         userContext: user ? {
@@ -338,8 +338,10 @@ export default function Results() {
         } : undefined
       });
 
-      // Download the PDF
-      pdf.save(`${model.name.replace(/\s+/g, '_')}_Assessment_Report.pdf`);
+      // Download the PDF with proper filename format: [ModelName]-Report-[YYYY-MM-DD].pdf
+      const today = new Date().toISOString().split('T')[0]; // Format: YYYY-MM-DD
+      const modelNameSlug = model.name.replace(/\s+/g, '-');
+      pdf.save(`${modelNameSlug}-Report-${today}.pdf`);
       
       toast({
         title: "Success",
@@ -386,7 +388,7 @@ export default function Results() {
           title: r.title,
           description: r.description
         })),
-        improvementResources: improvementResources.slice(0, 3),
+        improvementResources: improvementResources,
         maturitySummary,
         recommendationsSummary,
         userContext: user ? {
