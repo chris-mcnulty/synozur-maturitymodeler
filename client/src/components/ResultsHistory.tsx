@@ -2,6 +2,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { useLocation } from "wouter";
 
 interface ResultItem {
   id: string;
@@ -17,6 +18,8 @@ interface ResultsHistoryProps {
 }
 
 export function ResultsHistory({ results }: ResultsHistoryProps) {
+  const [, setLocation] = useLocation();
+  
   const getTrendIcon = (change?: number) => {
     if (!change) return <Minus className="h-4 w-4" />;
     if (change > 0) return <TrendingUp className="h-4 w-4 text-chart-3" />;
@@ -56,7 +59,11 @@ export function ResultsHistory({ results }: ResultsHistoryProps) {
                 </div>
               )}
               
-              <Button variant="outline" data-testid={`button-view-${result.id}`}>
+              <Button 
+                variant="outline" 
+                data-testid={`button-view-${result.id}`}
+                onClick={() => setLocation(`/results/${result.id}`)}
+              >
                 View Details
               </Button>
             </div>
