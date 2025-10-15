@@ -17,6 +17,7 @@ import { Download, Plus, Edit, Trash, FileSpreadsheet, Eye, BarChart3, Settings,
 import type { Model, Result, Assessment, Dimension, Question, Answer, User } from "@shared/schema";
 import { ObjectUploader } from "@/components/ObjectUploader";
 import { AiAssistant } from "@/components/admin/AiAssistant";
+import { AiUsageDashboard } from "@/components/admin/AiUsageDashboard";
 
 interface AdminResult extends Result {
   assessmentId: string;
@@ -963,13 +964,14 @@ export default function Admin() {
           </div>
 
           <Tabs defaultValue="models" className="w-full">
-            <TabsList className="grid w-full grid-cols-7">
+            <TabsList className="grid w-full grid-cols-8">
               <TabsTrigger value="models" data-testid="tab-models">Models</TabsTrigger>
               <TabsTrigger value="dimensions" data-testid="tab-dimensions">Dimensions</TabsTrigger>
               <TabsTrigger value="questions" data-testid="tab-questions">Questions</TabsTrigger>
               <TabsTrigger value="users" data-testid="tab-users">Users</TabsTrigger>
               <TabsTrigger value="results" data-testid="tab-results">Results</TabsTrigger>
               <TabsTrigger value="benchmarks" data-testid="tab-benchmarks">Benchmarks</TabsTrigger>
+              <TabsTrigger value="ai-usage" data-testid="tab-ai-usage">AI Usage</TabsTrigger>
               <TabsTrigger value="audit" data-testid="tab-audit">Audit Log</TabsTrigger>
             </TabsList>
 
@@ -1706,6 +1708,10 @@ export default function Admin() {
                   Benchmark calculation coming soon.
                 </p>
               </Card>
+            </TabsContent>
+
+            <TabsContent value="ai-usage" className="space-y-4">
+              <AiUsageDashboard />
             </TabsContent>
 
             <TabsContent value="audit" className="space-y-4">
