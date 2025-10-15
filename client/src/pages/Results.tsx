@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useEffect } from "react";
 import { useRoute, useLocation } from "wouter";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
@@ -62,6 +62,8 @@ export default function Results() {
   const assessmentId = params?.assessmentId;
   const [showProfileGate, setShowProfileGate] = useState(false);
   const [pdfAction, setPdfAction] = useState<'download' | 'email' | null>(null);
+  const [maturitySummary, setMaturitySummary] = useState<string>('');
+  const [recommendationsSummary, setRecommendationsSummary] = useState<string>('');
   const { toast } = useToast();
 
   // Fetch user data
@@ -123,6 +125,75 @@ export default function Results() {
 
   // Define all hooks before any conditional returns to ensure consistent hook order
   const overallScore = result?.overallScore || 0;
+
+  // Fetch AI-generated summaries when result and model are loaded
+  useEffect(() => {
+    const fetchAISummaries = async () => {
+      if (!result || !model || !user) return;
+
+      try {
+        // Prepare dimension scores for AI
+        const dimensionScoresForAI = model.dimensions.reduce((acc, dim) => ({
+          ...acc,
+          [dim.key]: {
+            score: (result.dimensionScores as Record<string, number>)[dim.key] || 0,
+            label: dim.label
+          }
+        }), {});
+
+        // Fetch maturity summary
+        const maturityResponse = await fetch('/api/ai/generate-maturity-summary', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            overallScore: result.overallScore,
+            dimensionScores: dimensionScoresForAI,
+            modelName: model.name,
+            userContext: {
+              industry: user.industry,
+              companySize: user.companySize,
+              jobTitle: user.jobTitle
+            }
+          })
+        });
+
+        if (maturityResponse.ok) {
+          const { summary } = await maturityResponse.json();
+          setMaturitySummary(summary);
+        }
+
+        // Fetch recommendations summary if recommendations exist
+        if (recommendations.length > 0) {
+          const recsResponse = await fetch('/api/ai/generate-recommendations-summary', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              recommendations: recommendations.map(r => ({
+                title: r.title,
+                description: r.description
+              })),
+              modelName: model.name,
+              userContext: {
+                industry: user.industry,
+                companySize: user.companySize,
+                jobTitle: user.jobTitle
+              }
+            })
+          });
+
+          if (recsResponse.ok) {
+            const { summary } = await recsResponse.json();
+            setRecommendationsSummary(summary);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching AI summaries:', error);
+        // Silently fail - summaries are enhancement, not critical
+      }
+    };
+
+    fetchAISummaries();
+  }, [result, model, user, recommendations]);
   
   // Memoize recommendations to ensure consistent hook order
   const recommendations = useMemo(() => {
