@@ -129,24 +129,24 @@ export function generateAssessmentPDF(data: PDFData): jsPDF {
   doc.setFont('Avenir', 'bold');
   doc.setFontSize(18);
   doc.setTextColor(textColor.r, textColor.g, textColor.b);
-  doc.text('Overall Maturity Score', 105, yPosition, { align: 'center' });
+  doc.text('Overall Maturity Score', 25, yPosition);
   doc.setFont('Avenir', 'normal');
   
   yPosition += 15;
   doc.setFontSize(36);
   doc.setTextColor(primaryColor.r, primaryColor.g, primaryColor.b);
-  doc.text(result.overallScore.toString(), 85, yPosition, { align: 'right' });
+  doc.text(result.overallScore.toString(), 25, yPosition);
   
   doc.setFontSize(14);
   doc.setTextColor(grayColor.r, grayColor.g, grayColor.b);
-  doc.text(' out of 500', 85, yPosition);
+  doc.text(` out of 500`, 25 + doc.getTextWidth(result.overallScore.toString()), yPosition);
   
   yPosition += 15;
 
   // Maturity Level
   doc.setFontSize(16);
   doc.setTextColor(primaryColor.r, primaryColor.g, primaryColor.b);
-  doc.text(`Maturity Level: ${result.label}`, 105, yPosition, { align: 'center' });
+  doc.text(`Maturity Level: ${result.label}`, 25, yPosition);
   
   yPosition += 10;
   doc.setFontSize(10);
@@ -158,7 +158,7 @@ export function generateAssessmentPDF(data: PDFData): jsPDF {
     doc.setFont('Avenir', 'bold');
     doc.setFontSize(12);
     doc.setTextColor(textColor.r, textColor.g, textColor.b);
-    doc.text('Executive Summary', 105, yPosition, { align: 'center' });
+    doc.text('Executive Summary', 25, yPosition);
     doc.setFont('Avenir', 'normal');
     yPosition += 8;
     
@@ -195,9 +195,9 @@ export function generateAssessmentPDF(data: PDFData): jsPDF {
         break;
     }
     
-    const lines = doc.splitTextToSize(maturityDescription, 150);
+    const lines = doc.splitTextToSize(maturityDescription, 160);
     lines.forEach((line: string) => {
-      doc.text(line, 105, yPosition, { align: 'center' });
+      doc.text(line, 25, yPosition);
       yPosition += 5;
     });
     yPosition += 10;
@@ -208,15 +208,15 @@ export function generateAssessmentPDF(data: PDFData): jsPDF {
     doc.setFont('Avenir', 'bold');
     doc.setFontSize(12);
     doc.setTextColor(textColor.r, textColor.g, textColor.b);
-    doc.text('Industry Benchmark', 105, yPosition, { align: 'center' });
+    doc.text('Industry Benchmark', 25, yPosition);
     doc.setFont('Avenir', 'normal');
     yPosition += 7;
     
     doc.setFontSize(10);
-    doc.text(`Your Score: ${result.overallScore} | Industry Average: ${benchmark.meanScore}`, 105, yPosition, { align: 'center' });
+    doc.text(`Your Score: ${result.overallScore} | Industry Average: ${benchmark.meanScore}`, 25, yPosition);
     doc.setTextColor(grayColor.r, grayColor.g, grayColor.b);
     yPosition += 5;
-    doc.text(`Based on ${benchmark.sampleSize} organizations`, 105, yPosition, { align: 'center' });
+    doc.text(`Based on ${benchmark.sampleSize} organizations`, 25, yPosition);
     yPosition += 10;
   }
 
@@ -228,7 +228,7 @@ export function generateAssessmentPDF(data: PDFData): jsPDF {
   doc.setFont('Avenir', 'bold');
   doc.setFontSize(14);
   doc.setTextColor(textColor.r, textColor.g, textColor.b);
-  doc.text('Dimension Breakdown', 105, yPosition, { align: 'center' });
+  doc.text('Dimension Breakdown', 25, yPosition);
   doc.setFont('Avenir', 'normal');
   yPosition += 10;
 
@@ -286,7 +286,7 @@ export function generateAssessmentPDF(data: PDFData): jsPDF {
       doc.setFont('Avenir', 'bold');
       doc.setFontSize(12);
       doc.setTextColor(textColor.r, textColor.g, textColor.b);
-      doc.text('Your Transformation Roadmap', 105, yPosition, { align: 'center' });
+      doc.text('Your Transformation Roadmap', 25, yPosition);
       doc.setFont('Avenir', 'normal');
       yPosition += 8;
       
@@ -309,7 +309,7 @@ export function generateAssessmentPDF(data: PDFData): jsPDF {
       doc.setFont('Avenir', 'bold');
       doc.setFontSize(12);
       doc.setTextColor(textColor.r, textColor.g, textColor.b);
-      doc.text('Strategic Action Items', 105, yPosition, { align: 'center' });
+      doc.text('Strategic Action Items', 25, yPosition);
       doc.setFont('Avenir', 'normal');
       yPosition += 8;
     }
@@ -355,7 +355,7 @@ export function generateAssessmentPDF(data: PDFData): jsPDF {
     doc.setFont('Avenir', 'bold');
     doc.setFontSize(14);
     doc.setTextColor(textColor.r, textColor.g, textColor.b);
-    doc.text('Improvement Resources', 105, yPosition, { align: 'center' });
+    doc.text('Improvement Resources', 25, yPosition);
     doc.setFont('Avenir', 'normal');
     yPosition += 10;
 
@@ -417,21 +417,21 @@ export function generateAssessmentPDF(data: PDFData): jsPDF {
   doc.setFont('Avenir', 'bold');
   doc.setFontSize(14);
   doc.setTextColor(textColor.r, textColor.g, textColor.b);
-  doc.text('Ready to Transform Your Organization?', 105, yPosition, { align: 'center' });
+  doc.text('Ready to Transform Your Organization?', 25, yPosition);
   doc.setFont('Avenir', 'normal');
   
   yPosition += 8;
   doc.setFontSize(10);
   doc.setTextColor(grayColor.r, grayColor.g, grayColor.b);
-  doc.text('Connect with our transformation experts to create a custom roadmap', 105, yPosition, { align: 'center' });
+  doc.text('Connect with our transformation experts to create a custom roadmap', 25, yPosition);
   yPosition += 5;
-  doc.text('for your organization\'s unique journey to excellence.', 105, yPosition, { align: 'center' });
+  doc.text('for your organization\'s unique journey to excellence.', 25, yPosition);
   
   yPosition += 10;
   doc.setFont('Avenir', 'bold');
   doc.setFontSize(11);
   doc.setTextColor(primaryColor.r, primaryColor.g, primaryColor.b);
-  doc.text('Take Action Today:', 105, yPosition, { align: 'center' });
+  doc.text('Take Action Today:', 25, yPosition);
   doc.setFont('Avenir', 'normal');
   
   yPosition += 8;
@@ -459,11 +459,6 @@ export function generateAssessmentPDF(data: PDFData): jsPDF {
   yPosition += 5;
   doc.setTextColor(primaryColor.r, primaryColor.g, primaryColor.b);
   doc.text('  ContactUs@synozur.com', 30, yPosition);
-  yPosition += 5;
-  doc.setFontSize(8);
-  doc.setTextColor(grayColor.r, grayColor.g, grayColor.b);
-  doc.text(`  (Email subject: "Followup on ${model.name}")`, 30, yPosition);
-  doc.setFontSize(9);
   
   yPosition += 12;
   
