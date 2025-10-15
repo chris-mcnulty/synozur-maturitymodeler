@@ -95,7 +95,7 @@ class AIService {
         .map(([, dim]) => `${dim.label}: ${dim.score}/500`)
         .join('\n');
 
-      const prompt = `You are a maturity assessment expert from The Synozur Alliance LLC, a leading transformation consultancy.
+      const prompt = `You are a transformation expert from The Synozur Alliance LLC (Synozur - the transformation company). Use Synozur's brand voice: empathetic, tailored, and focused on making the desirable achievable.
 
 Generate a comprehensive maturity summary for this assessment:
 
@@ -110,15 +110,22 @@ User Context:
 Dimension Scores:
 ${dimensionBreakdown}
 
-Write a 2-3 paragraph executive summary that:
-1. Provides an overall assessment of the organization's maturity level
-2. Highlights key strengths (highest scoring dimensions)
-3. Identifies priority improvement areas (lowest scoring dimensions)
-4. ${userContext ? 'Personalizes insights based on industry, company size, and role' : 'Provides general strategic guidance'}
-5. Uses professional language aligned with Synozur's brand as transformation experts
-6. Ends with an encouraging forward-looking statement
+Write a 2-3 paragraph executive summary following Synozur's brand voice:
+1. Start with empathy - acknowledge the organization's unique journey and current position
+2. Highlight key strengths as foundations to build upon (highest scoring dimensions)
+3. Identify priority transformation opportunities (lowest scoring dimensions) as paths to growth
+4. ${userContext ? `Tailor insights specifically for a ${userContext.jobTitle || 'leader'} in ${userContext.industry || 'the industry'} with ${userContext.companySize || 'this company size'}` : 'Provide strategic guidance'}
+5. Frame challenges as opportunities - make the desirable achievable
+6. End with an encouraging statement about finding their "North Star" for excellence
 
-Keep the tone professional, insightful, and action-oriented. Focus on transformation opportunities.`;
+Brand Voice Guidelines:
+- Empathetic and human-centric: "We understand your unique challenges"
+- Tailored solutions: Emphasize custom approaches, not one-size-fits-all
+- Clear language at 12th-grade reading level, avoid unnecessary jargon
+- Positive but grounded tone - confident without boasting
+- Focus on transformation journey and partnership
+
+Remember: Synozur illuminates the pathway for excellence and success.`;
 
       const completion = await this.callOpenAI(prompt);
       
@@ -147,7 +154,7 @@ Keep the tone professional, insightful, and action-oriented. Focus on transforma
         .map(r => `- ${r.title}: ${r.description}`)
         .join('\n');
 
-      const prompt = `You are a transformation expert from The Synozur Alliance LLC.
+      const prompt = `You are a transformation expert from The Synozur Alliance LLC (Synozur - the transformation company). Your role is to be a "navigator of change" who helps organizations find their North Star.
 
 Generate a strategic recommendations summary based on these assessment recommendations:
 
@@ -161,15 +168,23 @@ User Context:
 Recommendations:
 ${recList}
 
-Write a 1-2 paragraph executive summary that:
-1. Synthesizes the key recommendations into a cohesive action plan
-2. Prioritizes based on impact and feasibility
-3. ${userContext ? `Tailors the approach specifically for a ${userContext.jobTitle || 'leader'} in the ${userContext.industry || 'industry'} sector with ${userContext.companySize || 'this company size'}` : 'Provides strategic guidance'}
-4. Emphasizes the transformation journey and expected outcomes
-5. Mentions how Synozur's expertise can accelerate implementation
-6. Ends with a clear next step or call to action
+Write a 1-2 paragraph transformation roadmap following Synozur's brand voice:
+1. Frame this as a unique journey tailored to their specific needs - "Your transformation is unique"
+2. Synthesize recommendations into a clear, achievable path forward
+3. ${userContext ? `Personalize for a ${userContext.jobTitle || 'leader'} navigating transformation in ${userContext.industry || 'your industry'} with ${userContext.companySize || 'your organization size'}` : 'Provide strategic guidance'}
+4. Emphasize partnership: "We'll help you plot a new course" and "navigate complexities with ease"
+5. Connect to tangible business outcomes (efficiency, ROI, market success, adoption)
+6. Close with an invitation to partnership: how Synozur's expertise makes the desirable achievable
 
-Use Synozur's brand voice: confident, expert, transformation-focused, and results-oriented.`;
+Brand Voice Reminders:
+- Empathetic acknowledgment of their challenges
+- Tailored, custom approach - never generic
+- Clear, conversational language (12th-grade level)
+- Positive yet grounded - confident without overselling
+- Focus on partnership and collaboration ("we" language)
+- Frame as navigating toward their North Star
+
+Tagline integration: "With Synozur, we'll help you find your North Star and make the desirable achievable."`;
 
       const completion = await this.callOpenAI(prompt);
       

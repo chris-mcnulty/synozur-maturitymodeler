@@ -125,6 +125,55 @@ export default function Results() {
 
   // Define all hooks before any conditional returns to ensure consistent hook order
   const overallScore = result?.overallScore || 0;
+  
+  // Memoize recommendations to ensure consistent hook order
+  const recommendations = useMemo(() => {
+    if (!result || !model) return [];
+    const recs = [];
+    
+    // Overall score-based recommendations
+    if (result.overallScore >= 450) {
+      recs.push({
+        icon: <Award className="h-5 w-5" />,
+        title: "Industry Leader",
+        description: "You're at the forefront of AI transformation. Focus on innovation and sharing best practices.",
+      });
+    } else if (result.overallScore >= 350) {
+      recs.push({
+        icon: <TrendingUp className="h-5 w-5" />,
+        title: "Strong Foundation",
+        description: "You have excellent AI capabilities. Focus on optimization and scaling successful initiatives.",
+      });
+    } else if (result.overallScore >= 250) {
+      recs.push({
+        icon: <Target className="h-5 w-5" />,
+        title: "Building Momentum",
+        description: "You're making progress. Prioritize high-impact areas and build systematic processes.",
+      });
+    } else {
+      recs.push({
+        icon: <Lightbulb className="h-5 w-5" />,
+        title: "Getting Started",
+        description: "Begin with pilot projects and focus on building foundational AI capabilities.",
+      });
+    }
+
+    // Dimension-specific recommendations
+    if (model?.dimensions && result?.dimensionScores) {
+      model.dimensions.forEach(dim => {
+        const score = (result.dimensionScores as Record<string, number>)[dim.key] || 0;
+        if (score < 60) {
+          recs.push({
+            icon: <Target className="h-5 w-5" />,
+            title: `Improve ${dim.label}`,
+            description: `Focus on strengthening your ${dim.label.toLowerCase()} capabilities to unlock greater AI value.`,
+          });
+        }
+      });
+    }
+
+    return recs.slice(0, 3); // Return top 3 recommendations
+  }, [result, model]);
 
   // Fetch AI-generated summaries when result and model are loaded
   useEffect(() => {
@@ -194,55 +243,6 @@ export default function Results() {
 
     fetchAISummaries();
   }, [result, model, user, recommendations]);
-  
-  // Memoize recommendations to ensure consistent hook order
-  const recommendations = useMemo(() => {
-    if (!result || !model) return [];
-    const recs = [];
-    
-    // Overall score-based recommendations
-    if (result.overallScore >= 450) {
-      recs.push({
-        icon: <Award className="h-5 w-5" />,
-        title: "Industry Leader",
-        description: "You're at the forefront of AI transformation. Focus on innovation and sharing best practices.",
-      });
-    } else if (result.overallScore >= 350) {
-      recs.push({
-        icon: <TrendingUp className="h-5 w-5" />,
-        title: "Strong Foundation",
-        description: "You have excellent AI capabilities. Focus on optimization and scaling successful initiatives.",
-      });
-    } else if (result.overallScore >= 250) {
-      recs.push({
-        icon: <Target className="h-5 w-5" />,
-        title: "Building Momentum",
-        description: "You're making progress. Prioritize high-impact areas and build systematic processes.",
-      });
-    } else {
-      recs.push({
-        icon: <Lightbulb className="h-5 w-5" />,
-        title: "Getting Started",
-        description: "Begin with pilot projects and focus on building foundational AI capabilities.",
-      });
-    }
-
-    // Dimension-specific recommendations
-    if (model?.dimensions && result?.dimensionScores) {
-      model.dimensions.forEach(dim => {
-        const score = (result.dimensionScores as Record<string, number>)[dim.key] || 0;
-        if (score < 60) {
-          recs.push({
-            icon: <Target className="h-5 w-5" />,
-            title: `Improve ${dim.label}`,
-            description: `Focus on strengthening your ${dim.label.toLowerCase()} capabilities to unlock greater AI value.`,
-          });
-        }
-      });
-    }
-
-    return recs.slice(0, 3); // Return top 3 recommendations
-  }, [result, model]);
 
   // Memoize improvement resources to ensure consistent hook order
   const improvementResources = useMemo(() => {
@@ -315,7 +315,16 @@ export default function Results() {
           title: r.title,
           description: r.description
         })),
-        improvementResources: improvementResources.slice(0, 3)
+        improvementResources: improvementResources.slice(0, 3),
+        maturitySummary,
+        recommendationsSummary,
+        userContext: user ? {
+          name: user.name || undefined,
+          company: user.company || undefined,
+          jobTitle: user.jobTitle || undefined,
+          industry: user.industry || undefined,
+          companySize: user.companySize || undefined
+        } : undefined
       });
 
       // Download the PDF
@@ -366,7 +375,16 @@ export default function Results() {
           title: r.title,
           description: r.description
         })),
-        improvementResources: improvementResources.slice(0, 3)
+        improvementResources: improvementResources.slice(0, 3),
+        maturitySummary,
+        recommendationsSummary,
+        userContext: user ? {
+          name: user.name || undefined,
+          company: user.company || undefined,
+          jobTitle: user.jobTitle || undefined,
+          industry: user.industry || undefined,
+          companySize: user.companySize || undefined
+        } : undefined
       });
 
       // Convert PDF to base64 using Promise wrapper for proper error handling
@@ -592,6 +610,16 @@ export default function Results() {
               </div>
             </div>
           </Card>
+
+          {/* AI-Generated Maturity Summary */}
+          {maturitySummary && (
+            <Card className="p-8 mb-8">
+              <h3 className="text-2xl font-bold mb-4 text-primary">Executive Summary</h3>
+              <div className="prose prose-lg max-w-none">
+                <p className="text-muted-foreground whitespace-pre-wrap">{maturitySummary}</p>
+              </div>
+            </Card>
+          )}
         </div>
       </section>
 
@@ -617,7 +645,16 @@ export default function Results() {
       {/* Personalized Recommendations */}
       <section className="py-12 bg-muted/30">
         <div className="container mx-auto px-4 max-w-6xl">
-          <h2 className="text-3xl font-bold mb-8 text-center">Personalized Recommendations</h2>
+          <h2 className="text-3xl font-bold mb-8 text-center">Strategic Recommendations</h2>
+          
+          {/* AI-Generated Recommendations Summary */}
+          {recommendationsSummary && (
+            <Card className="p-6 mb-8 bg-background">
+              <h3 className="text-lg font-semibold mb-4 text-primary">Your Transformation Roadmap</h3>
+              <p className="text-muted-foreground whitespace-pre-wrap">{recommendationsSummary}</p>
+            </Card>
+          )}
+          
           <div className="grid md:grid-cols-1 lg:grid-cols-3 gap-6">
             {recommendations.map((rec, idx) => (
               <Card key={idx} className="p-6" data-testid={`card-recommendation-${idx}`}>
