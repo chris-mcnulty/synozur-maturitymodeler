@@ -135,11 +135,13 @@ export function generateAssessmentPDF(data: PDFData): jsPDF {
   yPosition += 15;
   doc.setFontSize(36);
   doc.setTextColor(primaryColor.r, primaryColor.g, primaryColor.b);
-  doc.text(result.overallScore.toString(), 25, yPosition);
+  const scoreText = result.overallScore.toString();
+  const scoreWidth = doc.getTextWidth(scoreText); // Calculate width at font size 36
+  doc.text(scoreText, 25, yPosition);
   
   doc.setFontSize(14);
   doc.setTextColor(grayColor.r, grayColor.g, grayColor.b);
-  doc.text(` out of 500`, 25 + doc.getTextWidth(result.overallScore.toString()), yPosition);
+  doc.text('out of 500', 25 + scoreWidth + 3, yPosition); // Add 3mm spacing
   
   yPosition += 15;
 
@@ -401,12 +403,10 @@ export function generateAssessmentPDF(data: PDFData): jsPDF {
     });
   }
 
-  // Check if we need a new page for footer
-  if (yPosition > 230) {
+  // Check if we need a new page for footer (needs ~65mm of space)
+  if (yPosition > 215) {
     doc.addPage();
     yPosition = 20;
-  } else {
-    yPosition = 230; // Move to footer position
   }
 
   // Enhanced Footer with Synozur Branding
