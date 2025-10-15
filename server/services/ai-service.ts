@@ -76,6 +76,35 @@ class AIService {
   private readonly timeout = 30000; // 30 seconds
 
   // Generate personalized recommendations based on assessment results
+  // Public method for generating text (for compatibility with admin endpoints)
+  async generateText(prompt: string, options?: GenerateOptions): Promise<any> {
+    try {
+      // If outputFormat is 'json', we need to provide a basic schema
+      const responseFormat = options?.outputFormat === 'json' ? z.object({}).passthrough() : undefined;
+      
+      const completion = await this.callOpenAI(prompt, responseFormat);
+      
+      if (!completion) {
+        throw new Error('Failed to generate text');
+      }
+
+      // If JSON format was requested, parse and return the object
+      if (options?.outputFormat === 'json') {
+        try {
+          return JSON.parse(completion);
+        } catch (e) {
+          console.error('Failed to parse JSON response:', e);
+          throw new Error('Invalid JSON response from AI');
+        }
+      }
+
+      return completion;
+    } catch (error) {
+      console.error('Error in generateText:', error);
+      throw error;
+    }
+  }
+
   async generateRecommendations(context: RecommendationContext): Promise<GeneratedRecommendation[]> {
     try {
       const prompt = this.buildRecommendationPrompt(context);
