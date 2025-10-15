@@ -363,33 +363,45 @@ export function generateAssessmentPDF(data: PDFData): jsPDF {
   
   doc.setFontSize(14);
   doc.setTextColor(textColor.r, textColor.g, textColor.b);
-  doc.text('Take the Next Step in Your Transformation Journey', 105, yPosition, { align: 'center' });
+  doc.text('Ready to Transform Your Organization?', 105, yPosition, { align: 'center' });
   
   yPosition += 8;
   doc.setFontSize(10);
   doc.setTextColor(grayColor.r, grayColor.g, grayColor.b);
-  doc.text('The Synozur Alliance specializes in guiding organizations through', 105, yPosition, { align: 'center' });
+  doc.text('Connect with our transformation experts to create a custom roadmap', 105, yPosition, { align: 'center' });
   yPosition += 5;
-  doc.text('strategic transformations that deliver measurable results.', 105, yPosition, { align: 'center' });
+  doc.text('for your organization\'s unique journey to excellence.', 105, yPosition, { align: 'center' });
   
   yPosition += 10;
   doc.setFontSize(11);
   doc.setTextColor(primaryColor.r, primaryColor.g, primaryColor.b);
-  doc.text('Connect With Our Experts:', 105, yPosition, { align: 'center' });
+  doc.text('Take Action Today:', 105, yPosition, { align: 'center' });
   
-  yPosition += 7;
-  doc.setFontSize(10);
+  yPosition += 8;
+  doc.setFontSize(9);
+  
+  // Schedule a Workshop
   doc.setTextColor(textColor.r, textColor.g, textColor.b);
-  
-  // Email contact
-  doc.text('✉ Email: contactus@synozur.com', 105, yPosition, { align: 'center' });
-  yPosition += 6;
-  
-  // Schedule consultation
-  doc.text('📅 Schedule a Consultation:', 105, yPosition, { align: 'center' });
+  doc.text('• Schedule a Workshop:', 30, yPosition);
   yPosition += 5;
   doc.setTextColor(primaryColor.r, primaryColor.g, primaryColor.b);
-  doc.text('https://www.synozur.com/start', 105, yPosition, { align: 'center' });
+  doc.text('  https://www.synozur.com/start', 30, yPosition);
+  yPosition += 7;
+  
+  // Learn More About Our Services
+  doc.setTextColor(textColor.r, textColor.g, textColor.b);
+  doc.text('• Learn More About Our Services:', 30, yPosition);
+  yPosition += 5;
+  doc.setTextColor(primaryColor.r, primaryColor.g, primaryColor.b);
+  doc.text('  https://www.synozur.com/services-overview/default', 30, yPosition);
+  yPosition += 7;
+  
+  // Contact Our Experts with subject line
+  doc.setTextColor(textColor.r, textColor.g, textColor.b);
+  doc.text(`• Contact Our Experts (Email subject: "Followup on ${model.name}"):`, 30, yPosition);
+  yPosition += 5;
+  doc.setTextColor(primaryColor.r, primaryColor.g, primaryColor.b);
+  doc.text('  contactus@synozur.com', 30, yPosition);
   
   yPosition += 12;
   
