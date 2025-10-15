@@ -16,6 +16,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Download, Plus, Edit, Trash, FileSpreadsheet, Eye, BarChart3, Settings, FileDown, FileUp, ListOrdered, Users, Star, Upload, X } from "lucide-react";
 import type { Model, Result, Assessment, Dimension, Question, Answer, User } from "@shared/schema";
 import { ObjectUploader } from "@/components/ObjectUploader";
+import { AiAssistant } from "@/components/admin/AiAssistant";
 
 interface AdminResult extends Result {
   assessmentId: string;
@@ -1195,6 +1196,31 @@ export default function Admin() {
                               <TableCell>{dimension.order}</TableCell>
                               <TableCell className="text-right">
                                 <div className="flex justify-end gap-2">
+                                  <AiAssistant
+                                    type="resources"
+                                    context={{
+                                      modelId: selectedModelId,
+                                      modelName: models.find(m => m.id === selectedModelId)?.name,
+                                      dimensionId: dimension.id,
+                                      dimensionLabel: dimension.label,
+                                    }}
+                                    onGenerated={(content) => {
+                                      toast({
+                                        title: "Resources Generated",
+                                        description: `Generated ${content.resources?.length || 0} resources for ${dimension.label}`,
+                                      });
+                                    }}
+                                    trigger={
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        title="Generate resources with AI"
+                                        data-testid={`button-generate-resources-${dimension.id}`}
+                                      >
+                                        <FileSpreadsheet className="h-4 w-4" />
+                                      </Button>
+                                    }
+                                  />
                                   <Button
                                     variant="ghost"
                                     size="icon"
@@ -2401,7 +2427,27 @@ export default function Admin() {
 
           <div className="space-y-4">
             <div>
-              <Label htmlFor="answer-improvement">Improvement Statement</Label>
+              <div className="flex items-center justify-between mb-2">
+                <Label htmlFor="answer-improvement">Improvement Statement</Label>
+                <AiAssistant
+                  type="improvement"
+                  context={{
+                    questionText: editingQuestion?.text,
+                    answerText: answerEditForm.text,
+                    answerScore: answerEditForm.score,
+                  }}
+                  onGenerated={(content) => {
+                    setAnswerEditForm({
+                      ...answerEditForm,
+                      improvementStatement: content.improvementStatement,
+                    });
+                    toast({
+                      title: "AI Content Applied",
+                      description: "The improvement statement has been updated.",
+                    });
+                  }}
+                />
+              </div>
               <Textarea
                 id="answer-improvement"
                 value={answerEditForm.improvementStatement}
