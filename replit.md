@@ -111,13 +111,16 @@ Maturity Modeler is a comprehensive fullstack JavaScript application for multi-m
   - Backend recommendation generation with personalized prompts
   - Admin AI content generation (interpretations, resources, improvements)
   - AI Usage dashboard with cost tracking and charts
-  - Content caching in aiGeneratedContent table with MD5 hash keys
+  - Content caching in aiGeneratedContent table with SHA256 hash keys
   - Usage logging in aiUsageLog for budget monitoring
   - Fallback recommendations when AI is unavailable
   - Synozur content prioritization in resource suggestions
   - AI-generated maturity summaries personalized by user context
   - AI-generated recommendation roadmaps aligned with Synozur brand voice
   - Enhanced PDF reports with AI summaries and The Synozur Alliance LLC branding
+  - **90-day caching for AI summaries**: Reduces API costs and ensures consistent content
+  - **Briefer, structured summaries**: Executive Summary (150 words) and Transformation Roadmap (120 words) with bullet points
+  - **Consistent PDF formatting**: Both AI sections use matching font sizes with proper dimensional score display
 
 ## Backlog
 
