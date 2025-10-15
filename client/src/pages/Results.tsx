@@ -762,20 +762,32 @@ export default function Results() {
       {/* CTA Section */}
       <section className="py-16 bg-gradient-to-b from-background to-primary/5">
         <div className="container mx-auto px-4 max-w-4xl text-center">
-          <h2 className="text-3xl font-bold mb-4">Ready to Transform Your AI Journey?</h2>
+          <h2 className="text-3xl font-bold mb-4">Ready to Transform Your Organization?</h2>
           <p className="text-lg text-muted-foreground mb-8">
-            Connect with our AI experts to create a custom transformation roadmap
+            Connect with our transformation experts to create a custom roadmap
           </p>
           <div className="grid md:grid-cols-3 gap-4 mb-8">
-            <Card className="p-4 hover-elevate">
+            <Card 
+              className="p-4 hover-elevate cursor-pointer"
+              onClick={() => window.open('https://www.synozur.com/start', '_blank')}
+            >
               <Calendar className="h-8 w-8 mx-auto mb-2 text-primary" />
               <h3 className="font-semibold">Schedule a Workshop</h3>
             </Card>
-            <Card className="p-4 hover-elevate">
+            <Card 
+              className="p-4 hover-elevate cursor-pointer"
+              onClick={() => window.open('https://www.synozur.com/services-overview/default', '_blank')}
+            >
               <BookOpen className="h-8 w-8 mx-auto mb-2 text-primary" />
-              <h3 className="font-semibold">Learn More About AI</h3>
+              <h3 className="font-semibold">Learn More</h3>
             </Card>
-            <Card className="p-4 hover-elevate">
+            <Card 
+              className="p-4 hover-elevate cursor-pointer"
+              onClick={() => {
+                const subject = encodeURIComponent(`Followup on ${model?.name || 'Assessment'}`);
+                window.location.href = `mailto:contactus@synozur.com?subject=${subject}`;
+              }}
+            >
               <Phone className="h-8 w-8 mx-auto mb-2 text-primary" />
               <h3 className="font-semibold">Contact Our Experts</h3>
             </Card>
