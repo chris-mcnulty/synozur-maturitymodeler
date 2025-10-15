@@ -2365,6 +2365,43 @@ export default function Admin() {
                       </TableCell>
                       <TableCell>
                         <div className="flex gap-1">
+                          <AiAssistant
+                            type="answer-rewrite"
+                            context={{
+                              questionText: editingQuestion?.text,
+                              answerText: localState.text,
+                              answerScore: localState.score,
+                              modelContext: selectedModel?.name,
+                            }}
+                            onGenerated={(data) => {
+                              if (data.rewrittenAnswer) {
+                                // Update the local state first
+                                setAnswerLocalState({
+                                  ...answerLocalState,
+                                  [answer.id]: { ...localState, text: data.rewrittenAnswer }
+                                });
+                                // Then update the database
+                                updateAnswer.mutate({
+                                  id: answer.id,
+                                  text: data.rewrittenAnswer
+                                });
+                                toast({
+                                  title: "Answer Rewritten",
+                                  description: "The answer has been updated with more contextual language.",
+                                });
+                              }
+                            }}
+                            trigger={
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                title="Rewrite answer to be more contextual"
+                                data-testid={`rewrite-answer-${answer.id}`}
+                              >
+                                <Sparkles className="h-4 w-4" />
+                              </Button>
+                            }
+                          />
                           <Button
                             variant="ghost"
                             size="icon"

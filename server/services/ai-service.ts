@@ -9,6 +9,12 @@ const openai = new OpenAI({
 });
 
 // Types for AI service
+export interface GenerateOptions {
+  outputFormat?: 'json' | 'text';
+  temperature?: number;
+  maxTokens?: number;
+}
+
 export interface RecommendationContext {
   assessment: Assessment;
   model: Model;
@@ -71,11 +77,44 @@ const resourceSuggestionSchema = z.object({
 });
 
 class AIService {
-  private readonly model = 'gpt-5-mini-2025-08-07'; // Using GPT-5 mini for cost efficiency
+  private readonly model = 'gpt-5-mini'; // Using Replit AI Integrations GPT-5 mini model
   private readonly maxRetries = 3;
   private readonly timeout = 30000; // 30 seconds
 
   // Generate personalized recommendations based on assessment results
+  
+  // Rewrite an answer option to be more contextual to the specific question
+  async rewriteAnswer(question: string, answer: string, score: number, modelContext?: string): Promise<string> {
+    try {
+      const prompt = `You are an expert in maturity assessments. Rewrite the following answer option to be more specific and contextual to the question while maintaining the same maturity level.
+
+Question: ${question}
+Current Answer: ${answer}
+Score Level: ${score}/100 (${this.getMaturityLevel(score * 5)})
+${modelContext ? `Model Context: ${modelContext}` : ''}
+
+Rewrite the answer to:
+1. Be specifically relevant to the question asked
+2. Maintain the same maturity level (${this.getMaturityLevel(score * 5)})
+3. Be clear and actionable
+4. Avoid generic statements
+5. Focus on practical, real-world scenarios
+
+Return only the rewritten answer text, no explanations or additional formatting.`;
+
+      const completion = await this.callOpenAI(prompt);
+      
+      if (!completion) {
+        throw new Error('Failed to rewrite answer');
+      }
+
+      return completion.trim();
+    } catch (error) {
+      console.error('Error rewriting answer:', error);
+      throw error;
+    }
+  }
+
   // Public method for generating text (for compatibility with admin endpoints)
   async generateText(prompt: string, options?: GenerateOptions): Promise<any> {
     try {

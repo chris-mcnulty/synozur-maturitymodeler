@@ -12,11 +12,12 @@ import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface AiAssistantProps {
-  type: 'interpretation' | 'resources' | 'improvement';
+  type: 'interpretation' | 'resources' | 'improvement' | 'answer-rewrite';
   onGenerated: (content: any) => void;
   context?: {
     modelId?: string;
     modelName?: string;
+    modelContext?: string;
     dimensionId?: string;
     dimensionLabel?: string;
     questionText?: string;
@@ -95,6 +96,25 @@ export function AiAssistant({ type, onGenerated, context = {}, trigger }: AiAssi
     },
   });
 
+  const rewriteAnswer = useMutation({
+    mutationFn: (data: any) => apiRequest('/api/admin/ai/rewrite-answer', 'POST', data),
+    onSuccess: (data) => {
+      onGenerated(data);
+      setIsOpen(false);
+      toast({
+        title: "Answer Rewritten",
+        description: "Answer has been rewritten to be more contextual and specific.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Rewrite Failed",
+        description: "Failed to rewrite answer. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleGenerate = () => {
     if (type === 'interpretation') {
       generateInterpretation.mutate({
@@ -114,10 +134,17 @@ export function AiAssistant({ type, onGenerated, context = {}, trigger }: AiAssi
         answerText: context.answerText,
         answerScore: context.answerScore,
       });
+    } else if (type === 'answer-rewrite') {
+      rewriteAnswer.mutate({
+        questionText: context.questionText,
+        answerText: context.answerText,
+        answerScore: context.answerScore,
+        modelContext: context.modelContext,
+      });
     }
   };
 
-  const isGenerating = generateInterpretation.isPending || generateResources.isPending || generateImprovement.isPending;
+  const isGenerating = generateInterpretation.isPending || generateResources.isPending || generateImprovement.isPending || rewriteAnswer.isPending;
 
   return (
     <>
@@ -144,6 +171,7 @@ export function AiAssistant({ type, onGenerated, context = {}, trigger }: AiAssi
                 {type === 'interpretation' && 'Generate Maturity Level Interpretation'}
                 {type === 'resources' && 'Generate Resource Suggestions'}
                 {type === 'improvement' && 'Generate Improvement Statement'}
+                {type === 'answer-rewrite' && 'Rewrite Answer for Context'}
               </div>
             </DialogTitle>
             <DialogDescription>
@@ -229,6 +257,25 @@ export function AiAssistant({ type, onGenerated, context = {}, trigger }: AiAssi
                     <p><strong>Question:</strong> {context.questionText}</p>
                     <p><strong>Answer:</strong> {context.answerText}</p>
                     <p><strong>Score:</strong> {context.answerScore}/100</p>
+                  </div>
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {type === 'answer-rewrite' && (
+              <Alert>
+                <AlertDescription>
+                  <div className="space-y-2">
+                    <p><strong>Question:</strong> {context.questionText}</p>
+                    <p><strong>Current Answer:</strong> {context.answerText}</p>
+                    <p><strong>Score Level:</strong> {context.answerScore}/100</p>
+                    <div className="mt-3 pt-3 border-t">
+                      <p className="text-sm text-muted-foreground">
+                        The AI will rewrite this answer to be more specific and contextual to the question, 
+                        while maintaining the same maturity level. This helps eliminate generic answers 
+                        and makes each option more relevant to what's being assessed.
+                      </p>
+                    </div>
                   </div>
                 </AlertDescription>
               </Alert>

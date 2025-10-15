@@ -1237,7 +1237,7 @@ Respond in JSON format:
       // Log usage
       await storage.createAiUsageLog({
         userId: req.user!.id,
-        modelName: 'gpt-5-mini-2025-08-07',
+        modelName: 'gpt-5-mini',
         operation: 'generate-improvement',
         estimatedCost: 2
       });
@@ -1246,6 +1246,62 @@ Respond in JSON format:
     } catch (error) {
       console.error('Failed to generate improvement statement:', error);
       res.status(500).json({ error: "Failed to generate improvement statement" });
+    }
+  });
+
+  // Rewrite answer option to be more contextual to the specific question
+  app.post("/api/admin/ai/rewrite-answer", ensureAdmin, async (req, res) => {
+    try {
+      const { questionText, answerText, answerScore, modelContext } = req.body;
+      
+      // Validate input
+      if (!questionText || !answerText || answerScore === undefined) {
+        return res.status(400).json({ error: "Question text, answer text, and answer score are required" });
+      }
+
+      // Generate cache key
+      const contextHash = createHash('md5')
+        .update(JSON.stringify({ questionText, answerText, answerScore, modelContext }))
+        .digest('hex');
+
+      // Check cache first
+      const cached = await storage.getAiGeneratedContent('answer-rewrite', contextHash);
+      if (cached && cached.expiresAt && cached.expiresAt > new Date()) {
+        return res.json({ rewrittenAnswer: cached.content });
+      }
+
+      // Generate using AI
+      const rewrittenAnswer = await aiService.rewriteAnswer(
+        questionText,
+        answerText,
+        answerScore,
+        modelContext
+      );
+
+      // Cache the result for 30 days
+      const expiresAt = new Date();
+      expiresAt.setDate(expiresAt.getDate() + 30);
+      
+      await storage.createAiGeneratedContent({
+        type: 'answer-rewrite',
+        contextHash,
+        content: rewrittenAnswer as any,
+        metadata: { questionText, answerText, answerScore, modelContext },
+        expiresAt
+      });
+
+      // Log usage
+      await storage.createAiUsageLog({
+        userId: req.user!.id,
+        modelName: 'gpt-5-mini',
+        operation: 'rewrite-answer',
+        estimatedCost: 1
+      });
+
+      res.json({ rewrittenAnswer });
+    } catch (error) {
+      console.error('Failed to rewrite answer:', error);
+      res.status(500).json({ error: "Failed to rewrite answer" });
     }
   });
 
