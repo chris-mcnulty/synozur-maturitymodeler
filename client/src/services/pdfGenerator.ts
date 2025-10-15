@@ -122,9 +122,10 @@ export function generateAssessmentPDF(data: PDFData): jsPDF {
     yPosition += 8;
     
     doc.setFontSize(9);
+    doc.setTextColor(textColor.r, textColor.g, textColor.b);
     const summaryLines = doc.splitTextToSize(maturitySummary, 160);
     summaryLines.forEach((line: string) => {
-      if (yPosition > 260) {
+      if (yPosition > 240) {  // Changed from 260 to ensure space for dimensional scores
         doc.addPage();
         yPosition = 20;
       }
@@ -230,18 +231,18 @@ export function generateAssessmentPDF(data: PDFData): jsPDF {
   }
 
   // Personalized Recommendations
-  if (recommendations.length > 0) {
+  if (recommendationsSummary || recommendations.length > 0) {
     doc.setDrawColor(primaryColor.r, primaryColor.g, primaryColor.b);
     doc.line(20, yPosition, 190, yPosition);
     yPosition += 10;
     
-    doc.setFontSize(14);
-    doc.setTextColor(textColor.r, textColor.g, textColor.b);
-    doc.text('Strategic Recommendations', 105, yPosition, { align: 'center' });
-    yPosition += 10;
-
     // AI Recommendations Summary if available
     if (recommendationsSummary) {
+      doc.setFontSize(12);
+      doc.setTextColor(textColor.r, textColor.g, textColor.b);
+      doc.text('Your Transformation Roadmap', 105, yPosition, { align: 'center' });
+      yPosition += 8;
+      
       doc.setFontSize(9);
       doc.setTextColor(textColor.r, textColor.g, textColor.b);
       const summaryLines = doc.splitTextToSize(recommendationsSummary, 160);
@@ -254,11 +255,13 @@ export function generateAssessmentPDF(data: PDFData): jsPDF {
         yPosition += 5;
       });
       yPosition += 10;
-      
-      // Add section header for detailed recommendations
-      doc.setFontSize(11);
+    }
+    
+    // Detailed recommendations section
+    if (recommendations.length > 0) {
+      doc.setFontSize(12);
       doc.setTextColor(textColor.r, textColor.g, textColor.b);
-      doc.text('Detailed Action Items:', 30, yPosition);
+      doc.text('Strategic Action Items', 105, yPosition, { align: 'center' });
       yPosition += 8;
     }
 
