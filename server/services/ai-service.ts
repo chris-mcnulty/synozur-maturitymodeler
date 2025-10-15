@@ -355,7 +355,6 @@ Return only the rewritten answer text, no explanations or additional formatting.
         const completion = await openai.chat.completions.create({
           model: this.model,
           messages,
-          temperature: 0.7,
           max_completion_tokens: 2000,
           response_format: responseFormat ? { type: 'json_object' } : undefined,
         });
