@@ -338,10 +338,12 @@ export default function Results() {
         } : undefined
       });
 
-      // Download the PDF with proper filename format: [ModelName]-Report-[YYYY-MM-DD].pdf
+      // Download the PDF with unique filename format: [ModelName]-Report-[YYYY-MM-DD]-[UniqueID].pdf
       const today = new Date().toISOString().split('T')[0]; // Format: YYYY-MM-DD
       const modelNameSlug = model.name.replace(/\s+/g, '-');
-      pdf.save(`${modelNameSlug}-Report-${today}.pdf`);
+      // Generate a unique identifier using timestamp and random component
+      const uniqueId = Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
+      pdf.save(`${modelNameSlug}-Report-${today}-${uniqueId}.pdf`);
       
       toast({
         title: "Success",
@@ -425,7 +427,7 @@ export default function Results() {
         },
         body: JSON.stringify({
           pdfBase64: base64PDF,
-          fileName: `${model.name.replace(/\s+/g, '-')}-Report-${new Date().toISOString().split('T')[0]}.pdf`,
+          fileName: `${model.name.replace(/\s+/g, '-')}-Report-${new Date().toISOString().split('T')[0]}-${Date.now().toString(36) + Math.random().toString(36).substr(2, 5)}.pdf`,
           recipientEmail,
           recipientName,
           modelName: model.name,
