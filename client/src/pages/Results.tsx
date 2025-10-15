@@ -64,6 +64,8 @@ export default function Results() {
   const [pdfAction, setPdfAction] = useState<'download' | 'email' | null>(null);
   const [maturitySummary, setMaturitySummary] = useState<string>('');
   const [recommendationsSummary, setRecommendationsSummary] = useState<string>('');
+  const [aiContentLoading, setAiContentLoading] = useState(false);
+  const [aiContentReady, setAiContentReady] = useState(false);
   const { toast } = useToast();
 
   // Fetch user data
@@ -180,6 +182,9 @@ export default function Results() {
     const fetchAISummaries = async () => {
       if (!result || !model) return;
 
+      setAiContentLoading(true);
+      setAiContentReady(false);
+
       try {
         // Prepare dimension scores for AI
         const dimensionScoresForAI = model.dimensions.reduce((acc, dim) => ({
@@ -235,9 +240,15 @@ export default function Results() {
             setRecommendationsSummary(summary);
           }
         }
+        
+        // Mark AI content as ready
+        setAiContentReady(true);
       } catch (error) {
         console.error('Error fetching AI summaries:', error);
-        // Silently fail - summaries are enhancement, not critical
+        // Still mark as ready even on error
+        setAiContentReady(true);
+      } finally {
+        setAiContentLoading(false);
       }
     };
 
@@ -440,6 +451,26 @@ export default function Results() {
 
   // Handle PDF/Email actions
   const handlePdfAction = useCallback((action: 'download' | 'email') => {
+    // Check if AI content is still loading
+    if (aiContentLoading) {
+      toast({
+        title: "Please wait",
+        description: "Report is being generated. This may take a few moments.",
+        variant: "default"
+      });
+      return;
+    }
+
+    // Check if AI content is ready
+    if (!aiContentReady) {
+      toast({
+        title: "Report not ready",
+        description: "Please wait for the complete report to generate before downloading.",
+        variant: "default"
+      });
+      return;
+    }
+
     setPdfAction(action);
     if (!user) {
       setShowProfileGate(true);
@@ -452,7 +483,7 @@ export default function Results() {
         sendPdfEmail(user.email || '', user.name || undefined);
       }
     }
-  }, [user, generateAndDownloadPDF, sendPdfEmail]);
+  }, [user, generateAndDownloadPDF, sendPdfEmail, aiContentLoading, aiContentReady, toast]);
 
   const handleProfileComplete = useCallback((profile: any) => {
     setShowProfileGate(false);
@@ -612,12 +643,26 @@ export default function Results() {
           </Card>
 
           {/* AI-Generated Maturity Summary */}
-          {maturitySummary && (
+          {(aiContentLoading || maturitySummary) && (
             <Card className="p-8 mb-8">
               <h3 className="text-2xl font-bold mb-4 text-primary">Executive Summary</h3>
-              <div className="prose prose-lg max-w-none">
-                <p className="text-muted-foreground whitespace-pre-wrap">{maturitySummary}</p>
-              </div>
+              {aiContentLoading && !maturitySummary ? (
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <div className="h-4 w-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                    <span>Analyzing your assessment results...</span>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="h-4 bg-muted rounded animate-pulse" />
+                    <div className="h-4 bg-muted rounded animate-pulse w-5/6" />
+                    <div className="h-4 bg-muted rounded animate-pulse w-4/6" />
+                  </div>
+                </div>
+              ) : (
+                <div className="prose prose-lg max-w-none">
+                  <p className="text-muted-foreground whitespace-pre-wrap">{maturitySummary}</p>
+                </div>
+              )}
             </Card>
           )}
         </div>
@@ -648,10 +693,24 @@ export default function Results() {
           <h2 className="text-3xl font-bold mb-8 text-center">Strategic Recommendations</h2>
           
           {/* AI-Generated Recommendations Summary */}
-          {recommendationsSummary && (
+          {(aiContentLoading || recommendationsSummary) && (
             <Card className="p-6 mb-8 bg-background">
               <h3 className="text-lg font-semibold mb-4 text-primary">Your Transformation Roadmap</h3>
-              <p className="text-muted-foreground whitespace-pre-wrap">{recommendationsSummary}</p>
+              {aiContentLoading && !recommendationsSummary ? (
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <div className="h-4 w-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                    <span>Creating your transformation roadmap...</span>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="h-4 bg-muted rounded animate-pulse" />
+                    <div className="h-4 bg-muted rounded animate-pulse w-5/6" />
+                    <div className="h-4 bg-muted rounded animate-pulse w-4/6" />
+                  </div>
+                </div>
+              ) : (
+                <p className="text-muted-foreground whitespace-pre-wrap">{recommendationsSummary}</p>
+              )}
             </Card>
           )}
           
@@ -740,19 +799,39 @@ export default function Results() {
               <Button 
                 size="lg" 
                 onClick={() => handlePdfAction('download')}
+                disabled={aiContentLoading || !aiContentReady}
                 data-testid="button-download-pdf"
               >
-                <Download className="mr-2 h-4 w-4" />
-                Download PDF Report
+                {aiContentLoading ? (
+                  <>
+                    <div className="mr-2 h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                    Generating Report...
+                  </>
+                ) : (
+                  <>
+                    <Download className="mr-2 h-4 w-4" />
+                    Download PDF Report
+                  </>
+                )}
               </Button>
               <Button 
                 size="lg" 
                 variant="outline"
                 onClick={() => handlePdfAction('email')}
+                disabled={aiContentLoading || !aiContentReady}
                 data-testid="button-email-pdf"
               >
-                <Mail className="mr-2 h-4 w-4" />
-                Email Report
+                {aiContentLoading ? (
+                  <>
+                    <div className="mr-2 h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                    Preparing...
+                  </>
+                ) : (
+                  <>
+                    <Mail className="mr-2 h-4 w-4" />
+                    Email Report
+                  </>
+                )}
               </Button>
             </div>
           </Card>
