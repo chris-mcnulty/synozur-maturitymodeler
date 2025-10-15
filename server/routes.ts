@@ -1670,6 +1670,14 @@ Respond in JSON format:
 
       const { pdfBase64, fileName, recipientEmail, recipientName, modelName } = validationResult.data;
 
+      // Check if user's email is verified
+      if (!req.user.emailVerified) {
+        return res.status(403).json({ 
+          error: "Email not verified", 
+          message: "Please verify your email address before downloading PDF reports. Check your inbox for a verification link or request a new one from your profile." 
+        });
+      }
+
       // Import SendGrid client
       const { getUncachableSendGridClient } = await import('./sendgrid.js');
       const { client: sgMail, fromEmail } = await getUncachableSendGridClient();
