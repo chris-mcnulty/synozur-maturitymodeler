@@ -293,21 +293,6 @@ export default function Landing() {
                 ))}
               </div>
             )}
-            
-            {regularModels.length > 0 && (
-              <div className="mt-12 text-center">
-                <p className="text-muted-foreground mb-4">
-                  Can't find the assessment you're looking for?
-                </p>
-                <Button 
-                  variant="outline" 
-                  onClick={() => window.open('https://www.synozur.com/contact', '_blank')}
-                  data-testid="button-request-custom"
-                >
-                  Request Custom Assessment
-                </Button>
-              </div>
-            )}
           </div>
         </section>
 
@@ -341,6 +326,22 @@ export default function Landing() {
                 Visit Synozur.com
               </Button>
             </div>
+            
+            {regularModels.length > 0 && (
+              <div className="mt-12 pt-8 border-t border-white/20">
+                <p className="text-white/80 mb-4">
+                  Can't find the assessment you're looking for?
+                </p>
+                <Button 
+                  variant="outline" 
+                  className="bg-transparent text-white border-white hover:bg-white/10"
+                  onClick={() => window.open('https://www.synozur.com/contact', '_blank')}
+                  data-testid="button-request-custom"
+                >
+                  Request Custom Assessment
+                </Button>
+              </div>
+            )}
           </div>
         </section>
       </main>
