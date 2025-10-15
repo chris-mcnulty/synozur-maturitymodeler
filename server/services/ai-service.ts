@@ -12,6 +12,121 @@ const openai = new OpenAI({
   baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL || 'https://api.openai.com/v1',
 });
 
+// AI Playbook grounding for AI Maturity Assessment model
+const AI_PLAYBOOK_GROUNDING = `
+SYNOZUR AI MATURITY INSIGHTS - Leading AI Playbooks Analysis
+
+Key Strategic Themes from 16 Leading AI Playbooks:
+
+1. HOLISTIC AI MATURITY DRIVES PERFORMANCE
+- Only 12% of companies achieve high AI maturity ("AI Achievers")
+- AI Achievers enjoy 50% higher revenue growth than peers
+- Success requires integration across strategy, tech, talent, and culture
+- Embed AI broadly and intentionally for outsized gains
+
+2. PEOPLE AND CULTURE ARE PIVOTAL
+- 70% of AI success depends on people and processes, not algorithms
+- Foster AI-ready culture through training, upskilling, agile teams
+- Strong executive sponsorship is critical
+- Treat AI as human capital transformation, not just technology deployment
+
+3. CLOUD & SCALE AS AI ENABLERS
+- Robust cloud infrastructure and security are essential for AI at scale
+- 8-step journey: strategy → skills, grounded in cloud adoption
+- Invest in scalable platforms and cyber defense as foundations
+
+4. RESPONSIBLE AI AND RISK MANAGEMENT
+- Responsible/secure AI is non-negotiable across all playbooks
+- Address data poisoning, model theft, ethical governance
+- Build trust and resilience through ethical AI practices
+
+COMPANY-SPECIFIC INSIGHTS:
+
+ACCENTURE - The Art of AI Maturity:
+- AI Achievers (12%) use AI as strategic lever for transformation
+- Holistic approach: technology + strategy + C-suite sponsorship + culture
+- Nearly double the AI maturity scores and significantly higher revenue growth
+
+AMAZON - AI/ML/GenAI Cloud Adoption:
+- Work backward from business outcomes
+- Build foundations: data governance, flexible cloud, mature MLOps
+- Treat AI as long-term capability, not disconnected pilots
+
+BAIN - Winning with AI:
+- AI as foundational innovation platform, not standalone tool
+- Integrate humans "in the loop" with AI
+- Focus on few core initiatives delivering real business value
+
+BCG - Leader's Guide to Transformation:
+- Only 1 in 4 companies realizes real AI value at scale
+- 10/20/70 rule: 10% algorithms, 20% tech/data, 70% people/culture
+- Leaders report 50% higher revenue growth, 60% greater shareholder return
+
+BOOZ ALLEN - Securing AI:
+- AI security must be embedded throughout lifecycle
+- Critical risks: data poisoning, model manipulation, adversarial attacks
+- Secure AI deployment emerging as key market differentiator
+
+DELOITTE - AI Transformation:
+- ~80% of organizations plan to boost AI spending
+- AI needs to be "built in, not bolted on"
+- Focus on "agentic AI" - autonomous, reasoning systems
+
+GOOGLE - AI Adoption Framework:
+- Six themes: Learn, Lead, Access, Scale, Secure, Automate
+- Move from tactical experiments to strategic transformation
+- Methodically strengthen each dimension for acceleration
+
+IBM - CEO's Guide to GenAI:
+- GenAI is "game-changer" requiring CEO-level strategy
+- Drive application modernization and workforce training
+- Ensure trustworthy AI with fairness and transparency
+
+MCKINSEY - Executive's AI Playbook:
+- Three parts: Value & Assess, Execute, Beware
+- Quantify and prioritize opportunities
+- Avoid top 10 failure signs
+
+MICROSOFT - CIO's Guide:
+- CIOs shifting from IT enabler to strategic AI leader
+- 83% expect GenAI budget growth
+- Become ethical stewards and change agents
+
+PWC - Agentic AI:
+- Multi-agent systems for complex workflow automation
+- 73% of Middle East CEOs expect GenAI to reshape value creation
+- Early adopters seeing dramatic cost reduction and agility
+
+AI MATURITY MODEL (5 Levels):
+
+1. FOUNDATIONAL (Maturity 20-30):
+- Pilot AI projects, limited business impact
+- Focus: Basic infrastructure, data quality, education
+
+2. DEVELOPING (Maturity 30-40):
+- Targeted AI applications in 1-2 functions
+- Focus: Skills development, cross-functional alignment
+
+3. PROFICIENT (Maturity 40-50):
+- AI embedded in core operations
+- Focus: Scaling capabilities, change management
+
+4. ADVANCED (Maturity 50-60):
+- AI drives major decisions and innovation
+- Focus: Enterprise platforms, responsible AI
+
+5. FRONTIER (Maturity 60+):
+- AI-first culture, business model reinvention
+- Focus: Human-AI orchestration, ecosystem leadership
+
+TRANSFORMATION ROADMAP PRIORITIES:
+- Start with clear vision and business outcomes
+- Build foundations: data, cloud, security
+- Scale use cases with governance
+- Empower talent and foster culture
+- Continuously learn and adapt
+`;
+
 // Types for AI service
 export interface GenerateOptions {
   outputFormat?: 'json' | 'text';
@@ -181,16 +296,30 @@ class AIService {
       const opportunities = sortedDimensions.slice(-2)
         .map(([, dim]) => `${dim.label} (${dim.score}/500)`);
 
+      // Include AI Playbook grounding for AI Maturity Assessment model
+      const isAIModel = modelName?.toLowerCase().includes('ai maturity');
+      const grounding = isAIModel ? `
+
+STRATEGIC CONTEXT FROM LEADING AI PLAYBOOKS:
+- Only 12% of companies achieve high AI maturity ("AI Achievers") with 50% higher revenue growth
+- 70% of AI success depends on people and processes, not algorithms
+- BCG's 10/20/70 rule: 10% algorithms, 20% tech/data, 70% people/culture
+- AI maturity levels: Foundational (20-30), Developing (30-40), Proficient (40-50), Advanced (50-60), Frontier (60+)
+- Key success factors: holistic integration, executive sponsorship, cloud infrastructure, responsible AI
+` : '';
+
       const prompt = `You are a transformation expert from The Synozur Alliance LLC. Write a BRIEF executive summary (MAX 150 words total) with clear structure:
 
 Assessment: ${modelName}
 Overall Score: ${overallScore}/500
 ${userContext ? `Context: ${userContext.jobTitle || 'Leader'} in ${userContext.industry || 'Industry'}, ${userContext.companySize || 'Company'}` : ''}
+${grounding}
 
 Write EXACTLY 3 short paragraphs:
 
 PARAGRAPH 1 (2 sentences):
 Acknowledge their current position with empathy. Reference the overall score and journey uniqueness.
+${isAIModel ? 'Reference insights from leading AI playbooks where relevant.' : ''}
 
 PARAGRAPH 2 (use bullet points):
 Your key strengths:
@@ -203,6 +332,7 @@ Priority growth areas:
 
 PARAGRAPH 3 (2 sentences):
 Inspiring close about finding their North Star and Synozur partnership making the desirable achievable.
+${isAIModel ? 'Connect to the strategic importance of AI transformation based on playbook insights.' : ''}
 
 CRITICAL RULES:
 - Total output MUST be under 150 words
@@ -256,10 +386,21 @@ The Synozur Alliance LLC is here to help you find your North Star and make the d
       // Take top 3 recommendations for the summary
       const topRecs = recommendations.slice(0, 3);
 
+      // Include AI Playbook grounding for AI Maturity Assessment model
+      const isAIModel = modelName?.toLowerCase().includes('ai maturity');
+      const grounding = isAIModel ? `
+
+STRATEGIC CONTEXT:
+- Leaders achieving AI maturity see 50% higher revenue growth (Accenture)
+- Success requires focus: Deploy, Reshape, Invent (BCG framework)
+- Transformation priorities: Clear vision, strong foundations, talent empowerment
+` : '';
+
       const prompt = `You are a transformation expert from The Synozur Alliance LLC. Write a BRIEF transformation roadmap (MAX 120 words) with clear structure:
 
 Model: ${modelName}
 ${userContext ? `Context: ${userContext.jobTitle || 'Leader'} in ${userContext.industry || 'Industry'}` : ''}
+${grounding}
 
 Write EXACTLY 2 short paragraphs:
 
@@ -271,6 +412,7 @@ Frame their unique transformation journey. Use these key actions as bullet point
 
 PARAGRAPH 2 (2 sentences):
 Connect to business outcomes and Synozur partnership. End with "Let's find your North Star together."
+${isAIModel ? 'Reference strategic value of AI transformation based on playbook insights.' : ''}
 
 CRITICAL RULES:
 - Total output MUST be under 120 words
@@ -493,6 +635,17 @@ Company Size: ${user.companySize || 'Not specified'}
 Role: ${user.jobTitle || 'Not specified'}
 Country: ${user.country || 'Not specified'}` : 'User context not available';
 
+    // Include AI Playbook grounding for AI Maturity Assessment model
+    const isAIModel = model.name?.toLowerCase().includes('ai maturity');
+    const grounding = isAIModel ? `
+STRATEGIC GROUNDING:
+${AI_PLAYBOOK_GROUNDING}
+
+Use the above insights from leading AI playbooks to inform your recommendations.
+Reference specific playbook insights when relevant.
+Align recommendations with the maturity model levels and transformation priorities.
+` : '';
+
     return `Generate personalized recommendations for this maturity assessment:
 
 Model: ${model.name}
@@ -504,6 +657,8 @@ ${dimensionScores}
 User Context:
 ${userContext}
 
+${grounding}
+
 Generate 3-5 specific, actionable recommendations in JSON format.
 Prioritize by impact (high/medium/low).
 Each recommendation should include:
@@ -514,6 +669,7 @@ Each recommendation should include:
 
 Focus on the lowest-scoring dimensions first.
 Make recommendations specific to the industry and company size when possible.
+${isAIModel ? 'Ground recommendations in the AI playbook insights and cite specific companies or frameworks when relevant.' : ''}
 
 Return as JSON with structure:
 {
