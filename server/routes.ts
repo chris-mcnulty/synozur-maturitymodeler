@@ -1707,26 +1707,55 @@ Respond in JSON format:
         to: recipientEmail,
         from: fromEmail,
         subject: `Your ${modelName || 'Maturity Assessment'} Report`,
-        text: `Dear ${recipientName || 'Valued User'},\n\nThank you for completing the ${modelName || 'maturity assessment'}. Please find your comprehensive assessment report attached.\n\nBest regards,\nThe Synozur Team`,
+        text: `Dear ${recipientName || 'Valued User'},
+
+Thank you for completing the ${modelName || 'assessment'}. Your comprehensive report is attached, including:
+
+• Your overall maturity score and level
+• Dimension-specific insights
+• Personalized recommendations
+• Resources to guide your next steps
+
+If you have any questions, we're here to help you navigate your journey.
+
+Best regards,
+The Synozur Team`,
         html: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <h2 style="color: #810FFB;">Your Assessment Report is Ready</h2>
-            <p>Dear ${recipientName || 'Valued User'},</p>
-            <p>Thank you for completing the <strong>${modelName || 'maturity assessment'}</strong>.</p>
-            <p>Your comprehensive assessment report is attached to this email. This report includes:</p>
-            <ul>
-              <li>Overall maturity score and level</li>
-              <li>Dimension-specific insights</li>
-              <li>Personalized recommendations</li>
-              <li>Improvement resources</li>
-            </ul>
-            <p>If you have any questions about your results, please don't hesitate to reach out.</p>
-            <p style="margin-top: 30px;">Best regards,<br><strong>The Synozur Team</strong></p>
-            <hr style="margin: 30px 0; border: none; border-top: 1px solid #eee;">
-            <p style="font-size: 12px; color: #666;">
-              Visit us at <a href="https://www.synozur.com" style="color: #810FFB;">www.synozur.com</a>
-            </p>
-          </div>
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <style>
+              body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; }
+              .container { max-width: 600px; margin: 0 auto; background: #ffffff; }
+              .header-image { width: 100%; height: auto; display: block; }
+              .content { padding: 40px 30px; background: #ffffff; }
+              .footer { text-align: center; padding: 30px; background: #f9f9f9; color: #666; font-size: 14px; }
+              ul { padding-left: 20px; }
+              ul li { margin: 8px 0; }
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              <img src="https://storage.googleapis.com/replit-public-assets/synozur-email-header.jpg" alt="Synozur Alliance" class="header-image" />
+              <div class="content">
+                <h2 style="color: #810FFB; margin-top: 0;">Your Assessment Report is Ready</h2>
+                <p>Dear ${recipientName || 'Valued User'},</p>
+                <p>Thank you for completing the <strong>${modelName || 'assessment'}</strong>. Your comprehensive report is attached, including:</p>
+                <ul>
+                  <li>Your overall maturity score and level</li>
+                  <li>Dimension-specific insights</li>
+                  <li>Personalized recommendations</li>
+                  <li>Resources to guide your next steps</li>
+                </ul>
+                <p>If you have any questions, we're here to help you navigate your journey.</p>
+              </div>
+              <div class="footer">
+                <p><strong>Best regards,</strong><br>The Synozur Team</p>
+                <p>© ${new Date().getFullYear()} The Synozur Alliance LLC</p>
+              </div>
+            </div>
+          </body>
+          </html>
         `,
         attachments: [
           {
@@ -1795,25 +1824,55 @@ Respond in JSON format:
         const msg = {
           to: email,
           from: fromEmail,
-          subject: 'Reset Your Password - Synozur Maturity Modeler',
-          text: `You requested a password reset. Click the link below to reset your password:\n\n${resetUrl}\n\nThis link will expire in 1 hour.\n\nIf you didn't request this, please ignore this email.`,
+          subject: 'Reset Your Password – Synozur Maturity Modeler',
+          text: `You requested a password reset for your Synozur Maturity Modeler account.
+
+To continue your journey, click the link below to reset your password:
+
+${resetUrl}
+
+This link will expire in 1 hour.
+
+If you didn't request this, please ignore this email—your password will remain unchanged.
+— The Synozur Team`,
           html: `
-            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-              <h2 style="color: #810FFB;">Reset Your Password</h2>
-              <p>You requested a password reset for your Synozur Maturity Modeler account.</p>
-              <p>Click the button below to reset your password:</p>
-              <div style="margin: 30px 0;">
-                <a href="${resetUrl}" style="background-color: #810FFB; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">Reset Password</a>
+            <!DOCTYPE html>
+            <html>
+            <head>
+              <style>
+                body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; }
+                .container { max-width: 600px; margin: 0 auto; background: #ffffff; }
+                .header-image { width: 100%; height: auto; display: block; }
+                .content { padding: 40px 30px; background: #ffffff; }
+                .button { display: inline-block; background: #810FFB; color: white !important; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: 600; margin: 25px 0; }
+                .footer { text-align: center; padding: 30px; background: #f9f9f9; color: #666; font-size: 14px; }
+                .link-text { color: #810FFB; word-break: break-all; }
+              </style>
+            </head>
+            <body>
+              <div class="container">
+                <img src="https://storage.googleapis.com/replit-public-assets/synozur-email-header.jpg" alt="Synozur Alliance" class="header-image" />
+                <div class="content">
+                  <h2 style="color: #810FFB; margin-top: 0;">Reset Your Password</h2>
+                  <p>You requested a password reset for your Synozur Maturity Modeler account.</p>
+                  <p>To continue your journey, click the button below to reset your password:</p>
+                  <p style="text-align: center;">
+                    <a href="${resetUrl}" class="button">Reset Password</a>
+                  </p>
+                  <p style="font-size: 14px; color: #666;">
+                    Or copy and paste this link into your browser:<br>
+                    <span class="link-text">${resetUrl}</span>
+                  </p>
+                  <p style="font-size: 14px; color: #666;">This link will expire in <strong>1 hour</strong>.</p>
+                  <p style="font-size: 14px; color: #666;">If you didn't request this password reset, please ignore this email—your password will remain unchanged.</p>
+                </div>
+                <div class="footer">
+                  <p>— The Synozur Team</p>
+                  <p>© ${new Date().getFullYear()} The Synozur Alliance LLC</p>
+                </div>
               </div>
-              <p style="color: #666; font-size: 14px;">Or copy and paste this link into your browser:</p>
-              <p style="color: #810FFB; word-break: break-all;">${resetUrl}</p>
-              <p style="margin-top: 30px; color: #666;">This link will expire in <strong>1 hour</strong>.</p>
-              <p style="color: #666;">If you didn't request this password reset, please ignore this email. Your password will remain unchanged.</p>
-              <hr style="margin: 30px 0; border: none; border-top: 1px solid #eee;">
-              <p style="font-size: 12px; color: #666;">
-                Visit us at <a href="https://www.synozur.com" style="color: #810FFB;">www.synozur.com</a>
-              </p>
-            </div>
+            </body>
+            </html>
           `,
         };
 

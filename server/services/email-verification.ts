@@ -36,42 +36,50 @@ export async function sendVerificationEmail(
   const msg = {
     to: email,
     from: fromEmail,
-    subject: 'Verify Your Email - Synozur Maturity Modeler',
-    text: `Welcome to Synozur Maturity Modeler! Please verify your email address by clicking the link below:\n\n${verificationUrl}\n\nThis link will expire in 24 hours.\n\nIf you didn't create an account, you can safely ignore this email.`,
+    subject: 'Welcome to Synozur Maturity Modeler – Please Verify Your Email',
+    text: `Welcome to Synozur Maturity Modeler!
+
+We're excited to guide you on your journey to business excellence. To unlock all features—including downloadable PDF reports—please verify your email address by clicking the link below:
+
+${verificationUrl}
+
+This link will expire in 24 hours.
+
+If you didn't create an account, you can safely ignore this email.
+— The Synozur Team`,
     html: `
       <!DOCTYPE html>
       <html>
       <head>
         <style>
-          body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; line-height: 1.6; color: #333; }
-          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-          .header { background: linear-gradient(135deg, #810FFB 0%, #E60CB3 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
-          .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 8px 8px; }
-          .button { display: inline-block; background: #810FFB; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: 600; margin: 20px 0; }
-          .button:hover { background: #6a0dd1; }
-          .footer { text-align: center; margin-top: 30px; color: #666; font-size: 14px; }
+          body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; }
+          .container { max-width: 600px; margin: 0 auto; background: #ffffff; }
+          .header-image { width: 100%; height: auto; display: block; }
+          .content { padding: 40px 30px; background: #ffffff; }
+          .button { display: inline-block; background: #810FFB; color: white !important; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: 600; margin: 25px 0; }
+          .footer { text-align: center; padding: 30px; background: #f9f9f9; color: #666; font-size: 14px; }
+          .link-text { color: #810FFB; word-break: break-all; }
         </style>
       </head>
       <body>
         <div class="container">
-          <div class="header">
-            <h1>Welcome to Synozur!</h1>
-          </div>
+          <img src="https://storage.googleapis.com/replit-public-assets/synozur-email-header.jpg" alt="Synozur Alliance" class="header-image" />
           <div class="content">
-            <p>Thank you for creating your account with Synozur Maturity Modeler.</p>
-            <p>To unlock all features including downloadable PDF reports, please verify your email address:</p>
+            <p>Welcome to Synozur Maturity Modeler!</p>
+            <p>We're excited to guide you on your journey to business excellence. To unlock all features—including downloadable PDF reports—please verify your email address:</p>
             <p style="text-align: center;">
               <a href="${verificationUrl}" class="button">Verify Email Address</a>
             </p>
             <p style="font-size: 14px; color: #666;">
               Or copy and paste this link into your browser:<br>
-              <a href="${verificationUrl}" style="color: #810FFB;">${verificationUrl}</a>
+              <span class="link-text">${verificationUrl}</span>
             </p>
             <p style="font-size: 14px; color: #666;">This link will expire in 24 hours.</p>
-            <p style="font-size: 14px; color: #666;">If you didn't create an account with Synozur, you can safely ignore this email.</p>
+            <p style="font-size: 14px; color: #666;">If you didn't create an account, you can safely ignore this email.</p>
           </div>
           <div class="footer">
-            <p>© ${new Date().getFullYear()} The Synozur Alliance LLC | Find Your North Star</p>
+            <p>— The Synozur Team</p>
+            <p>© ${new Date().getFullYear()} The Synozur Alliance LLC</p>
           </div>
         </div>
       </body>
