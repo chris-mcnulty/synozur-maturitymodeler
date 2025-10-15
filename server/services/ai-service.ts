@@ -83,6 +83,108 @@ class AIService {
 
   // Generate personalized recommendations based on assessment results
   
+  // Generate a comprehensive maturity summary across dimensions
+  async generateMaturitySummary(
+    overallScore: number,
+    dimensionScores: Record<string, { score: number; label: string }>,
+    modelName: string,
+    userContext?: { industry?: string; companySize?: string; jobTitle?: string }
+  ): Promise<string> {
+    try {
+      const dimensionBreakdown = Object.entries(dimensionScores)
+        .map(([, dim]) => `${dim.label}: ${dim.score}/500`)
+        .join('\n');
+
+      const prompt = `You are a maturity assessment expert from The Synozur Alliance LLC, a leading transformation consultancy.
+
+Generate a comprehensive maturity summary for this assessment:
+
+Model: ${modelName}
+Overall Score: ${overallScore}/500
+${userContext ? `
+User Context:
+- Industry: ${userContext.industry || 'Not specified'}
+- Company Size: ${userContext.companySize || 'Not specified'}
+- Role: ${userContext.jobTitle || 'Not specified'}` : ''}
+
+Dimension Scores:
+${dimensionBreakdown}
+
+Write a 2-3 paragraph executive summary that:
+1. Provides an overall assessment of the organization's maturity level
+2. Highlights key strengths (highest scoring dimensions)
+3. Identifies priority improvement areas (lowest scoring dimensions)
+4. ${userContext ? 'Personalizes insights based on industry, company size, and role' : 'Provides general strategic guidance'}
+5. Uses professional language aligned with Synozur's brand as transformation experts
+6. Ends with an encouraging forward-looking statement
+
+Keep the tone professional, insightful, and action-oriented. Focus on transformation opportunities.`;
+
+      const completion = await this.callOpenAI(prompt);
+      
+      if (!completion) {
+        throw new Error('Failed to generate maturity summary');
+      }
+
+      return completion.trim();
+    } catch (error) {
+      console.error('Error generating maturity summary:', error);
+      // Return a fallback summary
+      return `Based on your overall score of ${overallScore}/500, your organization shows ${
+        overallScore >= 400 ? 'advanced' : overallScore >= 300 ? 'developing' : 'emerging'
+      } maturity across the assessed dimensions. Focus on strengthening your lowest-scoring areas while leveraging your existing strengths to drive transformation forward.`;
+    }
+  }
+
+  // Generate a summary of personalized recommendations
+  async generateRecommendationsSummary(
+    recommendations: Array<{ title: string; description: string; priority?: string }>,
+    modelName: string,
+    userContext?: { industry?: string; companySize?: string; jobTitle?: string }
+  ): Promise<string> {
+    try {
+      const recList = recommendations
+        .map(r => `- ${r.title}: ${r.description}`)
+        .join('\n');
+
+      const prompt = `You are a transformation expert from The Synozur Alliance LLC.
+
+Generate a strategic recommendations summary based on these assessment recommendations:
+
+Model: ${modelName}
+${userContext ? `
+User Context:
+- Industry: ${userContext.industry || 'Not specified'}
+- Company Size: ${userContext.companySize || 'Not specified'}
+- Role: ${userContext.jobTitle || 'Not specified'}` : ''}
+
+Recommendations:
+${recList}
+
+Write a 1-2 paragraph executive summary that:
+1. Synthesizes the key recommendations into a cohesive action plan
+2. Prioritizes based on impact and feasibility
+3. ${userContext ? `Tailors the approach specifically for a ${userContext.jobTitle || 'leader'} in the ${userContext.industry || 'industry'} sector with ${userContext.companySize || 'this company size'}` : 'Provides strategic guidance'}
+4. Emphasizes the transformation journey and expected outcomes
+5. Mentions how Synozur's expertise can accelerate implementation
+6. Ends with a clear next step or call to action
+
+Use Synozur's brand voice: confident, expert, transformation-focused, and results-oriented.`;
+
+      const completion = await this.callOpenAI(prompt);
+      
+      if (!completion) {
+        throw new Error('Failed to generate recommendations summary');
+      }
+
+      return completion.trim();
+    } catch (error) {
+      console.error('Error generating recommendations summary:', error);
+      // Return a fallback summary
+      return 'Based on your assessment results, we recommend focusing on your highest-priority improvement areas while building on existing strengths. The Synozur Alliance can help you create a detailed transformation roadmap tailored to your specific needs.';
+    }
+  }
+
   // Rewrite an answer option to be more contextual to the specific question
   async rewriteAnswer(question: string, answer: string, score: number, modelContext?: string): Promise<string> {
     try {

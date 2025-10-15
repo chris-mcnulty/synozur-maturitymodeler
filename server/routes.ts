@@ -1305,6 +1305,117 @@ Respond in JSON format:
     }
   });
 
+  // Generate maturity summary using AI
+  app.post("/api/ai/generate-maturity-summary", ensureAuthenticated, async (req, res) => {
+    try {
+      const { overallScore, dimensionScores, modelName, userContext } = req.body;
+      
+      // Validate input
+      if (!overallScore || !dimensionScores || !modelName) {
+        return res.status(400).json({ error: "Missing required fields" });
+      }
+
+      // Generate cache key
+      const contextHash = createHash('md5')
+        .update(JSON.stringify({ overallScore, dimensionScores, modelName, userContext }))
+        .digest('hex');
+
+      // Check cache first
+      const cached = await storage.getAiGeneratedContent('maturity-summary', contextHash);
+      if (cached && cached.expiresAt && cached.expiresAt > new Date()) {
+        return res.json({ summary: cached.content });
+      }
+
+      // Generate using AI
+      const summary = await aiService.generateMaturitySummary(
+        overallScore,
+        dimensionScores,
+        modelName,
+        userContext
+      );
+
+      // Cache the result for 30 days
+      const expiresAt = new Date();
+      expiresAt.setDate(expiresAt.getDate() + 30);
+      
+      await storage.createAiGeneratedContent({
+        type: 'maturity-summary',
+        contextHash,
+        content: summary as any,
+        metadata: { overallScore, modelName, userContext },
+        expiresAt
+      });
+
+      // Log usage
+      await storage.createAiUsageLog({
+        userId: req.user!.id,
+        modelName: 'gpt-5-mini',
+        operation: 'generate-maturity-summary',
+        estimatedCost: 3
+      });
+
+      res.json({ summary });
+    } catch (error) {
+      console.error('Failed to generate maturity summary:', error);
+      res.status(500).json({ error: "Failed to generate maturity summary" });
+    }
+  });
+
+  // Generate recommendations summary using AI
+  app.post("/api/ai/generate-recommendations-summary", ensureAuthenticated, async (req, res) => {
+    try {
+      const { recommendations, modelName, userContext } = req.body;
+      
+      // Validate input
+      if (!recommendations || !modelName) {
+        return res.status(400).json({ error: "Missing required fields" });
+      }
+
+      // Generate cache key
+      const contextHash = createHash('md5')
+        .update(JSON.stringify({ recommendations, modelName, userContext }))
+        .digest('hex');
+
+      // Check cache first
+      const cached = await storage.getAiGeneratedContent('recommendations-summary', contextHash);
+      if (cached && cached.expiresAt && cached.expiresAt > new Date()) {
+        return res.json({ summary: cached.content });
+      }
+
+      // Generate using AI
+      const summary = await aiService.generateRecommendationsSummary(
+        recommendations,
+        modelName,
+        userContext
+      );
+
+      // Cache the result for 30 days
+      const expiresAt = new Date();
+      expiresAt.setDate(expiresAt.getDate() + 30);
+      
+      await storage.createAiGeneratedContent({
+        type: 'recommendations-summary',
+        contextHash,
+        content: summary as any,
+        metadata: { modelName, userContext },
+        expiresAt
+      });
+
+      // Log usage
+      await storage.createAiUsageLog({
+        userId: req.user!.id,
+        modelName: 'gpt-5-mini',
+        operation: 'generate-recommendations-summary',
+        estimatedCost: 2
+      });
+
+      res.json({ summary });
+    } catch (error) {
+      console.error('Failed to generate recommendations summary:', error);
+      res.status(500).json({ error: "Failed to generate recommendations summary" });
+    }
+  });
+
   // Get AI usage statistics for admin dashboard
   app.get("/api/admin/ai/usage", ensureAdmin, async (req, res) => {
     try {

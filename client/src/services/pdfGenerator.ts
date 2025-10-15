@@ -15,10 +15,20 @@ interface PDFData {
     improvementStatement?: string;
     resourceLink?: string;
   }>;
+  maturitySummary?: string;
+  recommendationsSummary?: string;
+  userContext?: {
+    name?: string;
+    company?: string;
+    jobTitle?: string;
+    industry?: string;
+    companySize?: string;
+  };
 }
 
 export function generateAssessmentPDF(data: PDFData): jsPDF {
-  const { result, model, benchmark, recommendations = [], improvementResources = [] } = data;
+  const { result, model, benchmark, recommendations = [], improvementResources = [], 
+          maturitySummary, recommendationsSummary, userContext } = data;
   
   // Create new PDF document
   const doc = new jsPDF({
@@ -33,19 +43,45 @@ export function generateAssessmentPDF(data: PDFData): jsPDF {
   const textColor = { r: 51, g: 51, b: 51 };
   const grayColor = { r: 102, g: 102, b: 102 };
   
-  let yPosition = 20;
+  let yPosition = 15;
 
-  // Header
+  // Synozur Branding Header
+  doc.setFontSize(12);
+  doc.setTextColor(primaryColor.r, primaryColor.g, primaryColor.b);
+  doc.text('THE SYNOZUR ALLIANCE LLC', 105, yPosition, { align: 'center' });
+  yPosition += 6;
+  doc.setFontSize(9);
+  doc.setTextColor(grayColor.r, grayColor.g, grayColor.b);
+  doc.text('Transformation Experts | Find Your North Star', 105, yPosition, { align: 'center' });
+  
+  yPosition += 15;
+
+  // Report Title
   doc.setFontSize(24);
   doc.setTextColor(primaryColor.r, primaryColor.g, primaryColor.b);
   doc.text(`${model.name} Report`, 105, yPosition, { align: 'center' });
   
-  yPosition += 10;
+  // Personalization if user context exists
+  if (userContext) {
+    yPosition += 10;
+    doc.setFontSize(10);
+    doc.setTextColor(textColor.r, textColor.g, textColor.b);
+    if (userContext.name) {
+      doc.text(`Prepared for: ${userContext.name}`, 105, yPosition, { align: 'center' });
+      yPosition += 5;
+    }
+    if (userContext.company) {
+      doc.text(userContext.company, 105, yPosition, { align: 'center' });
+      yPosition += 5;
+    }
+  }
+  
+  yPosition += 5;
   doc.setFontSize(10);
   doc.setTextColor(grayColor.r, grayColor.g, grayColor.b);
-  doc.text(`Generated: ${new Date().toLocaleDateString()}`, 105, yPosition, { align: 'center' });
+  doc.text(`Assessment Date: ${new Date().toLocaleDateString()}`, 105, yPosition, { align: 'center' });
   
-  yPosition += 20;
+  yPosition += 15;
 
   // Overall Score Section
   doc.setDrawColor(primaryColor.r, primaryColor.g, primaryColor.b);
@@ -77,33 +113,53 @@ export function generateAssessmentPDF(data: PDFData): jsPDF {
   doc.setFontSize(10);
   doc.setTextColor(textColor.r, textColor.g, textColor.b);
   
-  // Add maturity description based on label
-  let maturityDescription = '';
-  switch(result.label) {
-    case 'Transformational':
-      maturityDescription = "You're at the forefront of AI transformation, leading the industry with mature practices.";
-      break;
-    case 'Strategic':
-      maturityDescription = "You're strategic with AI as a differentiator. Double down on responsible AI, proprietary models, and organizational culture.";
-      break;
-    case 'Operational':
-      maturityDescription = "You have good operational AI processes with clear opportunities to advance to strategic maturity.";
-      break;
-    case 'Experimental':
-      maturityDescription = "You're experimenting with AI and building momentum. Focus on scaling successful pilots.";
-      break;
-    case 'Nascent':
-      maturityDescription = "You're at the beginning of your AI journey with significant growth potential ahead.";
-      break;
+  // AI-Generated Executive Summary or fallback description
+  if (maturitySummary) {
+    yPosition += 10;
+    doc.setFontSize(12);
+    doc.setTextColor(textColor.r, textColor.g, textColor.b);
+    doc.text('Executive Summary', 105, yPosition, { align: 'center' });
+    yPosition += 8;
+    
+    doc.setFontSize(9);
+    const summaryLines = doc.splitTextToSize(maturitySummary, 160);
+    summaryLines.forEach((line: string) => {
+      if (yPosition > 260) {
+        doc.addPage();
+        yPosition = 20;
+      }
+      doc.text(line, 25, yPosition);
+      yPosition += 5;
+    });
+    yPosition += 10;
+  } else {
+    // Fallback to simple description if no AI summary
+    let maturityDescription = '';
+    switch(result.label) {
+      case 'Transformational':
+        maturityDescription = "You're at the forefront of AI transformation, leading the industry with mature practices.";
+        break;
+      case 'Strategic':
+        maturityDescription = "You're strategic with AI as a differentiator. Double down on responsible AI, proprietary models, and organizational culture.";
+        break;
+      case 'Operational':
+        maturityDescription = "You have good operational AI processes with clear opportunities to advance to strategic maturity.";
+        break;
+      case 'Experimental':
+        maturityDescription = "You're experimenting with AI and building momentum. Focus on scaling successful pilots.";
+        break;
+      case 'Nascent':
+        maturityDescription = "You're at the beginning of your AI journey with significant growth potential ahead.";
+        break;
+    }
+    
+    const lines = doc.splitTextToSize(maturityDescription, 150);
+    lines.forEach((line: string) => {
+      doc.text(line, 105, yPosition, { align: 'center' });
+      yPosition += 5;
+    });
+    yPosition += 10;
   }
-  
-  const lines = doc.splitTextToSize(maturityDescription, 150);
-  lines.forEach((line: string) => {
-    doc.text(line, 105, yPosition, { align: 'center' });
-    yPosition += 5;
-  });
-  
-  yPosition += 10;
 
   // Benchmark comparison if available
   if (benchmark) {
@@ -181,8 +237,30 @@ export function generateAssessmentPDF(data: PDFData): jsPDF {
     
     doc.setFontSize(14);
     doc.setTextColor(textColor.r, textColor.g, textColor.b);
-    doc.text('Personalized Recommendations', 105, yPosition, { align: 'center' });
+    doc.text('Strategic Recommendations', 105, yPosition, { align: 'center' });
     yPosition += 10;
+
+    // AI Recommendations Summary if available
+    if (recommendationsSummary) {
+      doc.setFontSize(9);
+      doc.setTextColor(textColor.r, textColor.g, textColor.b);
+      const summaryLines = doc.splitTextToSize(recommendationsSummary, 160);
+      summaryLines.forEach((line: string) => {
+        if (yPosition > 260) {
+          doc.addPage();
+          yPosition = 20;
+        }
+        doc.text(line, 25, yPosition);
+        yPosition += 5;
+      });
+      yPosition += 10;
+      
+      // Add section header for detailed recommendations
+      doc.setFontSize(11);
+      doc.setTextColor(textColor.r, textColor.g, textColor.b);
+      doc.text('Detailed Action Items:', 30, yPosition);
+      yPosition += 8;
+    }
 
     recommendations.slice(0, 3).forEach(rec => {
       if (yPosition > 250) {
@@ -275,32 +353,53 @@ export function generateAssessmentPDF(data: PDFData): jsPDF {
     yPosition = 230; // Move to footer position
   }
 
-  // Footer CTA
+  // Enhanced Footer with Synozur Branding
   doc.setDrawColor(primaryColor.r, primaryColor.g, primaryColor.b);
   doc.line(20, yPosition, 190, yPosition);
   yPosition += 10;
   
-  doc.setFontSize(12);
+  doc.setFontSize(14);
   doc.setTextColor(textColor.r, textColor.g, textColor.b);
-  doc.text('Ready to Transform Your AI Journey?', 105, yPosition, { align: 'center' });
+  doc.text('Take the Next Step in Your Transformation Journey', 105, yPosition, { align: 'center' });
+  
+  yPosition += 8;
+  doc.setFontSize(10);
+  doc.setTextColor(grayColor.r, grayColor.g, grayColor.b);
+  doc.text('The Synozur Alliance specializes in guiding organizations through', 105, yPosition, { align: 'center' });
+  yPosition += 5;
+  doc.text('strategic transformations that deliver measurable results.', 105, yPosition, { align: 'center' });
+  
+  yPosition += 10;
+  doc.setFontSize(11);
+  doc.setTextColor(primaryColor.r, primaryColor.g, primaryColor.b);
+  doc.text('Connect With Our Experts:', 105, yPosition, { align: 'center' });
   
   yPosition += 7;
   doc.setFontSize(10);
-  doc.setTextColor(grayColor.r, grayColor.g, grayColor.b);
-  doc.text('Connect with our AI experts to create a custom transformation roadmap:', 105, yPosition, { align: 'center' });
+  doc.setTextColor(textColor.r, textColor.g, textColor.b);
   
-  yPosition += 10;
+  // Email contact
+  doc.text('✉ Email: contactus@synozur.com', 105, yPosition, { align: 'center' });
+  yPosition += 6;
+  
+  // Schedule consultation
+  doc.text('📅 Schedule a Consultation:', 105, yPosition, { align: 'center' });
+  yPosition += 5;
   doc.setTextColor(primaryColor.r, primaryColor.g, primaryColor.b);
-  doc.text('Learn More About AI Solutions', 105, yPosition, { align: 'center' });
-  yPosition += 5;
-  doc.text('Schedule a Workshop', 105, yPosition, { align: 'center' });
-  yPosition += 5;
-  doc.text('Contact Us: contactus@synozur.com', 105, yPosition, { align: 'center' });
+  doc.text('https://www.synozur.com/start', 105, yPosition, { align: 'center' });
   
-  yPosition += 10;
+  yPosition += 12;
+  
+  // Copyright and Legal
   doc.setFontSize(8);
   doc.setTextColor(grayColor.r, grayColor.g, grayColor.b);
-  doc.text('This site, content, and models are the property of The Synozur Alliance LLC. All rights reserved.', 105, yPosition, { align: 'center' });
+  doc.text('© ' + new Date().getFullYear() + ' The Synozur Alliance LLC. All Rights Reserved.', 105, yPosition, { align: 'center' });
+  yPosition += 4;
+  doc.text('This assessment, its methodology, and all associated intellectual property are proprietary to', 105, yPosition, { align: 'center' });
+  yPosition += 3;
+  doc.text('The Synozur Alliance LLC and protected under applicable copyright and trademark laws.', 105, yPosition, { align: 'center' });
+  yPosition += 3;
+  doc.text('Unauthorized reproduction or distribution is prohibited.', 105, yPosition, { align: 'center' });
 
   return doc;
 }
