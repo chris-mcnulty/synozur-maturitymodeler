@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Download, Plus, Edit, Trash, FileSpreadsheet, Eye, BarChart3, Settings, FileDown, FileUp, ListOrdered, Users, Star, Upload, X, Sparkles } from "lucide-react";
+import { Download, Plus, Edit, Trash, FileSpreadsheet, Eye, BarChart3, Settings, FileDown, FileUp, ListOrdered, Users, Star, Upload, X, Sparkles, CheckCircle2, XCircle } from "lucide-react";
 import type { Model, Result, Assessment, Dimension, Question, Answer, User } from "@shared/schema";
 import { ObjectUploader } from "@/components/ObjectUploader";
 import { AiAssistant } from "@/components/admin/AiAssistant";
@@ -239,6 +239,27 @@ export default function Admin() {
       toast({
         title: "Error",
         description: error.message || "Failed to delete user",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Verify user email mutation (admin only)
+  const verifyUserEmail = useMutation({
+    mutationFn: async (id: string) => {
+      return apiRequest(`/api/admin/users/${id}/verify-email`, 'PUT');
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/users'] });
+      toast({
+        title: "Email verified",
+        description: "User's email has been manually verified.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to verify email",
         variant: "destructive",
       });
     },
@@ -1553,6 +1574,7 @@ export default function Admin() {
                         <TableRow>
                           <TableHead>Username</TableHead>
                           <TableHead>Email</TableHead>
+                          <TableHead>Verified</TableHead>
                           <TableHead>Name</TableHead>
                           <TableHead>Company</TableHead>
                           <TableHead>Role</TableHead>
@@ -1565,6 +1587,19 @@ export default function Admin() {
                           <TableRow key={user.id}>
                             <TableCell className="font-medium">{user.username}</TableCell>
                             <TableCell>{user.email || '-'}</TableCell>
+                            <TableCell>
+                              {user.emailVerified ? (
+                                <Badge variant="secondary" className="bg-green-500/10 text-green-600 dark:text-green-400">
+                                  <CheckCircle2 className="h-3 w-3 mr-1" />
+                                  Verified
+                                </Badge>
+                              ) : (
+                                <Badge variant="secondary" className="bg-orange-500/10 text-orange-600 dark:text-orange-400">
+                                  <XCircle className="h-3 w-3 mr-1" />
+                                  Unverified
+                                </Badge>
+                              )}
+                            </TableCell>
                             <TableCell>{user.name || '-'}</TableCell>
                             <TableCell>{user.company || '-'}</TableCell>
                             <TableCell>
@@ -1577,6 +1612,21 @@ export default function Admin() {
                             </TableCell>
                             <TableCell className="text-right">
                               <div className="flex justify-end gap-2">
+                                {!user.emailVerified && (
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => {
+                                      if (confirm(`Manually verify email for "${user.username}"?`)) {
+                                        verifyUserEmail.mutate(user.id);
+                                      }
+                                    }}
+                                    title="Verify email"
+                                    data-testid={`verify-email-${user.id}`}
+                                  >
+                                    <CheckCircle2 className="h-4 w-4 text-green-600" />
+                                  </Button>
+                                )}
                                 <Button
                                   variant="ghost"
                                   size="icon"
