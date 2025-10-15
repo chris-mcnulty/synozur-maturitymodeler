@@ -315,7 +315,7 @@ export default function Landing() {
         <section className="py-20 bg-primary text-white">
           <div className="container mx-auto px-4 text-center">
             <h2 className="text-4xl md:text-5xl font-bold mb-6">
-              Ready to Discover Your Maturity?
+              Feeling Immature?
             </h2>
             <p className="text-xl text-white/90 mb-8 max-w-3xl mx-auto">
               Join leading organizations that are using Synozur's assessment to accelerate their transformation journey
