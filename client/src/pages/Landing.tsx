@@ -120,20 +120,6 @@ export default function Landing() {
           </div>
         </section>
 
-        {/* Featured Model Title and Description */}
-        {featuredModel && (
-          <div className="bg-background py-12">
-            <div className="container mx-auto px-4 text-center">
-              <h2 className="text-4xl md:text-5xl font-bold mb-4 text-white md:bg-gradient-to-r md:from-blue-400 md:via-purple-400 md:to-pink-400 md:bg-clip-text md:text-transparent">
-                {featuredModel.name}
-              </h2>
-              <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto">
-                {featuredModel.description}
-              </p>
-            </div>
-          </div>
-        )}
-
         {/* Featured Model Section */}
         {featuredModel && (
           <section className="py-20 bg-gradient-to-br from-primary/5 via-background to-accent/5">
@@ -142,6 +128,15 @@ export default function Landing() {
                 <Badge className="mb-6 px-4 py-1 text-sm bg-primary/10 text-primary border-primary/20">
                   Featured Assessment
                 </Badge>
+                
+                <div className="text-center mb-12">
+                  <h2 className="text-4xl md:text-5xl font-bold mb-4 text-white md:bg-gradient-to-r md:from-blue-400 md:via-purple-400 md:to-pink-400 md:bg-clip-text md:text-transparent">
+                    {featuredModel.name}
+                  </h2>
+                  <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto">
+                    {featuredModel.description}
+                  </p>
+                </div>
                 
                 <div className="grid lg:grid-cols-2 gap-12 items-center">
                   {/* Left: Image and Key Info */}
