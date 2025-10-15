@@ -5,12 +5,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect } from "react";
+import { CheckCircle2, AlertCircle, Mail } from "lucide-react";
 import type { Result, Assessment, Model } from "@shared/schema";
 
 // Standard dropdown options
@@ -233,6 +235,29 @@ export default function Profile() {
     },
   });
 
+  // Resend verification email mutation
+  const resendVerification = useMutation({
+    mutationFn: async () => {
+      if (!user?.email) {
+        throw new Error('No email address found');
+      }
+      return apiRequest('/api/auth/resend-verification', 'POST', { email: user.email });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Verification email sent",
+        description: "Please check your inbox for the verification link.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to send verification email",
+        variant: "destructive",
+      });
+    },
+  });
+
   return (
     <div className="min-h-screen flex flex-col">
       <main className="flex-1 py-12">
@@ -268,6 +293,30 @@ export default function Profile() {
                         disabled={!isEditing}
                         required
                       />
+                      {user.emailVerified ? (
+                        <div className="flex items-center gap-2 mt-2 text-sm text-green-600 dark:text-green-400" data-testid="email-verified-status">
+                          <CheckCircle2 className="h-4 w-4" />
+                          <span>Email verified</span>
+                        </div>
+                      ) : (
+                        <Alert className="mt-2" data-testid="email-unverified-alert">
+                          <AlertCircle className="h-4 w-4" />
+                          <AlertDescription className="flex items-center justify-between">
+                            <span className="text-sm">Email not verified</span>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => resendVerification.mutate()}
+                              disabled={resendVerification.isPending}
+                              data-testid="button-resend-verification"
+                              className="ml-2"
+                            >
+                              <Mail className="h-3 w-3 mr-1" />
+                              {resendVerification.isPending ? 'Sending...' : 'Resend'}
+                            </Button>
+                          </AlertDescription>
+                        </Alert>
+                      )}
                     </div>
                     <div>
                       <Label>Name <span className="text-destructive">*</span></Label>
