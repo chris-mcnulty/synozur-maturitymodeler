@@ -308,20 +308,20 @@ STRATEGIC CONTEXT FROM LEADING AI PLAYBOOKS:
 - Key success factors: holistic integration, executive sponsorship, cloud infrastructure, responsible AI
 ` : '';
 
-      const prompt = `You are a transformation expert from The Synozur Alliance LLC. Write a BRIEF executive summary (MAX 150 words total) with clear structure:
+      const prompt = `You are a transformation expert from The Synozur Alliance LLC. Write a comprehensive executive summary with clear structure:
 
 Assessment: ${modelName}
 Overall Score: ${overallScore}/500
 ${userContext ? `Context: ${userContext.jobTitle || 'Leader'} in ${userContext.industry || 'Industry'}, ${userContext.companySize || 'Company'}` : ''}
 ${grounding}
 
-Write EXACTLY 3 short paragraphs:
+Write a structured executive summary with 3-4 paragraphs:
 
-PARAGRAPH 1 (2 sentences):
-Acknowledge their current position with empathy. Reference the overall score and journey uniqueness.
-${isAIModel ? 'Reference insights from leading AI playbooks where relevant.' : ''}
+PARAGRAPH 1 (3-4 sentences):
+Acknowledge their current position with empathy and understanding. Reference the overall score and what it means for their journey. Recognize the unique challenges and opportunities in their context.
+${isAIModel ? 'Reference insights from leading AI playbooks about maturity journeys.' : ''}
 
-PARAGRAPH 2 (use bullet points):
+PARAGRAPH 2 (use bullet points and full context):
 Your key strengths:
 • ${topStrengths[0]}
 • ${topStrengths[1]}
@@ -330,15 +330,19 @@ Priority growth areas:
 • ${opportunities[0]}
 • ${opportunities[1]}
 
-PARAGRAPH 3 (2 sentences):
-Inspiring close about finding their North Star and Synozur partnership making the desirable achievable.
-${isAIModel ? 'Connect to the strategic importance of AI transformation based on playbook insights.' : ''}
+PARAGRAPH 3 (3-4 sentences):
+Provide strategic insights about what these strengths and opportunities mean for their transformation. Connect to industry best practices and potential outcomes.
+${isAIModel ? 'Reference specific success patterns from AI leaders and the strategic value of improvement.' : ''}
 
-CRITICAL RULES:
-- Total output MUST be under 150 words
-- Use bullet points ONLY in paragraph 2 for listing items
-- Keep sentences concise and impactful
-- ${userContext ? `Personalize for ${userContext.jobTitle} perspective` : 'Keep strategic focus'}`;
+PARAGRAPH 4 (2-3 sentences):
+Inspiring close about finding their North Star and how Synozur's expertise can help make the desirable achievable. Emphasize partnership and transformation potential.
+
+FORMATTING RULES:
+- Use clear paragraph breaks between sections
+- Include bullet points for strengths and growth areas
+- Be comprehensive yet readable
+- ${userContext ? `Personalize deeply for ${userContext.jobTitle} perspective in ${userContext.industry}` : 'Maintain strategic focus'}
+- Write naturally without word count constraints`;
 
       const completion = await this.callOpenAI(prompt);
       
@@ -396,27 +400,34 @@ STRATEGIC CONTEXT:
 - Transformation priorities: Clear vision, strong foundations, talent empowerment
 ` : '';
 
-      const prompt = `You are a transformation expert from The Synozur Alliance LLC. Write a BRIEF transformation roadmap (MAX 120 words) with clear structure:
+      const prompt = `You are a transformation expert from The Synozur Alliance LLC. Write a comprehensive transformation roadmap with clear structure:
 
 Model: ${modelName}
 ${userContext ? `Context: ${userContext.jobTitle || 'Leader'} in ${userContext.industry || 'Industry'}` : ''}
 ${grounding}
 
-Write EXACTLY 2 short paragraphs:
+Write 2-3 detailed paragraphs:
 
-PARAGRAPH 1 (2-3 sentences):
-Frame their unique transformation journey. Use these key actions as bullet points:
+PARAGRAPH 1 (4-5 sentences):
+Frame their unique transformation journey and what it means for their organization. Explain the strategic context and importance of the following priority actions:
+
+Priority actions to focus on:
 • ${topRecs[0]?.title || 'Priority action 1'}
 • ${topRecs[1]?.title || 'Priority action 2'}
 • ${topRecs[2]?.title || 'Priority action 3'}
 
-PARAGRAPH 2 (2 sentences):
-Connect to business outcomes and Synozur partnership. End with "Let's find your North Star together."
-${isAIModel ? 'Reference strategic value of AI transformation based on playbook insights.' : ''}
+PARAGRAPH 2 (3-4 sentences):
+Connect these actions to tangible business outcomes and expected transformation results. Explain how implementing these priorities will drive value.
+${isAIModel ? 'Reference strategic value and ROI patterns from leading organizations.' : ''}
 
-CRITICAL RULES:
-- Total output MUST be under 120 words
-- Use bullet points ONLY for the 3 action items
+PARAGRAPH 3 (2-3 sentences):
+Describe how Synozur's expertise and partnership approach will accelerate their journey. End with an inspiring call to action: "Let's find your North Star together."
+
+FORMATTING RULES:
+- Use clear paragraph breaks
+- Include bullet points for the priority actions
+- Be comprehensive and strategic
+- Write naturally without word count constraints
 - Keep language clear and actionable
 - ${userContext ? `Personalize for ${userContext.jobTitle} in ${userContext.industry}` : 'Keep strategic'}
 - End with partnership invitation`;
