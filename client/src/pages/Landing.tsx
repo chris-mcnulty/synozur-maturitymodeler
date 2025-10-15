@@ -80,14 +80,6 @@ export default function Landing() {
     },
   });
 
-  const maturityStages = [
-    { label: "Nascent", range: "100-199", color: "bg-red-600" },
-    { label: "Experimental", range: "200-299", color: "bg-orange-500" },
-    { label: "Operational", range: "300-399", color: "bg-yellow-500" },
-    { label: "Strategic", range: "400-449", color: "bg-green-500" },
-    { label: "Transformational", range: "450-500", color: "bg-primary" },
-  ];
-
   return (
     <div className="min-h-screen flex flex-col">
       <main className="flex-1">
@@ -215,31 +207,6 @@ export default function Landing() {
             </div>
           </section>
         )}
-
-        {/* Maturity Journey Section - Matching prototype */}
-        <section className="py-20 bg-background">
-          <div className="container mx-auto px-4">
-            <h2 className="text-4xl font-bold text-center mb-16">Your Maturity Journey</h2>
-            
-            <div className="max-w-6xl mx-auto mb-16">
-              <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-                {maturityStages.map((stage, index) => (
-                  <div key={stage.label} className="relative">
-                    <div className={`${stage.color} rounded-lg p-6 text-white transition-transform hover:scale-105`}>
-                      <div className="text-3xl font-bold mb-2">{stage.label}</div>
-                      <div className="text-lg opacity-90">{stage.range}</div>
-                    </div>
-                    {index < maturityStages.length - 1 && (
-                      <div className="hidden md:block absolute top-1/2 right-0 transform translate-x-1/2 -translate-y-1/2">
-                        <ArrowRight className="h-6 w-6 text-muted-foreground" />
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </section>
 
         {/* All Available Models - Graphically Interesting Display */}
         <section className="py-20 bg-gradient-to-br from-background via-primary/5 to-background relative overflow-hidden">
