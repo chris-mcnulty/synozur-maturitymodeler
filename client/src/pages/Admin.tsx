@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Download, Plus, Edit, Trash, FileSpreadsheet, Eye, BarChart3, Settings, FileDown, FileUp, ListOrdered, Users, Star, Upload, X } from "lucide-react";
+import { Download, Plus, Edit, Trash, FileSpreadsheet, Eye, BarChart3, Settings, FileDown, FileUp, ListOrdered, Users, Star, Upload, X, Sparkles } from "lucide-react";
 import type { Model, Result, Assessment, Dimension, Question, Answer, User } from "@shared/schema";
 import { ObjectUploader } from "@/components/ObjectUploader";
 import { AiAssistant } from "@/components/admin/AiAssistant";
@@ -2371,7 +2371,7 @@ export default function Admin() {
                               questionText: editingQuestion?.text,
                               answerText: localState.text,
                               answerScore: localState.score,
-                              modelContext: selectedModel?.name,
+                              modelContext: undefined,
                             }}
                             onGenerated={(data) => {
                               if (data.rewrittenAnswer) {
