@@ -187,13 +187,32 @@ export default function Results() {
 
       try {
         // Prepare dimension scores for AI
-        const dimensionScoresForAI = model.dimensions.reduce((acc, dim) => ({
-          ...acc,
-          [dim.key]: {
-            score: (result.dimensionScores as Record<string, number>)[dim.key] || 0,
-            label: dim.label
+        // Build a comprehensive mapping that includes ALL dimension scores from the result
+        const resultDimensionScores = result.dimensionScores as Record<string, number>;
+        const dimensionScoresForAI: Record<string, { score: number; label: string }> = {};
+        
+        // First, map all dimensions from the model (with labels)
+        model.dimensions.forEach(dim => {
+          if (resultDimensionScores[dim.key] !== undefined) {
+            dimensionScoresForAI[dim.key] = {
+              score: resultDimensionScores[dim.key],
+              label: dim.label
+            };
           }
-        }), {});
+        });
+        
+        // Then, check for any dimension scores in the result that aren't in the model
+        // This handles cases where the model structure has changed
+        Object.entries(resultDimensionScores).forEach(([key, score]) => {
+          if (!dimensionScoresForAI[key]) {
+            const matchingDimension = model.dimensions.find(d => d.key === key);
+            dimensionScoresForAI[key] = {
+              score,
+              label: matchingDimension?.label || `Dimension ${key}` // Fallback label
+            };
+            console.warn(`Dimension score found without matching model dimension: ${key}`);
+          }
+        });
 
         // Fetch maturity summary
         const maturityResponse = await fetch('/api/ai/generate-maturity-summary', {

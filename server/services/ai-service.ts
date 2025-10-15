@@ -287,13 +287,24 @@ class AIService {
     
     try {
       // Sort dimensions by score for highlighting strengths and opportunities
-      const sortedDimensions = Object.entries(dimensionScores)
+      // Filter out any dimensions with missing labels to prevent "undefined" in summaries
+      const validDimensions = Object.entries(dimensionScores)
+        .filter(([, dim]) => dim && dim.label && dim.label.trim() !== '')
         .sort(([, a], [, b]) => b.score - a.score);
       
-      const topStrengths = sortedDimensions.slice(0, 2)
+      // Ensure we have at least 2 dimensions to work with
+      if (validDimensions.length < 2) {
+        console.warn('Insufficient dimension data for AI summary:', { dimensionScores, validCount: validDimensions.length });
+        // Return a generic summary if we don't have enough dimension data
+        return `Your organization demonstrates ${overallScore >= 400 ? 'advanced' : overallScore >= 300 ? 'developing' : 'emerging'} maturity at ${overallScore}/500.
+
+Your assessment shows areas of strength and opportunities for growth. The Synozur Alliance LLC is here to help you find your North Star and make the desirable achievable.`;
+      }
+      
+      const topStrengths = validDimensions.slice(0, 2)
         .map(([, dim]) => `${dim.label} (${dim.score}/500)`);
       
-      const opportunities = sortedDimensions.slice(-2)
+      const opportunities = validDimensions.slice(-2)
         .map(([, dim]) => `${dim.label} (${dim.score}/500)`);
 
       // Include AI Playbook grounding for AI Maturity Assessment model

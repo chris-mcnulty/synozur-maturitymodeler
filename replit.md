@@ -132,6 +132,8 @@ Maturity Modeler is a comprehensive fullstack JavaScript application for multi-m
   - **90-day caching for AI summaries**: Reduces API costs and ensures consistent content
   - **Briefer, structured summaries**: Executive Summary (150 words) and Transformation Roadmap (120 words) with bullet points
   - **Consistent PDF formatting**: Both AI sections use matching font sizes with proper dimensional score display
+  - **Defensive dimension handling**: Filters out missing/undefined dimension labels to prevent "undefined" in AI summaries
+  - **Comprehensive dimension mapping**: Frontend includes ALL dimension scores from results, even if model structure has changed
 
 ## Backlog
 
