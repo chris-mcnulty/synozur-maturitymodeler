@@ -2,6 +2,10 @@ import jsPDF from 'jspdf';
 import type { Result, Model, Dimension } from '@shared/schema';
 // @ts-ignore
 import logoImage from '@assets/SA-Logo-Horizontal-color_1760530252980.png';
+// @ts-ignore - Font files as base64 strings
+import avenirRegularFont from './avenir-regular-font.txt?raw';
+// @ts-ignore
+import avenirBoldFont from './avenir-bold-font.txt?raw';
 
 interface PDFData {
   result: Result;
@@ -39,6 +43,23 @@ export function generateAssessmentPDF(data: PDFData): jsPDF {
     format: 'a4'
   });
 
+  // Add Avenir Next LT Pro fonts
+  try {
+    // Add regular font
+    doc.addFileToVFS('AvenirNextLTPro-Regular.ttf', avenirRegularFont);
+    doc.addFont('AvenirNextLTPro-Regular.ttf', 'Avenir', 'normal');
+    
+    // Add bold font
+    doc.addFileToVFS('AvenirNextLTPro-Bold.ttf', avenirBoldFont);
+    doc.addFont('AvenirNextLTPro-Bold.ttf', 'Avenir', 'bold');
+    
+    // Set Avenir as default font
+    doc.setFont('Avenir', 'normal');
+  } catch (error) {
+    console.error('Error loading Avenir fonts, falling back to default:', error);
+    // If fonts fail to load, jsPDF will use its default font
+  }
+
   // Define colors (using RGB)
   const primaryColor = { r: 129, g: 15, b: 251 }; // #810FFB
   const accentColor = { r: 230, g: 12, b: 179 }; // #E60CB3
@@ -71,9 +92,11 @@ export function generateAssessmentPDF(data: PDFData): jsPDF {
   yPosition += 15;
 
   // Report Title
+  doc.setFont('Avenir', 'bold');
   doc.setFontSize(24);
   doc.setTextColor(primaryColor.r, primaryColor.g, primaryColor.b);
   doc.text(`${model.name} Report`, 105, yPosition, { align: 'center' });
+  doc.setFont('Avenir', 'normal');
   
   // Personalization if user context exists
   if (userContext) {
@@ -103,9 +126,11 @@ export function generateAssessmentPDF(data: PDFData): jsPDF {
   doc.line(20, yPosition, 190, yPosition);
   yPosition += 10;
 
+  doc.setFont('Avenir', 'bold');
   doc.setFontSize(18);
   doc.setTextColor(textColor.r, textColor.g, textColor.b);
   doc.text('Overall Maturity Score', 105, yPosition, { align: 'center' });
+  doc.setFont('Avenir', 'normal');
   
   yPosition += 15;
   doc.setFontSize(36);
@@ -130,9 +155,11 @@ export function generateAssessmentPDF(data: PDFData): jsPDF {
   // AI-Generated Executive Summary or fallback description
   if (maturitySummary) {
     yPosition += 10;
+    doc.setFont('Avenir', 'bold');
     doc.setFontSize(12);
     doc.setTextColor(textColor.r, textColor.g, textColor.b);
     doc.text('Executive Summary', 105, yPosition, { align: 'center' });
+    doc.setFont('Avenir', 'normal');
     yPosition += 8;
     
     doc.setFontSize(9);
@@ -178,9 +205,11 @@ export function generateAssessmentPDF(data: PDFData): jsPDF {
 
   // Benchmark comparison if available
   if (benchmark) {
+    doc.setFont('Avenir', 'bold');
     doc.setFontSize(12);
     doc.setTextColor(textColor.r, textColor.g, textColor.b);
     doc.text('Industry Benchmark', 105, yPosition, { align: 'center' });
+    doc.setFont('Avenir', 'normal');
     yPosition += 7;
     
     doc.setFontSize(10);
@@ -196,9 +225,11 @@ export function generateAssessmentPDF(data: PDFData): jsPDF {
   doc.line(20, yPosition, 190, yPosition);
   yPosition += 10;
   
+  doc.setFont('Avenir', 'bold');
   doc.setFontSize(14);
   doc.setTextColor(textColor.r, textColor.g, textColor.b);
   doc.text('Dimension Breakdown', 105, yPosition, { align: 'center' });
+  doc.setFont('Avenir', 'normal');
   yPosition += 10;
 
   // Table header
@@ -252,9 +283,11 @@ export function generateAssessmentPDF(data: PDFData): jsPDF {
     
     // AI Recommendations Summary if available
     if (recommendationsSummary) {
+      doc.setFont('Avenir', 'bold');
       doc.setFontSize(12);
       doc.setTextColor(textColor.r, textColor.g, textColor.b);
       doc.text('Your Transformation Roadmap', 105, yPosition, { align: 'center' });
+      doc.setFont('Avenir', 'normal');
       yPosition += 8;
       
       doc.setFontSize(9);
@@ -273,9 +306,11 @@ export function generateAssessmentPDF(data: PDFData): jsPDF {
     
     // Detailed recommendations section
     if (recommendations.length > 0) {
+      doc.setFont('Avenir', 'bold');
       doc.setFontSize(12);
       doc.setTextColor(textColor.r, textColor.g, textColor.b);
       doc.text('Strategic Action Items', 105, yPosition, { align: 'center' });
+      doc.setFont('Avenir', 'normal');
       yPosition += 8;
     }
 
@@ -285,9 +320,11 @@ export function generateAssessmentPDF(data: PDFData): jsPDF {
         yPosition = 20;
       }
       
+      doc.setFont('Avenir', 'bold');
       doc.setFontSize(10);
       doc.setTextColor(primaryColor.r, primaryColor.g, primaryColor.b);
       doc.text(`• ${rec.title}`, 30, yPosition);
+      doc.setFont('Avenir', 'normal');
       yPosition += 5;
       
       doc.setFontSize(9);
@@ -315,9 +352,11 @@ export function generateAssessmentPDF(data: PDFData): jsPDF {
     doc.line(20, yPosition, 190, yPosition);
     yPosition += 10;
     
+    doc.setFont('Avenir', 'bold');
     doc.setFontSize(14);
     doc.setTextColor(textColor.r, textColor.g, textColor.b);
     doc.text('Improvement Resources', 105, yPosition, { align: 'center' });
+    doc.setFont('Avenir', 'normal');
     yPosition += 10;
 
     improvementResources.forEach((resource, index) => {
@@ -375,9 +414,11 @@ export function generateAssessmentPDF(data: PDFData): jsPDF {
   doc.line(20, yPosition, 190, yPosition);
   yPosition += 10;
   
+  doc.setFont('Avenir', 'bold');
   doc.setFontSize(14);
   doc.setTextColor(textColor.r, textColor.g, textColor.b);
   doc.text('Ready to Transform Your Organization?', 105, yPosition, { align: 'center' });
+  doc.setFont('Avenir', 'normal');
   
   yPosition += 8;
   doc.setFontSize(10);
@@ -387,9 +428,11 @@ export function generateAssessmentPDF(data: PDFData): jsPDF {
   doc.text('for your organization\'s unique journey to excellence.', 105, yPosition, { align: 'center' });
   
   yPosition += 10;
+  doc.setFont('Avenir', 'bold');
   doc.setFontSize(11);
   doc.setTextColor(primaryColor.r, primaryColor.g, primaryColor.b);
   doc.text('Take Action Today:', 105, yPosition, { align: 'center' });
+  doc.setFont('Avenir', 'normal');
   
   yPosition += 8;
   doc.setFontSize(9);
