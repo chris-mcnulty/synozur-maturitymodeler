@@ -436,7 +436,7 @@ export default function Results() {
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.details || error.error || 'Failed to send email');
+        throw new Error(error.message || error.details || error.error || 'Failed to send email');
       }
 
       toast({
@@ -445,9 +445,10 @@ export default function Results() {
       });
     } catch (error) {
       console.error('Error sending email:', error);
+      const errorMessage = error instanceof Error ? error.message : "Failed to send email. Please try again.";
       toast({
         title: "Email Failed",
-        description: error instanceof Error ? error.message : "Failed to send email. Please try again.",
+        description: errorMessage,
         variant: "destructive"
       });
     }

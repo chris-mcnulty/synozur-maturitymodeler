@@ -201,6 +201,7 @@ export default function Admin() {
   // Fetch all users (admin only)
   const { data: users = [], isLoading: usersLoading } = useQuery<Omit<User, 'password'>[]>({
     queryKey: ['/api/users'],
+    enabled: currentUser?.role === 'admin',
   });
 
   // Update user mutation
