@@ -14,6 +14,8 @@ import type {
   Result, InsertResult,
   Benchmark, InsertBenchmark,
   Setting, InsertSetting,
+  AiGeneratedContent, InsertAiGeneratedContent,
+  AiUsageLog, InsertAiUsageLog,
 } from "@shared/schema";
 
 const PostgresSessionStore = connectPg(session);
@@ -83,6 +85,14 @@ export interface IStorage {
   getSetting(key: string): Promise<Setting | undefined>;
   setSetting(key: string, value: any): Promise<Setting>;
   getAllSettings(): Promise<Setting[]>;
+  
+  // AI-generated content methods
+  getAiGeneratedContent(type: string, contextHash: string): Promise<AiGeneratedContent | undefined>;
+  createAiGeneratedContent(content: InsertAiGeneratedContent): Promise<AiGeneratedContent>;
+  
+  // AI usage log methods
+  createAiUsageLog(log: InsertAiUsageLog): Promise<AiUsageLog>;
+  getAiUsageLogs(userId?: string): Promise<AiUsageLog[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -400,6 +410,41 @@ export class DatabaseStorage implements IStorage {
 
   async getAllSettings(): Promise<Setting[]> {
     return db.select().from(schema.settings);
+  }
+
+  // AI-generated content methods
+  async getAiGeneratedContent(type: string, contextHash: string): Promise<AiGeneratedContent | undefined> {
+    const [content] = await db.select()
+      .from(schema.aiGeneratedContent)
+      .where(and(
+        eq(schema.aiGeneratedContent.type, type),
+        eq(schema.aiGeneratedContent.contextHash, contextHash)
+      ))
+      .limit(1);
+    return content;
+  }
+
+  async createAiGeneratedContent(content: InsertAiGeneratedContent): Promise<AiGeneratedContent> {
+    const [created] = await db.insert(schema.aiGeneratedContent).values(content).returning();
+    return created;
+  }
+
+  // AI usage log methods
+  async createAiUsageLog(log: InsertAiUsageLog): Promise<AiUsageLog> {
+    const [created] = await db.insert(schema.aiUsageLog).values(log).returning();
+    return created;
+  }
+
+  async getAiUsageLogs(userId?: string): Promise<AiUsageLog[]> {
+    if (userId) {
+      return db.select()
+        .from(schema.aiUsageLog)
+        .where(eq(schema.aiUsageLog.userId, userId))
+        .orderBy(desc(schema.aiUsageLog.createdAt));
+    }
+    return db.select()
+      .from(schema.aiUsageLog)
+      .orderBy(desc(schema.aiUsageLog.createdAt));
   }
 }
 

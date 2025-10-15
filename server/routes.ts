@@ -816,6 +816,86 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Generate AI recommendations for completed assessment
+  app.post("/api/assessments/:id/recommendations", async (req, res) => {
+    try {
+      const { aiService } = await import('./services/ai-service.js');
+      const crypto = await import('crypto');
+      
+      // Get assessment details
+      const assessment = await storage.getAssessment(req.params.id);
+      if (!assessment || assessment.status !== 'completed') {
+        return res.status(404).json({ error: "Completed assessment not found" });
+      }
+
+      // Get related data
+      const [model, dimensions, result, user] = await Promise.all([
+        storage.getModel(assessment.modelId),
+        storage.getDimensionsByModelId(assessment.modelId),
+        storage.getResult(req.params.id),
+        assessment.userId ? storage.getUser(assessment.userId) : null
+      ]);
+
+      if (!model || !result) {
+        return res.status(404).json({ error: "Required data not found" });
+      }
+
+      // Build context for recommendations
+      const context = {
+        assessment,
+        model,
+        dimensions,
+        user: user || undefined,  // Convert null to undefined for type compatibility
+        scores: result.dimensionScores as Record<string, number>
+      };
+
+      // Create cache key from context
+      const contextString = JSON.stringify({
+        modelId: model.id,
+        scores: result.dimensionScores,
+        industry: user?.industry,
+        companySize: user?.companySize
+      });
+      const contextHash = crypto.createHash('sha256').update(contextString).digest('hex');
+
+      // Check cache first
+      const cached = await storage.getAiGeneratedContent('recommendation', contextHash);
+      if (cached && new Date(cached.expiresAt) > new Date()) {
+        return res.json(cached.content);
+      }
+
+      // Generate new recommendations
+      const recommendations = await aiService.generateRecommendations(context);
+
+      // Cache the recommendations (7 days)
+      const expiresAt = new Date();
+      expiresAt.setDate(expiresAt.getDate() + 7);
+      
+      await storage.createAiGeneratedContent({
+        type: 'recommendation',
+        contextHash,
+        content: recommendations as any,
+        metadata: { assessmentId: assessment.id, modelId: model.id },
+        expiresAt
+      });
+
+      // Log AI usage if user is authenticated
+      if (assessment.userId) {
+        await storage.createAiUsageLog({
+          userId: assessment.userId,
+          modelName: 'gpt-5-mini-2025-08-07',
+          operation: 'recommendation',
+          estimatedCost: 5 // Rough estimate: 5 cents per recommendation generation
+        });
+      }
+
+      res.json(recommendations);
+    } catch (error) {
+      console.error('Failed to generate recommendations:', error);
+      res.status(500).json({ error: "Failed to generate recommendations" });
+    }
+  });
+
   // User results
   app.get("/api/users/:userId/results", async (req, res) => {
     try {
