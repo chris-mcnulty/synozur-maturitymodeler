@@ -15,7 +15,10 @@ export const users = pgTable("users", {
   jobTitle: text("job_title"),
   industry: text("industry"),
   country: text("country"),
-  role: text("role").notNull().default("user"), // 'user' or 'admin'
+  role: text("role").notNull().default("user"), // 'user', 'modeler', or 'admin'
+  emailVerified: boolean("email_verified").notNull().default(false),
+  verificationToken: varchar("verification_token"),
+  verificationTokenExpiry: timestamp("verification_token_expiry"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
