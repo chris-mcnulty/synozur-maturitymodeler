@@ -113,6 +113,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin manual email verification
+  app.put('/api/admin/users/:id/verify-email', ensureAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const user = await storage.updateUser(id, { 
+        emailVerified: true,
+        verificationToken: null,
+        verificationTokenExpiry: null,
+      });
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+      // Remove password from response
+      const { password: _, ...safeUser } = user;
+      res.json({ success: true, user: safeUser });
+    } catch (error) {
+      console.error('Manual verification error:', error);
+      res.status(400).json({ error: "Failed to verify user email" });
+    }
+  });
+
   // Answer routes
   app.get('/api/answers/:questionId', async (req, res) => {
     try {
