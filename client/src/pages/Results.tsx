@@ -178,7 +178,7 @@ export default function Results() {
   // Fetch AI-generated summaries when result and model are loaded
   useEffect(() => {
     const fetchAISummaries = async () => {
-      if (!result || !model || !user) return;
+      if (!result || !model) return;
 
       try {
         // Prepare dimension scores for AI
@@ -198,11 +198,11 @@ export default function Results() {
             overallScore: result.overallScore,
             dimensionScores: dimensionScoresForAI,
             modelName: model.name,
-            userContext: {
+            userContext: user ? {
               industry: user.industry,
               companySize: user.companySize,
               jobTitle: user.jobTitle
-            }
+            } : undefined
           })
         });
 
@@ -222,11 +222,11 @@ export default function Results() {
                 description: r.description
               })),
               modelName: model.name,
-              userContext: {
+              userContext: user ? {
                 industry: user.industry,
                 companySize: user.companySize,
                 jobTitle: user.jobTitle
-              }
+              } : undefined
             })
           });
 
