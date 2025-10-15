@@ -1,6 +1,10 @@
 import OpenAI from 'openai';
 import { z } from 'zod';
+import crypto from 'crypto';
+import { eq, and, gt } from 'drizzle-orm';
 import type { Assessment, Model, Dimension, User } from '@shared/schema';
+import { db } from '../db';
+import { aiGeneratedContent } from '@shared/schema';
 
 // Initialize OpenAI client with Replit AI Integrations
 const openai = new OpenAI({
@@ -80,6 +84,68 @@ class AIService {
   private readonly model = 'gpt-5-mini'; // Using Replit AI Integrations GPT-5 mini model
   private readonly maxRetries = 3;
   private readonly timeout = 30000; // 30 seconds
+  private readonly cacheExpirationDays = 90; // Cache AI summaries for 90 days
+
+  // Generate cache key from context
+  private generateCacheKey(type: string, context: Record<string, any>): string {
+    const contextString = JSON.stringify(context, Object.keys(context).sort());
+    return crypto.createHash('sha256')
+      .update(`${type}:${contextString}`)
+      .digest('hex');
+  }
+
+  // Check if cached content exists and is valid
+  private async getCachedContent(type: string, context: Record<string, any>): Promise<string | null> {
+    try {
+      const cacheKey = this.generateCacheKey(type, context);
+      const now = new Date();
+      
+      const cached = await db
+        .select()
+        .from(aiGeneratedContent)
+        .where(
+          and(
+            eq(aiGeneratedContent.contextHash, cacheKey),
+            eq(aiGeneratedContent.type, type),
+            gt(aiGeneratedContent.expiresAt, now)
+          )
+        )
+        .limit(1);
+      
+      if (cached.length > 0 && cached[0].content) {
+        console.log(`Cache hit for ${type}:`, cacheKey);
+        return (cached[0].content as any).text || null;
+      }
+      
+      console.log(`Cache miss for ${type}:`, cacheKey);
+      return null;
+    } catch (error) {
+      console.error('Error checking cache:', error);
+      return null;
+    }
+  }
+
+  // Save content to cache
+  private async saveToCache(type: string, context: Record<string, any>, content: string): Promise<void> {
+    try {
+      const cacheKey = this.generateCacheKey(type, context);
+      const expiresAt = new Date();
+      expiresAt.setDate(expiresAt.getDate() + this.cacheExpirationDays);
+      
+      await db.insert(aiGeneratedContent).values({
+        type,
+        contextHash: cacheKey,
+        content: { text: content },
+        metadata: { context, generatedAt: new Date().toISOString() },
+        expiresAt
+      }).onConflictDoNothing();
+      
+      console.log(`Saved to cache ${type}:`, cacheKey);
+    } catch (error) {
+      console.error('Error saving to cache:', error);
+      // Non-critical error, continue without caching
+    }
+  }
 
   // Generate personalized recommendations based on assessment results
   
@@ -90,42 +156,59 @@ class AIService {
     modelName: string,
     userContext?: { industry?: string; companySize?: string; jobTitle?: string }
   ): Promise<string> {
+    // Create cache context
+    const cacheContext = {
+      overallScore,
+      dimensionScores,
+      modelName,
+      userContext: userContext || {}
+    };
+    
+    // Check cache first
+    const cached = await this.getCachedContent('maturity_summary', cacheContext);
+    if (cached) {
+      return cached;
+    }
+    
     try {
-      const dimensionBreakdown = Object.entries(dimensionScores)
-        .map(([, dim]) => `${dim.label}: ${dim.score}/500`)
-        .join('\n');
+      // Sort dimensions by score for highlighting strengths and opportunities
+      const sortedDimensions = Object.entries(dimensionScores)
+        .sort(([, a], [, b]) => b.score - a.score);
+      
+      const topStrengths = sortedDimensions.slice(0, 2)
+        .map(([, dim]) => `${dim.label} (${dim.score}/500)`);
+      
+      const opportunities = sortedDimensions.slice(-2)
+        .map(([, dim]) => `${dim.label} (${dim.score}/500)`);
 
-      const prompt = `You are a transformation expert from The Synozur Alliance LLC (Synozur - the transformation company). Use Synozur's brand voice: empathetic, tailored, and focused on making the desirable achievable.
+      const prompt = `You are a transformation expert from The Synozur Alliance LLC. Write a BRIEF executive summary (MAX 150 words total) with clear structure:
 
-Generate a comprehensive maturity summary for this assessment:
-
-Model: ${modelName}
+Assessment: ${modelName}
 Overall Score: ${overallScore}/500
-${userContext ? `
-User Context:
-- Industry: ${userContext.industry || 'Not specified'}
-- Company Size: ${userContext.companySize || 'Not specified'}
-- Role: ${userContext.jobTitle || 'Not specified'}` : ''}
+${userContext ? `Context: ${userContext.jobTitle || 'Leader'} in ${userContext.industry || 'Industry'}, ${userContext.companySize || 'Company'}` : ''}
 
-Dimension Scores:
-${dimensionBreakdown}
+Write EXACTLY 3 short paragraphs:
 
-Write a 2-3 paragraph executive summary following Synozur's brand voice:
-1. Start with empathy - acknowledge the organization's unique journey and current position
-2. Highlight key strengths as foundations to build upon (highest scoring dimensions)
-3. Identify priority transformation opportunities (lowest scoring dimensions) as paths to growth
-4. ${userContext ? `Tailor insights specifically for a ${userContext.jobTitle || 'leader'} in ${userContext.industry || 'the industry'} with ${userContext.companySize || 'this company size'}` : 'Provide strategic guidance'}
-5. Frame challenges as opportunities - make the desirable achievable
-6. End with an encouraging statement about finding their "North Star" for excellence
+PARAGRAPH 1 (2 sentences):
+Acknowledge their current position with empathy. Reference the overall score and journey uniqueness.
 
-Brand Voice Guidelines:
-- Empathetic and human-centric: "We understand your unique challenges"
-- Tailored solutions: Emphasize custom approaches, not one-size-fits-all
-- Clear language at 12th-grade reading level, avoid unnecessary jargon
-- Positive but grounded tone - confident without boasting
-- Focus on transformation journey and partnership
+PARAGRAPH 2 (use bullet points):
+Your key strengths:
+• ${topStrengths[0]}
+• ${topStrengths[1]}
 
-Remember: Synozur illuminates the pathway for excellence and success.`;
+Priority growth areas:
+• ${opportunities[0]}
+• ${opportunities[1]}
+
+PARAGRAPH 3 (2 sentences):
+Inspiring close about finding their North Star and Synozur partnership making the desirable achievable.
+
+CRITICAL RULES:
+- Total output MUST be under 150 words
+- Use bullet points ONLY in paragraph 2 for listing items
+- Keep sentences concise and impactful
+- ${userContext ? `Personalize for ${userContext.jobTitle} perspective` : 'Keep strategic focus'}`;
 
       const completion = await this.callOpenAI(prompt);
       
@@ -133,13 +216,20 @@ Remember: Synozur illuminates the pathway for excellence and success.`;
         throw new Error('Failed to generate maturity summary');
       }
 
-      return completion.trim();
+      const summary = completion.trim();
+      
+      // Save to cache
+      await this.saveToCache('maturity_summary', cacheContext, summary);
+      
+      return summary;
     } catch (error) {
       console.error('Error generating maturity summary:', error);
       // Return a fallback summary
-      return `Based on your overall score of ${overallScore}/500, your organization shows ${
-        overallScore >= 400 ? 'advanced' : overallScore >= 300 ? 'developing' : 'emerging'
-      } maturity across the assessed dimensions. Focus on strengthening your lowest-scoring areas while leveraging your existing strengths to drive transformation forward.`;
+      return `Your organization demonstrates ${overallScore >= 400 ? 'advanced' : overallScore >= 300 ? 'developing' : 'emerging'} maturity at ${overallScore}/500.
+
+Key strengths provide solid foundations. Priority areas offer clear transformation paths.
+
+The Synozur Alliance LLC is here to help you find your North Star and make the desirable achievable.`;
     }
   }
 
