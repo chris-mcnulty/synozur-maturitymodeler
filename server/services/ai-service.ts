@@ -239,42 +239,45 @@ The Synozur Alliance LLC is here to help you find your North Star and make the d
     modelName: string,
     userContext?: { industry?: string; companySize?: string; jobTitle?: string }
   ): Promise<string> {
+    // Create cache context
+    const cacheContext = {
+      recommendations,
+      modelName,
+      userContext: userContext || {}
+    };
+    
+    // Check cache first
+    const cached = await this.getCachedContent('recommendations_summary', cacheContext);
+    if (cached) {
+      return cached;
+    }
+    
     try {
-      const recList = recommendations
-        .map(r => `- ${r.title}: ${r.description}`)
-        .join('\n');
+      // Take top 3 recommendations for the summary
+      const topRecs = recommendations.slice(0, 3);
 
-      const prompt = `You are a transformation expert from The Synozur Alliance LLC (Synozur - the transformation company). Your role is to be a "navigator of change" who helps organizations find their North Star.
-
-Generate a strategic recommendations summary based on these assessment recommendations:
+      const prompt = `You are a transformation expert from The Synozur Alliance LLC. Write a BRIEF transformation roadmap (MAX 120 words) with clear structure:
 
 Model: ${modelName}
-${userContext ? `
-User Context:
-- Industry: ${userContext.industry || 'Not specified'}
-- Company Size: ${userContext.companySize || 'Not specified'}
-- Role: ${userContext.jobTitle || 'Not specified'}` : ''}
+${userContext ? `Context: ${userContext.jobTitle || 'Leader'} in ${userContext.industry || 'Industry'}` : ''}
 
-Recommendations:
-${recList}
+Write EXACTLY 2 short paragraphs:
 
-Write a 1-2 paragraph transformation roadmap following Synozur's brand voice:
-1. Frame this as a unique journey tailored to their specific needs - "Your transformation is unique"
-2. Synthesize recommendations into a clear, achievable path forward
-3. ${userContext ? `Personalize for a ${userContext.jobTitle || 'leader'} navigating transformation in ${userContext.industry || 'your industry'} with ${userContext.companySize || 'your organization size'}` : 'Provide strategic guidance'}
-4. Emphasize partnership: "We'll help you plot a new course" and "navigate complexities with ease"
-5. Connect to tangible business outcomes (efficiency, ROI, market success, adoption)
-6. Close with an invitation to partnership: how Synozur's expertise makes the desirable achievable
+PARAGRAPH 1 (2-3 sentences):
+Frame their unique transformation journey. Use these key actions as bullet points:
+• ${topRecs[0]?.title || 'Priority action 1'}
+• ${topRecs[1]?.title || 'Priority action 2'}
+• ${topRecs[2]?.title || 'Priority action 3'}
 
-Brand Voice Reminders:
-- Empathetic acknowledgment of their challenges
-- Tailored, custom approach - never generic
-- Clear, conversational language (12th-grade level)
-- Positive yet grounded - confident without overselling
-- Focus on partnership and collaboration ("we" language)
-- Frame as navigating toward their North Star
+PARAGRAPH 2 (2 sentences):
+Connect to business outcomes and Synozur partnership. End with "Let's find your North Star together."
 
-Tagline integration: "With Synozur, we'll help you find your North Star and make the desirable achievable."`;
+CRITICAL RULES:
+- Total output MUST be under 120 words
+- Use bullet points ONLY for the 3 action items
+- Keep language clear and actionable
+- ${userContext ? `Personalize for ${userContext.jobTitle} in ${userContext.industry}` : 'Keep strategic'}
+- End with partnership invitation`;
 
       const completion = await this.callOpenAI(prompt);
       
@@ -282,11 +285,21 @@ Tagline integration: "With Synozur, we'll help you find your North Star and make
         throw new Error('Failed to generate recommendations summary');
       }
 
-      return completion.trim();
+      const summary = completion.trim();
+      
+      // Save to cache
+      await this.saveToCache('recommendations_summary', cacheContext, summary);
+      
+      return summary;
     } catch (error) {
       console.error('Error generating recommendations summary:', error);
       // Return a fallback summary
-      return 'Based on your assessment results, we recommend focusing on your highest-priority improvement areas while building on existing strengths. The Synozur Alliance can help you create a detailed transformation roadmap tailored to your specific needs.';
+      return `Your transformation roadmap focuses on:
+• Strengthening foundational capabilities
+• Building strategic advantages
+• Accelerating growth initiatives
+
+The Synozur Alliance LLC will help you navigate this journey with expertise and partnership. Let's find your North Star together.`;
     }
   }
 
