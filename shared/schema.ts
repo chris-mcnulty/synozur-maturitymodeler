@@ -296,6 +296,8 @@ export const insertAiUsageLogSchema = createInsertSchema(aiUsageLog).omit({
 });
 
 // Types
+export type UserRole = 'user' | 'modeler' | 'admin';
+
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
 
