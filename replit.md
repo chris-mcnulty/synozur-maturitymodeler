@@ -136,6 +136,16 @@ Maturity Modeler is a comprehensive fullstack JavaScript application for multi-m
 - [ ] **Maturity Scale Editor**: Admin UI to customize maturity level names, descriptions, and score ranges per model
 - [ ] **General Resources Editor**: Admin UI to manage general resources shown at end of results (onscreen and PDF)
 - [ ] **Results Page Enhancement**: Display custom maturity scales and general resources from model configuration
+- [ ] **Grounding Document System**: Implement comprehensive model-specific grounding for AI-enhanced recommendations
+  - Add grounding_documents field to models table (JSONB) for storing playbooks and frameworks
+  - Create admin UI for uploading/editing grounding documents per model with markdown support
+  - Add website_resources field for storing relevant Synozur.com URLs
+  - Update AI service to include model-specific grounding in generation context
+  - Implement document versioning to track updates
+  - Add global grounding documents table for company-wide frameworks
+  - Create admin dashboard to manage and preview grounding effects on AI outputs
+  - Implement caching strategy for grounding-enhanced responses
+  - Add ability to fetch and cache website resources for supplementary grounding
 
 ### Technical Debt
 - [ ] Replace mock benchmark data with real calculations
