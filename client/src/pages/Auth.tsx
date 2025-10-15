@@ -245,6 +245,44 @@ export default function Auth() {
               <span>Progress tracking over time</span>
             </li>
           </ul>
+
+          <div className="mt-12 pt-8 border-t border-border">
+            <h3 className="text-2xl font-bold mb-4">Why Sign Up?</h3>
+            <p className="text-muted-foreground mb-6">
+              Because your maturity journey deserves more than guesswork. When you sign up, you unlock tools that make progress clear and actionable:
+            </p>
+            <ul className="space-y-3 mb-6">
+              <li className="flex items-start">
+                <span className="text-primary mr-3">✅</span>
+                <span>Personalized recommendations designed to fit your goals</span>
+              </li>
+              <li className="flex items-start">
+                <span className="text-primary mr-3">✅</span>
+                <span>Saved assessments so you can track growth over time</span>
+              </li>
+              <li className="flex items-start">
+                <span className="text-primary mr-3">✅</span>
+                <span>Downloadable PDFs for easy sharing and reference</span>
+              </li>
+            </ul>
+            <p className="font-semibold mb-6">And the best part? It's completely free.</p>
+            
+            <h4 className="font-semibold mb-3">We take your privacy seriously:</h4>
+            <ul className="space-y-2 mb-6">
+              <li className="flex items-start text-sm text-muted-foreground">
+                <span className="mr-2">•</span>
+                <span>We never sell or share your data</span>
+              </li>
+              <li className="flex items-start text-sm text-muted-foreground">
+                <span className="mr-2">•</span>
+                <span>We only use anonymized insights to improve benchmarks</span>
+              </li>
+            </ul>
+            
+            <p className="text-sm text-muted-foreground">
+              By signing up, you agree to receive occasional updates from Synozur—always relevant, never overwhelming—and you can unsubscribe anytime.
+            </p>
+          </div>
         </div>
       </div>
     </div>
