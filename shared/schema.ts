@@ -222,6 +222,50 @@ export const insertSettingSchema = createInsertSchema(settings).omit({
   updatedAt: true,
 });
 
+// AI-generated content cache table
+export const aiGeneratedContent = pgTable("ai_generated_content", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  type: text("type").notNull(), // 'recommendation', 'interpretation', 'resource'
+  contextHash: varchar("context_hash", { length: 64 }).notNull(), // SHA256 hash of context for cache key
+  content: json("content").notNull(), // The generated content
+  metadata: json("metadata"), // Sources, confidence scores, etc.
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  expiresAt: timestamp("expires_at").notNull(), // Cache expiration
+}, (table) => ({
+  contextHashIdx: index("idx_ai_content_hash").on(table.contextHash),
+  typeIdx: index("idx_ai_content_type").on(table.type),
+  expiresIdx: index("idx_ai_content_expires").on(table.expiresAt),
+}));
+
+// Content embeddings for RAG system
+export const contentEmbeddings = pgTable("content_embeddings", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  sourceUrl: text("source_url").notNull(),
+  title: text("title"),
+  content: text("content").notNull(),
+  embedding: text("embedding"), // Will store vector as JSON array for now (pgvector requires extension)
+  metadata: json("metadata"), // Additional metadata about the content
+  indexedAt: timestamp("indexed_at").defaultNow().notNull(),
+}, (table) => ({
+  sourceUrlIdx: index("idx_embeddings_source").on(table.sourceUrl),
+}));
+
+// AI usage tracking table
+export const aiUsageLog = pgTable("ai_usage_log", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id, { onDelete: "set null" }),
+  modelName: text("model_name").notNull(), // GPT model used
+  operation: text("operation").notNull(), // 'recommendation', 'interpretation', etc.
+  promptTokens: integer("prompt_tokens"),
+  completionTokens: integer("completion_tokens"),
+  totalTokens: integer("total_tokens"),
+  estimatedCost: integer("estimated_cost"), // In cents
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  userIdx: index("idx_ai_usage_user").on(table.userId),
+  createdIdx: index("idx_ai_usage_created").on(table.createdAt),
+}));
+
 // Session table for connect-pg-simple
 // This table is managed by express-session and connect-pg-simple
 export const session = pgTable("session", {
@@ -231,6 +275,22 @@ export const session = pgTable("session", {
 }, (table) => ({
   expireIdx: index("IDX_session_expire").on(table.expire),
 }));
+
+// Insert schemas for AI tables
+export const insertAiGeneratedContentSchema = createInsertSchema(aiGeneratedContent).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertContentEmbeddingSchema = createInsertSchema(contentEmbeddings).omit({
+  id: true,
+  indexedAt: true,
+});
+
+export const insertAiUsageLogSchema = createInsertSchema(aiUsageLog).omit({
+  id: true,
+  createdAt: true,
+});
 
 // Types
 export type User = typeof users.$inferSelect;
@@ -262,3 +322,12 @@ export type InsertBenchmark = z.infer<typeof insertBenchmarkSchema>;
 
 export type Setting = typeof settings.$inferSelect;
 export type InsertSetting = z.infer<typeof insertSettingSchema>;
+
+export type AiGeneratedContent = typeof aiGeneratedContent.$inferSelect;
+export type InsertAiGeneratedContent = z.infer<typeof insertAiGeneratedContentSchema>;
+
+export type ContentEmbedding = typeof contentEmbeddings.$inferSelect;
+export type InsertContentEmbedding = z.infer<typeof insertContentEmbeddingSchema>;
+
+export type AiUsageLog = typeof aiUsageLog.$inferSelect;
+export type InsertAiUsageLog = z.infer<typeof insertAiUsageLogSchema>;
