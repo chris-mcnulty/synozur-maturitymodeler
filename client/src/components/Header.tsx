@@ -14,10 +14,11 @@ import synozurLogo from '@assets/SA-Logo-Horizontal-color_1759930898755.png';
 
 export function Header() {
   const { theme, setTheme } = useTheme();
-  const { user, logout } = useAuth();
+  const { user, logout, logoutMutation } = useAuth();
   const [, setLocation] = useLocation();
 
   const handleLogout = async () => {
+    if (logoutMutation.isPending) return;
     await logout();
     setLocation('/');
   };
@@ -87,7 +88,7 @@ export function Header() {
                     Profile
                   </Link>
                 </DropdownMenuItem>
-                {user.isAdmin && (
+                {(user.role === 'admin' || user.role === 'modeler') && (
                   <DropdownMenuItem asChild>
                     <Link href="/admin">
                       Admin Panel
@@ -95,9 +96,9 @@ export function Header() {
                   </DropdownMenuItem>
                 )}
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleLogout}>
+                <DropdownMenuItem onClick={handleLogout} disabled={logoutMutation.isPending}>
                   <LogOut className="mr-2 h-4 w-4" />
-                  Logout
+                  {logoutMutation.isPending ? "Logging out..." : "Logout"}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

@@ -152,6 +152,16 @@ Maturity Modeler is a comprehensive fullstack JavaScript application for multi-m
   - Rejection dialog with optional reason field
   - Empty and loading states handled
 
+- ✅ Logout functionality fix:
+  - Fixed "logout is not a function" error in Header component
+  - Added `logout()` helper function to useAuth hook that calls logoutMutation.mutateAsync()
+  - Implemented concurrent click protection using logoutMutation.isPending check
+  - Logout button disabled and shows "Logging out..." during logout process
+  - Backend /api/logout endpoint properly destroys session via req.logout()
+  - Frontend clears cache and redirects to home page after successful logout
+  - Fixed user.isAdmin error by using role-based check (admin/modeler)
+  - E2e tested: single POST /api/logout, session destruction, protected route blocking
+
 ## Backlog
 
 ### Pending Implementation
