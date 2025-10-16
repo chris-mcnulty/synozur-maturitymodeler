@@ -1337,10 +1337,11 @@ Respond in JSON format:
     }
   });
 
-  // Approve an AI content review
+  // Approve an AI content review (supports partial approvals)
   app.post("/api/admin/ai/approve-review/:id", ensureAdminOrModeler, async (req, res) => {
     try {
       const { id } = req.params;
+      const { selectedItemIds, editedContent } = req.body;
       
       const review = await storage.getAiReviewById(id);
       if (!review) {
@@ -1350,6 +1351,68 @@ Respond in JSON format:
       if (review.status !== 'pending') {
         return res.status(400).json({ error: "Review has already been processed" });
       }
+
+      // Use edited content if provided, otherwise use original generated content
+      const contentToApprove = editedContent || review.generatedContent;
+
+      // If selectedItemIds are provided, filter content to only selected items
+      let partialContent = contentToApprove;
+      
+      if (selectedItemIds && selectedItemIds.length > 0) {
+        // Apply partial approval based on content type
+        switch (review.contentType) {
+          case 'dimension_resources':
+            // Filter resources to only selected ones
+            const resourceIndices = selectedItemIds
+              .filter((id: string) => id.startsWith('resource-'))
+              .map((id: string) => parseInt(id.replace('resource-', '')));
+            
+            if (contentToApprove.resources) {
+              partialContent = {
+                ...contentToApprove,
+                resources: contentToApprove.resources.filter((_: any, idx: number) => 
+                  resourceIndices.includes(idx)
+                )
+              };
+            }
+            break;
+            
+          case 'maturity_level_interpretation':
+            partialContent = { ...contentToApprove };
+            
+            // Filter characteristics if not all are selected
+            const charIndices = selectedItemIds
+              .filter((id: string) => id.startsWith('characteristic-'))
+              .map((id: string) => parseInt(id.replace('characteristic-', '')));
+            
+            if (charIndices.length > 0 && contentToApprove.characteristics) {
+              partialContent = {
+                ...partialContent,
+                characteristics: contentToApprove.characteristics.filter((_: string, idx: number) =>
+                  charIndices.includes(idx)
+                )
+              };
+            }
+            
+            // Remove interpretation if not selected
+            if (!selectedItemIds.includes('interpretation')) {
+              delete (partialContent as any).interpretation;
+              delete (partialContent as any).title;
+            }
+            break;
+            
+          case 'answer_improvement':
+          case 'answer_rewrite':
+            // Only approve if main content is selected
+            if (!selectedItemIds.includes('main-content')) {
+              return res.status(400).json({ error: "No content selected for approval" });
+            }
+            break;
+        }
+      }
+
+      // Store the filtered content in review before approving
+      review.generatedContent = partialContent;
 
       // Approve the review
       const approved = await storage.approveAiReview(id, req.user!.id);
@@ -1363,7 +1426,7 @@ Respond in JSON format:
       
       res.json({ 
         success: true, 
-        message: "Content approved successfully",
+        message: selectedItemIds ? "Selected content approved successfully" : "Content approved successfully",
         review: approved 
       });
     } catch (error) {
@@ -1372,11 +1435,11 @@ Respond in JSON format:
     }
   });
 
-  // Reject an AI content review
+  // Reject an AI content review (supports partial rejections)
   app.post("/api/admin/ai/reject-review/:id", ensureAdminOrModeler, async (req, res) => {
     try {
       const { id } = req.params;
-      const { reason } = req.body;
+      const { reason, selectedItemIds } = req.body;
       
       const review = await storage.getAiReviewById(id);
       if (!review) {
@@ -1387,14 +1450,102 @@ Respond in JSON format:
         return res.status(400).json({ error: "Review has already been processed" });
       }
 
-      // Reject the review
-      const rejected = await storage.rejectAiReview(id, req.user!.id, reason);
-      
-      res.json({ 
-        success: true, 
-        message: "Content rejected successfully",
-        review: rejected 
-      });
+      // If selectedItemIds are provided, we're doing a partial rejection
+      if (selectedItemIds && selectedItemIds.length > 0) {
+        // For partial rejections, we need to keep the review pending
+        // and only remove the rejected items from the generated content
+        let remainingContent = { ...(review.generatedContent || {}) };
+        
+        switch (review.contentType) {
+          case 'dimension_resources':
+            // Remove rejected resources
+            const rejectedResourceIndices = selectedItemIds
+              .filter((id: string) => id.startsWith('resource-'))
+              .map((id: string) => parseInt(id.replace('resource-', '')));
+            
+            if (remainingContent.resources) {
+              remainingContent = {
+                ...remainingContent,
+                resources: remainingContent.resources.filter((_: any, idx: number) => 
+                  !rejectedResourceIndices.includes(idx)
+                )
+              };
+            }
+            break;
+            
+          case 'maturity_level_interpretation':
+            // Remove rejected characteristics
+            const rejectedCharIndices = selectedItemIds
+              .filter((id: string) => id.startsWith('characteristic-'))
+              .map((id: string) => parseInt(id.replace('characteristic-', '')));
+            
+            if (rejectedCharIndices.length > 0 && remainingContent.characteristics) {
+              remainingContent = {
+                ...remainingContent,
+                characteristics: remainingContent.characteristics.filter((_: string, idx: number) =>
+                  !rejectedCharIndices.includes(idx)
+                )
+              };
+            }
+            
+            // Remove interpretation if rejected
+            if (selectedItemIds.includes('interpretation')) {
+              delete (remainingContent as any).interpretation;
+              delete (remainingContent as any).title;
+            }
+            break;
+            
+          case 'answer_improvement':
+          case 'answer_rewrite':
+            // If main content is rejected, reject the entire review
+            if (selectedItemIds.includes('main-content')) {
+              const rejected = await storage.rejectAiReview(id, req.user!.id, reason);
+              return res.json({
+                success: true,
+                message: "Content rejected successfully",
+                review: rejected
+              });
+            }
+            break;
+        }
+        
+        // Update the review with remaining content
+        // Note: We keep it pending so remaining items can still be approved
+        review.generatedContent = remainingContent;
+        
+        // Check if any content remains
+        const hasRemainingContent = 
+          (review.contentType === 'dimension_resources' && remainingContent.resources?.length > 0) ||
+          (review.contentType === 'maturity_level_interpretation' && 
+            (remainingContent.interpretation || remainingContent.characteristics?.length > 0)) ||
+          (review.contentType === 'answer_improvement' && remainingContent.improvementStatement) ||
+          (review.contentType === 'answer_rewrite' && remainingContent.rewrittenAnswer);
+        
+        if (!hasRemainingContent) {
+          // No content remains, reject the entire review
+          const rejected = await storage.rejectAiReview(id, req.user!.id, reason);
+          return res.json({
+            success: true,
+            message: "All content rejected",
+            review: rejected
+          });
+        }
+        
+        return res.json({
+          success: true,
+          message: "Selected items rejected, remaining items still pending",
+          review
+        });
+      } else {
+        // Full rejection
+        const rejected = await storage.rejectAiReview(id, req.user!.id, reason);
+        
+        res.json({ 
+          success: true, 
+          message: "Content rejected successfully",
+          review: rejected 
+        });
+      }
     } catch (error) {
       console.error('Failed to reject review:', error);
       res.status(500).json({ error: "Failed to reject review" });
