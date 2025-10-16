@@ -109,6 +109,10 @@ Maturity Modeler is a comprehensive fullstack JavaScript application for multi-m
   - Promise-wrapped FileReader for proper async error handling
   - Email validation with user-friendly error messages
   - Base64 PDF encoding and SendGrid attachment delivery
+  - **Email header image fix**: All emails now display Synozur Alliance header properly
+    - Created `/email-header.jpg` endpoint serving image from attached_assets
+    - Dynamic URL generation works across all environments (dev, production)
+    - Updated all three email templates (PDF, password reset, verification)
 - ✅ Password reset functionality:
   - Forgot password flow with email-based reset links
   - Password reset tokens stored in database with 1-hour expiry
