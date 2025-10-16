@@ -30,6 +30,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Set up authentication routes
   setupAuth(app);
 
+  // Serve email header image
+  app.get('/email-header.jpg', (req, res) => {
+    const imagePath = join(__dirname, '../attached_assets/SA_EmailHeader_short_1760554032055.jpg');
+    res.sendFile(imagePath);
+  });
+
   // Get current user
   app.get('/api/user', (req, res) => {
     if (!req.user) {

@@ -46,21 +46,22 @@ export default function Auth() {
   };
 
   return (
-    <div className="min-h-screen flex">
+    <div className="min-h-screen flex flex-col lg:flex-row">
       {/* Left side - Forms */}
-      <div className="flex-1 flex items-center justify-center p-8">
-        <Card className="w-full max-w-md p-8">
-          <div className="mb-8 text-center">
-            <div className="flex items-center justify-center mb-4">
-              <img 
-                src={synozurLogo} 
-                alt="Synozur Logo" 
-                className="w-24 h-24 object-contain"
-              />
+      <div className="flex-1 flex flex-col p-8">
+        <div className="flex items-center justify-center flex-1">
+          <Card className="w-full max-w-md p-8">
+            <div className="mb-8 text-center">
+              <div className="flex items-center justify-center mb-4">
+                <img 
+                  src={synozurLogo} 
+                  alt="Synozur Logo" 
+                  className="w-24 h-24 object-contain"
+                />
+              </div>
+              <h2 className="text-xl font-semibold mt-2">Maturity Modeler</h2>
+              <p className="text-muted-foreground mt-2">Find Your North Star</p>
             </div>
-            <h2 className="text-xl font-semibold mt-2">Maturity Modeler</h2>
-            <p className="text-muted-foreground mt-2">Find Your North Star</p>
-          </div>
 
           <Tabs defaultValue="login" className="w-full">
             <TabsList className="grid w-full grid-cols-2">
@@ -208,9 +209,51 @@ export default function Auth() {
             </TabsContent>
           </Tabs>
         </Card>
+        </div>
+
+        {/* Mobile Disclaimer - Only shown on mobile */}
+        <div className="lg:hidden mt-8 max-w-md mx-auto" data-testid="mobile-disclaimer">
+          <div className="pt-8 border-t border-border">
+            <h3 className="text-2xl font-bold mb-4">Why Sign Up?</h3>
+            <p className="text-muted-foreground mb-6">
+              Because your maturity journey deserves more than guesswork. When you sign up, you unlock tools that make progress clear and actionable:
+            </p>
+            <ul className="space-y-3 mb-6">
+              <li className="flex items-start">
+                <span className="text-primary mr-3">✅</span>
+                <span>Personalized recommendations designed to fit your goals</span>
+              </li>
+              <li className="flex items-start">
+                <span className="text-primary mr-3">✅</span>
+                <span>Saved assessments so you can track growth over time</span>
+              </li>
+              <li className="flex items-start">
+                <span className="text-primary mr-3">✅</span>
+                <span>Downloadable PDFs for easy sharing and reference</span>
+              </li>
+            </ul>
+            <p className="font-semibold mb-6">And the best part? It's completely free.</p>
+            
+            <h4 className="font-semibold mb-3">We take your privacy seriously:</h4>
+            <ul className="space-y-2 mb-6">
+              <li className="flex items-start text-sm text-muted-foreground">
+                <span className="mr-2">•</span>
+                <span>We never sell or share your data</span>
+              </li>
+              <li className="flex items-start text-sm text-muted-foreground">
+                <span className="mr-2">•</span>
+                <span>We only use anonymized insights to improve benchmarks</span>
+              </li>
+            </ul>
+            
+            <p className="text-sm text-muted-foreground">
+              By signing up, you agree to receive occasional updates from Synozur—always relevant, never overwhelming—and you can unsubscribe anytime.
+            </p>
+          </div>
+        </div>
       </div>
 
-      {/* Right side - Hero */}
+      {/* Right side - Hero - Only shown on desktop */}
       <div className="flex-1 bg-gradient-to-br from-primary/10 via-primary/5 to-background p-8 hidden lg:flex flex-col justify-center">
         <div className="max-w-lg">
           <div className="mb-8">
