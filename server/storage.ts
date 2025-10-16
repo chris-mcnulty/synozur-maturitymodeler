@@ -16,6 +16,7 @@ import type {
   Setting, InsertSetting,
   AiGeneratedContent, InsertAiGeneratedContent,
   AiUsageLog, InsertAiUsageLog,
+  AiContentReview, InsertAiContentReview,
 } from "@shared/schema";
 
 const PostgresSessionStore = connectPg(session);
@@ -93,6 +94,13 @@ export interface IStorage {
   // AI usage log methods
   createAiUsageLog(log: InsertAiUsageLog): Promise<AiUsageLog>;
   getAiUsageLogs(userId?: string): Promise<AiUsageLog[]>;
+  
+  // AI content review methods
+  createAiContentReview(review: InsertAiContentReview): Promise<AiContentReview>;
+  getPendingAiReviews(modelId?: string): Promise<AiContentReview[]>;
+  getAiReviewById(id: string): Promise<AiContentReview | undefined>;
+  approveAiReview(id: string, reviewedBy: string): Promise<AiContentReview | undefined>;
+  rejectAiReview(id: string, reviewedBy: string, reason?: string): Promise<AiContentReview | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -445,6 +453,56 @@ export class DatabaseStorage implements IStorage {
     return db.select()
       .from(schema.aiUsageLog)
       .orderBy(desc(schema.aiUsageLog.createdAt));
+  }
+
+  // AI content review methods
+  async createAiContentReview(review: InsertAiContentReview): Promise<AiContentReview> {
+    const [created] = await db.insert(schema.aiContentReviews).values(review).returning();
+    return created;
+  }
+
+  async getPendingAiReviews(modelId?: string): Promise<AiContentReview[]> {
+    const conditions = [eq(schema.aiContentReviews.status, 'pending')];
+    if (modelId) {
+      conditions.push(eq(schema.aiContentReviews.modelId, modelId));
+    }
+    return db.select()
+      .from(schema.aiContentReviews)
+      .where(and(...conditions))
+      .orderBy(desc(schema.aiContentReviews.createdAt));
+  }
+
+  async getAiReviewById(id: string): Promise<AiContentReview | undefined> {
+    const [review] = await db.select()
+      .from(schema.aiContentReviews)
+      .where(eq(schema.aiContentReviews.id, id))
+      .limit(1);
+    return review;
+  }
+
+  async approveAiReview(id: string, reviewedBy: string): Promise<AiContentReview | undefined> {
+    const [updated] = await db.update(schema.aiContentReviews)
+      .set({
+        status: 'approved',
+        reviewedBy,
+        reviewedAt: new Date()
+      })
+      .where(eq(schema.aiContentReviews.id, id))
+      .returning();
+    return updated;
+  }
+
+  async rejectAiReview(id: string, reviewedBy: string, reason?: string): Promise<AiContentReview | undefined> {
+    const [updated] = await db.update(schema.aiContentReviews)
+      .set({
+        status: 'rejected',
+        reviewedBy,
+        reviewedAt: new Date(),
+        rejectionReason: reason
+      })
+      .where(eq(schema.aiContentReviews.id, id))
+      .returning();
+    return updated;
   }
 }
 

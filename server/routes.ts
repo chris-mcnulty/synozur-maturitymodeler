@@ -1061,17 +1061,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Model not found" });
       }
 
-      // Generate cache key
-      const contextHash = createHash('md5')
-        .update(JSON.stringify({ modelId, maturityLevel, score }))
-        .digest('hex');
-
-      // Check cache first
-      const cached = await storage.getAiGeneratedContent('interpretation', contextHash);
-      if (cached && cached.expiresAt && cached.expiresAt > new Date()) {
-        return res.json(cached.content);
-      }
-
       // Generate using AI
       const prompt = `Generate a maturity level interpretation for a ${model.name} assessment.
 
@@ -1092,16 +1081,16 @@ Respond in JSON format:
 
       const interpretation = await aiService.generateText(prompt, { outputFormat: 'json' });
 
-      // Cache the result for 30 days
-      const expiresAt = new Date();
-      expiresAt.setDate(expiresAt.getDate() + 30);
-      
-      await storage.createAiGeneratedContent({
+      // Save to review queue instead of directly applying
+      const review = await storage.createAiContentReview({
         type: 'interpretation',
-        contextHash,
-        content: interpretation as any,
-        metadata: { modelId, maturityLevel, score },
-        expiresAt
+        contentType: 'maturity_level_interpretation',
+        modelId,
+        targetId: `${modelId}_level_${maturityLevel}`, // Unique identifier for this interpretation
+        generatedContent: interpretation as any,
+        metadata: { modelId, maturityLevel, score, modelName: model.name },
+        status: 'pending',
+        createdBy: req.user!.id
       });
 
       // Log usage
@@ -1112,7 +1101,11 @@ Respond in JSON format:
         estimatedCost: 3
       });
 
-      res.json(interpretation);
+      res.json({ 
+        success: true, 
+        message: "Interpretation generated and sent to review queue",
+        reviewId: review.id
+      });
     } catch (error) {
       console.error('Failed to generate interpretation:', error);
       res.status(500).json({ error: "Failed to generate interpretation" });
@@ -1134,17 +1127,6 @@ Respond in JSON format:
       
       if (!model || !dimension) {
         return res.status(404).json({ error: "Model or dimension not found" });
-      }
-
-      // Generate cache key
-      const contextHash = createHash('md5')
-        .update(JSON.stringify({ modelId, dimensionId, scoreLevel }))
-        .digest('hex');
-
-      // Check cache first
-      const cached = await storage.getAiGeneratedContent('resources', contextHash);
-      if (cached && cached.expiresAt && cached.expiresAt > new Date()) {
-        return res.json(cached.content);
       }
 
       // Generate using AI
@@ -1174,16 +1156,16 @@ Respond in JSON format:
 
       const resources = await aiService.generateText(prompt, { outputFormat: 'json' });
 
-      // Cache the result for 30 days
-      const expiresAt = new Date();
-      expiresAt.setDate(expiresAt.getDate() + 30);
-      
-      await storage.createAiGeneratedContent({
-        type: 'resources',
-        contextHash,
-        content: resources as any,
-        metadata: { modelId, dimensionId, scoreLevel },
-        expiresAt
+      // Save to review queue instead of directly applying
+      const review = await storage.createAiContentReview({
+        type: 'resource',
+        contentType: 'dimension_resources',
+        modelId,
+        targetId: dimensionId,
+        generatedContent: resources as any,
+        metadata: { modelId, dimensionId, scoreLevel, modelName: model.name, dimensionLabel: dimension.label },
+        status: 'pending',
+        createdBy: req.user!.id
       });
 
       // Log usage
@@ -1194,7 +1176,11 @@ Respond in JSON format:
         estimatedCost: 4
       });
 
-      res.json(resources);
+      res.json({
+        success: true,
+        message: "Resources generated and sent to review queue",
+        reviewId: review.id
+      });
     } catch (error) {
       console.error('Failed to generate resources:', error);
       res.status(500).json({ error: "Failed to generate resources" });
@@ -1204,22 +1190,11 @@ Respond in JSON format:
   // Generate improvement statement for an answer option
   app.post("/api/admin/ai/generate-improvement", ensureAdminOrModeler, async (req, res) => {
     try {
-      const { questionText, answerText, answerScore } = req.body;
+      const { questionText, answerText, answerScore, answerId } = req.body;
       
       // Validate input
       if (!questionText || !answerText || answerScore === undefined) {
         return res.status(400).json({ error: "Question text, answer text, and answer score are required" });
-      }
-
-      // Generate cache key
-      const contextHash = createHash('md5')
-        .update(JSON.stringify({ questionText, answerText, answerScore }))
-        .digest('hex');
-
-      // Check cache first
-      const cached = await storage.getAiGeneratedContent('improvement', contextHash);
-      if (cached && cached.expiresAt && cached.expiresAt > new Date()) {
-        return res.json(cached.content);
       }
 
       // Generate using AI
@@ -1243,16 +1218,16 @@ Respond in JSON format:
 
       const improvement = await aiService.generateText(prompt, { outputFormat: 'json' });
 
-      // Cache the result for 30 days
-      const expiresAt = new Date();
-      expiresAt.setDate(expiresAt.getDate() + 30);
-      
-      await storage.createAiGeneratedContent({
+      // Save to review queue instead of directly applying
+      const review = await storage.createAiContentReview({
         type: 'improvement',
-        contextHash,
-        content: improvement as any,
+        contentType: 'answer_improvement',
+        modelId: null,
+        targetId: answerId || null,
+        generatedContent: improvement as any,
         metadata: { questionText, answerText, answerScore },
-        expiresAt
+        status: 'pending',
+        createdBy: req.user!.id
       });
 
       // Log usage
@@ -1263,7 +1238,11 @@ Respond in JSON format:
         estimatedCost: 2
       });
 
-      res.json(improvement);
+      res.json({
+        success: true,
+        message: "Improvement statement generated and sent to review queue",
+        reviewId: review.id
+      });
     } catch (error) {
       console.error('Failed to generate improvement statement:', error);
       res.status(500).json({ error: "Failed to generate improvement statement" });
@@ -1273,22 +1252,11 @@ Respond in JSON format:
   // Rewrite answer option to be more contextual to the specific question
   app.post("/api/admin/ai/rewrite-answer", ensureAdminOrModeler, async (req, res) => {
     try {
-      const { questionText, answerText, answerScore, modelContext } = req.body;
+      const { questionText, answerText, answerScore, modelContext, answerId } = req.body;
       
       // Validate input
       if (!questionText || !answerText || answerScore === undefined) {
         return res.status(400).json({ error: "Question text, answer text, and answer score are required" });
-      }
-
-      // Generate cache key
-      const contextHash = createHash('md5')
-        .update(JSON.stringify({ questionText, answerText, answerScore, modelContext }))
-        .digest('hex');
-
-      // Check cache first
-      const cached = await storage.getAiGeneratedContent('answer-rewrite', contextHash);
-      if (cached && cached.expiresAt && cached.expiresAt > new Date()) {
-        return res.json({ rewrittenAnswer: cached.content });
       }
 
       // Generate using AI
@@ -1299,16 +1267,16 @@ Respond in JSON format:
         modelContext
       );
 
-      // Cache the result for 30 days
-      const expiresAt = new Date();
-      expiresAt.setDate(expiresAt.getDate() + 30);
-      
-      await storage.createAiGeneratedContent({
+      // Save to review queue instead of directly applying
+      const review = await storage.createAiContentReview({
         type: 'answer-rewrite',
-        contextHash,
-        content: rewrittenAnswer as any,
+        contentType: 'answer_rewrite',
+        modelId: null,
+        targetId: answerId || null,
+        generatedContent: { rewrittenAnswer } as any,
         metadata: { questionText, answerText, answerScore, modelContext },
-        expiresAt
+        status: 'pending',
+        createdBy: req.user!.id
       });
 
       // Log usage
@@ -1319,10 +1287,104 @@ Respond in JSON format:
         estimatedCost: 1
       });
 
-      res.json({ rewrittenAnswer });
+      res.json({
+        success: true,
+        message: "Answer rewrite generated and sent to review queue",
+        reviewId: review.id
+      });
     } catch (error) {
       console.error('Failed to rewrite answer:', error);
       res.status(500).json({ error: "Failed to rewrite answer" });
+    }
+  });
+
+  // AI Content Review Workflow Endpoints
+  
+  // Get all pending AI content reviews
+  app.get("/api/admin/ai/pending-reviews", ensureAdminOrModeler, async (req, res) => {
+    try {
+      const { modelId } = req.query;
+      const reviews = await storage.getPendingAiReviews(modelId as string | undefined);
+      
+      // Enhance with creator information
+      const reviewsWithUsers = await Promise.all(
+        reviews.map(async (review) => {
+          const creator = await storage.getUser(review.createdBy);
+          return {
+            ...review,
+            creatorName: creator?.name || creator?.username || 'Unknown'
+          };
+        })
+      );
+      
+      res.json(reviewsWithUsers);
+    } catch (error) {
+      console.error('Failed to fetch pending reviews:', error);
+      res.status(500).json({ error: "Failed to fetch pending reviews" });
+    }
+  });
+
+  // Approve an AI content review
+  app.post("/api/admin/ai/approve-review/:id", ensureAdminOrModeler, async (req, res) => {
+    try {
+      const { id } = req.params;
+      
+      const review = await storage.getAiReviewById(id);
+      if (!review) {
+        return res.status(404).json({ error: "Review not found" });
+      }
+      
+      if (review.status !== 'pending') {
+        return res.status(400).json({ error: "Review has already been processed" });
+      }
+
+      // Approve the review
+      const approved = await storage.approveAiReview(id, req.user!.id);
+      
+      // TODO: Apply the approved content to the actual database tables
+      // This will be done based on the contentType:
+      // - 'maturity_level_interpretation' -> update model maturityScale
+      // - 'dimension_resources' -> update answer/question resources
+      // - 'answer_improvement' -> update answer improvementStatement
+      // - 'answer_rewrite' -> update answer text
+      
+      res.json({ 
+        success: true, 
+        message: "Content approved successfully",
+        review: approved 
+      });
+    } catch (error) {
+      console.error('Failed to approve review:', error);
+      res.status(500).json({ error: "Failed to approve review" });
+    }
+  });
+
+  // Reject an AI content review
+  app.post("/api/admin/ai/reject-review/:id", ensureAdminOrModeler, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { reason } = req.body;
+      
+      const review = await storage.getAiReviewById(id);
+      if (!review) {
+        return res.status(404).json({ error: "Review not found" });
+      }
+      
+      if (review.status !== 'pending') {
+        return res.status(400).json({ error: "Review has already been processed" });
+      }
+
+      // Reject the review
+      const rejected = await storage.rejectAiReview(id, req.user!.id, reason);
+      
+      res.json({ 
+        success: true, 
+        message: "Content rejected successfully",
+        review: rejected 
+      });
+    } catch (error) {
+      console.error('Failed to reject review:', error);
+      res.status(500).json({ error: "Failed to reject review" });
     }
   });
 

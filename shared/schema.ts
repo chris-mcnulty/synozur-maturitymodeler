@@ -269,6 +269,27 @@ export const aiUsageLog = pgTable("ai_usage_log", {
   createdIdx: index("idx_ai_usage_created").on(table.createdAt),
 }));
 
+// AI content review queue table
+export const aiContentReviews = pgTable("ai_content_reviews", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  type: text("type").notNull(), // 'interpretation', 'resource', 'improvement', 'answer-rewrite'
+  contentType: text("content_type").notNull(), // specific type like 'answer_improvement', 'dimension_resource', etc.
+  modelId: varchar("model_id").references(() => models.id, { onDelete: "cascade" }),
+  targetId: varchar("target_id"), // ID of the answer/question/dimension this applies to
+  generatedContent: json("generated_content").notNull(), // The actual AI-generated content
+  metadata: json("metadata"), // Additional context (question text, answer text, etc.)
+  status: text("status").notNull().default("pending"), // 'pending', 'approved', 'rejected'
+  createdBy: varchar("created_by").notNull().references(() => users.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  reviewedBy: varchar("reviewed_by").references(() => users.id, { onDelete: "set null" }),
+  reviewedAt: timestamp("reviewed_at"),
+  rejectionReason: text("rejection_reason"),
+}, (table) => ({
+  statusIdx: index("idx_ai_review_status").on(table.status),
+  createdByIdx: index("idx_ai_review_creator").on(table.createdBy),
+  modelIdx: index("idx_ai_review_model").on(table.modelId),
+}));
+
 // Session table for connect-pg-simple
 // This table is managed by express-session and connect-pg-simple
 export const session = pgTable("session", {
@@ -293,6 +314,12 @@ export const insertContentEmbeddingSchema = createInsertSchema(contentEmbeddings
 export const insertAiUsageLogSchema = createInsertSchema(aiUsageLog).omit({
   id: true,
   createdAt: true,
+});
+
+export const insertAiContentReviewSchema = createInsertSchema(aiContentReviews).omit({
+  id: true,
+  createdAt: true,
+  reviewedAt: true,
 });
 
 // Types
@@ -336,3 +363,6 @@ export type InsertContentEmbedding = z.infer<typeof insertContentEmbeddingSchema
 
 export type AiUsageLog = typeof aiUsageLog.$inferSelect;
 export type InsertAiUsageLog = z.infer<typeof insertAiUsageLogSchema>;
+
+export type AiContentReview = typeof aiContentReviews.$inferSelect;
+export type InsertAiContentReview = z.infer<typeof insertAiContentReviewSchema>;
