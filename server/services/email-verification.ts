@@ -32,6 +32,7 @@ export async function sendVerificationEmail(
   const { client: sgMail, fromEmail } = await getUncachableSendGridClient();
 
   const verificationUrl = `${baseUrl}/verify-email?token=${token}`;
+  const emailHeaderUrl = `${baseUrl}/email-header.jpg`;
 
   const msg = {
     to: email,
@@ -63,7 +64,7 @@ If you didn't create an account, you can safely ignore this email.
       </head>
       <body>
         <div class="container">
-          <img src="https://de9b7c40-dcaa-46b2-b0c0-d28fd76a0dab-00-2enzqmoszfuzm.janeway.replit.dev/objects/SA_EmailHeader_short.jpg" alt="Synozur Alliance" class="header-image" />
+          <img src="${emailHeaderUrl}" alt="Synozur Alliance" class="header-image" />
           <div class="content">
             <p>Welcome to Synozur Maturity Modeler!</p>
             <p>We're excited to guide you on your journey to business excellence. To unlock all features—including downloadable PDF reports—please verify your email address:</p>
