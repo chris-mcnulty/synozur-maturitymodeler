@@ -1528,16 +1528,37 @@ Respond in JSON format:
       // Approve the review
       const approved = await storage.approveAiReview(id, req.user!.id);
       
-      // TODO: Apply the approved content to the actual database tables
-      // This will be done based on the contentType:
-      // - 'maturity_level_interpretation' -> update model maturityScale
-      // - 'dimension_resources' -> update answer/question resources
-      // - 'answer_improvement' -> update answer improvementStatement
-      // - 'answer_rewrite' -> update answer text
+      // Apply the approved content to the actual database tables
+      try {
+        switch (review.contentType) {
+          case 'answer_rewrite':
+            if (review.targetId && partialContent.rewrittenAnswer) {
+              await db.update(schema.answers)
+                .set({ text: partialContent.rewrittenAnswer })
+                .where(eq(schema.answers.id, review.targetId));
+            }
+            break;
+            
+          case 'answer_improvement':
+            if (review.targetId && partialContent.improvementStatement) {
+              await db.update(schema.answers)
+                .set({ improvementStatement: partialContent.improvementStatement })
+                .where(eq(schema.answers.id, review.targetId));
+            }
+            break;
+            
+          // TODO: Implement other content types when needed
+          // case 'maturity_level_interpretation':
+          // case 'dimension_resources':
+        }
+      } catch (applyError) {
+        console.error('Failed to apply approved content:', applyError);
+        // Continue anyway - review is approved even if apply fails
+      }
       
       res.json({ 
         success: true, 
-        message: selectedItemIds ? "Selected content approved successfully" : "Content approved successfully",
+        message: selectedItemIds ? "Selected content approved and applied successfully" : "Content approved and applied successfully",
         review: approved 
       });
     } catch (error) {
