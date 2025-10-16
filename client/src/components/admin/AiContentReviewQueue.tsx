@@ -423,14 +423,24 @@ export function AiContentReviewQueue() {
                 onCheckedChange={() => toggleItemSelection(reviewId, 'main-content')}
                 data-testid={`checkbox-rewrite-${reviewId}`}
               />
-              <div className="flex-1">
-                <label className="text-sm font-semibold">Rewritten Answer:</label>
-                <Textarea
-                  value={content?.rewrittenAnswer || ''}
-                  onChange={(e) => handleContentEdit(reviewId, ['rewrittenAnswer'], e.target.value)}
-                  className="mt-1 min-h-[100px]"
-                  data-testid={`textarea-rewrite-${reviewId}`}
-                />
+              <div className="flex-1 space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-semibold text-muted-foreground">Original Answer:</label>
+                    <div className="mt-1 p-3 rounded-md bg-muted/50 border min-h-[100px]">
+                      <p className="text-sm">{review.metadata?.answerText || 'N/A'}</p>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-sm font-semibold">Rewritten Answer:</label>
+                    <Textarea
+                      value={content?.rewrittenAnswer || ''}
+                      onChange={(e) => handleContentEdit(reviewId, ['rewrittenAnswer'], e.target.value)}
+                      className="mt-1 min-h-[100px]"
+                      data-testid={`textarea-rewrite-${reviewId}`}
+                    />
+                  </div>
+                </div>
               </div>
             </div>
           </div>

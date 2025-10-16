@@ -1358,6 +1358,70 @@ Respond in JSON format:
     }
   });
 
+  // Bulk rewrite all answers for a question
+  app.post("/api/admin/ai/rewrite-all-answers", ensureAdminOrModeler, async (req, res) => {
+    try {
+      const { questionId, questionText, answers, modelContext } = req.body;
+      
+      // Validate input
+      if (!questionId || !questionText || !Array.isArray(answers) || answers.length === 0) {
+        return res.status(400).json({ error: "Question ID, question text, and answers array are required" });
+      }
+
+      const reviewIds: string[] = [];
+
+      // Generate rewrites for each answer
+      for (const answer of answers) {
+        if (!answer.text || answer.score === undefined) {
+          continue;
+        }
+
+        try {
+          const rewrittenAnswer = await aiService.rewriteAnswer(
+            questionText,
+            answer.text,
+            answer.score,
+            modelContext
+          );
+
+          // Store in review queue
+          const review = await storage.createAiContentReview({
+            type: 'answer-rewrite',
+            contentType: 'answer_rewrite',
+            targetId: answer.id,
+            generatedContent: { rewrittenAnswer } as any,
+            metadata: { questionText, answerText: answer.text, answerScore: answer.score, modelContext },
+            status: 'pending',
+            createdBy: req.user!.id
+          });
+
+          reviewIds.push(review.id);
+
+          // Log usage for each rewrite
+          await storage.createAiUsageLog({
+            userId: req.user!.id,
+            modelName: 'gpt-5-mini',
+            operation: 'rewrite-answer',
+            estimatedCost: 1
+          });
+        } catch (answerError) {
+          console.error(`Failed to rewrite answer ${answer.id}:`, answerError);
+          // Continue with other answers even if one fails
+        }
+      }
+
+      res.json({
+        success: true,
+        message: `${reviewIds.length} answer rewrites generated and sent to review queue`,
+        reviewIds,
+        count: reviewIds.length
+      });
+    } catch (error) {
+      console.error('Failed to bulk rewrite answers:', error);
+      res.status(500).json({ error: "Failed to bulk rewrite answers" });
+    }
+  });
+
   // AI Content Review Workflow Endpoints
   
   // Get all pending AI content reviews

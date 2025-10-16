@@ -2336,7 +2336,42 @@ export default function Admin() {
           </DialogHeader>
 
           <div className="space-y-4">
-            <div className="flex justify-end">
+            <div className="flex justify-between gap-2">
+              <Button
+                variant="outline"
+                onClick={async () => {
+                  if (!editingQuestion || answers.length === 0) return;
+                  
+                  try {
+                    const response = await apiRequest('/api/admin/ai/rewrite-all-answers', 'POST', {
+                      questionId: editingQuestion.id,
+                      questionText: editingQuestion.text,
+                      answers: answers.map(a => ({
+                        id: a.id,
+                        text: a.text,
+                        score: a.score
+                      })),
+                      modelContext: undefined
+                    });
+                    
+                    toast({
+                      title: "Rewrites Sent to Review Queue",
+                      description: response.message || `${answers.length} answer rewrites pending approval in AI Review tab.`,
+                    });
+                  } catch (error) {
+                    toast({
+                      title: "Generation Failed",
+                      description: "Failed to generate answer rewrites. Please try again.",
+                      variant: "destructive",
+                    });
+                  }
+                }}
+                disabled={!editingQuestion || answers.length === 0}
+                data-testid="button-rewrite-all-answers"
+              >
+                <Sparkles className="mr-2 h-4 w-4" />
+                Rewrite All Answers
+              </Button>
               <Button
                 onClick={() => {
                   const newOrder = answers.length + 1;
