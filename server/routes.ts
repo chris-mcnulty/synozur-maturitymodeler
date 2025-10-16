@@ -1891,6 +1891,7 @@ The Synozur Team`,
         const { client: sgMail, fromEmail } = await getUncachableSendGridClient();
 
         const resetUrl = `${req.protocol}://${req.get('host')}/reset-password?token=${resetToken.token}`;
+        const emailHeaderUrl = `${req.protocol}://${req.get('host')}/email-header.jpg`;
 
         const msg = {
           to: email,
@@ -1922,7 +1923,7 @@ If you didn't request this, please ignore this email—your password will remain
             </head>
             <body>
               <div class="container">
-                <img src="https://de9b7c40-dcaa-46b2-b0c0-d28fd76a0dab-00-2enzqmoszfuzm.janeway.replit.dev/objects/SA_EmailHeader_short.jpg" alt="Synozur Alliance" class="header-image" />
+                <img src="${emailHeaderUrl}" alt="Synozur Alliance" class="header-image" />
                 <div class="content">
                   <h2 style="color: #810FFB; margin-top: 0;">Reset Your Password</h2>
                   <p>You requested a password reset for your Synozur Maturity Modeler account.</p>
