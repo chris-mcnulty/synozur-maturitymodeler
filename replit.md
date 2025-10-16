@@ -162,6 +162,16 @@ Maturity Modeler is a comprehensive fullstack JavaScript application for multi-m
   - Fixed user.isAdmin error by using role-based check (admin/modeler)
   - E2e tested: single POST /api/logout, session destruction, protected route blocking
 
+- ✅ Social Sharing Feature:
+  - Share assessment results on 6 social platforms (LinkedIn, Twitter/X, Threads, Facebook, Instagram, Bluesky)
+  - Share text includes score, maturity level, results URL, and Synozur promotional message
+  - LinkedIn, Twitter, Threads, Facebook, and Bluesky open share dialogs with prefilled content
+  - Instagram uses clipboard copy with toast notification (no web share API available)
+  - Share section located below download/email buttons with visual separator
+  - Responsive flex-wrap layout with platform-specific icons from react-icons/si
+  - Formatted share message: "I scored {score} - {level} on the {model name}! [Results URL] Get your own score free with personalized recommendations, resources and roadmap from Synozur at [Model URL]"
+  - All buttons use outline variant with proper data-testid attributes for testing
+
 ## Backlog
 
 ### Pending Implementation
