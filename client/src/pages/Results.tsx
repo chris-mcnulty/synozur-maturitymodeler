@@ -733,7 +733,7 @@ export default function Results() {
                   </div>
                 </div>
               ) : (
-                <p className="text-muted-foreground whitespace-pre-wrap">{recommendationsSummary}</p>
+                <p className="text-base text-muted-foreground whitespace-pre-wrap">{recommendationsSummary}</p>
               )}
             </Card>
           )}
@@ -747,7 +747,7 @@ export default function Results() {
                   </div>
                   <div className="flex-1">
                     <h3 className="font-semibold mb-2">{rec.title}</h3>
-                    <p className="text-sm text-muted-foreground">{rec.description}</p>
+                    <p className="text-base text-muted-foreground">{rec.description}</p>
                   </div>
                 </div>
               </Card>
@@ -766,21 +766,21 @@ export default function Results() {
                 <Card key={idx} className="p-6" data-testid={`card-resource-${idx}`}>
                   <div className="space-y-3">
                     <div>
-                      <h4 className="font-semibold text-sm text-muted-foreground">Question</h4>
-                      <p className="text-sm">{resource.question}</p>
+                      <h4 className="font-semibold text-base text-muted-foreground">Question</h4>
+                      <p className="text-base">{resource.question}</p>
                     </div>
                     {resource.answer && (
                       <div>
-                        <h4 className="font-semibold text-sm text-muted-foreground">Your Answer</h4>
-                        <p className="text-sm">{resource.answer}</p>
+                        <h4 className="font-semibold text-base text-muted-foreground">Your Answer</h4>
+                        <p className="text-base">{resource.answer}</p>
                       </div>
                     )}
                     {resource.improvementStatement && (
                       <div className="flex items-start gap-3 bg-primary/5 p-4 rounded-lg">
                         <Lightbulb className="h-5 w-5 text-primary mt-0.5" />
                         <div className="flex-1">
-                          <h4 className="font-semibold text-sm mb-1">Improvement Recommendation</h4>
-                          <p className="text-sm text-muted-foreground">{resource.improvementStatement}</p>
+                          <h4 className="font-semibold text-base mb-1">Improvement Recommendation</h4>
+                          <p className="text-base text-muted-foreground">{resource.improvementStatement}</p>
                         </div>
                       </div>
                     )}
@@ -791,13 +791,13 @@ export default function Results() {
                           href={resource.resourceLink}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-sm text-primary hover:underline"
+                          className="text-base text-primary hover:underline"
                           data-testid={`link-resource-${idx}`}
                         >
                           {resource.resourceTitle || 'View Resource'}
                         </a>
                         {resource.resourceDescription && (
-                          <span className="text-sm text-muted-foreground">- {resource.resourceDescription}</span>
+                          <span className="text-base text-muted-foreground">- {resource.resourceDescription}</span>
                         )}
                       </div>
                     )}
@@ -919,7 +919,7 @@ export default function Results() {
                       <ExternalLink className="h-5 w-5 text-muted-foreground flex-shrink-0 ml-2" />
                     </div>
                     {resource.description && (
-                      <p className="text-sm text-muted-foreground">
+                      <p className="text-base text-muted-foreground">
                         {resource.description}
                       </p>
                     )}
