@@ -1073,16 +1073,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
 Maturity Level: ${maturityLevel}
 Score: ${score}/500
 
-Please provide:
-1. A clear, concise title for this maturity level (2-3 words)
-2. A detailed interpretation (2-3 sentences) explaining what this score means
-3. Key characteristics of organizations at this level (3-4 bullet points)
+STRICT RULES:
+- interpretation: MAXIMUM 30 words (2 lines)
+- characteristics: Each MAXIMUM 10 words
+
+Provide:
+1. Title (2-3 words)
+2. Interpretation (MAXIMUM 30 words explaining this score)
+3. 3 characteristics (each MAXIMUM 10 words)
 
 Respond in JSON format:
 {
   "title": "Level Title",
-  "interpretation": "Detailed interpretation...",
-  "characteristics": ["Characteristic 1", "Characteristic 2", "Characteristic 3"]
+  "interpretation": "Brief 30-word max interpretation",
+  "characteristics": ["10 words max", "10 words max", "10 words max"]
 }`;
 
       const interpretation = await aiService.generateText(prompt, { outputFormat: 'json' });
@@ -1136,26 +1140,25 @@ Respond in JSON format:
       }
 
       // Generate using AI
-      const prompt = `Generate improvement resources for the ${dimension.label} dimension of the ${model.name} assessment.
+      const prompt = `Generate improvement actions for the ${dimension.label} dimension of the ${model.name} assessment.
 
 Current score level: ${scoreLevel} (low/medium/high)
 
-Generate 3-5 relevant resources that would help improve in this area. Prioritize Synozur.com content and methodologies where applicable, but also include external authoritative sources.
+STRICT RULES:
+- NO URLs or links (we'll add these manually)
+- Each description: MAXIMUM 30 words (2 lines)
+- Focus on actionable improvements only
 
-For each resource, provide:
-1. Title (clear and actionable)
-2. Description (1-2 sentences explaining the value)
-3. Link (prefer Synozur.com content when available, otherwise authoritative external sources)
-4. Type (article/guide/webinar/tool/framework)
+Generate 3 improvement actions:
 
 Respond in JSON format:
 {
   "resources": [
     {
-      "title": "Resource Title",
-      "description": "Brief description of the resource and its value...",
-      "link": "https://synozur.com/... or external URL",
-      "type": "article"
+      "title": "Action Title",
+      "description": "30-word max actionable improvement step",
+      "link": "",
+      "type": "action"
     }
   ]
 }`;
@@ -1210,16 +1213,20 @@ Question: "${questionText}"
 Selected Answer: "${answerText}"
 Answer Score: ${answerScore}/100
 
-Based on this answer selection, generate:
-1. A specific improvement statement (1-2 sentences) that explains what needs to be improved
-2. A priority level (high/medium/low) based on the score
-3. A quick win action item that can be implemented immediately
+STRICT RULES:
+- improvementStatement: MAXIMUM 30 words (2 lines)
+- quickWin: MAXIMUM 15 words
+
+Generate:
+1. Improvement statement (MAXIMUM 30 words)
+2. Priority (high/medium/low) based on score
+3. Quick win (MAXIMUM 15 words)
 
 Respond in JSON format:
 {
-  "improvementStatement": "Specific improvement needed...",
+  "improvementStatement": "30-word max improvement",
   "priority": "high",
-  "quickWin": "Immediate action that can be taken..."
+  "quickWin": "15-word max action"
 }`;
 
       const improvement = await aiService.generateText(prompt, { outputFormat: 'json' });

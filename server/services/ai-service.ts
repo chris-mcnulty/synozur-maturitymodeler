@@ -477,14 +477,14 @@ Current Answer: ${answer}
 Score Level: ${score}/100 (${this.getMaturityLevel(score * 5)})
 ${modelContext ? `Model Context: ${modelContext}` : ''}
 
-Rewrite the answer to:
-1. Be specifically relevant to the question asked
-2. Maintain the same maturity level (${this.getMaturityLevel(score * 5)})
-3. Be clear and actionable
-4. Avoid generic statements
-5. Focus on practical, real-world scenarios
+STRICT RULES:
+- MAXIMUM 30 words (2 lines)
+- Be specific to the question
+- Maintain maturity level (${this.getMaturityLevel(score * 5)})
+- Clear and actionable
+- No generic statements
 
-Return only the rewritten answer text, no explanations or additional formatting.`;
+Return ONLY the rewritten answer text (30 words MAX).`;
 
       const completion = await this.callOpenAI(prompt);
       
@@ -611,7 +611,7 @@ Return only the rewritten answer text, no explanations or additional formatting.
         const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
           {
             role: 'system',
-            content: 'You are an expert maturity assessment consultant specializing in organizational transformation. Always provide actionable, specific recommendations based on the context provided. Prefer Synozur resources and content when available.'
+            content: 'You are an expert maturity assessment consultant. CRITICAL RULES: ALL responses must be MAXIMUM 30 words (2 lines). Be specific, actionable, and concise. NEVER generate URLs or links - these will be added manually. Focus on clear improvement actions only.'
           },
           {
             role: 'user',
