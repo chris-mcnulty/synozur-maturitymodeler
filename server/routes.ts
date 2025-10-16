@@ -1771,6 +1771,9 @@ Respond in JSON format:
       const { getUncachableSendGridClient } = await import('./sendgrid.js');
       const { client: sgMail, fromEmail } = await getUncachableSendGridClient();
 
+      // Generate dynamic email header URL
+      const emailHeaderUrl = `${req.protocol}://${req.get('host')}/email-header.jpg`;
+
       const msg = {
         to: recipientEmail,
         from: fromEmail,
@@ -1804,7 +1807,7 @@ The Synozur Team`,
           </head>
           <body>
             <div class="container">
-              <img src="https://de9b7c40-dcaa-46b2-b0c0-d28fd76a0dab-00-2enzqmoszfuzm.janeway.replit.dev/objects/SA_EmailHeader_short.jpg" alt="Synozur Alliance" class="header-image" />
+              <img src="${emailHeaderUrl}" alt="Synozur Alliance" class="header-image" />
               <div class="content">
                 <h2 style="color: #810FFB; margin-top: 0;">Your Assessment Report is Ready</h2>
                 <p>Dear ${recipientName || 'Valued User'},</p>
