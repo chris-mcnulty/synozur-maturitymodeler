@@ -45,8 +45,8 @@ export function AiAssistant({ type, onGenerated, context = {}, trigger }: AiAssi
       onGenerated(data);
       setIsOpen(false);
       toast({
-        title: "Interpretation Generated",
-        description: "AI-generated maturity level interpretation has been created.",
+        title: "Content Sent to Review Queue",
+        description: data.message || "AI-generated content is pending approval in the AI Review tab.",
       });
     },
     onError: () => {
@@ -64,8 +64,8 @@ export function AiAssistant({ type, onGenerated, context = {}, trigger }: AiAssi
       onGenerated(data);
       setIsOpen(false);
       toast({
-        title: "Resources Generated",
-        description: "AI-generated resource suggestions have been created.",
+        title: "Content Sent to Review Queue",
+        description: data.message || "AI-generated content is pending approval in the AI Review tab.",
       });
     },
     onError: () => {
@@ -83,8 +83,8 @@ export function AiAssistant({ type, onGenerated, context = {}, trigger }: AiAssi
       onGenerated(data);
       setIsOpen(false);
       toast({
-        title: "Improvement Statement Generated",
-        description: "AI-generated improvement statement has been created.",
+        title: "Content Sent to Review Queue",
+        description: data.message || "AI-generated content is pending approval in the AI Review tab.",
       });
     },
     onError: () => {
@@ -102,8 +102,8 @@ export function AiAssistant({ type, onGenerated, context = {}, trigger }: AiAssi
       onGenerated(data);
       setIsOpen(false);
       toast({
-        title: "Answer Rewritten",
-        description: "Answer has been rewritten to be more contextual and specific.",
+        title: "Content Sent to Review Queue",
+        description: data.message || "AI-generated content is pending approval in the AI Review tab.",
       });
     },
     onError: () => {

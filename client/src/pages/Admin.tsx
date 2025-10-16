@@ -19,6 +19,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { ObjectUploader } from "@/components/ObjectUploader";
 import { AiAssistant } from "@/components/admin/AiAssistant";
 import { AiUsageDashboard } from "@/components/admin/AiUsageDashboard";
+import { AiContentReviewQueue } from "@/components/admin/AiContentReviewQueue";
 
 interface AdminResult extends Result {
   assessmentId: string;
@@ -202,6 +203,12 @@ export default function Admin() {
   const { data: users = [], isLoading: usersLoading } = useQuery<Omit<User, 'password'>[]>({
     queryKey: ['/api/users'],
     enabled: currentUser?.role === 'admin',
+  });
+
+  // Fetch pending AI reviews count
+  const { data: pendingReviews = [] } = useQuery<any[]>({
+    queryKey: ['/api/admin/ai/pending-reviews'],
+    enabled: currentUser?.role === 'admin' || currentUser?.role === 'modeler',
   });
 
   // Update user mutation
@@ -988,7 +995,7 @@ export default function Admin() {
           </div>
 
           <Tabs defaultValue="models" className="w-full">
-            <TabsList className={`grid w-full ${currentUser?.role === 'modeler' ? 'grid-cols-7' : 'grid-cols-8'}`}>
+            <TabsList className={`grid w-full ${currentUser?.role === 'modeler' ? 'grid-cols-8' : 'grid-cols-9'}`}>
               <TabsTrigger value="models" data-testid="tab-models">Models</TabsTrigger>
               <TabsTrigger value="dimensions" data-testid="tab-dimensions">Dimensions</TabsTrigger>
               <TabsTrigger value="questions" data-testid="tab-questions">Questions</TabsTrigger>
@@ -997,6 +1004,9 @@ export default function Admin() {
               )}
               <TabsTrigger value="results" data-testid="tab-results">Results</TabsTrigger>
               <TabsTrigger value="benchmarks" data-testid="tab-benchmarks">Benchmarks</TabsTrigger>
+              <TabsTrigger value="ai-review" data-testid="tab-ai-review">
+                AI Review {pendingReviews.length > 0 && <Badge variant="secondary" className="ml-1" data-testid="badge-pending-reviews">{pendingReviews.length}</Badge>}
+              </TabsTrigger>
               <TabsTrigger value="ai-usage" data-testid="tab-ai-usage">AI Usage</TabsTrigger>
               <TabsTrigger value="audit" data-testid="tab-audit">Audit Log</TabsTrigger>
             </TabsList>
@@ -1763,6 +1773,10 @@ export default function Admin() {
                   Benchmark calculation coming soon.
                 </p>
               </Card>
+            </TabsContent>
+
+            <TabsContent value="ai-review" className="space-y-4">
+              <AiContentReviewQueue />
             </TabsContent>
 
             <TabsContent value="ai-usage" className="space-y-4">

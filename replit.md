@@ -135,6 +135,19 @@ Maturity Modeler is a comprehensive fullstack JavaScript application for multi-m
   - **Defensive dimension handling**: Filters out missing/undefined dimension labels to prevent "undefined" in AI summaries
   - **Comprehensive dimension mapping**: Frontend includes ALL dimension scores from results, even if model structure has changed
 
+- ✅ AI Content Review Workflow:
+  - Database schema with aiContentReviews table for pending content
+  - Storage layer methods (create, list pending, get by ID, approve, reject)
+  - All 4 admin AI generation endpoints save to review queue instead of direct use
+  - Review workflow backend endpoints (list, approve/:id, reject/:id)
+  - AiContentReviewQueue UI component with content preview and approve/reject actions
+  - Admin panel "AI Review" tab with pending count badge
+  - AiAssistant toast messages updated to indicate content sent for review
+  - Real-time cache invalidation and notifications on approve/reject
+  - Role-based access for admin and modeler roles
+  - Rejection dialog with optional reason field
+  - Empty and loading states handled
+
 ## Backlog
 
 ### Pending Implementation
