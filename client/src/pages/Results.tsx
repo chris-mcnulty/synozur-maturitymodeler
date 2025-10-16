@@ -4,9 +4,10 @@ import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { Download, Mail, ArrowLeft, ChevronRight, Users, Target, TrendingUp, Award, BookOpen, Calendar, Phone, ExternalLink, Lightbulb } from "lucide-react";
+import { Download, Mail, ArrowLeft, ChevronRight, Users, Target, TrendingUp, Award, BookOpen, Calendar, Phone, ExternalLink, Lightbulb, Share2 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import type { Result, Assessment, Model, Dimension, User, Question, Answer } from "@shared/schema";
+import { SiLinkedin, SiX, SiThreads, SiFacebook, SiInstagram, SiBluesky } from "react-icons/si";
 import {
   Dialog,
   DialogContent,
@@ -857,6 +858,121 @@ export default function Results() {
                   </>
                 )}
               </Button>
+            </div>
+            
+            {/* Social Sharing Section */}
+            <div className="mt-8 pt-8 border-t border-border">
+              <div className="text-center mb-4">
+                <div className="flex items-center justify-center gap-2 mb-2">
+                  <Share2 className="h-5 w-5 text-primary" />
+                  <h3 className="text-lg font-semibold">Share Your Results</h3>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Inspire others on their transformation journey
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-3 justify-center">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const resultsUrl = `${window.location.origin}/results/${assessmentId}`;
+                    const modelUrl = `${window.location.origin}/${model.slug}`;
+                    const shareText = `I scored ${result.overallScore} - ${maturityLevel.name} on the ${model.name}!\n\n${resultsUrl}\n\nGet your own score free with personalized recommendations, resources and roadmap from Synozur at ${modelUrl}`;
+                    const linkedInUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(resultsUrl)}&summary=${encodeURIComponent(shareText)}`;
+                    window.open(linkedInUrl, '_blank', 'width=600,height=600');
+                  }}
+                  className="gap-2"
+                  data-testid="button-share-linkedin"
+                >
+                  <SiLinkedin className="h-4 w-4" />
+                  LinkedIn
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const resultsUrl = `${window.location.origin}/results/${assessmentId}`;
+                    const modelUrl = `${window.location.origin}/${model.slug}`;
+                    const shareText = `I scored ${result.overallScore} - ${maturityLevel.name} on the ${model.name}!\n\n${resultsUrl}\n\nGet your own score free with personalized recommendations, resources and roadmap from Synozur at ${modelUrl}`;
+                    const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}`;
+                    window.open(twitterUrl, '_blank', 'width=600,height=600');
+                  }}
+                  className="gap-2"
+                  data-testid="button-share-twitter"
+                >
+                  <SiX className="h-4 w-4" />
+                  X / Twitter
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const resultsUrl = `${window.location.origin}/results/${assessmentId}`;
+                    const modelUrl = `${window.location.origin}/${model.slug}`;
+                    const shareText = `I scored ${result.overallScore} - ${maturityLevel.name} on the ${model.name}!\n\n${resultsUrl}\n\nGet your own score free with personalized recommendations, resources and roadmap from Synozur at ${modelUrl}`;
+                    const threadsUrl = `https://www.threads.net/intent/post?text=${encodeURIComponent(shareText)}`;
+                    window.open(threadsUrl, '_blank', 'width=600,height=600');
+                  }}
+                  className="gap-2"
+                  data-testid="button-share-threads"
+                >
+                  <SiThreads className="h-4 w-4" />
+                  Threads
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const resultsUrl = `${window.location.origin}/results/${assessmentId}`;
+                    const modelUrl = `${window.location.origin}/${model.slug}`;
+                    const shareText = `I scored ${result.overallScore} - ${maturityLevel.name} on the ${model.name}!`;
+                    const facebookUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(resultsUrl)}&quote=${encodeURIComponent(shareText)}`;
+                    window.open(facebookUrl, '_blank', 'width=600,height=600');
+                  }}
+                  className="gap-2"
+                  data-testid="button-share-facebook"
+                >
+                  <SiFacebook className="h-4 w-4" />
+                  Facebook
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const resultsUrl = `${window.location.origin}/results/${assessmentId}`;
+                    const shareText = `I scored ${result.overallScore} - ${maturityLevel.name} on the ${model.name}! Check out my results: ${resultsUrl}`;
+                    // Instagram doesn't support web share API directly - copy to clipboard instead
+                    navigator.clipboard.writeText(shareText).then(() => {
+                      toast({
+                        title: "Copied to clipboard!",
+                        description: "Share text copied. Paste it in your Instagram post.",
+                      });
+                    });
+                  }}
+                  className="gap-2"
+                  data-testid="button-share-instagram"
+                >
+                  <SiInstagram className="h-4 w-4" />
+                  Instagram
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const resultsUrl = `${window.location.origin}/results/${assessmentId}`;
+                    const modelUrl = `${window.location.origin}/${model.slug}`;
+                    const shareText = `I scored ${result.overallScore} - ${maturityLevel.name} on the ${model.name}!\n\n${resultsUrl}\n\nGet your own score free with personalized recommendations, resources and roadmap from Synozur at ${modelUrl}`;
+                    const blueskyUrl = `https://bsky.app/intent/compose?text=${encodeURIComponent(shareText)}`;
+                    window.open(blueskyUrl, '_blank', 'width=600,height=600');
+                  }}
+                  className="gap-2"
+                  data-testid="button-share-bluesky"
+                >
+                  <SiBluesky className="h-4 w-4" />
+                  Bluesky
+                </Button>
+              </div>
             </div>
           </Card>
         </div>
