@@ -126,6 +126,13 @@ export default function Results() {
     enabled: !!model?.slug,
   });
 
+  // Update page title when model loads
+  useEffect(() => {
+    if (model) {
+      document.title = `${model.name} Results | The Synozur Alliance`;
+    }
+  }, [model]);
+
   // Define all hooks before any conditional returns to ensure consistent hook order
   const overallScore = result?.overallScore || 0;
   

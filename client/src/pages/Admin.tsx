@@ -20,6 +20,7 @@ import { ObjectUploader } from "@/components/ObjectUploader";
 import { AiAssistant } from "@/components/admin/AiAssistant";
 import { AiUsageDashboard } from "@/components/admin/AiUsageDashboard";
 import { AiContentReviewQueue } from "@/components/admin/AiContentReviewQueue";
+import { ContentManagement } from "@/components/admin/ContentManagement";
 
 interface AdminResult extends Result {
   assessmentId: string;
@@ -995,7 +996,7 @@ export default function Admin() {
           </div>
 
           <Tabs defaultValue="models" className="w-full">
-            <TabsList className={`grid w-full ${currentUser?.role === 'modeler' ? 'grid-cols-8' : 'grid-cols-9'}`}>
+            <TabsList className={`grid w-full ${currentUser?.role === 'modeler' ? 'grid-cols-9' : 'grid-cols-10'}`}>
               <TabsTrigger value="models" data-testid="tab-models">Models</TabsTrigger>
               <TabsTrigger value="dimensions" data-testid="tab-dimensions">Dimensions</TabsTrigger>
               <TabsTrigger value="questions" data-testid="tab-questions">Questions</TabsTrigger>
@@ -1004,6 +1005,7 @@ export default function Admin() {
               )}
               <TabsTrigger value="results" data-testid="tab-results">Results</TabsTrigger>
               <TabsTrigger value="benchmarks" data-testid="tab-benchmarks">Benchmarks</TabsTrigger>
+              <TabsTrigger value="content" data-testid="tab-content">Content</TabsTrigger>
               <TabsTrigger value="ai-review" data-testid="tab-ai-review">
                 AI Review {pendingReviews.length > 0 && <Badge variant="secondary" className="ml-1" data-testid="badge-pending-reviews">{pendingReviews.length}</Badge>}
               </TabsTrigger>
@@ -1773,6 +1775,10 @@ export default function Admin() {
                   Benchmark calculation coming soon.
                 </p>
               </Card>
+            </TabsContent>
+
+            <TabsContent value="content" className="space-y-4">
+              <ContentManagement />
             </TabsContent>
 
             <TabsContent value="ai-review" className="space-y-4">

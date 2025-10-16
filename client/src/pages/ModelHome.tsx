@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useRoute, useLocation } from "wouter";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
@@ -19,6 +20,13 @@ export default function ModelHome() {
     queryKey: ['/api/models', modelSlug],
     enabled: !!modelSlug,
   });
+
+  // Update page title when model loads
+  useEffect(() => {
+    if (model) {
+      document.title = `${model.name} | The Synozur Alliance`;
+    }
+  }, [model]);
 
   // Create assessment mutation
   const createAssessment = useMutation({

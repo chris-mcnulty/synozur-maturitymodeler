@@ -588,6 +588,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get all content data for a model (for content management)
+  app.get("/api/admin/models/:id/content", ensureAdminOrModeler, async (req, res) => {
+    try {
+      const modelId = req.params.id;
+      
+      // Get the model
+      const model = await storage.getModel(modelId);
+      if (!model) {
+        return res.status(404).json({ error: "Model not found" });
+      }
+
+      // Get all dimensions for the model
+      const dimensions = await storage.getDimensionsByModelId(modelId);
+      
+      // Get all questions for the model
+      const questions = await storage.getQuestionsByModelId(modelId);
+      
+      // Get all answers for the model's questions
+      const questionIds = questions.map(q => q.id);
+      const answers = questionIds.length > 0 
+        ? await db.select().from(schema.answers)
+            .where(inArray(schema.answers.questionId, questionIds))
+            .orderBy(schema.answers.score)
+        : [];
+      
+      // Get maturity levels (simple structure for now)
+      const maturityLevels = [
+        { id: "1", scoreMin: 100, scoreMax: 200, name: "Initial", interpretation: null },
+        { id: "2", scoreMin: 201, scoreMax: 300, name: "Developing", interpretation: null },
+        { id: "3", scoreMin: 301, scoreMax: 400, name: "Defined", interpretation: null },
+        { id: "4", scoreMin: 401, scoreMax: 450, name: "Managed", interpretation: null },
+        { id: "5", scoreMin: 451, scoreMax: 500, name: "Optimizing", interpretation: null },
+      ];
+
+      res.json({
+        model,
+        dimensions,
+        questions,
+        answers,
+        maturityLevels,
+      });
+    } catch (error) {
+      console.error('Failed to fetch content data:', error);
+      res.status(500).json({ error: "Failed to fetch content data" });
+    }
+  });
+
   app.get("/api/assessments/:id", async (req, res) => {
     try {
       const assessment = await storage.getAssessment(req.params.id);
