@@ -37,12 +37,10 @@ export function ImportManager() {
   // Preview mutation
   const previewMutation = useMutation({
     mutationFn: async (data: any) => {
-      const response = await apiRequest("/api/admin/import/preview", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ importData: data, modelSlug }),
+      return await apiRequest("/api/admin/import/preview", "POST", { 
+        importData: data, 
+        modelSlug 
       });
-      return response.json();
     },
     onSuccess: (result: ValidationResult) => {
       setValidation(result);
@@ -72,16 +70,11 @@ export function ImportManager() {
   // Execute mutation
   const executeMutation = useMutation({
     mutationFn: async (data: any) => {
-      const response = await apiRequest("/api/admin/import/execute", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          importData: data, 
-          modelSlug,
-          filename: selectedFile?.name || "unknown.json"
-        }),
+      return await apiRequest("/api/admin/import/execute", "POST", { 
+        importData: data, 
+        modelSlug,
+        filename: selectedFile?.name || "unknown.json"
       });
-      return response.json();
     },
     onSuccess: (result) => {
       toast({

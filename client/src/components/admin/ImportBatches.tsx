@@ -41,10 +41,7 @@ export function ImportBatches() {
 
   const deleteMutation = useMutation({
     mutationFn: async (batchId: string) => {
-      const response = await apiRequest(`/api/admin/import/batches/${batchId}`, {
-        method: "DELETE",
-      });
-      return response.json();
+      return await apiRequest(`/api/admin/import/batches/${batchId}`, "DELETE");
     },
     onSuccess: (result) => {
       toast({

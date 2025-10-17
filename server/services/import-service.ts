@@ -101,12 +101,10 @@ export async function matchQuestions(
   modelId: string
 ): Promise<QuestionMatch[]> {
   // Get all questions for the model
-  const internalQuestions = await db.query.questions.findMany({
-    where: eq(schema.questions.modelId, modelId),
-    with: {
-      dimension: true,
-    },
-  });
+  const internalQuestions = await db
+    .select()
+    .from(schema.questions)
+    .where(eq(schema.questions.modelId, modelId));
   
   const matches: QuestionMatch[] = [];
   
@@ -154,12 +152,13 @@ export async function validateImportData(
   const warnings: string[] = [];
   
   // Find target model
-  const model = await db.query.models.findFirst({
-    where: eq(schema.models.slug, modelSlug),
-    with: {
-      dimensions: true,
-    },
-  });
+  const modelResult = await db
+    .select()
+    .from(schema.models)
+    .where(eq(schema.models.slug, modelSlug))
+    .limit(1);
+  
+  const model = modelResult[0];
   
   if (!model) {
     errors.push(`Model with slug "${modelSlug}" not found`);
@@ -197,14 +196,20 @@ export async function validateImportData(
     };
   }
   
+  // Fetch dimensions for the model
+  const modelDimensions = await db
+    .select()
+    .from(schema.dimensions)
+    .where(eq(schema.dimensions.modelId, model.id));
+  
   // Create dimension mappings
   const dimensionMappings: Record<string, string> = {};
   const externalDimensions = data.model_info.dimensions || [];
   
   for (const extDim of externalDimensions) {
     // Try to find matching internal dimension by label
-    const internalDim = (model.dimensions as any[]).find(
-      (d: any) => d.label.toLowerCase() === extDim.toLowerCase()
+    const internalDim = modelDimensions.find(
+      (d) => d.label.toLowerCase() === extDim.toLowerCase()
     );
     
     if (internalDim) {
@@ -278,9 +283,13 @@ export async function executeImport(
   }
   
   // Find target model
-  const model = await db.query.models.findFirst({
-    where: eq(schema.models.slug, modelSlug),
-  });
+  const modelResult = await db
+    .select()
+    .from(schema.models)
+    .where(eq(schema.models.slug, modelSlug))
+    .limit(1);
+  
+  const model = modelResult[0];
   
   if (!model) {
     throw new Error(`Model "${modelSlug}" not found`);
@@ -335,14 +344,14 @@ export async function executeImport(
         }
         
         // Find the answer ID that matches the score
-        const question = await db.query.questions.findFirst({
-          where: eq(schema.questions.id, internalQuestionId),
-          with: { answers: true },
-        });
+        const questionAnswers = await db
+          .select()
+          .from(schema.answers)
+          .where(eq(schema.answers.questionId, internalQuestionId));
         
-        if (!question) continue;
+        if (!questionAnswers || questionAnswers.length === 0) continue;
         
-        const matchingAnswer = (question.answers as any[]).find((a: any) => a.score === answer.value);
+        const matchingAnswer = questionAnswers.find((a) => a.score === answer.value);
         
         if (matchingAnswer) {
           responses.push({

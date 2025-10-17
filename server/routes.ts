@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { db } from "./db";
-import { eq, inArray } from "drizzle-orm";
+import { eq, inArray, desc } from "drizzle-orm";
 import * as schema from "@shared/schema";
 import { insertAssessmentSchema, insertAssessmentResponseSchema, insertResultSchema, insertModelSchema, insertDimensionSchema, insertQuestionSchema, insertAnswerSchema, Answer } from "@shared/schema";
 import { readFileSync } from "fs";
@@ -2376,20 +2376,32 @@ If you didn't request this, please ignore this email—your password will remain
   // List all import batches
   app.get('/api/admin/import/batches', ensureAdminOrModeler, async (req, res) => {
     try {
-      const batches = await db.query.importBatches.findMany({
-        orderBy: (batches, { desc }) => [desc(batches.createdAt)],
-        with: {
-          importedBy: {
-            columns: {
-              id: true,
-              username: true,
-              name: true,
-            },
-          },
-        },
-      });
+      const batches = await db
+        .select()
+        .from(schema.importBatches)
+        .orderBy(desc(schema.importBatches.createdAt));
       
-      res.json(batches);
+      // Fetch user info separately for each batch
+      const batchesWithUsers = await Promise.all(
+        batches.map(async (batch) => {
+          const userResult = await db
+            .select({
+              id: schema.users.id,
+              username: schema.users.username,
+              name: schema.users.name,
+            })
+            .from(schema.users)
+            .where(eq(schema.users.id, batch.importedBy))
+            .limit(1);
+          
+          return {
+            ...batch,
+            importedBy: userResult[0],
+          };
+        })
+      );
+      
+      res.json(batchesWithUsers);
     } catch (error) {
       console.error('Failed to fetch import batches:', error);
       res.status(500).json({ error: "Failed to fetch import batches" });
@@ -2402,9 +2414,13 @@ If you didn't request this, please ignore this email—your password will remain
       const { id } = req.params;
       
       // Get batch info before deletion
-      const batch = await db.query.importBatches.findFirst({
-        where: eq(schema.importBatches.id, id),
-      });
+      const batchResult = await db
+        .select()
+        .from(schema.importBatches)
+        .where(eq(schema.importBatches.id, id))
+        .limit(1);
+      
+      const batch = batchResult[0];
       
       if (!batch) {
         return res.status(404).json({ error: "Import batch not found" });
