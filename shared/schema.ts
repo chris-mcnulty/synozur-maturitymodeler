@@ -107,6 +107,18 @@ export const answers = pgTable("answers", {
   resourceDescription: text("resource_description"),
 });
 
+// Import batches table for tracking data imports
+export const importBatches = pgTable("import_batches", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  source: text("source").notNull(), // e.g., "legacy_ai_maturity"
+  filename: text("filename"),
+  importedBy: varchar("imported_by").notNull().references(() => users.id, { onDelete: "cascade" }),
+  assessmentCount: integer("assessment_count").notNull(),
+  questionMappings: json("question_mappings").$type<Record<string, string>>(), // External question ID -> internal question UUID
+  metadata: json("metadata"), // Additional import context
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 // Assessments table
 export const assessments = pgTable("assessments", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -116,6 +128,7 @@ export const assessments = pgTable("assessments", {
   startedAt: timestamp("started_at").defaultNow().notNull(),
   completedAt: timestamp("completed_at"),
   sessionId: text("session_id"), // For anonymous users
+  importBatchId: varchar("import_batch_id").references(() => importBatches.id, { onDelete: "cascade" }), // Null for non-imported data
 });
 
 // Assessment responses table
@@ -223,6 +236,11 @@ export const insertBenchmarkSchema = createInsertSchema(benchmarks).omit({
 export const insertSettingSchema = createInsertSchema(settings).omit({
   id: true,
   updatedAt: true,
+});
+
+export const insertImportBatchSchema = createInsertSchema(importBatches).omit({
+  id: true,
+  createdAt: true,
 });
 
 // AI-generated content cache table
@@ -366,3 +384,6 @@ export type InsertAiUsageLog = z.infer<typeof insertAiUsageLogSchema>;
 
 export type AiContentReview = typeof aiContentReviews.$inferSelect;
 export type InsertAiContentReview = z.infer<typeof insertAiContentReviewSchema>;
+
+export type ImportBatch = typeof importBatches.$inferSelect;
+export type InsertImportBatch = z.infer<typeof insertImportBatchSchema>;
