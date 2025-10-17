@@ -11,6 +11,7 @@ import { fileURLToPath } from "url";
 import { setupAuth, ensureAuthenticated, ensureAdmin, ensureAdminOrModeler } from "./auth";
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
 import { aiService } from "./services/ai-service";
+import { validateImportData, executeImport, type ImportExportData } from "./services/import-service";
 import { z } from "zod";
 import { scrypt, randomBytes, createHash } from "crypto";
 import { promisify } from "util";
@@ -2312,6 +2313,114 @@ If you didn't request this, please ignore this email—your password will remain
         error: "Failed to reset password", 
         details: error instanceof Error ? error.message : 'Unknown error' 
       });
+    }
+  });
+
+  // ===== IMPORT ENDPOINTS =====
+  
+  // Preview import data - validate and show question mappings
+  app.post('/api/admin/import/preview', ensureAdminOrModeler, async (req, res) => {
+    try {
+      const { importData, modelSlug } = req.body;
+      
+      if (!importData || !modelSlug) {
+        return res.status(400).json({ error: "Missing required fields: importData and modelSlug" });
+      }
+      
+      const validation = await validateImportData(importData as ImportExportData, modelSlug);
+      
+      res.json(validation);
+    } catch (error) {
+      console.error('Import preview error:', error);
+      res.status(500).json({ 
+        error: "Failed to preview import", 
+        details: error instanceof Error ? error.message : 'Unknown error' 
+      });
+    }
+  });
+  
+  // Execute import
+  app.post('/api/admin/import/execute', ensureAdminOrModeler, async (req, res) => {
+    try {
+      const { importData, modelSlug, filename } = req.body;
+      
+      if (!importData || !modelSlug) {
+        return res.status(400).json({ error: "Missing required fields: importData and modelSlug" });
+      }
+      
+      if (!req.user) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      const result = await executeImport(
+        importData as ImportExportData,
+        modelSlug,
+        req.user.id,
+        filename || null
+      );
+      
+      res.json({ 
+        success: true,
+        message: `Successfully imported ${result.importedCount} assessments`,
+        ...result
+      });
+    } catch (error) {
+      console.error('Import execution error:', error);
+      res.status(500).json({ 
+        error: "Failed to execute import", 
+        details: error instanceof Error ? error.message : 'Unknown error' 
+      });
+    }
+  });
+  
+  // List all import batches
+  app.get('/api/admin/import/batches', ensureAdminOrModeler, async (req, res) => {
+    try {
+      const batches = await db.query.importBatches.findMany({
+        orderBy: (batches, { desc }) => [desc(batches.createdAt)],
+        with: {
+          importedBy: {
+            columns: {
+              id: true,
+              username: true,
+              name: true,
+            },
+          },
+        },
+      });
+      
+      res.json(batches);
+    } catch (error) {
+      console.error('Failed to fetch import batches:', error);
+      res.status(500).json({ error: "Failed to fetch import batches" });
+    }
+  });
+  
+  // Delete an import batch (and all its assessments)
+  app.delete('/api/admin/import/batches/:id', ensureAdminOrModeler, async (req, res) => {
+    try {
+      const { id } = req.params;
+      
+      // Get batch info before deletion
+      const batch = await db.query.importBatches.findFirst({
+        where: eq(schema.importBatches.id, id),
+      });
+      
+      if (!batch) {
+        return res.status(404).json({ error: "Import batch not found" });
+      }
+      
+      // Delete the batch (cascades to assessments, responses, results)
+      await db.delete(schema.importBatches)
+        .where(eq(schema.importBatches.id, id));
+      
+      res.json({ 
+        success: true, 
+        message: `Successfully deleted import batch and ${batch.assessmentCount} assessments` 
+      });
+    } catch (error) {
+      console.error('Failed to delete import batch:', error);
+      res.status(500).json({ error: "Failed to delete import batch" });
     }
   });
 
