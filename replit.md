@@ -1,214 +1,36 @@
 # Maturity Modeler - Synozur Multi-Model Maturity Platform
 
-## Project Overview
-Maturity Modeler is a comprehensive fullstack JavaScript application for multi-model maturity assessments with dynamic routing (/:modelSlug), CSV-driven model management, gated PDF results, benchmarking capabilities, and comprehensive admin controls.
-
-## Brand & Design
-- **Primary Color**: Purple #810FFB (emphasized throughout)
-- **Accent Color**: Pink #E60CB3 (used sparingly in charts/data visualizations only)
-- **Theme**: Dark-mode-first UI
-- **Typography**: Inter font family
-- **Tagline**: "Find Your North Star"
-- **Alternative Tagline**: "Synozur - the Transformation Company"
-- **Website**: https://www.synozur.com
-
-## Architecture
-- **Frontend**: React + Vite + TypeScript + Wouter routing + Shadcn UI
-- **Backend**: Express + PostgreSQL + Drizzle ORM
-- **Storage**: PostgreSQL database + Object Storage for assets
-- **Auth**: Passport-based authentication with session management
-
-## Key Features
-- Dynamic model routing (/:modelSlug)
-- Assessment wizard with progress tracking and autosave
-- Scoring engine (100-500 scale)
-- Profile gating for results access
-- Email-delivered PDF reports
-- Benchmarking against industry peers
-- Admin console for model and results management
-- CSV-driven model import/export
-
-## Current Status
-- ✅ Design system and brand guidelines established
-- ✅ Core UI components built with examples
-- ✅ Page layouts created (Landing, ModelHome, Assessment, Results, Profile, Admin)
-- ✅ Dark mode implementation with theme toggle
-- ✅ All 5 question types supported (Multiple Choice, Multi-Select, Numeric, True/False, Text Input)
-- ✅ Multi-select questions with proportional scoring (100-500 scale)
-- ✅ Company size classification with 7 employee buckets in Profile
-- ✅ Model creation backend with JSON import/export
-- ✅ Database schema with support for all question/response types including multi-select
-- ✅ Dimensions management (CRUD operations with order/reordering)
-- ✅ Answer options management for multiple choice and multi-select questions
-- ✅ Answer resource editing (title, description, link, improvement statement)
-- ✅ Questions grouped by dimension with manual ordering within groups
-- ✅ Single unified Header component with auth state management
-- ✅ Role-based authentication system with admin/modeler/user roles:
-  - **admin**: Full system access including user management
-  - **modeler**: Model management access without user administration
-  - **user**: Basic assessment and profile access
-- ✅ User management in admin panel (view, edit roles, delete users, manual email verification)
-- ✅ Email verification system:
-  - Automatic verification emails sent on registration (24-hour token expiry)
-  - Email verification page (/verify-email) for token validation
-  - Profile page shows verification status with resend option
-  - Admin manual verification capability (PUT /api/admin/users/:id/verify-email)
-  - PDF email delivery requires verified email address
-  - Helpful error messaging for unverified users
-  - Admin UI displays verification status badges (verified/unverified)
-- ✅ Secure auth endpoints (passwords excluded from all responses)
-- ✅ Robust error handling for duplicate emails and malformed password hashes
-- ✅ Registration security: All self-registrations forced to 'user' role (admin/modeler must be granted via admin panel)
-- ✅ Assessment completion flow with comprehensive error handling
-- ✅ Results page redesigned to match prototype (immediate display, no login required)
-- ✅ Profile gating for PDF delivery with dual-mode authentication:
-  - Login tab for existing users (username/password)
-  - Create Account tab for new users (full registration)
-  - Tab switcher for seamless mode switching
-- ✅ PDF generation with jsPDF matching sample format
-- ✅ Improvement resources display from CSV data
-- ✅ Dynamic recommendations based on assessment scores
-- ✅ CSV import/export with add vs replace mode
-- ✅ CSV schema supports multi-select and complete resource metadata
-- ✅ General resources column added to models (JSONB structure ready)
-- ✅ Featured models system with prime homepage positioning
-- ✅ Question count display across all model cards and featured section
-- ✅ Admin toggle for marking/unmarking models as featured (star icon)
-- ✅ Object storage integration for model images (Google Cloud Storage via Replit)
-- ✅ Image upload in admin panel with Uppy (presigned URL flow, ACL enforcement)
-- ✅ Image preview, replace, and remove functionality in model editor
-- ✅ Landing page layout: Hero (static h1, Sign Up) → Model title/description section → Featured Assessment
-- ✅ Hero titles styled with responsive gradients: white on mobile, blue-purple-pink gradient on desktop
-- ✅ Both H1 and H2 use matching gradient styles for visual consistency
-- ✅ Assessment history filtered by logged-in user (GET /api/assessments endpoint)
-- ✅ Profile editing for users (email, name, company, job title, industry, company size, country)
-- ✅ Self-service profile update endpoint (PUT /api/profile)
-- ✅ Admin reporting with comprehensive dashboard:
-  - Statistics cards showing total assessments, average score, registered users, and published models
-  - CSV export for assessment results (all assessments with scores, models, users, dates)
-  - CSV export for user accounts (username, email, name, company, job title, industry, company size, country, role, created at)
-  - Admin-only endpoint (GET /api/admin/assessments) to view all assessments system-wide
-  - User profile shows only their own assessment history, while admin can see all assessments
-- ✅ Profile fields with standardized dropdown lists:
-  - Job Title dropdown with 20 standard roles (CEO, CTO, Manager, etc.) plus "Other" option
-  - Industry dropdown with 20 standard industries (Technology, Finance, Healthcare, etc.) plus "Other" option
-  - Country dropdown with 20 countries (United States, Canada, UK, etc.)
-  - Company Size dropdown with 7 employee size buckets
-  - All profile fields are required with frontend and backend validation
-  - ProfileGate and Profile page use identical dropdown options for consistency
-  - Backend validation with Zod schema (updateProfileSchema) enforcing required fields
-- ✅ HubSpot tracking integration:
-  - Tracking script added to page header (client/index.html)
-  - Loads on all pages across the application
-  - HubSpot Account ID: 49076134
-  - Script loads asynchronously to avoid blocking page rendering
-- ✅ Synozur logo favicon on all pages (browser tabs, bookmarks, mobile home screen)
-- ✅ SendGrid email delivery integration:
-  - PDF reports sent via email after user login/registration
-  - Secure endpoint with authentication and Zod validation
-  - Promise-wrapped FileReader for proper async error handling
-  - Email validation with user-friendly error messages
-  - Base64 PDF encoding and SendGrid attachment delivery
-  - **Email header image fix**: All emails now display Synozur Alliance header properly
-    - Created `/email-header.jpg` endpoint serving image from attached_assets
-    - Dynamic URL generation works across all environments (dev, production)
-    - Updated all three email templates (PDF, password reset, verification)
-- ✅ Password reset functionality:
-  - Forgot password flow with email-based reset links
-  - Password reset tokens stored in database with 1-hour expiry
-  - Token validation (single-use, expiry check)
-  - Secure password hashing using Node.js crypto (scrypt)
-  - Defensive error handling for email delivery failures
-  - Integration with ProfileGate login tab ("Forgot password?" link)
-  - Pages: /forgot-password (email input) and /reset-password (new password form)
-- ✅ Azure OpenAI GPT-5 Integration:
-  - AI service layer using Replit AI Integrations (no API key required)
-  - Backend recommendation generation with personalized prompts
-  - Admin AI content generation (interpretations, resources, improvements)
-  - AI Usage dashboard with cost tracking and charts
-  - Content caching in aiGeneratedContent table with SHA256 hash keys
-  - Usage logging in aiUsageLog for budget monitoring
-  - Fallback recommendations when AI is unavailable
-  - Synozur content prioritization in resource suggestions
-  - AI-generated maturity summaries personalized by user context
-  - AI-generated recommendation roadmaps aligned with Synozur brand voice
-  - Enhanced PDF reports with AI summaries and The Synozur Alliance LLC branding
-  - **90-day caching for AI summaries**: Reduces API costs and ensures consistent content
-  - **Briefer, structured summaries**: Executive Summary (150 words) and Transformation Roadmap (120 words) with bullet points
-  - **Consistent PDF formatting**: Both AI sections use matching font sizes with proper dimensional score display
-  - **Defensive dimension handling**: Filters out missing/undefined dimension labels to prevent "undefined" in AI summaries
-  - **Comprehensive dimension mapping**: Frontend includes ALL dimension scores from results, even if model structure has changed
-
-- ✅ AI Content Review Workflow:
-  - Database schema with aiContentReviews table for pending content
-  - Storage layer methods (create, list pending, get by ID, approve, reject)
-  - All 4 admin AI generation endpoints save to review queue instead of direct use
-  - Review workflow backend endpoints (list, approve/:id, reject/:id)
-  - AiContentReviewQueue UI component with content preview and approve/reject actions
-  - Admin panel "AI Review" tab with pending count badge
-  - AiAssistant toast messages updated to indicate content sent for review
-  - Real-time cache invalidation and notifications on approve/reject
-  - Role-based access for admin and modeler roles
-  - Rejection dialog with optional reason field
-  - Empty and loading states handled
-
-- ✅ Logout functionality fix:
-  - Fixed "logout is not a function" error in Header component
-  - Added `logout()` helper function to useAuth hook that calls logoutMutation.mutateAsync()
-  - Implemented concurrent click protection using logoutMutation.isPending check
-  - Logout button disabled and shows "Logging out..." during logout process
-  - Backend /api/logout endpoint properly destroys session via req.logout()
-  - Frontend clears cache and redirects to home page after successful logout
-  - Fixed user.isAdmin error by using role-based check (admin/modeler)
-  - E2e tested: single POST /api/logout, session destruction, protected route blocking
-
-- ✅ Social Sharing Feature:
-  - Share assessment results on 6 social platforms (LinkedIn, Twitter/X, Threads, Facebook, Instagram, Bluesky)
-  - Share text includes score, maturity level, results URL, and Synozur promotional message
-  - LinkedIn, Twitter, Threads, Facebook, and Bluesky open share dialogs with prefilled content
-  - Instagram uses clipboard copy with toast notification (no web share API available)
-  - Share section located below download/email buttons with visual separator
-  - Responsive flex-wrap layout with platform-specific icons from react-icons/si
-  - Formatted share message: "I scored {score} - {level} on the {model name}! [Results URL] Get your own score free with personalized recommendations, resources and roadmap from Synozur at [Model URL]"
-  - All buttons use outline variant with proper data-testid attributes for testing
-
-## Backlog
-
-### Pending Implementation
-- [ ] **Email Confirmation Cycle**: Implement email verification flow to ensure valid email addresses before allowing PDF downloads
-  - Add email confirmation after registration
-  - Restrict PDF downloads to users with confirmed email addresses
-  - Guide users to login/register when trying to download PDFs
-  - Show reminder notifications for users who haven't confirmed their email
-  - Add resend confirmation email functionality
-  - Track email confirmation status in user profile
-- [ ] **Science-Backed Framework Section**: Add metrics/statistics section to model home page showing research validation, assessment counts, and organizational adoption once real data is available
-- [ ] **Maturity Scale Editor**: Admin UI to customize maturity level names, descriptions, and score ranges per model
-- [ ] **General Resources Editor**: Admin UI to manage general resources shown at end of results (onscreen and PDF)
-- [ ] **Results Page Enhancement**: Display custom maturity scales and general resources from model configuration
-- [ ] **Grounding Document System**: Implement comprehensive model-specific grounding for AI-enhanced recommendations
-  - Add grounding_documents field to models table (JSONB) for storing playbooks and frameworks
-  - Create admin UI for uploading/editing grounding documents per model with markdown support
-  - Add website_resources field for storing relevant Synozur.com URLs
-  - Update AI service to include model-specific grounding in generation context
-  - Implement document versioning to track updates
-  - Add global grounding documents table for company-wide frameworks
-  - Create admin dashboard to manage and preview grounding effects on AI outputs
-  - Implement caching strategy for grounding-enhanced responses
-  - Add ability to fetch and cache website resources for supplementary grounding
-
-### Technical Debt
-- [ ] Replace mock benchmark data with real calculations
-- [ ] Implement benchmark calculation engine
-- [ ] Add audit logging system
+## Overview
+Maturity Modeler is a comprehensive fullstack JavaScript application designed for multi-model maturity assessments. Its core purpose is to provide dynamic routing for assessments, manage models via CSV, generate gated PDF results, offer benchmarking capabilities, and provide extensive administrative controls. The platform aims to help users "Find Their North Star" through insightful maturity assessments, aligning with Synozur's vision as "the Transformation Company."
 
 ## User Preferences
 - Uses SendGrid for email delivery (API key method, not Replit connector)
 - Prefers seeing metrics on home pages when data is available
 - Assessment dimensions are valuable and should be emphasized
 
-## Admin Test Account
-- **Username**: testadmin
-- **Password**: admin123
-- **Role**: admin
-- Use this account for testing admin functionality
+## System Architecture
+The application uses a modern fullstack architecture:
+- **Frontend**: React, Vite, TypeScript, Wouter for routing, and Shadcn UI for component styling.
+- **Backend**: Express.js for the API, PostgreSQL for the database, and Drizzle ORM for database interactions.
+- **Storage**: PostgreSQL for relational data and object storage (Google Cloud Storage) for assets like model images.
+- **Authentication**: Passport-based session management with role-based access control (admin, modeler, user).
+- **UI/UX**: Features a dark-mode-first UI with a primary purple (#810FFB) and accent pink (#E60CB3) color scheme, utilizing the Inter font family. Responsive gradient styling is applied to hero titles.
+- **Core Features**: Dynamic model routing (/:modelSlug), assessment wizard with autosave, 100-500 point scoring engine, profile gating for results, email-delivered PDF reports, benchmarking, and a comprehensive admin console.
+- **Model Management**: CSV-driven import/export of models, dimensions, answer options, and resource editing. Models can be featured on the homepage.
+- **User Management**: Admin panel for user CRUD, role assignment, and email verification management. Self-registration defaults to 'user' role.
+- **Email System**: Integrated email verification, password reset, and PDF report delivery via SendGrid. Email templates support dynamic content and consistent branding.
+- **AI Integration**: Leverages Azure OpenAI GPT-5 for generating personalized recommendations, interpretations, and roadmaps, with a 90-day caching mechanism for cost efficiency. Includes an AI content review workflow for admin approval.
+- **Data Import**: System for importing anonymized assessment data with validation, fuzzy text matching for question mapping, and batch tracking.
+- **Reporting**: Admin dashboard with statistics, CSV export for assessment results and user accounts.
+- **Profile Management**: User profile editing with standardized dropdowns for job title, industry, company size, and country, all with required validation.
+- **Social Sharing**: Enables sharing assessment results across multiple social platforms with pre-filled content.
+
+## External Dependencies
+- **PostgreSQL**: Primary database for all application data.
+- **Google Cloud Storage**: Used for object storage of model images.
+- **SendGrid**: Email delivery service for verification, password resets, and PDF reports.
+- **Azure OpenAI GPT-5**: AI service for generating personalized recommendations and content.
+- **HubSpot**: Integrated for website tracking (Account ID: 49076134).
+- **jsPDF**: Library used for generating PDF reports.
+- **Uppy**: Frontend file uploader for image management in the admin panel.
+- **React Icons (react-icons/si)**: Provides social media icons for the sharing feature.
