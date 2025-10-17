@@ -21,6 +21,8 @@ import { AiAssistant } from "@/components/admin/AiAssistant";
 import { AiUsageDashboard } from "@/components/admin/AiUsageDashboard";
 import { AiContentReviewQueue } from "@/components/admin/AiContentReviewQueue";
 import { ContentManagement } from "@/components/admin/ContentManagement";
+import { ImportManager } from "@/components/admin/ImportManager";
+import { ImportBatches } from "@/components/admin/ImportBatches";
 
 interface AdminResult extends Result {
   assessmentId: string;
@@ -996,7 +998,7 @@ export default function Admin() {
           </div>
 
           <Tabs defaultValue="models" className="w-full">
-            <TabsList className={`grid w-full ${currentUser?.role === 'modeler' ? 'grid-cols-9' : 'grid-cols-10'}`}>
+            <TabsList className={`grid w-full ${currentUser?.role === 'modeler' ? 'grid-cols-10' : 'grid-cols-11'}`}>
               <TabsTrigger value="models" data-testid="tab-models">Models</TabsTrigger>
               <TabsTrigger value="dimensions" data-testid="tab-dimensions">Dimensions</TabsTrigger>
               <TabsTrigger value="questions" data-testid="tab-questions">Questions</TabsTrigger>
@@ -1005,6 +1007,7 @@ export default function Admin() {
               )}
               <TabsTrigger value="results" data-testid="tab-results">Results</TabsTrigger>
               <TabsTrigger value="benchmarks" data-testid="tab-benchmarks">Benchmarks</TabsTrigger>
+              <TabsTrigger value="import" data-testid="tab-import">Import</TabsTrigger>
               <TabsTrigger value="content" data-testid="tab-content">Content</TabsTrigger>
               <TabsTrigger value="ai-review" data-testid="tab-ai-review">
                 AI Review {pendingReviews.length > 0 && <Badge variant="secondary" className="ml-1" data-testid="badge-pending-reviews">{pendingReviews.length}</Badge>}
@@ -1775,6 +1778,24 @@ export default function Admin() {
                   Benchmark calculation coming soon.
                 </p>
               </Card>
+            </TabsContent>
+
+            <TabsContent value="import" className="space-y-6">
+              <div className="space-y-6">
+                <div>
+                  <h2 className="text-2xl font-bold mb-2">Data Import</h2>
+                  <p className="text-muted-foreground">
+                    Import assessment data from external systems into the AI Maturity Model
+                  </p>
+                </div>
+                
+                <ImportManager />
+                
+                <div className="border-t pt-6">
+                  <h2 className="text-2xl font-bold mb-4">Import History</h2>
+                  <ImportBatches />
+                </div>
+              </div>
             </TabsContent>
 
             <TabsContent value="content" className="space-y-4">
