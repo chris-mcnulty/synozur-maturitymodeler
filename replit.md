@@ -21,7 +21,7 @@ The application uses a modern fullstack architecture:
 - **Email System**: Integrated email verification, password reset, and PDF report delivery via SendGrid. Email templates support dynamic content and consistent branding.
 - **AI Integration**: Leverages Azure OpenAI GPT-5 for generating personalized recommendations, interpretations, and roadmaps, with a 90-day caching mechanism for cost efficiency. Includes an AI content review workflow for admin approval.
 - **Data Import**: System for importing anonymized assessment data with validation, fuzzy text matching for question mapping, and batch tracking.
-- **Reporting**: Admin dashboard with statistics, CSV export for assessment results and user accounts.
+- **Reporting**: Admin dashboard with statistics displaying actual user names and companies. CSV exports include real user data for assessment results and user accounts. Anonymous/imported assessments display as "Anonymous".
 - **Profile Management**: User profile editing with standardized dropdowns for job title, industry, company size, and country, all with required validation.
 - **Social Sharing**: Enables sharing assessment results across multiple social platforms with pre-filled content.
 

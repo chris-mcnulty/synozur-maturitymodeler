@@ -170,12 +170,12 @@ export default function Admin() {
   const { data: results = [], isLoading: resultsLoading } = useQuery<AdminResult[]>({
     queryKey: ['/api/admin/results'],
     queryFn: async () => {
-      // Fetch all assessments (admin endpoint)
+      // Fetch all assessments with user data (admin endpoint)
       const assessments = await fetch('/api/admin/assessments').then(r => r.json());
       
       // Fetch results and models for each assessment
       const resultsWithDetails = await Promise.all(
-        assessments.map(async (assessment: Assessment) => {
+        assessments.map(async (assessment: any) => {
           try {
             const [result, model] = await Promise.all([
               fetch(`/api/results/${assessment.id}`).then(r => r.ok ? r.json() : null),
@@ -187,8 +187,8 @@ export default function Admin() {
                 ...result,
                 assessmentId: assessment.id,
                 modelName: model?.name || 'Unknown Model',
-                userName: 'User', // Would come from auth
-                company: 'Company', // Would come from profile
+                userName: assessment.user?.name || null,
+                company: assessment.user?.company || null,
                 date: assessment.startedAt ? new Date(assessment.startedAt).toISOString() : new Date().toISOString(),
               };
             }

@@ -578,12 +578,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get all assessments (admin only)
+  // Get all assessments with user data (admin only)
   app.get("/api/admin/assessments", ensureAdmin, async (req, res) => {
     try {
-      // Fetch all assessments from storage
+      // Fetch all assessments
       const allAssessments = await db.select().from(schema.assessments);
-      res.json(allAssessments);
+      
+      // Fetch user data for each assessment
+      const assessmentsWithUsers = await Promise.all(
+        allAssessments.map(async (assessment) => {
+          if (!assessment.userId) {
+            return {
+              ...assessment,
+              user: null,
+            };
+          }
+          
+          const userResult = await db
+            .select({
+              id: schema.users.id,
+              name: schema.users.name,
+              company: schema.users.company,
+            })
+            .from(schema.users)
+            .where(eq(schema.users.id, assessment.userId))
+            .limit(1);
+          
+          return {
+            ...assessment,
+            user: userResult[0] || null,
+          };
+        })
+      );
+      
+      res.json(assessmentsWithUsers);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch all assessments" });
     }
