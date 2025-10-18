@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { Footer } from "@/components/Footer";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -4403,7 +4402,6 @@ export default function Admin() {
         </DialogContent>
       </Dialog>
 
-      <Footer />
     </SidebarProvider>
   );
 }
