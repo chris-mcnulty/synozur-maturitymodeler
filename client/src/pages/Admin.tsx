@@ -129,6 +129,12 @@ export default function Admin() {
   const [showAnalyticalExport, setShowAnalyticalExport] = useState(false);
   const [selectedExportModel, setSelectedExportModel] = useState<string>('');
 
+  // Knowledge base state
+  const [knowledgeScope, setKnowledgeScope] = useState<'company-wide' | 'model-specific'>('company-wide');
+  const [knowledgeModelId, setKnowledgeModelId] = useState<string>('');
+  const [knowledgeDescription, setKnowledgeDescription] = useState<string>('');
+  const [knowledgeFilter, setKnowledgeFilter] = useState<'all' | 'company-wide' | 'model-specific'>('all');
+
   // Fetch models
   const { data: models = [], isLoading: modelsLoading } = useQuery<Model[]>({
     queryKey: ['/api/models'],
@@ -700,6 +706,117 @@ export default function Admin() {
     },
   });
 
+  // Fetch knowledge documents
+  const { data: knowledgeDocuments = [], refetch: refetchKnowledgeDocs } = useQuery<Array<{
+    id: string;
+    fileName: string;
+    fileUrl: string;
+    fileSize: number;
+    fileType: string;
+    scope: string;
+    modelId: string | null;
+    description: string | null;
+    uploadedAt: string;
+  }>>({
+    queryKey: ['/api/knowledge/documents', knowledgeFilter],
+    queryFn: async () => {
+      let url = '/api/knowledge/documents';
+      if (knowledgeFilter !== 'all') {
+        url += `?scope=${knowledgeFilter}`;
+      }
+      return fetch(url).then(r => r.json());
+    },
+  });
+
+  // Upload knowledge document mutation
+  const uploadKnowledgeDoc = useMutation({
+    mutationFn: async ({ file, scope, modelId, description }: {
+      file: File;
+      scope: 'company-wide' | 'model-specific';
+      modelId?: string;
+      description?: string;
+    }) => {
+      // Step 1: Get presigned upload URL
+      const uploadUrlResponse = await fetch('/api/knowledge/upload-url', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+      });
+      
+      if (!uploadUrlResponse.ok) {
+        const error = await uploadUrlResponse.json();
+        throw new Error(error.message || 'Failed to get upload URL');
+      }
+      
+      const { uploadURL } = await uploadUrlResponse.json();
+      
+      // Step 2: Upload file to presigned URL
+      const uploadResponse = await fetch(uploadURL, {
+        method: 'PUT',
+        body: file,
+        headers: {
+          'Content-Type': file.type || 'application/octet-stream',
+        },
+      });
+      
+      if (!uploadResponse.ok) {
+        throw new Error('Failed to upload file');
+      }
+      
+      // Step 3: Create document metadata
+      return apiRequest('/api/knowledge/documents', 'POST', {
+        fileName: file.name,
+        fileUrl: uploadURL.split('?')[0], // Remove query params
+        fileSize: file.size,
+        fileType: file.type || 'application/octet-stream',
+        scope,
+        modelId: scope === 'model-specific' ? modelId : null,
+        description: description || null,
+      });
+    },
+    onSuccess: (data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/knowledge/documents'] });
+      refetchKnowledgeDocs();
+      toast({
+        title: "Document uploaded",
+        description: `${variables.file.name} has been uploaded successfully.`,
+      });
+      // Reset form
+      setKnowledgeScope('company-wide');
+      setKnowledgeModelId('');
+      setKnowledgeDescription('');
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Upload failed",
+        description: error.message || "Failed to upload document",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Delete knowledge document mutation
+  const deleteKnowledgeDoc = useMutation({
+    mutationFn: async (documentId: string) => {
+      return apiRequest(`/api/knowledge/documents/${documentId}`, 'DELETE');
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/knowledge/documents'] });
+      refetchKnowledgeDocs();
+      toast({
+        title: "Document deleted",
+        description: "The document has been removed successfully.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete document",
+        variant: "destructive",
+      });
+    },
+  });
+
   const resetModelForm = () => {
     setModelForm({
       name: '',
@@ -1135,6 +1252,16 @@ export default function Admin() {
                     >
                       <BookOpen className="h-4 w-4" />
                       <span>Content</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton 
+                      onClick={() => setActiveSection('knowledge')}
+                      isActive={activeSection === 'knowledge'}
+                      data-testid="tab-knowledge"
+                    >
+                      <FileText className="h-4 w-4" />
+                      <span>Knowledge Base</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                   <SidebarMenuItem>
@@ -2045,6 +2172,316 @@ export default function Admin() {
                   Audit logging coming soon.
                 </p>
               </Card>
+              )}
+
+              {activeSection === 'knowledge' && (
+                <div className="space-y-6">
+                  {/* Header */}
+                  <div>
+                    <h2 className="text-2xl font-bold mb-2">Knowledge Base</h2>
+                    <p className="text-muted-foreground">
+                      Manage documents and resources for AI-enhanced assessments
+                    </p>
+                  </div>
+
+                  {/* Upload Card */}
+                  <Card className="p-6">
+                    <h3 className="text-lg font-semibold mb-4">Upload Document</h3>
+                    
+                    <form onSubmit={(e) => {
+                      e.preventDefault();
+                      const formData = new FormData(e.currentTarget);
+                      const fileInput = formData.get('file') as File | null;
+                      
+                      if (!fileInput || fileInput.size === 0) {
+                        toast({
+                          title: "No file selected",
+                          description: "Please select a file to upload",
+                          variant: "destructive",
+                        });
+                        return;
+                      }
+
+                      // File type validation
+                      const allowedTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'text/plain', 'text/markdown'];
+                      const allowedExtensions = ['.pdf', '.doc', '.docx', '.txt', '.md'];
+                      const fileName = fileInput.name.toLowerCase();
+                      const hasValidExtension = allowedExtensions.some(ext => fileName.endsWith(ext));
+                      
+                      // Block PPT/PPTX
+                      if (fileName.endsWith('.ppt') || fileName.endsWith('.pptx')) {
+                        toast({
+                          title: "PowerPoint not supported",
+                          description: "Please convert your PowerPoint to PDF first to reduce file size and ensure compatibility",
+                          variant: "destructive",
+                        });
+                        return;
+                      }
+
+                      if (!hasValidExtension && !allowedTypes.includes(fileInput.type)) {
+                        toast({
+                          title: "Invalid file type",
+                          description: "Please upload a PDF, Word document, text file, or markdown file",
+                          variant: "destructive",
+                        });
+                        return;
+                      }
+
+                      // File size validation (25MB = 26214400 bytes)
+                      if (fileInput.size > 26214400) {
+                        toast({
+                          title: "File too large",
+                          description: "Please upload a file smaller than 25MB",
+                          variant: "destructive",
+                        });
+                        return;
+                      }
+
+                      // Scope validation
+                      if (knowledgeScope === 'model-specific' && !knowledgeModelId) {
+                        toast({
+                          title: "Model required",
+                          description: "Please select a model for model-specific documents",
+                          variant: "destructive",
+                        });
+                        return;
+                      }
+
+                      uploadKnowledgeDoc.mutate({
+                        file: fileInput,
+                        scope: knowledgeScope,
+                        modelId: knowledgeModelId || undefined,
+                        description: knowledgeDescription || undefined,
+                      });
+
+                      // Reset file input
+                      e.currentTarget.reset();
+                    }}>
+                      <div className="space-y-4">
+                        {/* File Input */}
+                        <div>
+                          <Label htmlFor="file">Select File</Label>
+                          <Input
+                            id="file"
+                            name="file"
+                            type="file"
+                            accept=".pdf,.doc,.docx,.txt,.md"
+                            data-testid="input-knowledge-file"
+                            className="cursor-pointer"
+                          />
+                          <p className="text-sm text-muted-foreground mt-2">
+                            Accepted formats: PDF, Word, Text, Markdown (max 25MB)
+                          </p>
+                          <p className="text-sm text-muted-foreground mt-1">
+                            💡 Have a PowerPoint? Convert to PDF first to reduce file size
+                          </p>
+                        </div>
+
+                        {/* Scope Selector */}
+                        <div>
+                          <Label>Scope</Label>
+                          <div className="flex gap-4 mt-2">
+                            <label className="flex items-center gap-2 cursor-pointer">
+                              <input
+                                type="radio"
+                                name="scope"
+                                value="company-wide"
+                                checked={knowledgeScope === 'company-wide'}
+                                onChange={() => {
+                                  setKnowledgeScope('company-wide');
+                                  setKnowledgeModelId('');
+                                }}
+                                data-testid="radio-scope-company"
+                                className="cursor-pointer"
+                              />
+                              <span>Company-Wide</span>
+                            </label>
+                            <label className="flex items-center gap-2 cursor-pointer">
+                              <input
+                                type="radio"
+                                name="scope"
+                                value="model-specific"
+                                checked={knowledgeScope === 'model-specific'}
+                                onChange={() => setKnowledgeScope('model-specific')}
+                                data-testid="radio-scope-model"
+                                className="cursor-pointer"
+                              />
+                              <span>Model-Specific</span>
+                            </label>
+                          </div>
+                        </div>
+
+                        {/* Model Selector (shown only when model-specific) */}
+                        {knowledgeScope === 'model-specific' && (
+                          <div>
+                            <Label htmlFor="model">Select Model</Label>
+                            <Select value={knowledgeModelId} onValueChange={setKnowledgeModelId}>
+                              <SelectTrigger id="model" data-testid="select-knowledge-model">
+                                <SelectValue placeholder="Choose a model..." />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {models.map((model) => (
+                                  <SelectItem key={model.id} value={model.id}>
+                                    {model.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        )}
+
+                        {/* Description */}
+                        <div>
+                          <Label htmlFor="description">Description (Optional)</Label>
+                          <Textarea
+                            id="description"
+                            value={knowledgeDescription}
+                            onChange={(e) => setKnowledgeDescription(e.target.value)}
+                            placeholder="Brief description of this document..."
+                            rows={2}
+                            data-testid="input-knowledge-description"
+                          />
+                        </div>
+
+                        {/* Upload Button */}
+                        <Button
+                          type="submit"
+                          disabled={uploadKnowledgeDoc.isPending}
+                          data-testid="button-upload-knowledge-doc"
+                        >
+                          {uploadKnowledgeDoc.isPending ? (
+                            <>Uploading...</>
+                          ) : (
+                            <>
+                              <Upload className="mr-2 h-4 w-4" />
+                              Upload Document
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                    </form>
+                  </Card>
+
+                  {/* Document List Card */}
+                  <Card className="p-6">
+                    <div className="flex justify-between items-center mb-6">
+                      <h3 className="text-lg font-semibold">Documents</h3>
+                      
+                      {/* Filter Tabs */}
+                      <div className="flex gap-2">
+                        <Button
+                          variant={knowledgeFilter === 'all' ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => setKnowledgeFilter('all')}
+                          data-testid="filter-all"
+                        >
+                          All
+                        </Button>
+                        <Button
+                          variant={knowledgeFilter === 'company-wide' ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => setKnowledgeFilter('company-wide')}
+                          data-testid="filter-company-wide"
+                        >
+                          Company-Wide
+                        </Button>
+                        <Button
+                          variant={knowledgeFilter === 'model-specific' ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => setKnowledgeFilter('model-specific')}
+                          data-testid="filter-model-specific"
+                        >
+                          Model-Specific
+                        </Button>
+                      </div>
+                    </div>
+
+                    {knowledgeDocuments.length === 0 ? (
+                      <div className="text-center py-12 text-muted-foreground">
+                        <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                        <p>No documents uploaded yet</p>
+                        <p className="text-sm mt-2">Upload your first document above</p>
+                      </div>
+                    ) : (
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Name</TableHead>
+                            <TableHead>Type</TableHead>
+                            <TableHead>Size</TableHead>
+                            <TableHead>Scope</TableHead>
+                            <TableHead>Model</TableHead>
+                            <TableHead>Uploaded</TableHead>
+                            <TableHead className="text-right">Actions</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {knowledgeDocuments.map((doc) => {
+                            // Format file size
+                            const formatFileSize = (bytes: number) => {
+                              if (bytes < 1024) return `${bytes} B`;
+                              if (bytes < 1048576) return `${(bytes / 1024).toFixed(1)} KB`;
+                              return `${(bytes / 1048576).toFixed(1)} MB`;
+                            };
+
+                            // Get file extension
+                            const getFileType = (fileName: string) => {
+                              const ext = fileName.split('.').pop()?.toLowerCase() || '';
+                              return ext.toUpperCase();
+                            };
+
+                            // Find model name
+                            const modelName = doc.modelId 
+                              ? models.find(m => m.id === doc.modelId)?.name || 'Unknown'
+                              : '-';
+
+                            return (
+                              <TableRow key={doc.id} data-testid={`doc-row-${doc.id}`}>
+                                <TableCell className="font-medium">{doc.fileName}</TableCell>
+                                <TableCell>
+                                  <Badge variant="outline">{getFileType(doc.fileName)}</Badge>
+                                </TableCell>
+                                <TableCell>{formatFileSize(doc.fileSize)}</TableCell>
+                                <TableCell>
+                                  <Badge>{doc.scope === 'company-wide' ? 'Company' : 'Model'}</Badge>
+                                </TableCell>
+                                <TableCell>{modelName}</TableCell>
+                                <TableCell>
+                                  {new Date(doc.uploadedAt).toLocaleDateString()}
+                                </TableCell>
+                                <TableCell className="text-right">
+                                  <div className="flex justify-end gap-2">
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => window.open(`/objects/${doc.fileUrl}`, '_blank')}
+                                      data-testid={`button-download-doc-${doc.id}`}
+                                    >
+                                      <Download className="h-4 w-4" />
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => {
+                                        if (confirm(`Delete "${doc.fileName}"?`)) {
+                                          deleteKnowledgeDoc.mutate(doc.id);
+                                        }
+                                      }}
+                                      disabled={deleteKnowledgeDoc.isPending}
+                                      data-testid={`button-delete-knowledge-doc-${doc.id}`}
+                                    >
+                                      <Trash className="h-4 w-4" />
+                                    </Button>
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            );
+                          })}
+                        </TableBody>
+                      </Table>
+                    )}
+                  </Card>
+                </div>
               )}
             </div>
           </main>
