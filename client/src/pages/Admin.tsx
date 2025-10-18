@@ -106,6 +106,10 @@ export default function Admin() {
   const [csvImportMode, setCSVImportMode] = useState<'add' | 'replace'>('add');
   const [isCSVImportDialogOpen, setIsCSVImportDialogOpen] = useState(false);
   const [pendingCSVFile, setPendingCSVFile] = useState<{file: File; modelId: string} | null>(null);
+  const [isModelImportDialogOpen, setIsModelImportDialogOpen] = useState(false);
+  const [pendingModelFile, setPendingModelFile] = useState<{file: File; modelData: any} | null>(null);
+  const [modelImportName, setModelImportName] = useState('');
+  const [modelImportSlug, setModelImportSlug] = useState('');
   
   // Maturity scale and general resources state
   const [isMaturityScaleDialogOpen, setIsMaturityScaleDialogOpen] = useState(false);
@@ -997,6 +1001,104 @@ export default function Admin() {
     }
   };
 
+  // Export complete model definition as .model JSON file
+  const exportModelDefinition = async (modelId: string) => {
+    try {
+      const response = await fetch(`/api/models/${modelId}/export-model`);
+      if (!response.ok) throw new Error('Export failed');
+      
+      const data = await response.json();
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = window.URL.createObjectURL(blob);
+      const model = models.find(m => m.id === modelId);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${model?.slug || 'model'}.model`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+      
+      toast({
+        title: "Export successful",
+        description: `Model definition exported successfully.`,
+      });
+    } catch (error) {
+      toast({
+        title: "Export failed",
+        description: "Failed to export model definition. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Import complete model definition from .model JSON file
+  const handleModelImportClick = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.model';
+    input.onchange = async (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (file) {
+        try {
+          const content = await file.text();
+          const modelData = JSON.parse(content);
+          setPendingModelFile({ file, modelData });
+          setIsModelImportDialogOpen(true);
+        } catch (error) {
+          toast({
+            title: "Invalid file",
+            description: "Failed to parse .model file. Please check the file format.",
+            variant: "destructive",
+          });
+        }
+      }
+    };
+    input.click();
+  };
+
+  const handleConfirmModelImport = async () => {
+    if (!pendingModelFile) return;
+    
+    try {
+      const response = await fetch('/api/models/import-model', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          modelData: pendingModelFile.modelData,
+          newName: modelImportName || undefined,
+          newSlug: modelImportSlug || undefined,
+        }),
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Import failed');
+      }
+      
+      const result = await response.json();
+      queryClient.invalidateQueries({ queryKey: ['/api/models'] });
+      
+      toast({
+        title: "Import successful",
+        description: `Model imported with ${result.stats.dimensionsCreated} dimensions, ${result.stats.questionsCreated} questions, and ${result.stats.answersCreated} answers.`,
+      });
+      
+      setIsModelImportDialogOpen(false);
+      setPendingModelFile(null);
+      setModelImportName('');
+      setModelImportSlug('');
+    } catch (error) {
+      toast({
+        title: "Import failed",
+        description: error instanceof Error ? error.message : "Failed to import model. Please check the file format.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const exportResultsToCSV = () => {
     if (!results.length) {
       toast({
@@ -1379,6 +1481,14 @@ export default function Admin() {
                       Download CSV Template
                     </Button>
                     <Button 
+                      variant="outline"
+                      onClick={handleModelImportClick}
+                      data-testid="button-import-model"
+                    >
+                      <Upload className="mr-2 h-4 w-4" />
+                      Import Model
+                    </Button>
+                    <Button 
                       onClick={() => {
                         resetModelForm();
                         setIsModelDialogOpen(true);
@@ -1460,6 +1570,15 @@ export default function Admin() {
                                 title="Export Questions CSV"
                               >
                                 <FileDown className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => exportModelDefinition(model.id)}
+                                data-testid={`button-export-model-${model.id}`}
+                                title="Export Model Definition (.model file)"
+                              >
+                                <Database className="h-4 w-4" />
                               </Button>
                               <Button 
                                 variant="ghost" 
@@ -3434,6 +3553,86 @@ export default function Admin() {
               data-testid="button-confirm-import"
             >
               Import Questions
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Model Import Dialog */}
+      <Dialog open={isModelImportDialogOpen} onOpenChange={setIsModelImportDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Import Model Definition</DialogTitle>
+            <DialogDescription>
+              Import a complete model from a .model file. You can optionally rename the model during import.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>File</Label>
+              <p className="text-sm text-muted-foreground">
+                {pendingModelFile?.file.name || 'No file selected'}
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Original Model Details</Label>
+              <div className="p-3 bg-muted rounded-md">
+                <p className="text-sm"><strong>Name:</strong> {pendingModelFile?.modelData.model.name}</p>
+                <p className="text-sm"><strong>Slug:</strong> {pendingModelFile?.modelData.model.slug}</p>
+                <p className="text-sm"><strong>Version:</strong> {pendingModelFile?.modelData.model.version}</p>
+                <p className="text-sm mt-2"><strong>Includes:</strong></p>
+                <ul className="text-sm list-disc list-inside ml-2">
+                  <li>{pendingModelFile?.modelData.dimensions.length || 0} dimensions</li>
+                  <li>{pendingModelFile?.modelData.questions.length || 0} questions</li>
+                </ul>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="import-model-name">New Model Name (Optional)</Label>
+              <Input
+                id="import-model-name"
+                value={modelImportName}
+                onChange={(e) => setModelImportName(e.target.value)}
+                placeholder={pendingModelFile?.modelData.model.name || 'Leave empty to use original name'}
+                data-testid="input-import-model-name"
+              />
+              <p className="text-sm text-muted-foreground">
+                Leave empty to use the original name
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="import-model-slug">New Model Slug (Optional)</Label>
+              <Input
+                id="import-model-slug"
+                value={modelImportSlug}
+                onChange={(e) => setModelImportSlug(e.target.value)}
+                placeholder={pendingModelFile?.modelData.model.slug || 'Leave empty to use original slug'}
+                data-testid="input-import-model-slug"
+              />
+              <p className="text-sm text-muted-foreground">
+                Leave empty to use the original slug. Slug must be unique.
+              </p>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => {
+              setIsModelImportDialogOpen(false);
+              setPendingModelFile(null);
+              setModelImportName('');
+              setModelImportSlug('');
+            }}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleConfirmModelImport}
+              data-testid="button-confirm-model-import"
+            >
+              Import Model
             </Button>
           </DialogFooter>
         </DialogContent>
