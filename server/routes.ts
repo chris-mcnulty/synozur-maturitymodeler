@@ -2211,6 +2211,70 @@ Respond in JSON format:
     }
   });
 
+  // Benchmark routes
+  app.get("/api/benchmarks/config", ensureAdmin, async (req, res) => {
+    try {
+      const { getBenchmarkConfig } = await import("./services/benchmark-service.js");
+      const config = await getBenchmarkConfig();
+      res.json(config);
+    } catch (error) {
+      console.error('Get benchmark config error:', error);
+      res.status(500).json({ error: "Failed to get benchmark configuration" });
+    }
+  });
+
+  app.put("/api/benchmarks/config", ensureAdmin, async (req, res) => {
+    try {
+      const { setBenchmarkConfig } = await import("./services/benchmark-service.js");
+      await setBenchmarkConfig(req.body);
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Update benchmark config error:', error);
+      res.status(500).json({ error: "Failed to update benchmark configuration" });
+    }
+  });
+
+  app.post("/api/benchmarks/calculate/:modelId", ensureAdmin, async (req, res) => {
+    try {
+      const { calculateBenchmarks } = await import("./services/benchmark-service.js");
+      await calculateBenchmarks(req.params.modelId);
+      res.json({ success: true, message: "Benchmarks calculated successfully" });
+    } catch (error) {
+      console.error('Calculate benchmarks error:', error);
+      res.status(500).json({ error: "Failed to calculate benchmarks" });
+    }
+  });
+
+  app.get("/api/benchmarks/:modelId", async (req, res) => {
+    try {
+      const { getBenchmarksForUser } = await import("./services/benchmark-service.js");
+      
+      // Get user profile if authenticated
+      const userProfile = req.user ? {
+        industry: req.user.industry || undefined,
+        companySize: req.user.companySize || undefined,
+        country: req.user.country || undefined,
+      } : undefined;
+
+      const benchmarks = await getBenchmarksForUser(req.params.modelId, userProfile);
+      res.json(benchmarks);
+    } catch (error) {
+      console.error('Get benchmarks error:', error);
+      res.status(500).json({ error: "Failed to get benchmarks" });
+    }
+  });
+
+  app.get("/api/benchmarks/:modelId/all", ensureAdmin, async (req, res) => {
+    try {
+      const { getAllBenchmarksForModel } = await import("./services/benchmark-service.js");
+      const benchmarks = await getAllBenchmarksForModel(req.params.modelId);
+      res.json(benchmarks);
+    } catch (error) {
+      console.error('Get all benchmarks error:', error);
+      res.status(500).json({ error: "Failed to get all benchmarks" });
+    }
+  });
+
   // Export assessment results
   app.get("/api/assessments/:id/export", async (req, res) => {
     try {

@@ -162,12 +162,18 @@ export const results = pgTable("results", {
 export const benchmarks = pgTable("benchmarks", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   modelId: varchar("model_id").notNull().references(() => models.id, { onDelete: "cascade" }),
+  segmentType: text("segment_type").notNull(), // 'overall', 'industry', 'company_size', 'country', 'industry_company_size'
   industry: text("industry"),
+  companySize: text("company_size"),
   country: text("country"),
   meanScore: integer("mean_score").notNull(),
+  dimensionScores: json("dimension_scores").$type<Record<string, number>>(), // { dimensionKey: avgScore }
   sampleSize: integer("sample_size").notNull(),
+  calculatedAt: timestamp("calculated_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
+}, (table) => ({
+  modelSegmentIdx: index("idx_benchmark_model_segment").on(table.modelId, table.segmentType),
+}));
 
 // Settings table for admin configurations
 export const settings = pgTable("settings", {
