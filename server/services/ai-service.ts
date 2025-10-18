@@ -1,10 +1,12 @@
 import OpenAI from 'openai';
 import { z } from 'zod';
 import crypto from 'crypto';
-import { eq, and, gt } from 'drizzle-orm';
+import { eq, and, gt, or, isNull } from 'drizzle-orm';
 import type { Assessment, Model, Dimension, User } from '@shared/schema';
 import { db } from '../db';
-import { aiGeneratedContent } from '@shared/schema';
+import * as schema from '@shared/schema';
+import { aiGeneratedContent, knowledgeDocuments } from '@shared/schema';
+import { DocumentExtractionService } from './document-extraction';
 
 // Initialize OpenAI client with Replit AI Integrations
 const openai = new OpenAI({
@@ -262,6 +264,104 @@ class AIService {
     }
   }
 
+  // Generate a hash representing the current knowledge base version for cache invalidation
+  private async getKnowledgeVersionHash(modelId?: string): Promise<string> {
+    try {
+      // Fetch document metadata (id + updatedAt) for version fingerprint
+      let documentsQuery = db.select({
+        id: knowledgeDocuments.id,
+        updatedAt: knowledgeDocuments.updatedAt
+      }).from(knowledgeDocuments);
+      
+      if (modelId) {
+        // Get both company-wide and model-specific documents
+        documentsQuery = documentsQuery.where(
+          or(
+            eq(knowledgeDocuments.scope, 'company-wide'),
+            and(
+              eq(knowledgeDocuments.scope, 'model-specific'),
+              eq(knowledgeDocuments.modelId, modelId)
+            )
+          )
+        ) as any;
+      } else {
+        // Only get company-wide documents
+        documentsQuery = documentsQuery.where(
+          eq(knowledgeDocuments.scope, 'company-wide')
+        ) as any;
+      }
+      
+      const docs = await documentsQuery;
+      
+      // Create a stable fingerprint from document IDs and timestamps
+      const fingerprint = docs
+        .sort((a, b) => a.id.localeCompare(b.id)) // Ensure stable ordering
+        .map(doc => `${doc.id}:${doc.updatedAt.toISOString()}`)
+        .join('|');
+      
+      // Return hash of fingerprint
+      return crypto.createHash('sha256').update(fingerprint).digest('hex').substring(0, 16);
+    } catch (error) {
+      console.error('Error generating knowledge version hash:', error);
+      return 'default'; // Fallback to ensure caching still works
+    }
+  }
+
+  // Fetch and extract knowledge documents for grounding AI responses
+  private async getKnowledgeContext(modelId?: string): Promise<string> {
+    try {
+      const documentExtractor = new DocumentExtractionService();
+      
+      // Fetch relevant knowledge documents
+      let documentsQuery = db.select().from(knowledgeDocuments);
+      
+      if (modelId) {
+        // Get both company-wide and model-specific documents
+        documentsQuery = documentsQuery.where(
+          or(
+            eq(knowledgeDocuments.scope, 'company-wide'),
+            and(
+              eq(knowledgeDocuments.scope, 'model-specific'),
+              eq(knowledgeDocuments.modelId, modelId)
+            )
+          )
+        ) as any;
+      } else {
+        // Only get company-wide documents
+        documentsQuery = documentsQuery.where(
+          eq(knowledgeDocuments.scope, 'company-wide')
+        ) as any;
+      }
+      
+      const docs = await documentsQuery;
+      
+      if (docs.length === 0) {
+        return AI_PLAYBOOK_GROUNDING; // Fallback to hard-coded grounding
+      }
+      
+      // Extract text from all documents
+      const extractedTexts = await Promise.all(
+        docs.map(async (doc) => {
+          try {
+            const text = await documentExtractor.extractTextFromDocument(doc.fileUrl, doc.fileType);
+            return `## ${doc.name}\n${text}\n`;
+          } catch (error) {
+            console.error(`Failed to extract text from ${doc.name}:`, error);
+            return `## ${doc.name}\n[Text extraction failed]\n`;
+          }
+        })
+      );
+      
+      // Combine extracted knowledge with hard-coded grounding
+      const knowledgeContext = `# KNOWLEDGE BASE\n\n${extractedTexts.join('\n')}\n\n${AI_PLAYBOOK_GROUNDING}`;
+      
+      return knowledgeContext;
+    } catch (error) {
+      console.error('Error fetching knowledge context:', error);
+      return AI_PLAYBOOK_GROUNDING; // Fallback to hard-coded grounding
+    }
+  }
+
   // Generate personalized recommendations based on assessment results
   
   // Generate a comprehensive maturity summary across dimensions
@@ -271,12 +371,25 @@ class AIService {
     modelName: string,
     userContext?: { industry?: string; companySize?: string; jobTitle?: string }
   ): Promise<string> {
-    // Create cache context
+    // Get model ID to fetch knowledge version
+    let modelId: string | undefined;
+    try {
+      const models = await db.select().from(schema.models).where(eq(schema.models.name, modelName)).limit(1);
+      modelId = models[0]?.id;
+    } catch (error) {
+      console.error('Error fetching modelId for knowledge context:', error);
+    }
+
+    // Get knowledge version hash for cache invalidation
+    const knowledgeVersion = await this.getKnowledgeVersionHash(modelId);
+
+    // Create cache context including knowledge version
     const cacheContext = {
       overallScore,
       dimensionScores,
       modelName,
-      userContext: userContext || {}
+      userContext: userContext || {},
+      knowledgeVersion
     };
     
     // Check cache first
@@ -307,30 +420,21 @@ Your assessment shows areas of strength and opportunities for growth. The Synozu
       const opportunities = validDimensions.slice(-2)
         .map(([, dim]) => `${dim.label} (${dim.score}/500)`);
 
-      // Include AI Playbook grounding for AI Maturity Assessment model
-      const isAIModel = modelName?.toLowerCase().includes('ai maturity');
-      const grounding = isAIModel ? `
-
-STRATEGIC CONTEXT FROM LEADING AI PLAYBOOKS:
-- Only 12% of companies achieve high AI maturity ("AI Achievers") with 50% higher revenue growth
-- 70% of AI success depends on people and processes, not algorithms
-- BCG's 10/20/70 rule: 10% algorithms, 20% tech/data, 70% people/culture
-- AI maturity levels: Foundational (20-30), Developing (30-40), Proficient (40-50), Advanced (50-60), Frontier (60+)
-- Key success factors: holistic integration, executive sponsorship, cloud infrastructure, responsible AI
-` : '';
+      // Fetch knowledge context from uploaded documents (modelId already retrieved above)
+      const knowledgeContext = await this.getKnowledgeContext(modelId);
 
       const prompt = `You are a transformation expert from The Synozur Alliance LLC. Write a comprehensive executive summary with clear structure:
+
+${knowledgeContext}
 
 Assessment: ${modelName}
 Overall Score: ${overallScore}/500
 ${userContext ? `Context: ${userContext.jobTitle || 'Leader'} in ${userContext.industry || 'Industry'}, ${userContext.companySize || 'Company'}` : ''}
-${grounding}
 
 Write a structured executive summary with 3-4 paragraphs:
 
 PARAGRAPH 1 (3-4 sentences):
-Acknowledge their current position with empathy and understanding. Reference the overall score and what it means for their journey. Recognize the unique challenges and opportunities in their context.
-${isAIModel ? 'Reference insights from leading AI playbooks about maturity journeys.' : ''}
+Acknowledge their current position with empathy and understanding. Reference the overall score and what it means for their journey. Recognize the unique challenges and opportunities in their context. Use insights from the knowledge base above to provide context and perspective.
 
 PARAGRAPH 2 (use bullet points and full context):
 Your key strengths:
@@ -342,8 +446,7 @@ Priority growth areas:
 • ${opportunities[1]}
 
 PARAGRAPH 3 (3-4 sentences):
-Provide strategic insights about what these strengths and opportunities mean for their transformation. Connect to industry best practices and potential outcomes.
-${isAIModel ? 'Reference specific success patterns from AI leaders and the strategic value of improvement.' : ''}
+Provide strategic insights about what these strengths and opportunities mean for their transformation. Connect to industry best practices from the knowledge base and potential outcomes. Reference specific success patterns and the strategic value of improvement.
 
 PARAGRAPH 4 (2-3 sentences):
 Inspiring close about finding their North Star and how Synozur's expertise can help make the desirable achievable. Emphasize partnership and transformation potential.
@@ -353,6 +456,7 @@ FORMATTING RULES:
 - Include bullet points for strengths and growth areas
 - Be comprehensive yet readable
 - ${userContext ? `Personalize deeply for ${userContext.jobTitle} perspective in ${userContext.industry}` : 'Maintain strategic focus'}
+- Draw insights from the knowledge base to provide specific, actionable guidance
 - Write naturally without word count constraints`;
 
       const completion = await this.callOpenAI(prompt, undefined, false); // Bypass word limit for comprehensive summary
@@ -384,11 +488,24 @@ The Synozur Alliance LLC is here to help you find your North Star and make the d
     modelName: string,
     userContext?: { industry?: string; companySize?: string; jobTitle?: string }
   ): Promise<string> {
-    // Create cache context
+    // Get model ID to fetch knowledge version
+    let modelId: string | undefined;
+    try {
+      const models = await db.select().from(schema.models).where(eq(schema.models.name, modelName)).limit(1);
+      modelId = models[0]?.id;
+    } catch (error) {
+      console.error('Error fetching modelId for knowledge context:', error);
+    }
+
+    // Get knowledge version hash for cache invalidation
+    const knowledgeVersion = await this.getKnowledgeVersionHash(modelId);
+
+    // Create cache context including knowledge version
     const cacheContext = {
       recommendations,
       modelName,
-      userContext: userContext || {}
+      userContext: userContext || {},
+      knowledgeVersion
     };
     
     // Check cache first
@@ -401,26 +518,20 @@ The Synozur Alliance LLC is here to help you find your North Star and make the d
       // Take top 3 recommendations for the summary
       const topRecs = recommendations.slice(0, 3);
 
-      // Include AI Playbook grounding for AI Maturity Assessment model
-      const isAIModel = modelName?.toLowerCase().includes('ai maturity');
-      const grounding = isAIModel ? `
-
-STRATEGIC CONTEXT:
-- Leaders achieving AI maturity see 50% higher revenue growth (Accenture)
-- Success requires focus: Deploy, Reshape, Invent (BCG framework)
-- Transformation priorities: Clear vision, strong foundations, talent empowerment
-` : '';
+      // Fetch knowledge context from uploaded documents (modelId already retrieved above)
+      const knowledgeContext = await this.getKnowledgeContext(modelId);
 
       const prompt = `You are a transformation expert from The Synozur Alliance LLC. Write a comprehensive transformation roadmap with clear structure:
 
+${knowledgeContext}
+
 Model: ${modelName}
 ${userContext ? `Context: ${userContext.jobTitle || 'Leader'} in ${userContext.industry || 'Industry'}` : ''}
-${grounding}
 
 Write 2-3 detailed paragraphs:
 
 PARAGRAPH 1 (4-5 sentences):
-Frame their unique transformation journey and what it means for their organization. Explain the strategic context and importance of the following priority actions:
+Frame their unique transformation journey and what it means for their organization. Explain the strategic context and importance of the following priority actions. Use insights from the knowledge base to provide specific guidance:
 
 Priority actions to focus on:
 • ${topRecs[0]?.title || 'Priority action 1'}
@@ -428,8 +539,7 @@ Priority actions to focus on:
 • ${topRecs[2]?.title || 'Priority action 3'}
 
 PARAGRAPH 2 (3-4 sentences):
-Connect these actions to tangible business outcomes and expected transformation results. Explain how implementing these priorities will drive value.
-${isAIModel ? 'Reference strategic value and ROI patterns from leading organizations.' : ''}
+Connect these actions to tangible business outcomes and expected transformation results. Explain how implementing these priorities will drive value. Reference strategic value and ROI patterns from the knowledge base above.
 
 PARAGRAPH 3 (2-3 sentences):
 Describe how Synozur's expertise and partnership approach will accelerate their journey. End with an inspiring call to action: "Let's find your North Star together."
@@ -441,6 +551,7 @@ FORMATTING RULES:
 - Write naturally without word count constraints
 - Keep language clear and actionable
 - ${userContext ? `Personalize for ${userContext.jobTitle} in ${userContext.industry}` : 'Keep strategic'}
+- Draw specific insights from the knowledge base to provide actionable guidance
 - End with partnership invitation`;
 
       const completion = await this.callOpenAI(prompt, undefined, false); // Bypass word limit for comprehensive roadmap
