@@ -392,7 +392,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .from(schema.assessments)
         .where(eq(schema.assessments.modelId, modelId));
       
-      const assessmentIds = assessments.map(a => a.id);
+      // Filter out any null/undefined IDs and ensure we have valid strings
+      const assessmentIds = assessments
+        .map(a => a.id)
+        .filter((id): id is string => id != null && id !== '');
       
       if (assessmentIds.length > 0) {
         // Delete responses
@@ -403,11 +406,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         await db.delete(schema.results)
           .where(inArray(schema.results.assessmentId, assessmentIds));
         
-        // Delete AI content
-        await db.delete(schema.aiGeneratedContent)
-          .where(inArray(schema.aiGeneratedContent.assessmentId, assessmentIds));
+        // Note: AI content is cached by contextHash, not assessmentId, so it's not deleted here
+        // The cache will naturally expire based on expiresAt timestamps
         
-        // Delete assessments
+        // Delete assessments - use modelId directly to avoid inArray issues
         await db.delete(schema.assessments)
           .where(eq(schema.assessments.modelId, modelId));
       }
