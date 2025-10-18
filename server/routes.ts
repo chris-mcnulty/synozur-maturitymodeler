@@ -2521,7 +2521,6 @@ If you didn't request this, please ignore this email—your password will remain
           name: model.name,
           slug: model.slug,
           description: model.description,
-          scoringMethod: model.scoringMethod,
           maturityScale: model.maturityScale,
         },
         dimensions: dimensions.map(d => ({
@@ -2556,7 +2555,7 @@ If you didn't request this, please ignore this email—your password will remain
             })),
           };
         }),
-        assessments: [],
+        assessments: [] as any[],
       };
       
       // For each assessment, get responses, results, and user data
@@ -2601,7 +2600,7 @@ If you didn't request this, please ignore this email—your password will remain
           const question = questions.find(q => q.id === r.questionId);
           if (!question) return null;
           
-          let selectedAnswers = [];
+          let selectedAnswers: Array<{ id: string; text: string; score: number }> = [];
           
           // Handle different question types
           if (r.answerIds && r.answerIds.length > 0) {
@@ -2634,7 +2633,7 @@ If you didn't request this, please ignore this email—your password will remain
             booleanValue: r.booleanValue,
             textValue: r.textValue,
           };
-        }).filter(Boolean);
+        }).filter((item): item is NonNullable<typeof item> => item !== null);
         
         exportData.assessments.push({
           id: assessment.id,
