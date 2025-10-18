@@ -2659,6 +2659,139 @@ If you didn't request this, please ignore this email—your password will remain
     }
   });
 
+  // Knowledge base routes
+  
+  // Get upload URL for knowledge document
+  app.post("/api/knowledge/upload-url", ensureAdminOrModeler, async (req, res) => {
+    try {
+      const objectStorageService = new ObjectStorageService();
+      const uploadURL = await objectStorageService.getObjectEntityUploadURL();
+      res.json({ uploadURL });
+    } catch (error) {
+      console.error("Error getting upload URL:", error);
+      res.status(500).json({ error: "Failed to get upload URL" });
+    }
+  });
+  
+  // Create knowledge document metadata after file upload
+  app.post("/api/knowledge/documents", ensureAdminOrModeler, async (req, res) => {
+    try {
+      const { name, fileUrl, fileSize, fileType, scope, modelId, description } = req.body;
+      
+      // Validate file type
+      const allowedTypes = ['pdf', 'docx', 'doc', 'txt', 'md'];
+      if (!allowedTypes.includes(fileType.toLowerCase())) {
+        return res.status(400).json({ 
+          error: `Invalid file type. Allowed types: ${allowedTypes.join(', ')}` 
+        });
+      }
+      
+      // Validate file size (25MB = 26214400 bytes)
+      const maxSize = 26214400;
+      if (fileSize > maxSize) {
+        return res.status(400).json({ 
+          error: "File size exceeds 25MB limit" 
+        });
+      }
+      
+      // Validate scope
+      if (!['company-wide', 'model-specific'].includes(scope)) {
+        return res.status(400).json({ 
+          error: "Scope must be 'company-wide' or 'model-specific'" 
+        });
+      }
+      
+      // If model-specific, ensure modelId is provided
+      if (scope === 'model-specific' && !modelId) {
+        return res.status(400).json({ 
+          error: "Model ID required for model-specific documents" 
+        });
+      }
+      
+      const objectStorageService = new ObjectStorageService();
+      
+      // Set ACL policy for the uploaded document (private for knowledge docs)
+      const normalizedPath = await objectStorageService.trySetObjectEntityAclPolicy(
+        fileUrl,
+        {
+          owner: req.user!.id,
+          visibility: "private",
+        }
+      );
+      
+      // Create document record in database
+      const document = await db.insert(schema.knowledgeDocuments).values({
+        name,
+        fileUrl: normalizedPath,
+        fileSize,
+        fileType: fileType.toLowerCase(),
+        scope,
+        modelId: scope === 'model-specific' ? modelId : null,
+        description,
+        uploadedBy: req.user!.id,
+      }).returning();
+      
+      res.json(document[0]);
+    } catch (error) {
+      console.error("Error creating knowledge document:", error);
+      res.status(500).json({ error: "Failed to create document" });
+    }
+  });
+  
+  // List all knowledge documents (with optional filters)
+  app.get("/api/knowledge/documents", ensureAdminOrModeler, async (req, res) => {
+    try {
+      const { scope, modelId } = req.query;
+      
+      let query = db.select().from(schema.knowledgeDocuments);
+      
+      if (scope) {
+        query = query.where(eq(schema.knowledgeDocuments.scope, scope as string)) as any;
+      }
+      
+      if (modelId) {
+        query = query.where(eq(schema.knowledgeDocuments.modelId, modelId as string)) as any;
+      }
+      
+      const documents = await query.orderBy(desc(schema.knowledgeDocuments.uploadedAt));
+      res.json(documents);
+    } catch (error) {
+      console.error("Error listing knowledge documents:", error);
+      res.status(500).json({ error: "Failed to list documents" });
+    }
+  });
+  
+  // Delete knowledge document
+  app.delete("/api/knowledge/documents/:id", ensureAdminOrModeler, async (req, res) => {
+    try {
+      const { id } = req.params;
+      
+      // Get document to find file URL
+      const docResult = await db
+        .select()
+        .from(schema.knowledgeDocuments)
+        .where(eq(schema.knowledgeDocuments.id, id))
+        .limit(1);
+      
+      const doc = docResult[0];
+      if (!doc) {
+        return res.status(404).json({ error: "Document not found" });
+      }
+      
+      // Delete from database
+      await db.delete(schema.knowledgeDocuments)
+        .where(eq(schema.knowledgeDocuments.id, id));
+      
+      // Optionally delete file from object storage
+      // (skipping this for now to preserve files if needed)
+      
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting knowledge document:", error);
+      res.status(500).json({ error: "Failed to delete document" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
