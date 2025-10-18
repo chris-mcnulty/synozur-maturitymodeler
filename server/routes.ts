@@ -361,6 +361,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Delete all assessment data for a model (admin only, for testing purposes)
+  app.delete("/api/models/:id/assessment-data", ensureAdmin, async (req, res) => {
+    try {
+      const modelId = req.params.id;
+      
+      // Verify model exists
+      const model = await storage.getModel(modelId);
+      if (!model) {
+        return res.status(404).json({ error: "Model not found" });
+      }
+
+      // Delete all assessments and their related data for this model
+      const assessments = await db.select()
+        .from(schema.assessments)
+        .where(eq(schema.assessments.modelId, modelId));
+      
+      const assessmentIds = assessments.map(a => a.id);
+      
+      if (assessmentIds.length > 0) {
+        // Delete responses
+        await db.delete(schema.assessmentResponses)
+          .where(inArray(schema.assessmentResponses.assessmentId, assessmentIds));
+        
+        // Delete results
+        await db.delete(schema.results)
+          .where(inArray(schema.results.assessmentId, assessmentIds));
+        
+        // Delete AI content
+        await db.delete(schema.aiGeneratedContent)
+          .where(inArray(schema.aiGeneratedContent.assessmentId, assessmentIds));
+        
+        // Delete assessments
+        await db.delete(schema.assessments)
+          .where(eq(schema.assessments.modelId, modelId));
+      }
+
+      // Delete benchmarks for this model
+      await db.delete(schema.benchmarks)
+        .where(eq(schema.benchmarks.modelId, modelId));
+      
+      res.json({ 
+        success: true, 
+        deletedCount: assessmentIds.length,
+        message: `Deleted ${assessmentIds.length} assessments and all related data for model "${model.name}"`
+      });
+    } catch (error) {
+      console.error("Error deleting assessment data:", error);
+      res.status(500).json({ error: "Failed to delete assessment data" });
+    }
+  });
+
   // Object Storage routes for model images
   app.post("/api/objects/upload", ensureAdminOrModeler, async (req, res) => {
     try {

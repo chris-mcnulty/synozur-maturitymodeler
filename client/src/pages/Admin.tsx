@@ -385,6 +385,12 @@ export default function Admin() {
   const [knowledgeModelId, setKnowledgeModelId] = useState<string>('');
   const [knowledgeDescription, setKnowledgeDescription] = useState<string>('');
   const [knowledgeFilter, setKnowledgeFilter] = useState<'all' | 'company-wide' | 'model-specific'>('all');
+  
+  // Delete data confirmation dialog state
+  const [isDeleteDataDialogOpen, setIsDeleteDataDialogOpen] = useState(false);
+  const [deleteDataModelId, setDeleteDataModelId] = useState<string | null>(null);
+  const [deleteDataModelName, setDeleteDataModelName] = useState<string>('');
+  const [deleteDataConfirmation, setDeleteDataConfirmation] = useState<string>('');
 
   // Fetch models
   const { data: models = [], isLoading: modelsLoading } = useQuery<Model[]>({
@@ -747,6 +753,28 @@ export default function Admin() {
       toast({
         title: "Error",
         description: error.message || "Failed to delete model",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Delete all assessment data for a model mutation
+  const deleteAssessmentData = useMutation({
+    mutationFn: async (modelId: string) => {
+      return apiRequest(`/api/models/${modelId}/assessment-data`, 'DELETE');
+    },
+    onSuccess: (data: any) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/results'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/benchmarks'] });
+      toast({
+        title: "Assessment data deleted",
+        description: data.message || "All assessment data has been removed successfully.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete assessment data",
         variant: "destructive",
       });
     },
@@ -1690,25 +1718,6 @@ export default function Admin() {
 
           <main className="flex-1 overflow-auto p-6">
             <div className="max-w-7xl mx-auto space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                <Card className="p-6">
-                  <div className="text-3xl font-bold text-primary mb-2">{models.length}</div>
-                  <div className="text-sm text-muted-foreground">Active Models</div>
-                </Card>
-                <Card className="p-6">
-                  <div className="text-3xl font-bold text-secondary mb-2">{totalAssessments}</div>
-                  <div className="text-sm text-muted-foreground">Total Assessments</div>
-                </Card>
-                <Card className="p-6">
-                  <div className="text-3xl font-bold text-chart-3 mb-2">{averageScore}</div>
-                  <div className="text-sm text-muted-foreground">Average Score</div>
-                </Card>
-                <Card className="p-6">
-                  <div className="text-3xl font-bold text-chart-4 mb-2">{publishedModels}</div>
-                  <div className="text-sm text-muted-foreground">Published Models</div>
-                </Card>
-              </div>
-
               {activeSection === 'models' && (
               <Card className="p-6">
                 <div className="flex justify-between items-center mb-6">
@@ -1868,6 +1877,20 @@ export default function Admin() {
                                 title="Edit General Resources"
                               >
                                 <FileSpreadsheet className="h-4 w-4" />
+                              </Button>
+                              <Button 
+                                variant="ghost" 
+                                size="icon"
+                                onClick={() => {
+                                  setDeleteDataModelId(model.id);
+                                  setDeleteDataModelName(model.name);
+                                  setDeleteDataConfirmation('');
+                                  setIsDeleteDataDialogOpen(true);
+                                }}
+                                data-testid={`button-delete-data-${model.id}`}
+                                title="Delete All Assessment Data (for testing)"
+                              >
+                                <Database className="h-4 w-4 text-destructive" />
                               </Button>
                               <Button 
                                 variant="ghost" 
@@ -2863,9 +2886,107 @@ export default function Admin() {
                 </div>
               )}
             </div>
+
+            {/* Footer Stats */}
+            <footer className="mt-8 pt-6 border-t">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <Card className="p-4">
+                  <div className="text-2xl font-bold text-primary mb-1" data-testid="stat-active-models">{models.length}</div>
+                  <div className="text-xs text-muted-foreground">Active Models</div>
+                </Card>
+                <Card className="p-4">
+                  <div className="text-2xl font-bold text-secondary mb-1" data-testid="stat-total-assessments">{totalAssessments}</div>
+                  <div className="text-xs text-muted-foreground">Total Assessments</div>
+                </Card>
+                <Card className="p-4">
+                  <div className="text-2xl font-bold text-chart-3 mb-1" data-testid="stat-average-score">{averageScore}</div>
+                  <div className="text-xs text-muted-foreground">Average Score</div>
+                </Card>
+                <Card className="p-4">
+                  <div className="text-2xl font-bold text-chart-4 mb-1" data-testid="stat-published-models">{publishedModels}</div>
+                  <div className="text-xs text-muted-foreground">Published Models</div>
+                </Card>
+              </div>
+            </footer>
           </main>
         </div>
       </div>
+
+      {/* Delete Assessment Data Confirmation Dialog */}
+      <Dialog open={isDeleteDataDialogOpen} onOpenChange={setIsDeleteDataDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete All Assessment Data?</DialogTitle>
+            <DialogDescription>
+              This action cannot be undone. All assessment data for "{deleteDataModelName}" will be permanently deleted.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div className="bg-destructive/10 border border-destructive/20 rounded-md p-4">
+              <h4 className="font-semibold text-destructive mb-2">WARNING: This will permanently delete:</h4>
+              <ul className="text-sm space-y-1 list-disc list-inside">
+                <li>All assessments for this model</li>
+                <li>All user responses</li>
+                <li>All results and scores</li>
+                <li>All AI-generated content</li>
+                <li>All benchmarks</li>
+              </ul>
+            </div>
+
+            <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-md p-4">
+              <h4 className="font-semibold text-blue-900 dark:text-blue-100 mb-2">IMPORTANT: Backup your data first!</h4>
+              <p className="text-sm text-blue-800 dark:text-blue-200">
+                Go to the Results tab and click "Export Results CSV" to download a backup copy before proceeding.
+              </p>
+            </div>
+
+            <div>
+              <Label htmlFor="delete-confirmation">Type "DELETE ALL DATA" to confirm:</Label>
+              <Input
+                id="delete-confirmation"
+                value={deleteDataConfirmation}
+                onChange={(e) => setDeleteDataConfirmation(e.target.value)}
+                placeholder="DELETE ALL DATA"
+                data-testid="input-delete-confirmation"
+              />
+            </div>
+          </div>
+
+          <div className="flex gap-2 justify-end">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setIsDeleteDataDialogOpen(false);
+                setDeleteDataConfirmation('');
+              }}
+              data-testid="button-cancel-delete-data"
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                if (deleteDataConfirmation === 'DELETE ALL DATA' && deleteDataModelId) {
+                  deleteAssessmentData.mutate(deleteDataModelId);
+                  setIsDeleteDataDialogOpen(false);
+                  setDeleteDataConfirmation('');
+                } else {
+                  toast({
+                    title: "Incorrect confirmation",
+                    description: "You must type 'DELETE ALL DATA' exactly to confirm.",
+                    variant: "destructive",
+                  });
+                }
+              }}
+              disabled={deleteDataConfirmation !== 'DELETE ALL DATA'}
+              data-testid="button-confirm-delete-data"
+            >
+              Delete All Data
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Model Dialog */}
       <Dialog open={isModelDialogOpen} onOpenChange={setIsModelDialogOpen}>
