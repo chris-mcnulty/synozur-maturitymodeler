@@ -2468,6 +2468,197 @@ If you didn't request this, please ignore this email—your password will remain
     }
   });
 
+  // Export analytical data for a specific model (for external analysis tools)
+  app.get("/api/admin/export/model/:modelSlug/analysis", ensureAdminOrModeler, async (req, res) => {
+    try {
+      const { modelSlug } = req.params;
+      
+      // Get model
+      const modelResult = await db
+        .select()
+        .from(schema.models)
+        .where(eq(schema.models.slug, modelSlug))
+        .limit(1);
+      
+      const model = modelResult[0];
+      if (!model) {
+        return res.status(404).json({ error: "Model not found" });
+      }
+      
+      // Get dimensions
+      const dimensions = await db
+        .select()
+        .from(schema.dimensions)
+        .where(eq(schema.dimensions.modelId, model.id))
+        .orderBy(schema.dimensions.order);
+      
+      // Get questions
+      const questions = await db
+        .select()
+        .from(schema.questions)
+        .where(eq(schema.questions.modelId, model.id))
+        .orderBy(schema.questions.order);
+      
+      // Get all answers for these questions
+      const questionIds = questions.map(q => q.id);
+      const allAnswers = questionIds.length > 0 ? await db
+        .select()
+        .from(schema.answers)
+        .where(inArray(schema.answers.questionId, questionIds))
+        .orderBy(schema.answers.order) : [];
+      
+      // Get all assessments for this model
+      const assessments = await db
+        .select()
+        .from(schema.assessments)
+        .where(eq(schema.assessments.modelId, model.id));
+      
+      // Build comprehensive export data
+      const exportData = {
+        model: {
+          id: model.id,
+          name: model.name,
+          slug: model.slug,
+          description: model.description,
+          scoringMethod: model.scoringMethod,
+          maturityScale: model.maturityScale,
+        },
+        dimensions: dimensions.map(d => ({
+          id: d.id,
+          key: d.key,
+          label: d.label,
+          description: d.description,
+          order: d.order,
+        })),
+        questions: questions.map(q => {
+          const questionAnswers = allAnswers.filter(a => a.questionId === q.id);
+          const dimension = dimensions.find(d => d.id === q.dimensionId);
+          
+          return {
+            id: q.id,
+            text: q.text,
+            type: q.type,
+            dimension: dimension ? {
+              key: dimension.key,
+              label: dimension.label,
+            } : null,
+            order: q.order,
+            minValue: q.minValue,
+            maxValue: q.maxValue,
+            unit: q.unit,
+            placeholder: q.placeholder,
+            answers: questionAnswers.map(a => ({
+              id: a.id,
+              text: a.text,
+              score: a.score,
+              order: a.order,
+            })),
+          };
+        }),
+        assessments: [],
+      };
+      
+      // For each assessment, get responses, results, and user data
+      for (const assessment of assessments) {
+        // Get user data
+        let userData = null;
+        if (assessment.userId) {
+          const userResult = await db
+            .select({
+              name: schema.users.name,
+              company: schema.users.company,
+              jobTitle: schema.users.jobTitle,
+              industry: schema.users.industry,
+              companySize: schema.users.companySize,
+              country: schema.users.country,
+            })
+            .from(schema.users)
+            .where(eq(schema.users.id, assessment.userId))
+            .limit(1);
+          
+          userData = userResult[0] || null;
+        }
+        
+        // Get results
+        const resultResult = await db
+          .select()
+          .from(schema.results)
+          .where(eq(schema.results.assessmentId, assessment.id))
+          .limit(1);
+        
+        const result = resultResult[0];
+        if (!result) continue; // Skip assessments without results
+        
+        // Get responses
+        const responses = await db
+          .select()
+          .from(schema.assessmentResponses)
+          .where(eq(schema.assessmentResponses.assessmentId, assessment.id));
+        
+        // Build response details with full context
+        const responseDetails = responses.map(r => {
+          const question = questions.find(q => q.id === r.questionId);
+          if (!question) return null;
+          
+          let selectedAnswers = [];
+          
+          // Handle different question types
+          if (r.answerIds && r.answerIds.length > 0) {
+            // Multi-select
+            selectedAnswers = allAnswers
+              .filter(a => r.answerIds!.includes(a.id))
+              .map(a => ({
+                id: a.id,
+                text: a.text,
+                score: a.score,
+              }));
+          } else if (r.answerId) {
+            // Single answer
+            const answer = allAnswers.find(a => a.id === r.answerId);
+            if (answer) {
+              selectedAnswers = [{
+                id: answer.id,
+                text: answer.text,
+                score: answer.score,
+              }];
+            }
+          }
+          
+          return {
+            questionId: r.questionId,
+            questionText: question.text,
+            questionType: question.type,
+            selectedAnswers,
+            numericValue: r.numericValue,
+            booleanValue: r.booleanValue,
+            textValue: r.textValue,
+          };
+        }).filter(Boolean);
+        
+        exportData.assessments.push({
+          id: assessment.id,
+          completedAt: assessment.completedAt,
+          user: userData,
+          isImported: !!assessment.importBatchId,
+          results: {
+            overallScore: result.overallScore,
+            label: result.label,
+            dimensionScores: result.dimensionScores,
+          },
+          responses: responseDetails,
+        });
+      }
+      
+      // Set response headers for JSON download
+      res.setHeader('Content-Type', 'application/json');
+      res.setHeader('Content-Disposition', `attachment; filename="${modelSlug}-analysis-${new Date().toISOString().split('T')[0]}.json"`);
+      res.json(exportData);
+    } catch (error) {
+      console.error('Export error:', error);
+      res.status(500).json({ error: "Failed to generate export" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
