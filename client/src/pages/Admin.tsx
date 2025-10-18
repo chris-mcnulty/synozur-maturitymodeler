@@ -43,6 +43,253 @@ interface AdminResult extends Result {
   date?: string;
 }
 
+// Benchmark Configuration Component
+function BenchmarkConfig() {
+  const { toast } = useToast();
+  const [isEditing, setIsEditing] = useState(false);
+  const [configForm, setConfigForm] = useState({
+    minSampleSizeOverall: 5,
+    minSampleSizeIndustry: 10,
+    minSampleSizeCompanySize: 10,
+    minSampleSizeCountry: 10,
+    minSampleSizeIndustryCompanySize: 15,
+  });
+
+  const { data: config, isLoading } = useQuery({
+    queryKey: ['/api/benchmarks/config'],
+  });
+
+  const updateConfig = useMutation({
+    mutationFn: (data: typeof configForm) =>
+      apiRequest('/api/benchmarks/config', 'PUT', data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/benchmarks/config'] });
+      toast({ title: 'Configuration updated successfully' });
+      setIsEditing(false);
+    },
+    onError: () => {
+      toast({ title: 'Failed to update configuration', variant: 'destructive' });
+    },
+  });
+
+  if (isLoading) return <div>Loading configuration...</div>;
+
+  if (!isEditing && config) {
+    return (
+      <div className="space-y-4">
+        <div className="grid grid-cols-2 gap-4">
+          <div className="p-4 border rounded-md">
+            <p className="text-sm font-medium">Overall Benchmark</p>
+            <p className="text-2xl font-bold">{config.minSampleSizeOverall}</p>
+            <p className="text-xs text-muted-foreground">minimum samples</p>
+          </div>
+          <div className="p-4 border rounded-md">
+            <p className="text-sm font-medium">Industry Benchmark</p>
+            <p className="text-2xl font-bold">{config.minSampleSizeIndustry}</p>
+            <p className="text-xs text-muted-foreground">minimum samples</p>
+          </div>
+          <div className="p-4 border rounded-md">
+            <p className="text-sm font-medium">Company Size Benchmark</p>
+            <p className="text-2xl font-bold">{config.minSampleSizeCompanySize}</p>
+            <p className="text-xs text-muted-foreground">minimum samples</p>
+          </div>
+          <div className="p-4 border rounded-md">
+            <p className="text-sm font-medium">Country Benchmark</p>
+            <p className="text-2xl font-bold">{config.minSampleSizeCountry}</p>
+            <p className="text-xs text-muted-foreground">minimum samples</p>
+          </div>
+          <div className="p-4 border rounded-md col-span-2">
+            <p className="text-sm font-medium">Industry + Company Size Benchmark</p>
+            <p className="text-2xl font-bold">{config.minSampleSizeIndustryCompanySize}</p>
+            <p className="text-xs text-muted-foreground">minimum samples</p>
+          </div>
+        </div>
+        <Button onClick={() => {
+          setConfigForm(config);
+          setIsEditing(true);
+        }} data-testid="button-edit-benchmark-config">
+          <Edit className="mr-2 h-4 w-4" />
+          Edit Configuration
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="minSampleSizeOverall">Overall Benchmark (min samples)</Label>
+          <Input
+            id="minSampleSizeOverall"
+            type="number"
+            min="1"
+            value={configForm.minSampleSizeOverall}
+            onChange={(e) => setConfigForm({ ...configForm, minSampleSizeOverall: parseInt(e.target.value) })}
+            data-testid="input-min-sample-overall"
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="minSampleSizeIndustry">Industry Benchmark (min samples)</Label>
+          <Input
+            id="minSampleSizeIndustry"
+            type="number"
+            min="1"
+            value={configForm.minSampleSizeIndustry}
+            onChange={(e) => setConfigForm({ ...configForm, minSampleSizeIndustry: parseInt(e.target.value) })}
+            data-testid="input-min-sample-industry"
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="minSampleSizeCompanySize">Company Size Benchmark (min samples)</Label>
+          <Input
+            id="minSampleSizeCompanySize"
+            type="number"
+            min="1"
+            value={configForm.minSampleSizeCompanySize}
+            onChange={(e) => setConfigForm({ ...configForm, minSampleSizeCompanySize: parseInt(e.target.value) })}
+            data-testid="input-min-sample-company-size"
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="minSampleSizeCountry">Country Benchmark (min samples)</Label>
+          <Input
+            id="minSampleSizeCountry"
+            type="number"
+            min="1"
+            value={configForm.minSampleSizeCountry}
+            onChange={(e) => setConfigForm({ ...configForm, minSampleSizeCountry: parseInt(e.target.value) })}
+            data-testid="input-min-sample-country"
+          />
+        </div>
+        <div className="space-y-2 col-span-2">
+          <Label htmlFor="minSampleSizeIndustryCompanySize">Industry + Company Size Benchmark (min samples)</Label>
+          <Input
+            id="minSampleSizeIndustryCompanySize"
+            type="number"
+            min="1"
+            value={configForm.minSampleSizeIndustryCompanySize}
+            onChange={(e) => setConfigForm({ ...configForm, minSampleSizeIndustryCompanySize: parseInt(e.target.value) })}
+            data-testid="input-min-sample-industry-company-size"
+          />
+        </div>
+      </div>
+      <div className="flex gap-2">
+        <Button onClick={() => setIsEditing(false)} variant="outline" data-testid="button-cancel-benchmark-config">
+          Cancel
+        </Button>
+        <Button onClick={() => updateConfig.mutate(configForm)} data-testid="button-save-benchmark-config">
+          Save Configuration
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+// Benchmarks by Model Component
+function BenchmarksByModel() {
+  const { toast } = useToast();
+  const [selectedModelId, setSelectedModelId] = useState<string>('');
+
+  const { data: models } = useQuery<Model[]>({
+    queryKey: ['/api/models'],
+  });
+
+  const { data: benchmarks, isLoading: benchmarksLoading } = useQuery({
+    queryKey: ['/api/benchmarks', selectedModelId, 'all'],
+    enabled: !!selectedModelId,
+  });
+
+  const calculateBenchmarks = useMutation({
+    mutationFn: (modelId: string) =>
+      apiRequest(`/api/benchmarks/calculate/${modelId}`, 'POST'),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/benchmarks', selectedModelId, 'all'] });
+      toast({ title: 'Benchmarks calculated successfully' });
+    },
+    onError: () => {
+      toast({ title: 'Failed to calculate benchmarks', variant: 'destructive' });
+    },
+  });
+
+  return (
+    <div className="space-y-4">
+      <div className="space-y-2">
+        <Label htmlFor="benchmark-model-select">Select Model</Label>
+        <div className="flex gap-2">
+          <Select value={selectedModelId} onValueChange={setSelectedModelId}>
+            <SelectTrigger id="benchmark-model-select" data-testid="select-benchmark-model">
+              <SelectValue placeholder="Choose a model" />
+            </SelectTrigger>
+            <SelectContent>
+              {models?.map((model) => (
+                <SelectItem key={model.id} value={model.id}>
+                  {model.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {selectedModelId && (
+            <Button
+              onClick={() => calculateBenchmarks.mutate(selectedModelId)}
+              disabled={calculateBenchmarks.isPending}
+              data-testid="button-calculate-benchmarks"
+            >
+              <BarChart3 className="mr-2 h-4 w-4" />
+              {calculateBenchmarks.isPending ? 'Calculating...' : 'Calculate Benchmarks'}
+            </Button>
+          )}
+        </div>
+      </div>
+
+      {selectedModelId && benchmarksLoading && (
+        <p className="text-muted-foreground">Loading benchmarks...</p>
+      )}
+
+      {selectedModelId && benchmarks && benchmarks.length === 0 && (
+        <p className="text-muted-foreground">
+          No benchmarks available for this model. Click "Calculate Benchmarks" to generate them.
+        </p>
+      )}
+
+      {selectedModelId && benchmarks && benchmarks.length > 0 && (
+        <div className="space-y-4">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Segment Type</TableHead>
+                <TableHead>Industry</TableHead>
+                <TableHead>Company Size</TableHead>
+                <TableHead>Country</TableHead>
+                <TableHead>Mean Score</TableHead>
+                <TableHead>Sample Size</TableHead>
+                <TableHead>Updated At</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {benchmarks.map((benchmark: any) => (
+                <TableRow key={benchmark.id} data-testid={`benchmark-row-${benchmark.id}`}>
+                  <TableCell>
+                    <Badge variant={benchmark.segmentType === 'overall' ? 'default' : 'secondary'}>
+                      {benchmark.segmentType.replace(/_/g, ' ')}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>{benchmark.industry || '-'}</TableCell>
+                  <TableCell>{benchmark.companySize || '-'}</TableCell>
+                  <TableCell>{benchmark.country || '-'}</TableCell>
+                  <TableCell className="font-bold">{benchmark.meanScore}</TableCell>
+                  <TableCell>{benchmark.sampleSize}</TableCell>
+                  <TableCell>{new Date(benchmark.updatedAt).toLocaleDateString()}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function Admin() {
   const { toast } = useToast();
   const { user: currentUser } = useAuth();
@@ -2234,21 +2481,34 @@ export default function Admin() {
               )}
 
               {activeSection === 'benchmarks' && (
-              <Card className="p-6">
-                <div className="flex justify-between items-center mb-6">
-                  <h2 className="text-xl font-bold">Benchmark Management</h2>
-                  <Button data-testid="button-rebuild-benchmarks" disabled>
-                    <BarChart3 className="mr-2 h-4 w-4" />
-                    Rebuild Benchmarks
-                  </Button>
-                </div>
-                <p className="text-muted-foreground">
-                  Configure and manage industry benchmarks. Benchmarks are automatically updated nightly.
-                </p>
-                <p className="text-sm text-muted-foreground mt-4">
-                  Benchmark calculation coming soon.
-                </p>
-              </Card>
+              <div className="space-y-6">
+                <Card className="p-6">
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center">
+                      <h2 className="text-xl font-bold">Benchmark Configuration</h2>
+                    </div>
+                    
+                    <p className="text-muted-foreground">
+                      Configure minimum sample sizes required for each benchmark segment type. Segments with fewer samples will not be displayed to users.
+                    </p>
+                    
+                    <BenchmarkConfig />
+                  </div>
+                </Card>
+
+                <Card className="p-6">
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center">
+                      <h2 className="text-xl font-bold">Model Benchmarks</h2>
+                      <p className="text-sm text-muted-foreground">
+                        Select a model to view and manage its benchmarks
+                      </p>
+                    </div>
+                    
+                    <BenchmarksByModel />
+                  </div>
+                </Card>
+              </div>
               )}
 
               {activeSection === 'import' && (
