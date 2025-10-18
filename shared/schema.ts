@@ -409,3 +409,63 @@ export type InsertImportBatch = z.infer<typeof insertImportBatchSchema>;
 
 export type KnowledgeDocument = typeof knowledgeDocuments.$inferSelect;
 export type InsertKnowledgeDocument = z.infer<typeof insertKnowledgeDocumentSchema>;
+
+// Model export/import file format (.model files)
+export const modelExportFormatSchema = z.object({
+  formatVersion: z.string().default("1.0"),
+  exportedAt: z.string(), // ISO timestamp
+  model: z.object({
+    name: z.string(),
+    slug: z.string(),
+    description: z.string(),
+    version: z.string(),
+    estimatedTime: z.string().nullable(),
+    status: z.string(),
+    featured: z.boolean(),
+    imageUrl: z.string().nullable(),
+    maturityScale: z.array(z.object({
+      id: z.string(),
+      name: z.string(),
+      description: z.string(),
+      minScore: z.number(),
+      maxScore: z.number(),
+    })).nullable(),
+    generalResources: z.array(z.object({
+      id: z.string(),
+      title: z.string(),
+      description: z.string().optional(),
+      link: z.string().optional(),
+    })).nullable(),
+  }),
+  dimensions: z.array(z.object({
+    key: z.string(),
+    label: z.string(),
+    description: z.string().nullable(),
+    order: z.number(),
+  })),
+  questions: z.array(z.object({
+    dimensionKey: z.string().nullable(), // References dimension.key
+    text: z.string(),
+    type: z.string(),
+    order: z.number(),
+    minValue: z.number().nullable(),
+    maxValue: z.number().nullable(),
+    unit: z.string().nullable(),
+    placeholder: z.string().nullable(),
+    improvementStatement: z.string().nullable(),
+    resourceTitle: z.string().nullable(),
+    resourceLink: z.string().nullable(),
+    resourceDescription: z.string().nullable(),
+    answers: z.array(z.object({
+      text: z.string(),
+      score: z.number(),
+      order: z.number(),
+      improvementStatement: z.string().nullable(),
+      resourceTitle: z.string().nullable(),
+      resourceLink: z.string().nullable(),
+      resourceDescription: z.string().nullable(),
+    })),
+  })),
+});
+
+export type ModelExportFormat = z.infer<typeof modelExportFormatSchema>;

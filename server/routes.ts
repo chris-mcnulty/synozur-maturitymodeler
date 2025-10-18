@@ -2023,6 +2023,194 @@ Respond in JSON format:
     }
   });
 
+  // Export complete model definition as .model JSON file
+  app.get("/api/models/:id/export-model", ensureAdminOrModeler, async (req, res) => {
+    try {
+      const model = await storage.getModel(req.params.id);
+      if (!model) {
+        return res.status(404).json({ error: "Model not found" });
+      }
+
+      // Fetch all related data
+      const dimensions = await storage.getDimensionsByModelId(model.id);
+      const questions = await storage.getQuestionsByModelId(model.id);
+      
+      // Create dimension key map for lookups
+      const dimensionIdToKey = new Map<string, string>();
+      dimensions.forEach(d => dimensionIdToKey.set(d.id, d.key));
+
+      // Build questions array with embedded answers
+      const questionsData = await Promise.all(
+        questions.map(async (q) => {
+          const answers = await storage.getAnswersByQuestionId(q.id);
+          return {
+            dimensionKey: q.dimensionId ? dimensionIdToKey.get(q.dimensionId) || null : null,
+            text: q.text,
+            type: q.type,
+            order: q.order,
+            minValue: q.minValue,
+            maxValue: q.maxValue,
+            unit: q.unit,
+            placeholder: q.placeholder,
+            improvementStatement: q.improvementStatement,
+            resourceTitle: q.resourceTitle,
+            resourceLink: q.resourceLink,
+            resourceDescription: q.resourceDescription,
+            answers: answers.map(a => ({
+              text: a.text,
+              score: a.score,
+              order: a.order,
+              improvementStatement: a.improvementStatement,
+              resourceTitle: a.resourceTitle,
+              resourceLink: a.resourceLink,
+              resourceDescription: a.resourceDescription,
+            })),
+          };
+        })
+      );
+
+      // Build the export format
+      const exportData: schema.ModelExportFormat = {
+        formatVersion: "1.0",
+        exportedAt: new Date().toISOString(),
+        model: {
+          name: model.name,
+          slug: model.slug,
+          description: model.description,
+          version: model.version,
+          estimatedTime: model.estimatedTime,
+          status: model.status,
+          featured: model.featured,
+          imageUrl: model.imageUrl,
+          maturityScale: model.maturityScale as any,
+          generalResources: model.generalResources as any,
+        },
+        dimensions: dimensions.map(d => ({
+          key: d.key,
+          label: d.label,
+          description: d.description,
+          order: d.order,
+        })),
+        questions: questionsData,
+      };
+
+      res.setHeader('Content-Type', 'application/json');
+      res.setHeader('Content-Disposition', `attachment; filename="${model.slug}.model"`);
+      res.json(exportData);
+    } catch (error) {
+      console.error('Model export error:', error);
+      res.status(500).json({ error: "Failed to export model" });
+    }
+  });
+
+  // Import complete model definition from .model JSON file
+  app.post("/api/models/import-model", ensureAdminOrModeler, async (req, res) => {
+    try {
+      const { modelData, newName, newSlug } = req.body;
+
+      // Validate the import data
+      const validationResult = schema.modelExportFormatSchema.safeParse(modelData);
+      if (!validationResult.success) {
+        return res.status(400).json({ 
+          error: "Invalid model file format", 
+          details: validationResult.error.issues 
+        });
+      }
+
+      const data = validationResult.data;
+
+      // Use provided name/slug or fall back to original
+      const modelName = newName || data.model.name;
+      const modelSlug = newSlug || data.model.slug;
+
+      // Check if slug already exists
+      const existingModel = await storage.getModelBySlug(modelSlug);
+      if (existingModel) {
+        return res.status(400).json({ 
+          error: "A model with this slug already exists. Please provide a different slug." 
+        });
+      }
+
+      // Create the model
+      const createdModel = await storage.createModel({
+        name: modelName,
+        slug: modelSlug,
+        description: data.model.description,
+        version: data.model.version,
+        estimatedTime: data.model.estimatedTime,
+        status: data.model.status,
+        featured: data.model.featured,
+        imageUrl: data.model.imageUrl,
+        maturityScale: data.model.maturityScale as any,
+        generalResources: data.model.generalResources as any,
+      });
+
+      // Create dimensions and build key-to-ID map
+      const dimensionKeyToId = new Map<string, string>();
+      for (const dim of data.dimensions) {
+        const createdDimension = await storage.createDimension({
+          modelId: createdModel.id,
+          key: dim.key,
+          label: dim.label,
+          description: dim.description,
+          order: dim.order,
+        });
+        dimensionKeyToId.set(dim.key, createdDimension.id);
+      }
+
+      // Create questions and answers
+      let questionsCreated = 0;
+      let answersCreated = 0;
+      
+      for (const q of data.questions) {
+        const createdQuestion = await storage.createQuestion({
+          modelId: createdModel.id,
+          dimensionId: q.dimensionKey ? dimensionKeyToId.get(q.dimensionKey) || null : null,
+          text: q.text,
+          type: q.type,
+          order: q.order,
+          minValue: q.minValue,
+          maxValue: q.maxValue,
+          unit: q.unit,
+          placeholder: q.placeholder,
+          improvementStatement: q.improvementStatement,
+          resourceTitle: q.resourceTitle,
+          resourceLink: q.resourceLink,
+          resourceDescription: q.resourceDescription,
+        });
+        questionsCreated++;
+
+        // Create answers for this question
+        for (const a of q.answers) {
+          await storage.createAnswer({
+            questionId: createdQuestion.id,
+            text: a.text,
+            score: a.score,
+            order: a.order,
+            improvementStatement: a.improvementStatement,
+            resourceTitle: a.resourceTitle,
+            resourceLink: a.resourceLink,
+            resourceDescription: a.resourceDescription,
+          });
+          answersCreated++;
+        }
+      }
+
+      res.json({ 
+        success: true, 
+        model: createdModel,
+        stats: {
+          dimensionsCreated: data.dimensions.length,
+          questionsCreated,
+          answersCreated,
+        }
+      });
+    } catch (error) {
+      console.error('Model import error:', error);
+      res.status(500).json({ error: "Failed to import model" });
+    }
+  });
+
   // Export assessment results
   app.get("/api/assessments/:id/export", async (req, res) => {
     try {
