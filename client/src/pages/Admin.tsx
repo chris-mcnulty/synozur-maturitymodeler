@@ -195,9 +195,17 @@ function BenchmarksByModel() {
     queryKey: ['/api/models'],
   });
 
-  const { data: benchmarks, isLoading: benchmarksLoading } = useQuery({
+  const { data: benchmarks, isLoading: benchmarksLoading } = useQuery<any[]>({
     queryKey: ['/api/benchmarks', selectedModelId, 'all'],
     enabled: !!selectedModelId,
+    queryFn: async () => {
+      if (!selectedModelId) return [];
+      const response = await fetch(`/api/benchmarks/${selectedModelId}/all`, {
+        credentials: 'include',
+      });
+      if (!response.ok) throw new Error('Failed to fetch benchmarks');
+      return response.json();
+    },
   });
 
   const calculateBenchmarks = useMutation({
@@ -986,7 +994,7 @@ export default function Admin() {
   });
 
   // Fetch knowledge documents
-  const { data: knowledgeDocuments = [], refetch: refetchKnowledgeDocs } = useQuery<Array<{
+  const { data: knowledgeDocuments = [], isLoading: knowledgeDocsLoading, error: knowledgeDocsError, refetch: refetchKnowledgeDocs } = useQuery<Array<{
     id: string;
     fileName: string;
     fileUrl: string;
@@ -999,11 +1007,22 @@ export default function Admin() {
   }>>({
     queryKey: ['/api/knowledge/documents', knowledgeFilter],
     queryFn: async () => {
-      let url = '/api/knowledge/documents';
-      if (knowledgeFilter !== 'all') {
-        url += `?scope=${knowledgeFilter}`;
+      try {
+        let url = '/api/knowledge/documents';
+        if (knowledgeFilter !== 'all') {
+          url += `?scope=${knowledgeFilter}`;
+        }
+        const response = await fetch(url, {
+          credentials: 'include',
+        });
+        if (!response.ok) {
+          throw new Error(`Failed to fetch knowledge documents: ${response.statusText}`);
+        }
+        return response.json();
+      } catch (error) {
+        console.error('Knowledge documents fetch error:', error);
+        throw error;
       }
-      return fetch(url).then(r => r.json());
     },
   });
 
@@ -2798,7 +2817,21 @@ export default function Admin() {
                       </div>
                     </div>
 
-                    {knowledgeDocuments.length === 0 ? (
+                    {knowledgeDocsError ? (
+                      <div className="text-center py-12">
+                        <div className="text-destructive mb-4">
+                          <p className="font-semibold">Error loading knowledge documents</p>
+                          <p className="text-sm mt-2">{String(knowledgeDocsError)}</p>
+                        </div>
+                        <Button onClick={() => refetchKnowledgeDocs()} data-testid="button-retry-knowledge-docs">
+                          Retry
+                        </Button>
+                      </div>
+                    ) : knowledgeDocsLoading ? (
+                      <div className="text-center py-12 text-muted-foreground">
+                        <p>Loading documents...</p>
+                      </div>
+                    ) : knowledgeDocuments.length === 0 ? (
                       <div className="text-center py-12 text-muted-foreground">
                         <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
                         <p>No documents uploaded yet</p>

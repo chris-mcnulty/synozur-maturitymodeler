@@ -12,7 +12,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect } from "react";
-import { CheckCircle2, AlertCircle, Mail } from "lucide-react";
+import { CheckCircle2, AlertCircle, Mail, Lock } from "lucide-react";
 import type { Result, Assessment, Model } from "@shared/schema";
 
 // Standard dropdown options
@@ -90,6 +90,7 @@ export default function Profile() {
   const { user, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
   const [isEditing, setIsEditing] = useState(false);
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [profileForm, setProfileForm] = useState({
     email: '',
     name: '',
@@ -98,6 +99,11 @@ export default function Profile() {
     jobTitle: '',
     industry: '',
     country: '',
+  });
+  const [passwordForm, setPasswordForm] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: '',
   });
 
   // Update form when user data loads
@@ -210,6 +216,25 @@ export default function Profile() {
     return true;
   };
 
+  // Validate password requirements
+  const validatePassword = (password: string): { valid: boolean; errors: string[] } => {
+    const errors: string[] = [];
+    
+    if (password.length < 8) {
+      errors.push('Password must be at least 8 characters long');
+    }
+    
+    if (!/[A-Z]/.test(password)) {
+      errors.push('Password must contain at least one uppercase letter');
+    }
+    
+    if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
+      errors.push('Password must contain at least one punctuation mark');
+    }
+    
+    return { valid: errors.length === 0, errors };
+  };
+
   // Update profile mutation
   const updateProfile = useMutation({
     mutationFn: async () => {
@@ -253,6 +278,47 @@ export default function Profile() {
       toast({
         title: "Error",
         description: error.message || "Failed to send verification email",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Change password mutation
+  const changePassword = useMutation({
+    mutationFn: async () => {
+      // Validate current password is provided
+      if (!passwordForm.currentPassword) {
+        throw new Error('Current password is required');
+      }
+      
+      // Validate new password matches confirmation
+      if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+        throw new Error('New passwords do not match');
+      }
+      
+      // Validate password requirements
+      const validation = validatePassword(passwordForm.newPassword);
+      if (!validation.valid) {
+        throw new Error(validation.errors[0]);
+      }
+      
+      return apiRequest('/api/auth/change-password', 'POST', {
+        currentPassword: passwordForm.currentPassword,
+        newPassword: passwordForm.newPassword,
+      });
+    },
+    onSuccess: () => {
+      setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
+      setIsChangingPassword(false);
+      toast({
+        title: "Password changed",
+        description: "Your password has been updated successfully.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to change password",
         variant: "destructive",
       });
     },
@@ -450,6 +516,79 @@ export default function Profile() {
                         Edit Profile
                       </Button>
                     )}
+                  </div>
+                )}
+              </Card>
+
+              {/* Password Change Card */}
+              <Card className="p-6 mt-6">
+                <h2 className="text-xl font-bold mb-6">Change Password</h2>
+                {!isChangingPassword ? (
+                  <Button 
+                    onClick={() => setIsChangingPassword(true)}
+                    data-testid="button-change-password"
+                    className="w-full"
+                  >
+                    <Lock className="mr-2 h-4 w-4" />
+                    Change Password
+                  </Button>
+                ) : (
+                  <div className="space-y-4">
+                    <div>
+                      <Label htmlFor="current-password">Current Password</Label>
+                      <Input
+                        id="current-password"
+                        type="password"
+                        value={passwordForm.currentPassword}
+                        onChange={(e) => setPasswordForm({ ...passwordForm, currentPassword: e.target.value })}
+                        data-testid="input-current-password"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="new-password">New Password</Label>
+                      <Input
+                        id="new-password"
+                        type="password"
+                        value={passwordForm.newPassword}
+                        onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
+                        data-testid="input-new-password"
+                      />
+                      <p className="text-xs text-muted-foreground mt-2">
+                        Password must be at least 8 characters, include one uppercase letter, and one punctuation mark (!@#$%^&*(),.?":{}|&lt;&gt;)
+                      </p>
+                    </div>
+                    <div>
+                      <Label htmlFor="confirm-password">Confirm New Password</Label>
+                      <Input
+                        id="confirm-password"
+                        type="password"
+                        value={passwordForm.confirmPassword}
+                        onChange={(e) => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
+                        data-testid="input-confirm-password"
+                      />
+                    </div>
+                    <div className="flex gap-2">
+                      <Button 
+                        className="flex-1" 
+                        onClick={() => changePassword.mutate()}
+                        disabled={changePassword.isPending}
+                        data-testid="button-submit-password-change"
+                      >
+                        {changePassword.isPending ? 'Changing...' : 'Change Password'}
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        className="flex-1" 
+                        onClick={() => {
+                          setIsChangingPassword(false);
+                          setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
+                        }}
+                        disabled={changePassword.isPending}
+                        data-testid="button-cancel-password-change"
+                      >
+                        Cancel
+                      </Button>
+                    </div>
                   </div>
                 )}
               </Card>

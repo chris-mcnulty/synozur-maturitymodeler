@@ -13,7 +13,7 @@ import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
 import { aiService } from "./services/ai-service";
 import { validateImportData, executeImport, type ImportExportData } from "./services/import-service";
 import { z } from "zod";
-import { scrypt, randomBytes, createHash } from "crypto";
+import { scrypt, randomBytes, createHash, timingSafeEqual } from "crypto";
 import { promisify } from "util";
 
 const scryptAsync = promisify(scrypt);
@@ -22,6 +22,21 @@ async function hashPassword(password: string) {
   const salt = randomBytes(16).toString("hex");
   const buf = (await scryptAsync(password, salt, 64)) as Buffer;
   return `${buf.toString("hex")}.${salt}`;
+}
+
+async function comparePasswords(supplied: string, stored: string) {
+  try {
+    const [hashed, salt] = stored.split(".");
+    if (!hashed || !salt) {
+      return false;
+    }
+    const hashedBuf = Buffer.from(hashed, "hex");
+    const suppliedBuf = (await scryptAsync(supplied, salt, 64)) as Buffer;
+    return timingSafeEqual(hashedBuf, suppliedBuf);
+  } catch (error) {
+    console.error('Password comparison error:', error);
+    return false;
+  }
 }
 
 const __filename = fileURLToPath(import.meta.url);
@@ -2645,6 +2660,61 @@ If you didn't request this, please ignore this email—your password will remain
         error: "Failed to reset password", 
         details: error instanceof Error ? error.message : 'Unknown error' 
       });
+    }
+  });
+
+  // Change password (for logged-in users)
+  app.post('/api/auth/change-password', async (req, res) => {
+    try {
+      // Ensure user is authenticated
+      if (!req.isAuthenticated() || !req.user) {
+        return res.status(401).json({ error: 'Unauthorized' });
+      }
+
+      const changePasswordSchema = z.object({
+        currentPassword: z.string().min(1, "Current password is required"),
+        newPassword: z.string()
+          .min(8, "Password must be at least 8 characters")
+          .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
+          .regex(/[!@#$%^&*(),.?":{}|<>]/, "Password must contain at least one punctuation mark"),
+      });
+
+      const validationResult = changePasswordSchema.safeParse(req.body);
+      if (!validationResult.success) {
+        return res.status(400).json({ 
+          error: "Invalid request", 
+          details: validationResult.error.issues.map((i: any) => i.message).join(", ")
+        });
+      }
+
+      const { currentPassword, newPassword } = validationResult.data;
+
+      // Get current user from database
+      const users = await db.select().from(schema.users).where(eq(schema.users.id, req.user.id));
+      if (users.length === 0) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+
+      const user = users[0];
+
+      // Verify current password
+      const isCurrentPasswordValid = await comparePasswords(currentPassword, user.password);
+      if (!isCurrentPasswordValid) {
+        return res.status(400).json({ error: 'Current password is incorrect' });
+      }
+
+      // Hash the new password
+      const hashedPassword = await hashPassword(newPassword);
+
+      // Update user password
+      await db.update(schema.users)
+        .set({ password: hashedPassword })
+        .where(eq(schema.users.id, req.user.id));
+
+      res.json({ success: true, message: 'Password changed successfully' });
+    } catch (error) {
+      console.error('Password change error:', error);
+      res.status(500).json({ error: 'Failed to change password' });
     }
   });
 
