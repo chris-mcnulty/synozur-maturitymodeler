@@ -340,6 +340,25 @@ export const insertAiContentReviewSchema = createInsertSchema(aiContentReviews).
   reviewedAt: true,
 });
 
+// Knowledge documents table for company-wide and model-specific reference materials
+export const knowledgeDocuments = pgTable("knowledge_documents", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  fileUrl: text("file_url").notNull(),
+  fileSize: integer("file_size").notNull(), // in bytes
+  fileType: text("file_type").notNull(), // pdf, docx, doc, txt, md
+  scope: text("scope").notNull(), // company-wide, model-specific
+  modelId: varchar("model_id").references(() => models.id, { onDelete: "cascade" }), // null for company-wide docs
+  description: text("description"),
+  uploadedBy: varchar("uploaded_by").notNull().references(() => users.id, { onDelete: "cascade" }),
+  uploadedAt: timestamp("uploaded_at").defaultNow().notNull(),
+});
+
+export const insertKnowledgeDocumentSchema = createInsertSchema(knowledgeDocuments).omit({
+  id: true,
+  uploadedAt: true,
+});
+
 // Types
 export type UserRole = 'user' | 'modeler' | 'admin';
 
@@ -387,3 +406,6 @@ export type InsertAiContentReview = z.infer<typeof insertAiContentReviewSchema>;
 
 export type ImportBatch = typeof importBatches.$inferSelect;
 export type InsertImportBatch = z.infer<typeof insertImportBatchSchema>;
+
+export type KnowledgeDocument = typeof knowledgeDocuments.$inferSelect;
+export type InsertKnowledgeDocument = z.infer<typeof insertKnowledgeDocumentSchema>;
