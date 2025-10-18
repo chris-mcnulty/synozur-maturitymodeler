@@ -355,7 +355,7 @@ FORMATTING RULES:
 - ${userContext ? `Personalize deeply for ${userContext.jobTitle} perspective in ${userContext.industry}` : 'Maintain strategic focus'}
 - Write naturally without word count constraints`;
 
-      const completion = await this.callOpenAI(prompt);
+      const completion = await this.callOpenAI(prompt, undefined, false); // Bypass word limit for comprehensive summary
       
       if (!completion) {
         throw new Error('Failed to generate maturity summary');
@@ -443,7 +443,7 @@ FORMATTING RULES:
 - ${userContext ? `Personalize for ${userContext.jobTitle} in ${userContext.industry}` : 'Keep strategic'}
 - End with partnership invitation`;
 
-      const completion = await this.callOpenAI(prompt);
+      const completion = await this.callOpenAI(prompt, undefined, false); // Bypass word limit for comprehensive roadmap
       
       if (!completion) {
         throw new Error('Failed to generate recommendations summary');
@@ -600,15 +600,20 @@ Return ONLY the rewritten answer text (30 words MAX).`;
   }
 
   // Core OpenAI API call with retry logic
-  private async callOpenAI(prompt: string, responseFormat?: z.ZodSchema): Promise<string> {
+  private async callOpenAI(prompt: string, responseFormat?: z.ZodSchema, enforceShortResponse: boolean = true): Promise<string> {
     let lastError: Error | null = null;
     
     for (let attempt = 1; attempt <= this.maxRetries; attempt++) {
       try {
+        // For comprehensive summaries and roadmaps, use a different system message
+        const systemMessage = enforceShortResponse
+          ? 'You are an expert maturity assessment consultant. CRITICAL RULES: ALL responses must be MAXIMUM 30 words (2 lines). Be specific, actionable, and concise. NEVER generate URLs or links - these will be added manually. Focus on clear improvement actions only.'
+          : 'You are an expert transformation consultant from The Synozur Alliance LLC. Provide comprehensive, insightful analysis that helps organizations find their North Star. Be detailed, strategic, and empathetic. NEVER generate URLs or links - these will be added manually.';
+        
         const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
           {
             role: 'system',
-            content: 'You are an expert maturity assessment consultant. CRITICAL RULES: ALL responses must be MAXIMUM 30 words (2 lines). Be specific, actionable, and concise. NEVER generate URLs or links - these will be added manually. Focus on clear improvement actions only.'
+            content: systemMessage
           },
           {
             role: 'user',
