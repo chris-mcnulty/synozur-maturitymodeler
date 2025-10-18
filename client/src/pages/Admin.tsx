@@ -1706,10 +1706,16 @@ export default function Admin() {
               <Card className="p-6">
                 <div className="flex justify-between items-center mb-6">
                   <h2 className="text-xl font-bold">Assessment Results</h2>
-                  <Button variant="outline" onClick={exportResultsToCSV} data-testid="button-export-results">
-                    <FileSpreadsheet className="mr-2 h-4 w-4" />
-                    Export CSV
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button variant="outline" onClick={exportResultsToCSV} data-testid="button-export-results">
+                      <FileSpreadsheet className="mr-2 h-4 w-4" />
+                      Export CSV
+                    </Button>
+                    <Button variant="outline" onClick={() => setShowAnalyticalExport(true)} data-testid="button-export-analytical">
+                      <Download className="mr-2 h-4 w-4" />
+                      Export for Analysis
+                    </Button>
+                  </div>
                 </div>
                 
                 <Table>
