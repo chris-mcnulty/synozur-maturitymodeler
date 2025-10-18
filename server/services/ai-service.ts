@@ -15,6 +15,10 @@ const openai = new OpenAI({
 });
 
 // AI Playbook grounding for AI Maturity Assessment model
+// REMOVED: Baked-in grounding content - now using only user-uploaded knowledge base documents
+const AI_PLAYBOOK_GROUNDING = ``; // Empty - knowledge base documents only
+
+/* HISTORICAL REFERENCE - REMOVED BAKED-IN CONTENT:
 const AI_PLAYBOOK_GROUNDING = `
 SYNOZUR AI MATURITY INSIGHTS - Leading AI Playbooks Analysis
 
@@ -128,6 +132,7 @@ TRANSFORMATION ROADMAP PRIORITIES:
 - Empower talent and foster culture
 - Continuously learn and adapt
 `;
+*/
 
 // Types for AI service
 export interface GenerateOptions {
@@ -267,10 +272,10 @@ class AIService {
   // Generate a hash representing the current knowledge base version for cache invalidation
   private async getKnowledgeVersionHash(modelId?: string): Promise<string> {
     try {
-      // Fetch document metadata (id + updatedAt) for version fingerprint
+      // Fetch document metadata (id + uploadedAt) for version fingerprint
       let documentsQuery = db.select({
         id: knowledgeDocuments.id,
-        updatedAt: knowledgeDocuments.updatedAt
+        uploadedAt: knowledgeDocuments.uploadedAt
       }).from(knowledgeDocuments);
       
       if (modelId) {
@@ -296,7 +301,7 @@ class AIService {
       // Create a stable fingerprint from document IDs and timestamps
       const fingerprint = docs
         .sort((a, b) => a.id.localeCompare(b.id)) // Ensure stable ordering
-        .map(doc => `${doc.id}:${doc.updatedAt.toISOString()}`)
+        .map(doc => `${doc.id}:${doc.uploadedAt.toISOString()}`)
         .join('|');
       
       // Return hash of fingerprint
@@ -336,7 +341,7 @@ class AIService {
       const docs = await documentsQuery;
       
       if (docs.length === 0) {
-        return AI_PLAYBOOK_GROUNDING; // Fallback to hard-coded grounding
+        return ''; // No knowledge documents available - AI will respond without grounding
       }
       
       // Extract text from all documents
@@ -352,13 +357,13 @@ class AIService {
         })
       );
       
-      // Combine extracted knowledge with hard-coded grounding
-      const knowledgeContext = `# KNOWLEDGE BASE\n\n${extractedTexts.join('\n')}\n\n${AI_PLAYBOOK_GROUNDING}`;
+      // Use only user-uploaded knowledge documents (no baked-in grounding)
+      const knowledgeContext = `# KNOWLEDGE BASE\n\n${extractedTexts.join('\n')}`;
       
       return knowledgeContext;
     } catch (error) {
       console.error('Error fetching knowledge context:', error);
-      return AI_PLAYBOOK_GROUNDING; // Fallback to hard-coded grounding
+      return ''; // Return empty on error - AI will respond without grounding
     }
   }
 
@@ -787,16 +792,8 @@ Company Size: ${user.companySize || 'Not specified'}
 Role: ${user.jobTitle || 'Not specified'}
 Country: ${user.country || 'Not specified'}` : 'User context not available';
 
-    // Include AI Playbook grounding for AI Maturity Assessment model
-    const isAIModel = model.name?.toLowerCase().includes('ai maturity');
-    const grounding = isAIModel ? `
-STRATEGIC GROUNDING:
-${AI_PLAYBOOK_GROUNDING}
-
-Use the above insights from leading AI playbooks to inform your recommendations.
-Reference specific playbook insights when relevant.
-Align recommendations with the maturity model levels and transformation priorities.
-` : '';
+    // No baked-in grounding - using only knowledge base documents uploaded by users
+    const grounding = '';
 
     return `Generate personalized recommendations for this maturity assessment:
 
@@ -821,7 +818,6 @@ Each recommendation should include:
 
 Focus on the lowest-scoring dimensions first.
 Make recommendations specific to the industry and company size when possible.
-${isAIModel ? 'Ground recommendations in the AI playbook insights and cite specific companies or frameworks when relevant.' : ''}
 
 Return as JSON with structure:
 {

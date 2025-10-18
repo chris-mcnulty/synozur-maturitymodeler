@@ -1061,11 +1061,14 @@ export default function Admin() {
       }
       
       // Step 3: Create document metadata
+      // Extract file extension from filename (e.g., "document.docx" -> "docx")
+      const fileExtension = file.name.split('.').pop()?.toLowerCase() || '';
+      
       return apiRequest('/api/knowledge/documents', 'POST', {
-        fileName: file.name,
+        name: file.name,
         fileUrl: uploadURL.split('?')[0], // Remove query params
         fileSize: file.size,
-        fileType: file.type || 'application/octet-stream',
+        fileType: fileExtension, // Send file extension, not MIME type
         scope,
         modelId: scope === 'model-specific' ? modelId : null,
         description: description || null,
@@ -1718,8 +1721,8 @@ export default function Admin() {
           </SidebarContent>
         </Sidebar>
 
-        <div className="flex flex-col flex-1">
-          <header className="flex items-center justify-between p-4 border-b">
+        <div className="flex flex-col flex-1 overflow-hidden">
+          <header className="flex items-center justify-between p-4 border-b flex-shrink-0">
             <div className="flex items-center gap-4">
               <SidebarTrigger data-testid="button-sidebar-toggle" />
               <h1 className="text-2xl font-bold">Admin Console</h1>
@@ -1734,7 +1737,7 @@ export default function Admin() {
             </Button>
           </header>
 
-          <main className="flex-1 overflow-auto p-6">
+          <main className="flex-1 overflow-y-auto p-6">
             <div className="max-w-7xl mx-auto space-y-6">
               {activeSection === 'models' && (
               <Card className="p-6">

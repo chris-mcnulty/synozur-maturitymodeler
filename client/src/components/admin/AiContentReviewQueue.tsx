@@ -592,7 +592,7 @@ export function AiContentReviewQueue() {
                         data-testid={`button-reject-${review.id}`}
                       >
                         <XCircle className="h-4 w-4 mr-1" />
-                        Reject All
+                        Reject
                       </Button>
                       <Button
                         variant="default"
@@ -606,7 +606,7 @@ export function AiContentReviewQueue() {
                         data-testid={`button-approve-${review.id}`}
                       >
                         <CheckCircle className="h-4 w-4 mr-1" />
-                        Approve All
+                        Accept
                       </Button>
                     </div>
                   </div>
