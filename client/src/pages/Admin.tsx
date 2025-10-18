@@ -112,6 +112,10 @@ export default function Admin() {
     description?: string;
     link?: string;
   }>>([]);
+  
+  // Analytical export state
+  const [showAnalyticalExport, setShowAnalyticalExport] = useState(false);
+  const [selectedExportModel, setSelectedExportModel] = useState<string>('');
 
   // Fetch models
   const { data: models = [], isLoading: modelsLoading } = useQuery<Model[]>({
@@ -952,6 +956,55 @@ export default function Admin() {
       title: "Export successful",
       description: `Exported ${users.length} user accounts to CSV.`,
     });
+  };
+
+  const handleAnalyticalExport = async () => {
+    if (!selectedExportModel) {
+      toast({
+        title: "No model selected",
+        description: "Please select a model to export.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const model = models.find(m => m.id === selectedExportModel);
+      if (!model) return;
+
+      // Call the analytical export endpoint
+      const response = await fetch(`/api/admin/export/model/${model.slug}/analysis`);
+      
+      if (!response.ok) {
+        throw new Error('Export failed');
+      }
+
+      // Download the JSON file
+      const data = await response.json();
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${model.slug}-analysis-${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+
+      toast({
+        title: "Export successful",
+        description: `Exported ${model.name} data for analysis.`,
+      });
+
+      setShowAnalyticalExport(false);
+      setSelectedExportModel('');
+    } catch (error) {
+      toast({
+        title: "Export failed",
+        description: "Failed to export analytical data.",
+        variant: "destructive",
+      });
+    }
   };
 
   // Calculate statistics
@@ -3069,6 +3122,65 @@ export default function Admin() {
               data-testid="button-save-general-resources"
             >
               Save Changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Analytical Export Dialog */}
+      <Dialog open={showAnalyticalExport} onOpenChange={setShowAnalyticalExport}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Export for Deep Analysis</DialogTitle>
+            <DialogDescription>
+              Export comprehensive assessment data including questions, answers, user responses, and scores for analysis in tools like Copilot Analyst.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="export-model">Select Model</Label>
+              <Select value={selectedExportModel} onValueChange={setSelectedExportModel}>
+                <SelectTrigger id="export-model" data-testid="select-export-model">
+                  <SelectValue placeholder="Choose a model to export" />
+                </SelectTrigger>
+                <SelectContent>
+                  {models.map((model) => (
+                    <SelectItem key={model.id} value={model.id}>
+                      {model.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="rounded-lg bg-muted p-4 space-y-2">
+              <h4 className="font-medium text-sm">Export Includes:</h4>
+              <ul className="text-sm text-muted-foreground space-y-1">
+                <li>• Model metadata and maturity scale</li>
+                <li>• All dimensions with descriptions</li>
+                <li>• All questions with answer options and scores</li>
+                <li>• Complete assessment responses with user context</li>
+                <li>• Overall and dimensional scores for each assessment</li>
+                <li>• User demographics (job title, industry, company size, country)</li>
+              </ul>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => {
+              setShowAnalyticalExport(false);
+              setSelectedExportModel('');
+            }}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleAnalyticalExport}
+              disabled={!selectedExportModel}
+              data-testid="button-confirm-analytical-export"
+            >
+              <Download className="mr-2 h-4 w-4" />
+              Export JSON
             </Button>
           </DialogFooter>
         </DialogContent>
