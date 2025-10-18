@@ -506,10 +506,6 @@ Return ONLY the rewritten answer text (30 words MAX).`;
       const responseFormat = options?.outputFormat === 'json' ? z.object({}).passthrough() : undefined;
       
       const completion = await this.callOpenAI(prompt, responseFormat);
-      
-      if (!completion) {
-        throw new Error('Failed to generate text');
-      }
 
       // If JSON format was requested, parse and return the object
       if (options?.outputFormat === 'json') {
@@ -522,8 +518,9 @@ Return ONLY the rewritten answer text (30 words MAX).`;
       }
 
       return completion;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error in generateText:', error);
+      // Re-throw with original error message for better debugging
       throw error;
     }
   }
@@ -603,7 +600,7 @@ Return ONLY the rewritten answer text (30 words MAX).`;
   }
 
   // Core OpenAI API call with retry logic
-  private async callOpenAI(prompt: string, responseFormat?: z.ZodSchema): Promise<string | null> {
+  private async callOpenAI(prompt: string, responseFormat?: z.ZodSchema): Promise<string> {
     let lastError: Error | null = null;
     
     for (let attempt = 1; attempt <= this.maxRetries; attempt++) {
@@ -626,10 +623,24 @@ Return ONLY the rewritten answer text (30 words MAX).`;
           response_format: responseFormat ? { type: 'json_object' } : undefined,
         });
 
-        return completion.choices[0]?.message?.content || null;
-      } catch (error) {
-        lastError = error as Error;
-        console.error(`OpenAI API attempt ${attempt} failed:`, error);
+        const content = completion.choices[0]?.message?.content;
+        if (!content) {
+          throw new Error('Empty response from AI API');
+        }
+        
+        return content;
+      } catch (error: any) {
+        lastError = error;
+        
+        // Extract meaningful error message from OpenAI error
+        const errorMessage = error?.message || error?.error?.message || 'Unknown error';
+        const errorType = error?.type || error?.error?.type || 'api_error';
+        
+        console.error(`OpenAI API attempt ${attempt} failed:`, {
+          type: errorType,
+          message: errorMessage,
+          status: error?.status,
+        });
         
         if (attempt < this.maxRetries) {
           // Exponential backoff
@@ -638,8 +649,11 @@ Return ONLY the rewritten answer text (30 words MAX).`;
       }
     }
 
+    // Throw the actual error with details instead of returning null
+    const errorMessage = (lastError as any)?.message || (lastError as any)?.error?.message || 'Unknown AI API error';
+    const fullError = new Error(`AI generation failed after ${this.maxRetries} attempts: ${errorMessage}`);
     console.error('All OpenAI API attempts failed:', lastError);
-    return null;
+    throw fullError;
   }
 
   // Build recommendation prompt

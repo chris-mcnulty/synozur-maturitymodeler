@@ -1266,9 +1266,10 @@ Respond in JSON format:
         message: "Resources generated and sent to review queue",
         reviewId: review.id
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to generate resources:', error);
-      res.status(500).json({ error: "Failed to generate resources" });
+      const errorMessage = error?.message || "Failed to generate resources";
+      res.status(500).json({ error: errorMessage });
     }
   });
 
