@@ -83,7 +83,7 @@ const COUNTRIES = [
 
 export default function Auth() {
   const [, setLocation] = useLocation();
-  const { user, loginMutation, registerMutation, isLoading } = useAuth();
+  const { user, loginMutation, registerMutation, isLoading, claimAssessmentAndRedirect } = useAuth();
   const { toast } = useToast();
   const [loginForm, setLoginForm] = useState({ username: "", password: "" });
   const [registerForm, setRegisterForm] = useState({
@@ -98,12 +98,26 @@ export default function Auth() {
     country: "",
   });
 
+  // Parse query parameters for redirect and assessment claim
+  const queryParams = new URLSearchParams(window.location.search);
+  const redirectPath = queryParams.get('redirect');
+  const claimAssessmentId = queryParams.get('claimAssessment');
+
   // Redirect if already logged in
   useEffect(() => {
     if (user) {
-      setLocation("/");
+      // If we have assessment to claim and redirect path, use those
+      if (claimAssessmentId && redirectPath) {
+        claimAssessmentAndRedirect(claimAssessmentId, redirectPath);
+      } else if (redirectPath) {
+        // Just redirect without claiming
+        window.location.href = redirectPath;
+      } else {
+        // Default redirect to home
+        setLocation("/");
+      }
     }
-  }, [user, setLocation]);
+  }, [user, setLocation, claimAssessmentId, redirectPath, claimAssessmentAndRedirect]);
 
   if (isLoading) {
     return (
@@ -115,7 +129,11 @@ export default function Auth() {
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    loginMutation.mutate(loginForm);
+    loginMutation.mutate(loginForm, {
+      onSuccess: () => {
+        // The useEffect will handle redirect and claim after user state updates
+      }
+    });
   };
 
   const handleRegister = (e: React.FormEvent) => {
@@ -145,7 +163,11 @@ export default function Auth() {
       }
     }
     
-    registerMutation.mutate(registerForm);
+    registerMutation.mutate(registerForm, {
+      onSuccess: () => {
+        // The useEffect will handle redirect and claim after user state updates
+      }
+    });
   };
 
   return (

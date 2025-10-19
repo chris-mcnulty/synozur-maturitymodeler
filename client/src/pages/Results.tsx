@@ -708,11 +708,18 @@ export default function Results() {
                     </AlertDescription>
                   </Alert>
                   <div className="flex gap-3">
-                    <Button onClick={() => setLocation('/auth')} data-testid="button-signup-executive">
+                    <Button 
+                      onClick={() => setLocation(`/auth?redirect=/results/${assessmentId}&claimAssessment=${assessmentId}`)} 
+                      data-testid="button-signup-executive"
+                    >
                       <Sparkles className="mr-2 h-4 w-4" />
                       Create Free Account
                     </Button>
-                    <Button variant="outline" onClick={() => setLocation('/auth')} data-testid="button-login-executive">
+                    <Button 
+                      variant="outline" 
+                      onClick={() => setLocation(`/auth?redirect=/results/${assessmentId}&claimAssessment=${assessmentId}`)} 
+                      data-testid="button-login-executive"
+                    >
                       Log In
                     </Button>
                   </div>
@@ -781,11 +788,19 @@ export default function Results() {
                     Create a free account to unlock your personalized transformation roadmap with AI-powered strategic recommendations
                   </p>
                   <div className="flex gap-3">
-                    <Button variant="secondary" onClick={() => setLocation('/auth')} data-testid="button-signup-roadmap">
+                    <Button 
+                      variant="secondary" 
+                      onClick={() => setLocation(`/auth?redirect=/results/${assessmentId}&claimAssessment=${assessmentId}`)} 
+                      data-testid="button-signup-roadmap"
+                    >
                       <Sparkles className="mr-2 h-4 w-4" />
                       Create Free Account
                     </Button>
-                    <Button variant="outline" onClick={() => setLocation('/auth')} data-testid="button-login-roadmap">
+                    <Button 
+                      variant="outline" 
+                      onClick={() => setLocation(`/auth?redirect=/results/${assessmentId}&claimAssessment=${assessmentId}`)} 
+                      data-testid="button-login-roadmap"
+                    >
                       Log In
                     </Button>
                   </div>

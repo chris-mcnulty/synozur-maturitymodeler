@@ -16,6 +16,7 @@ type AuthContextType = {
   logoutMutation: UseMutationResult<void, Error, void>;
   registerMutation: UseMutationResult<SelectUser, Error, InsertUser>;
   logout: () => Promise<void>;
+  claimAssessmentAndRedirect: (assessmentId: string, redirectPath: string) => Promise<void>;
 };
 
 type LoginData = Pick<InsertUser, "username" | "password">;
@@ -53,15 +54,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!response.ok) throw new Error("Login failed");
       return response.json();
     },
-    onSuccess: (user: SelectUser) => {
+    onSuccess: async (user: SelectUser) => {
       queryClient.setQueryData(["/api/user"], user);
-      queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+      await queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+      await queryClient.refetchQueries({ queryKey: ["/api/user"] });
       toast({
         title: "Welcome back!",
         description: "You have successfully logged in.",
       });
-      // Force redirect after successful login
-      window.location.href = "/";
+      // Note: Redirect is handled in Auth.tsx based on query params after user state updates
     },
     onError: (error: Error) => {
       toast({
@@ -86,15 +87,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       return response.json();
     },
-    onSuccess: (user: SelectUser) => {
+    onSuccess: async (user: SelectUser) => {
       queryClient.setQueryData(["/api/user"], user);
-      queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+      await queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+      await queryClient.refetchQueries({ queryKey: ["/api/user"] });
       toast({
         title: "Account created!",
         description: "Welcome to Maturity Modeler.",
       });
-      // Force redirect after successful registration
-      window.location.href = "/";
+      // Note: Redirect is handled in Auth.tsx based on query params after user state updates
     },
     onError: (error: Error) => {
       const message = error.message || "Failed to create account";
@@ -138,6 +139,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return logoutMutation.mutateAsync();
   };
 
+  const claimAssessmentAndRedirect = async (assessmentId: string, redirectPath: string) => {
+    try {
+      // Claim the assessment
+      await apiRequest(`/api/assessments/${assessmentId}/claim`, "POST");
+      
+      // Redirect to the specified path
+      window.location.href = redirectPath;
+    } catch (error) {
+      console.error("Failed to claim assessment:", error);
+      // Still redirect even if claim fails
+      window.location.href = redirectPath;
+    }
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -148,6 +163,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         logoutMutation,
         registerMutation,
         logout,
+        claimAssessmentAndRedirect,
       }}
     >
       {children}

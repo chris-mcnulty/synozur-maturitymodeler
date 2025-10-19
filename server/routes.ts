@@ -867,6 +867,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Claim an anonymous assessment after authentication
+  app.post("/api/assessments/:id/claim", ensureAuthenticated, async (req, res) => {
+    try {
+      const assessment = await storage.getAssessment(req.params.id);
+      
+      if (!assessment) {
+        return res.status(404).json({ error: "Assessment not found" });
+      }
+      
+      // If assessment already has a user, check if it's the current user
+      if (assessment.userId) {
+        if (assessment.userId === req.user!.id) {
+          // Already owned by this user, return success (idempotent)
+          return res.json(assessment);
+        } else {
+          // Owned by different user, cannot claim
+          return res.status(403).json({ error: "Assessment belongs to another user" });
+        }
+      }
+      
+      // Claim the anonymous assessment for the current user
+      const updatedAssessment = await storage.updateAssessment(req.params.id, {
+        userId: req.user!.id
+      });
+      
+      res.json(updatedAssessment);
+    } catch (error) {
+      console.error("Error claiming assessment:", error);
+      res.status(500).json({ error: "Failed to claim assessment" });
+    }
+  });
+
   // Assessment response routes
   app.post("/api/assessments/:id/responses", async (req, res) => {
     try {

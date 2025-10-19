@@ -165,7 +165,7 @@ export default function ModelHome() {
                       <Button 
                         variant="outline" 
                         size="sm"
-                        onClick={() => setLocation('/auth')}
+                        onClick={() => setLocation(`/auth?redirect=/${modelSlug}`)}
                         data-testid="button-signup-nudge"
                       >
                         Sign Up Free
@@ -173,7 +173,7 @@ export default function ModelHome() {
                       <Button 
                         variant="ghost" 
                         size="sm"
-                        onClick={() => setLocation('/auth')}
+                        onClick={() => setLocation(`/auth?redirect=/${modelSlug}`)}
                         data-testid="button-login-nudge"
                       >
                         Log In
