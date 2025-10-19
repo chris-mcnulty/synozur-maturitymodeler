@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { useRoute, useLocation } from "wouter";
+import { Helmet } from "react-helmet-async";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -78,6 +79,27 @@ export default function ModelHome() {
 
   return (
     <div className="min-h-screen flex flex-col">
+      <Helmet>
+        <title>{model.name} | The Synozur Alliance</title>
+        <meta name="description" content={model.description} />
+        
+        {/* Open Graph / Facebook */}
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content={`https://models.synozur.com/${model.slug}`} />
+        <meta property="og:title" content={`${model.name} | The Synozur Alliance`} />
+        <meta property="og:description" content={model.description} />
+        <meta property="og:image" content="https://models.synozur.com/og-image.jpg" />
+        <meta property="og:image:width" content="1024" />
+        <meta property="og:image:height" content="1024" />
+        
+        {/* Twitter */}
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:url" content={`https://models.synozur.com/${model.slug}`} />
+        <meta name="twitter:title" content={`${model.name} | The Synozur Alliance`} />
+        <meta name="twitter:description" content={model.description} />
+        <meta name="twitter:image" content="https://models.synozur.com/og-image.jpg" />
+      </Helmet>
+      
       <main className="flex-1">
         <section className="relative min-h-[400px] flex items-center overflow-hidden bg-primary">
           <div className="absolute inset-0 z-0">
