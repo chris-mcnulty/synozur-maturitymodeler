@@ -884,7 +884,7 @@ export default function Results() {
                   size="sm"
                   onClick={() => {
                     const resultsUrl = `${window.location.origin}/results/${assessmentId}`;
-                    const modelUrl = `${window.location.origin}/${model.slug}`;
+                    const modelUrl = `${window.location.origin}/api/og/${model.slug}`;
                     const shareText = `I scored ${result.overallScore} - ${maturityLevel.name} on the ${model.name}!\n\n${resultsUrl}\n\nGet your own score free with personalized recommendations, resources and roadmap from Synozur at ${modelUrl}`;
                     
                     // Copy to clipboard first
@@ -911,7 +911,7 @@ export default function Results() {
                   size="sm"
                   onClick={() => {
                     const resultsUrl = `${window.location.origin}/results/${assessmentId}`;
-                    const modelUrl = `${window.location.origin}/${model.slug}`;
+                    const modelUrl = `${window.location.origin}/api/og/${model.slug}`;
                     const shareText = `I scored ${result.overallScore} - ${maturityLevel.name} on the ${model.name}!\n\n${resultsUrl}\n\nGet your own score free with personalized recommendations, resources and roadmap from Synozur at ${modelUrl}`;
                     const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}`;
                     window.open(twitterUrl, '_blank', 'width=600,height=600');
@@ -927,7 +927,7 @@ export default function Results() {
                   size="sm"
                   onClick={() => {
                     const resultsUrl = `${window.location.origin}/results/${assessmentId}`;
-                    const modelUrl = `${window.location.origin}/${model.slug}`;
+                    const modelUrl = `${window.location.origin}/api/og/${model.slug}`;
                     const shareText = `I scored ${result.overallScore} - ${maturityLevel.name} on the ${model.name}!\n\n${resultsUrl}\n\nGet your own score free with personalized recommendations, resources and roadmap from Synozur at ${modelUrl}`;
                     const threadsUrl = `https://www.threads.net/intent/post?text=${encodeURIComponent(shareText)}`;
                     window.open(threadsUrl, '_blank', 'width=600,height=600');
@@ -943,7 +943,7 @@ export default function Results() {
                   size="sm"
                   onClick={() => {
                     const resultsUrl = `${window.location.origin}/results/${assessmentId}`;
-                    const modelUrl = `${window.location.origin}/${model.slug}`;
+                    const modelUrl = `${window.location.origin}/api/og/${model.slug}`;
                     const shareText = `I scored ${result.overallScore} - ${maturityLevel.name} on the ${model.name}!\n\n${resultsUrl}\n\nGet your own score free with personalized recommendations, resources and roadmap from Synozur at ${modelUrl}`;
                     
                     // Copy to clipboard first
@@ -970,7 +970,7 @@ export default function Results() {
                   size="sm"
                   onClick={() => {
                     const resultsUrl = `${window.location.origin}/results/${assessmentId}`;
-                    const modelUrl = `${window.location.origin}/${model.slug}`;
+                    const modelUrl = `${window.location.origin}/api/og/${model.slug}`;
                     const shareText = `I scored ${result.overallScore} - ${maturityLevel.name} on the ${model.name}!\n\n${resultsUrl}\n\nGet your own score free with personalized recommendations, resources and roadmap from Synozur at ${modelUrl}`;
                     
                     navigator.clipboard.writeText(shareText).then(() => {
@@ -991,7 +991,7 @@ export default function Results() {
                   size="sm"
                   onClick={() => {
                     const resultsUrl = `${window.location.origin}/results/${assessmentId}`;
-                    const modelUrl = `${window.location.origin}/${model.slug}`;
+                    const modelUrl = `${window.location.origin}/api/og/${model.slug}`;
                     const shareText = `I scored ${result.overallScore} - ${maturityLevel.name} on the ${model.name}!\n\n${resultsUrl}\n\nGet your own score free with personalized recommendations, resources and roadmap from Synozur at ${modelUrl}`;
                     const blueskyUrl = `https://bsky.app/intent/compose?text=${encodeURIComponent(shareText)}`;
                     window.open(blueskyUrl, '_blank', 'width=600,height=600');

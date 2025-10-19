@@ -24,8 +24,8 @@ The application uses a modern fullstack architecture:
 - **Data Import**: System for importing anonymized assessment data with validation, fuzzy text matching for question mapping, and batch tracking.
 - **Reporting**: Admin dashboard with statistics displaying actual user names and companies. CSV exports include real user data for assessment results and user accounts. Anonymous/imported assessments display as "Anonymous".
 - **Profile Management**: User profile editing with standardized dropdowns for job title, industry, company size, and country, all with required validation.
-- **Social Sharing**: Enables sharing assessment results across multiple social platforms with pre-filled content.
-- **Open Graph Integration**: Comprehensive Open Graph and Twitter Card meta tags for rich social media previews when sharing links on LinkedIn, Facebook, Twitter, and other platforms. Features custom preview image with Synozur branding.
+- **Social Sharing**: Enables sharing assessment results across multiple social platforms with pre-filled content. Shares use special Open Graph URLs (`/api/og/:modelSlug`) that provide model-specific previews while auto-redirecting users to the actual model pages.
+- **Open Graph Integration**: Server-side rendered meta tags via `/api/og/:modelSlug` endpoint for model-specific social media previews. When users share model links (e.g., for AI Maturity Assessment), social media crawlers see the correct model name and description instead of generic homepage text. Real users visiting these URLs are automatically redirected to the actual model page via JavaScript. All pages use the same custom preview image with Synozur branding.
 
 ## External Dependencies
 - **PostgreSQL**: Primary database for all application data.
