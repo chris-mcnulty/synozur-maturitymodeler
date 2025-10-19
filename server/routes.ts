@@ -710,14 +710,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
             .orderBy(schema.answers.score)
         : [];
       
-      // Get maturity levels (simple structure for now)
-      const maturityLevels = [
-        { id: "1", scoreMin: 100, scoreMax: 200, name: "Initial", interpretation: null },
-        { id: "2", scoreMin: 201, scoreMax: 300, name: "Developing", interpretation: null },
-        { id: "3", scoreMin: 301, scoreMax: 400, name: "Defined", interpretation: null },
-        { id: "4", scoreMin: 401, scoreMax: 450, name: "Managed", interpretation: null },
-        { id: "5", scoreMin: 451, scoreMax: 500, name: "Optimizing", interpretation: null },
-      ];
+      // Get maturity levels from the model's maturityScale field
+      // Parse the maturityScale JSON and transform to match the expected format
+      let maturityLevels = [];
+      if (model.maturityScale) {
+        try {
+          const parsedScale = typeof model.maturityScale === 'string' 
+            ? JSON.parse(model.maturityScale) 
+            : model.maturityScale;
+          
+          maturityLevels = parsedScale.map((level: any) => ({
+            id: level.id,
+            scoreMin: level.minScore,
+            scoreMax: level.maxScore,
+            name: level.name,
+            interpretation: level.description || null,
+          }));
+        } catch (error) {
+          console.error('Failed to parse maturity scale:', error);
+          // Fallback to default levels if parsing fails
+          maturityLevels = [
+            { id: "1", scoreMin: 100, scoreMax: 200, name: "Initial", interpretation: null },
+            { id: "2", scoreMin: 201, scoreMax: 300, name: "Developing", interpretation: null },
+            { id: "3", scoreMin: 301, scoreMax: 400, name: "Defined", interpretation: null },
+            { id: "4", scoreMin: 401, scoreMax: 450, name: "Managed", interpretation: null },
+            { id: "5", scoreMin: 451, scoreMax: 500, name: "Optimizing", interpretation: null },
+          ];
+        }
+      } else {
+        // Use default levels if no custom scale is defined
+        maturityLevels = [
+          { id: "1", scoreMin: 100, scoreMax: 200, name: "Initial", interpretation: null },
+          { id: "2", scoreMin: 201, scoreMax: 300, name: "Developing", interpretation: null },
+          { id: "3", scoreMin: 301, scoreMax: 400, name: "Defined", interpretation: null },
+          { id: "4", scoreMin: 401, scoreMax: 450, name: "Managed", interpretation: null },
+          { id: "5", scoreMin: 451, scoreMax: 500, name: "Optimizing", interpretation: null },
+        ];
+      }
 
       res.json({
         model,
