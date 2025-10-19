@@ -175,7 +175,7 @@ export default function ModelHome() {
                 </li>
                 
                 <li className="mt-6 mb-2">
-                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide pl-9">With Free Account</h3>
+                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide pl-9">WITH FREE REGISTRATION:</h3>
                 </li>
                 
                 <li className="flex items-start gap-3" data-testid="benefit-2">

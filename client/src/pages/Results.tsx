@@ -886,8 +886,19 @@ export default function Results() {
                     const resultsUrl = `${window.location.origin}/results/${assessmentId}`;
                     const modelUrl = `${window.location.origin}/${model.slug}`;
                     const shareText = `I scored ${result.overallScore} - ${maturityLevel.name} on the ${model.name}!\n\n${resultsUrl}\n\nGet your own score free with personalized recommendations, resources and roadmap from Synozur at ${modelUrl}`;
-                    const linkedInUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(resultsUrl)}&summary=${encodeURIComponent(shareText)}`;
-                    window.open(linkedInUrl, '_blank', 'width=600,height=600');
+                    
+                    // Copy to clipboard first
+                    navigator.clipboard.writeText(shareText).then(() => {
+                      toast({
+                        title: "Text copied!",
+                        description: "Paste it when LinkedIn opens. LinkedIn no longer supports pre-filled text.",
+                      });
+                      // Then open LinkedIn
+                      setTimeout(() => {
+                        const linkedInUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(resultsUrl)}`;
+                        window.open(linkedInUrl, '_blank', 'width=600,height=600');
+                      }, 500);
+                    });
                   }}
                   className="gap-2"
                   data-testid="button-share-linkedin"
@@ -933,9 +944,20 @@ export default function Results() {
                   onClick={() => {
                     const resultsUrl = `${window.location.origin}/results/${assessmentId}`;
                     const modelUrl = `${window.location.origin}/${model.slug}`;
-                    const shareText = `I scored ${result.overallScore} - ${maturityLevel.name} on the ${model.name}!`;
-                    const facebookUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(resultsUrl)}&quote=${encodeURIComponent(shareText)}`;
-                    window.open(facebookUrl, '_blank', 'width=600,height=600');
+                    const shareText = `I scored ${result.overallScore} - ${maturityLevel.name} on the ${model.name}!\n\n${resultsUrl}\n\nGet your own score free with personalized recommendations, resources and roadmap from Synozur at ${modelUrl}`;
+                    
+                    // Copy to clipboard first
+                    navigator.clipboard.writeText(shareText).then(() => {
+                      toast({
+                        title: "Text copied!",
+                        description: "Paste it when Facebook opens. Facebook no longer supports pre-filled text.",
+                      });
+                      // Then open Facebook
+                      setTimeout(() => {
+                        const facebookUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(resultsUrl)}`;
+                        window.open(facebookUrl, '_blank', 'width=600,height=600');
+                      }, 500);
+                    });
                   }}
                   className="gap-2"
                   data-testid="button-share-facebook"
@@ -948,12 +970,13 @@ export default function Results() {
                   size="sm"
                   onClick={() => {
                     const resultsUrl = `${window.location.origin}/results/${assessmentId}`;
-                    const shareText = `I scored ${result.overallScore} - ${maturityLevel.name} on the ${model.name}! Check out my results: ${resultsUrl}`;
-                    // Instagram doesn't support web share API directly - copy to clipboard instead
+                    const modelUrl = `${window.location.origin}/${model.slug}`;
+                    const shareText = `I scored ${result.overallScore} - ${maturityLevel.name} on the ${model.name}!\n\n${resultsUrl}\n\nGet your own score free with personalized recommendations, resources and roadmap from Synozur at ${modelUrl}`;
+                    
                     navigator.clipboard.writeText(shareText).then(() => {
                       toast({
-                        title: "Copied to clipboard!",
-                        description: "Share text copied. Paste it in your Instagram post.",
+                        title: "Text copied!",
+                        description: "Paste it in your Instagram post or story.",
                       });
                     });
                   }}
