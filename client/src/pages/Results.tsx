@@ -4,7 +4,7 @@ import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { Download, Mail, ArrowLeft, ChevronRight, Users, Target, TrendingUp, Award, BookOpen, Calendar, Phone, ExternalLink, Lightbulb, Share2 } from "lucide-react";
+import { Download, Mail, ArrowLeft, ChevronRight, Users, Target, TrendingUp, Award, BookOpen, Calendar, Phone, ExternalLink, Lightbulb, Share2, Sparkles, Lock, CheckCircle2 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import type { Result, Assessment, Model, Dimension, User, Question, Answer } from "@shared/schema";
 import { SiLinkedin, SiX, SiThreads, SiFacebook, SiInstagram, SiBluesky } from "react-icons/si";
@@ -15,6 +15,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ProfileGate } from "@/components/ProfileGate";
 import { generateAssessmentPDF } from "@/services/pdfGenerator";
 import { useToast } from "@/hooks/use-toast";
@@ -675,7 +676,50 @@ export default function Results() {
           </Card>
 
           {/* AI-Generated Maturity Summary */}
-          {(aiContentLoading || maturitySummary) && (
+          {!user ? (
+            <Card className="p-8 mb-8 border-2 border-primary/20 bg-gradient-to-br from-primary/5 to-secondary/5">
+              <div className="flex items-start gap-4 mb-4">
+                <div className="p-3 rounded-lg bg-primary/10">
+                  <Sparkles className="h-6 w-6 text-primary" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-2xl font-bold mb-2 text-primary">Executive Summary</h3>
+                  <p className="text-muted-foreground mb-4">
+                    Create a free account to unlock your personalized AI-powered executive summary
+                  </p>
+                  <Alert className="bg-background/50 border-primary/30 mb-4">
+                    <Lock className="h-4 w-4 text-primary" />
+                    <AlertDescription>
+                      <p className="font-medium mb-2">With a free account, you'll receive:</p>
+                      <ul className="space-y-1 text-sm">
+                        <li className="flex items-center gap-2">
+                          <CheckCircle2 className="h-4 w-4 text-primary" />
+                          <span>Detailed analysis of your maturity level</span>
+                        </li>
+                        <li className="flex items-center gap-2">
+                          <CheckCircle2 className="h-4 w-4 text-primary" />
+                          <span>AI-generated insights tailored to your responses</span>
+                        </li>
+                        <li className="flex items-center gap-2">
+                          <CheckCircle2 className="h-4 w-4 text-primary" />
+                          <span>Strategic recommendations for improvement</span>
+                        </li>
+                      </ul>
+                    </AlertDescription>
+                  </Alert>
+                  <div className="flex gap-3">
+                    <Button onClick={() => setLocation('/auth')} data-testid="button-signup-executive">
+                      <Sparkles className="mr-2 h-4 w-4" />
+                      Create Free Account
+                    </Button>
+                    <Button variant="outline" onClick={() => setLocation('/auth')} data-testid="button-login-executive">
+                      Log In
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </Card>
+          ) : (aiContentLoading || maturitySummary) && (
             <Card className="p-8 mb-8">
               <h3 className="text-2xl font-bold mb-4 text-primary">Executive Summary</h3>
               {aiContentLoading && !maturitySummary ? (
@@ -725,7 +769,30 @@ export default function Results() {
           <h2 className="text-3xl font-bold mb-8 text-center">Strategic Recommendations</h2>
           
           {/* AI-Generated Recommendations Summary */}
-          {(aiContentLoading || recommendationsSummary) && (
+          {!user ? (
+            <Card className="p-6 mb-8 border-2 border-secondary/20 bg-gradient-to-br from-secondary/5 to-primary/5">
+              <div className="flex items-start gap-4">
+                <div className="p-3 rounded-lg bg-secondary/10">
+                  <Target className="h-6 w-6 text-secondary" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold mb-2 text-secondary">Your Transformation Roadmap</h3>
+                  <p className="text-muted-foreground mb-4">
+                    Create a free account to unlock your personalized transformation roadmap with AI-powered strategic recommendations
+                  </p>
+                  <div className="flex gap-3">
+                    <Button variant="secondary" onClick={() => setLocation('/auth')} data-testid="button-signup-roadmap">
+                      <Sparkles className="mr-2 h-4 w-4" />
+                      Create Free Account
+                    </Button>
+                    <Button variant="outline" onClick={() => setLocation('/auth')} data-testid="button-login-roadmap">
+                      Log In
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </Card>
+          ) : (aiContentLoading || recommendationsSummary) && (
             <Card className="p-6 mb-8 bg-background">
               <h3 className="text-lg font-semibold mb-4 text-primary">Your Transformation Roadmap</h3>
               {aiContentLoading && !recommendationsSummary ? (

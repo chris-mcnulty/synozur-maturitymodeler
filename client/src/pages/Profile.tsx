@@ -333,7 +333,18 @@ export default function Profile() {
           <div className="grid md:grid-cols-3 gap-8">
             <div className="md:col-span-1">
               <Card className="p-6">
-                <h2 className="text-xl font-bold mb-6">Profile Information</h2>
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-xl font-bold">Profile Information</h2>
+                  {!authLoading && user && !isEditing && (
+                    <Button 
+                      size="sm"
+                      onClick={() => setIsEditing(true)}
+                      data-testid="button-edit-profile"
+                    >
+                      Edit
+                    </Button>
+                  )}
+                </div>
                 {authLoading || !user ? (
                   <div className="space-y-4">
                     <div className="h-10 bg-muted animate-pulse rounded" />
@@ -507,15 +518,7 @@ export default function Profile() {
                           Cancel
                         </Button>
                       </div>
-                    ) : (
-                      <Button 
-                        className="w-full" 
-                        onClick={() => setIsEditing(true)}
-                        data-testid="button-edit-profile"
-                      >
-                        Edit Profile
-                      </Button>
-                    )}
+                    ) : null}
                   </div>
                 )}
               </Card>

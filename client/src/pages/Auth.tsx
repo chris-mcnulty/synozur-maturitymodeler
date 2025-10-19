@@ -4,20 +4,98 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useLocation } from "wouter";
+import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
 import synozurLogo from "@assets/SynozurLogo_color 1400_1759973943542.png";
+
+// Standard dropdown options
+const JOB_ROLES = [
+  "Chief Executive Officer (CEO)",
+  "Chief Technology Officer (CTO)",
+  "Chief Financial Officer (CFO)",
+  "Chief Marketing Officer (CMO)",
+  "Chief Operating Officer (COO)",
+  "Vice President",
+  "Director",
+  "Senior Manager",
+  "Manager",
+  "Team Lead",
+  "Project Manager",
+  "Product Manager",
+  "Software Engineer",
+  "Data Analyst",
+  "Business Analyst",
+  "Sales Executive",
+  "Marketing Specialist",
+  "Human Resources Specialist",
+  "Customer Support Representative",
+  "Other",
+];
+
+const INDUSTRIES = [
+  "Technology",
+  "Finance",
+  "Healthcare",
+  "Education",
+  "Manufacturing",
+  "Retail",
+  "Transportation",
+  "Energy",
+  "Telecommunications",
+  "Media & Entertainment",
+  "Real Estate",
+  "Construction",
+  "Agriculture",
+  "Government",
+  "Nonprofit",
+  "Professional Services",
+  "Insurance",
+  "Automotive",
+  "Pharmaceuticals",
+  "Other",
+];
+
+const COUNTRIES = [
+  "United States",
+  "Canada",
+  "United Kingdom",
+  "Australia",
+  "Germany",
+  "France",
+  "Italy",
+  "Spain",
+  "Netherlands",
+  "Sweden",
+  "Switzerland",
+  "Japan",
+  "China",
+  "India",
+  "Brazil",
+  "Mexico",
+  "South Africa",
+  "Singapore",
+  "United Arab Emirates",
+  "New Zealand",
+];
 
 export default function Auth() {
   const [, setLocation] = useLocation();
   const { user, loginMutation, registerMutation, isLoading } = useAuth();
+  const { toast } = useToast();
   const [loginForm, setLoginForm] = useState({ username: "", password: "" });
   const [registerForm, setRegisterForm] = useState({
     username: "",
     email: "",
     password: "",
     name: "",
+    company: "",
+    companySize: "",
+    jobTitle: "",
+    industry: "",
+    country: "",
   });
 
   // Redirect if already logged in
@@ -42,6 +120,31 @@ export default function Auth() {
 
   const handleRegister = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate all required fields
+    const requiredFields = [
+      { field: 'username', label: 'Username' },
+      { field: 'email', label: 'Email' },
+      { field: 'password', label: 'Password' },
+      { field: 'name', label: 'Full Name' },
+      { field: 'company', label: 'Company' },
+      { field: 'jobTitle', label: 'Job Title' },
+      { field: 'industry', label: 'Industry' },
+      { field: 'companySize', label: 'Company Size' },
+      { field: 'country', label: 'Country' },
+    ];
+
+    for (const { field, label } of requiredFields) {
+      if (!registerForm[field as keyof typeof registerForm]?.trim()) {
+        toast({
+          title: "Required field missing",
+          description: `Please fill in: ${label}`,
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+    
     registerMutation.mutate(registerForm);
   };
 
@@ -127,7 +230,7 @@ export default function Auth() {
             <TabsContent value="register">
               <form onSubmit={handleRegister} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="name">Full Name</Label>
+                  <Label htmlFor="name">Full Name <span className="text-destructive">*</span></Label>
                   <Input
                     id="name"
                     type="text"
@@ -140,7 +243,7 @@ export default function Auth() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="username">Username</Label>
+                  <Label htmlFor="username">Username <span className="text-destructive">*</span></Label>
                   <Input
                     id="username"
                     type="text"
@@ -153,7 +256,7 @@ export default function Auth() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
+                  <Label htmlFor="email">Email <span className="text-destructive">*</span></Label>
                   <Input
                     id="email"
                     type="email"
@@ -166,7 +269,7 @@ export default function Auth() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="password">Password</Label>
+                  <Label htmlFor="password">Password <span className="text-destructive">*</span></Label>
                   <Input
                     id="password"
                     type="password"
@@ -177,6 +280,94 @@ export default function Auth() {
                     required
                     data-testid="input-register-password"
                   />
+                  <p className="text-xs text-muted-foreground">
+                    Must be at least 8 characters with one uppercase letter and one punctuation mark
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="company">Company <span className="text-destructive">*</span></Label>
+                  <Input
+                    id="company"
+                    type="text"
+                    value={registerForm.company}
+                    onChange={(e) =>
+                      setRegisterForm({ ...registerForm, company: e.target.value })
+                    }
+                    required
+                    data-testid="input-company"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="jobTitle">Job Title <span className="text-destructive">*</span></Label>
+                  <Select 
+                    value={registerForm.jobTitle} 
+                    onValueChange={(value) => setRegisterForm({ ...registerForm, jobTitle: value })}
+                    required
+                  >
+                    <SelectTrigger data-testid="select-job-title">
+                      <SelectValue placeholder="Select job title" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {JOB_ROLES.map((role) => (
+                        <SelectItem key={role} value={role}>{role}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="industry">Industry <span className="text-destructive">*</span></Label>
+                  <Select 
+                    value={registerForm.industry} 
+                    onValueChange={(value) => setRegisterForm({ ...registerForm, industry: value })}
+                    required
+                  >
+                    <SelectTrigger data-testid="select-industry">
+                      <SelectValue placeholder="Select industry" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {INDUSTRIES.map((industry) => (
+                        <SelectItem key={industry} value={industry}>{industry}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="companySize">Company Size <span className="text-destructive">*</span></Label>
+                  <Select 
+                    value={registerForm.companySize} 
+                    onValueChange={(value) => setRegisterForm({ ...registerForm, companySize: value })}
+                    required
+                  >
+                    <SelectTrigger data-testid="select-company-size">
+                      <SelectValue placeholder="Select company size" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="1">Sole Proprietor (1)</SelectItem>
+                      <SelectItem value="2-9">Small Team (2-9)</SelectItem>
+                      <SelectItem value="10-49">Small Business (10-49)</SelectItem>
+                      <SelectItem value="50-249">Medium Business (50-249)</SelectItem>
+                      <SelectItem value="250-999">Large Business (250-999)</SelectItem>
+                      <SelectItem value="1000-9999">Enterprise (1,000-9,999)</SelectItem>
+                      <SelectItem value="10000+">Large Enterprise (10,000+)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="country">Country <span className="text-destructive">*</span></Label>
+                  <Select 
+                    value={registerForm.country} 
+                    onValueChange={(value) => setRegisterForm({ ...registerForm, country: value })}
+                    required
+                  >
+                    <SelectTrigger data-testid="select-country">
+                      <SelectValue placeholder="Select country" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {COUNTRIES.map((country) => (
+                        <SelectItem key={country} value={country}>{country}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <Button
                   type="submit"

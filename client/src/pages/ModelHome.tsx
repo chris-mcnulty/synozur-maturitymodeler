@@ -5,10 +5,11 @@ import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowRight, CheckCircle2, Target, TrendingUp, ArrowLeft } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { ArrowRight, CheckCircle2, Target, TrendingUp, ArrowLeft, Sparkles, Save } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import type { Model, Dimension, Assessment } from "@shared/schema";
+import type { Model, Dimension, Assessment, User } from "@shared/schema";
 import openingGraphic from '@assets/generated_images/Opening_graphic_AI_transformation_bf033f89.png';
 
 export default function ModelHome() {
@@ -20,6 +21,11 @@ export default function ModelHome() {
   const { data: model, isLoading } = useQuery<Model & { dimensions: Dimension[] }>({
     queryKey: ['/api/models', modelSlug],
     enabled: !!modelSlug,
+  });
+
+  // Check if user is logged in
+  const { data: user } = useQuery<User>({
+    queryKey: ['/api/user'],
   });
 
   // Update page title when model loads
@@ -144,6 +150,39 @@ export default function ModelHome() {
         <section className="py-16 bg-muted/30">
           <div className="container mx-auto px-4">
             <div className="max-w-6xl mx-auto">
+              {/* Gentle nudge for anonymous users */}
+              {!user && (
+                <Alert className="mb-8 bg-gradient-to-r from-primary/5 to-secondary/5 border-primary/20" data-testid="alert-signup-nudge">
+                  <Sparkles className="h-5 w-5 text-primary" />
+                  <AlertDescription className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                    <div className="flex-1">
+                      <p className="font-medium mb-1">Get personalized insights and save your progress</p>
+                      <p className="text-sm text-muted-foreground">
+                        Create a free account to unlock AI-powered recommendations and save your assessment results
+                      </p>
+                    </div>
+                    <div className="flex gap-2 shrink-0">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => setLocation('/auth')}
+                        data-testid="button-signup-nudge"
+                      >
+                        Sign Up Free
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={() => setLocation('/auth')}
+                        data-testid="button-login-nudge"
+                      >
+                        Log In
+                      </Button>
+                    </div>
+                  </AlertDescription>
+                </Alert>
+              )}
+              
               <h2 className="text-3xl font-bold mb-8 text-center">Assessment Dimensions</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {model.dimensions.map((dimension, index) => (

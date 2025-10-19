@@ -60,7 +60,7 @@ function BenchmarkConfig() {
     minSampleSizeIndustryCompanySize: 15,
   });
 
-  const { data: config, isLoading } = useQuery({
+  const { data: config, isLoading } = useQuery<typeof configForm>({
     queryKey: ['/api/benchmarks/config'],
   });
 
