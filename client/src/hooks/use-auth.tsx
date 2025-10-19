@@ -97,10 +97,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       window.location.href = "/";
     },
     onError: (error: Error) => {
+      const message = error.message || "Failed to create account";
+      
+      // Check if it's a duplicate username/email error
+      const isDuplicateUser = message.includes("already exists") || message.includes("already registered");
+      
       toast({
-        title: "Registration failed",
-        description: error.message || "Failed to create account",
+        title: isDuplicateUser ? "Account Already Exists" : "Registration Failed",
+        description: isDuplicateUser 
+          ? "This email or username is already registered. Please log in instead, or use the 'Forgot Password' link if you need to reset your password."
+          : message,
         variant: "destructive",
+        duration: 8000, // Show longer for the helpful message
       });
     },
   });

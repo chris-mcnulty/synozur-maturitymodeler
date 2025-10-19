@@ -108,7 +108,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put('/api/users/:id', ensureAdmin, async (req, res) => {
     try {
       const { id } = req.params;
-      const { password, ...updateData } = req.body; // Don't allow password update through this route
+      const { newPassword, username, ...updateData } = req.body;
+      
+      // Validate username if provided
+      if (username !== undefined) {
+        if (!username || username.trim().length === 0) {
+          return res.status(400).json({ error: "Username cannot be empty" });
+        }
+        updateData.username = username.trim();
+      }
+      
+      // Hash new password if provided
+      if (newPassword) {
+        if (newPassword.length < 8) {
+          return res.status(400).json({ error: "Password must be at least 8 characters" });
+        }
+        const hashedPassword = await hashPassword(newPassword);
+        updateData.password = hashedPassword;
+      }
+      
       const user = await storage.updateUser(id, updateData);
       if (!user) {
         return res.status(404).json({ error: "User not found" });
@@ -116,8 +134,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Remove password from response
       const { password: _, ...safeUser } = user;
       res.json(safeUser);
-    } catch (error) {
-      res.status(400).json({ error: "Failed to update user" });
+    } catch (error: any) {
+      // Handle duplicate username error
+      if (error.code === '23505' && error.constraint?.includes('username')) {
+        return res.status(400).json({ error: "Username already exists" });
+      }
+      res.status(400).json({ error: error.message || "Failed to update user" });
     }
   });
 

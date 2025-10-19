@@ -380,6 +380,8 @@ export default function Admin() {
   const [isUserDialogOpen, setIsUserDialogOpen] = useState(false);
   const [userForm, setUserForm] = useState({
     role: 'user' as 'user' | 'admin',
+    username: '',
+    newPassword: '',
   });
   const [csvImportMode, setCSVImportMode] = useState<'add' | 'replace'>('add');
   const [isCSVImportDialogOpen, setIsCSVImportDialogOpen] = useState(false);
@@ -526,15 +528,19 @@ export default function Admin() {
 
   // Update user mutation
   const updateUser = useMutation({
-    mutationFn: async (data: { id: string; role: string }) => {
-      return apiRequest(`/api/users/${data.id}`, 'PUT', { role: data.role });
+    mutationFn: async (data: { id: string; role: string; username?: string; newPassword?: string }) => {
+      return apiRequest(`/api/users/${data.id}`, 'PUT', { 
+        role: data.role,
+        username: data.username,
+        newPassword: data.newPassword,
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/users'] });
       setIsUserDialogOpen(false);
       toast({
         title: "User updated",
-        description: "User role has been updated successfully.",
+        description: "User has been updated successfully.",
       });
     },
     onError: (error: Error) => {
@@ -1044,7 +1050,7 @@ export default function Admin() {
   // Fetch knowledge documents
   const { data: knowledgeDocuments = [], isLoading: knowledgeDocsLoading, error: knowledgeDocsError, refetch: refetchKnowledgeDocs } = useQuery<Array<{
     id: string;
-    fileName: string;
+    name: string;
     fileUrl: string;
     fileSize: number;
     fileType: string;
@@ -2472,7 +2478,11 @@ export default function Admin() {
                                   size="icon"
                                   onClick={() => {
                                     setEditingUser(user);
-                                    setUserForm({ role: (user.role as 'user' | 'admin') || 'user' });
+                                    setUserForm({ 
+                                      role: (user.role as 'user' | 'admin') || 'user',
+                                      username: user.username,
+                                      newPassword: '',
+                                    });
                                     setIsUserDialogOpen(true);
                                   }}
                                   data-testid={`edit-user-${user.id}`}
@@ -4084,13 +4094,23 @@ export default function Admin() {
       <Dialog open={isUserDialogOpen} onOpenChange={setIsUserDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Edit User Role</DialogTitle>
+            <DialogTitle>Edit User</DialogTitle>
             <DialogDescription>
-              Change the role for user: {editingUser?.username}
+              Update settings for user: {editingUser?.username}
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Username</Label>
+              <Input
+                value={userForm.username}
+                onChange={(e) => setUserForm({ ...userForm, username: e.target.value })}
+                placeholder="Enter username"
+                data-testid="input-username"
+              />
+            </div>
+
             <div className="space-y-2">
               <Label>User Role</Label>
               <Select
@@ -4109,6 +4129,20 @@ export default function Admin() {
                 Admins have full access to the admin panel and can manage all content.
               </p>
             </div>
+
+            <div className="space-y-2">
+              <Label>New Password (optional)</Label>
+              <Input
+                type="password"
+                value={userForm.newPassword}
+                onChange={(e) => setUserForm({ ...userForm, newPassword: e.target.value })}
+                placeholder="Leave empty to keep current password"
+                data-testid="input-new-password"
+              />
+              <p className="text-sm text-muted-foreground">
+                Minimum 8 characters, must include uppercase letter and punctuation.
+              </p>
+            </div>
           </div>
 
           <DialogFooter>
@@ -4118,7 +4152,32 @@ export default function Admin() {
             <Button
               onClick={() => {
                 if (editingUser) {
-                  updateUser.mutate({ id: editingUser.id, role: userForm.role });
+                  // Validate username
+                  if (!userForm.username || userForm.username.trim().length === 0) {
+                    toast({
+                      title: "Validation Error",
+                      description: "Username cannot be empty",
+                      variant: "destructive",
+                    });
+                    return;
+                  }
+                  
+                  // Validate password if provided
+                  if (userForm.newPassword && userForm.newPassword.length < 8) {
+                    toast({
+                      title: "Validation Error",
+                      description: "Password must be at least 8 characters",
+                      variant: "destructive",
+                    });
+                    return;
+                  }
+                  
+                  updateUser.mutate({ 
+                    id: editingUser.id, 
+                    role: userForm.role,
+                    username: userForm.username.trim(),
+                    newPassword: userForm.newPassword || undefined,
+                  });
                 }
               }}
               data-testid="button-save-user"
