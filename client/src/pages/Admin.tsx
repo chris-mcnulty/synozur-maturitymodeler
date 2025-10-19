@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -680,6 +680,31 @@ export default function Admin() {
       });
     },
   });
+
+  // Memoized upload handlers to prevent re-renders on every keystroke
+  const handleGetUploadParameters = useCallback(async () => {
+    const response = await fetch('/api/objects/upload', {
+      method: 'POST',
+      credentials: 'include',
+    });
+    const data = await response.json();
+    return {
+      method: 'PUT' as const,
+      url: data.uploadURL,
+    };
+  }, []);
+
+  const handleUploadComplete = useCallback((result: any) => {
+    if (result.successful && result.successful[0] && editingModel) {
+      const uploadURL = result.successful[0].uploadURL;
+      if (uploadURL) {
+        uploadModelImage.mutate({
+          modelId: editingModel.id,
+          imageUrl: uploadURL,
+        });
+      }
+    }
+  }, [editingModel, uploadModelImage]);
 
   // Toggle featured status mutation
   const toggleFeatured = useMutation({
@@ -3133,28 +3158,8 @@ export default function Admin() {
                         maxNumberOfFiles={1}
                         maxFileSize={524288} // 500KB
                         allowedFileTypes={['image/jpeg', 'image/png', 'image/webp']}
-                        onGetUploadParameters={async () => {
-                          const response = await fetch('/api/objects/upload', {
-                            method: 'POST',
-                            credentials: 'include',
-                          });
-                          const data = await response.json();
-                          return {
-                            method: 'PUT' as const,
-                            url: data.uploadURL,
-                          };
-                        }}
-                        onComplete={(result) => {
-                          if (result.successful && result.successful[0] && editingModel) {
-                            const uploadURL = result.successful[0].uploadURL;
-                            if (uploadURL) {
-                              uploadModelImage.mutate({
-                                modelId: editingModel.id,
-                                imageUrl: uploadURL,
-                              });
-                            }
-                          }
-                        }}
+                        onGetUploadParameters={handleGetUploadParameters}
+                        onComplete={handleUploadComplete}
                         buttonVariant="outline"
                       >
                         <Upload className="h-4 w-4 mr-2" />
@@ -3185,28 +3190,8 @@ export default function Admin() {
                       maxNumberOfFiles={1}
                       maxFileSize={524288} // 500KB
                       allowedFileTypes={['image/jpeg', 'image/png', 'image/webp']}
-                      onGetUploadParameters={async () => {
-                        const response = await fetch('/api/objects/upload', {
-                          method: 'POST',
-                          credentials: 'include',
-                        });
-                        const data = await response.json();
-                        return {
-                          method: 'PUT' as const,
-                          url: data.uploadURL,
-                        };
-                      }}
-                      onComplete={(result) => {
-                        if (result.successful && result.successful[0] && editingModel) {
-                          const uploadURL = result.successful[0].uploadURL;
-                          if (uploadURL) {
-                            uploadModelImage.mutate({
-                              modelId: editingModel.id,
-                              imageUrl: uploadURL,
-                            });
-                          }
-                        }
-                      }}
+                      onGetUploadParameters={handleGetUploadParameters}
+                      onComplete={handleUploadComplete}
                     >
                       <Upload className="h-4 w-4 mr-2" />
                       Upload Image
