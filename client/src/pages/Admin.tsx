@@ -1577,6 +1577,9 @@ export default function Admin() {
         <div className="flex h-screen w-full overflow-hidden">
           <Sidebar collapsible="icon">
             <SidebarContent>
+              {/* Add spacer to align with Admin Console heading */}
+              <div className="h-16" />
+              
               {/* Models Navigation */}
               <SidebarGroup>
                 <SidebarGroupLabel>Models</SidebarGroupLabel>
