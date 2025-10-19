@@ -79,7 +79,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(credentials),
       });
-      if (!response.ok) throw new Error("Registration failed");
+      if (!response.ok) {
+        // Get the actual error message from the server
+        const errorText = await response.text();
+        throw new Error(errorText || "Registration failed");
+      }
       return response.json();
     },
     onSuccess: (user: SelectUser) => {
