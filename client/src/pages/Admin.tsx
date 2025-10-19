@@ -419,6 +419,9 @@ export default function Admin() {
   const [knowledgeDescription, setKnowledgeDescription] = useState<string>('');
   const [knowledgeFilter, setKnowledgeFilter] = useState<'all' | 'company-wide' | 'model-specific'>('all');
   
+  // AI Cache management state
+  const [showCacheDialog, setShowCacheDialog] = useState(false);
+  
   // Delete data confirmation dialog state
   const [isDeleteDataDialogOpen, setIsDeleteDataDialogOpen] = useState(false);
   const [deleteDataModelId, setDeleteDataModelId] = useState<string | null>(null);
@@ -526,6 +529,17 @@ export default function Admin() {
     enabled: currentUser?.role === 'admin' || currentUser?.role === 'modeler',
   });
 
+  // Fetch AI cache statistics
+  const { data: cacheStats, refetch: refetchCacheStats } = useQuery<{
+    total: number;
+    valid: number;
+    expired: number;
+    byType: Record<string, number>;
+  }>({
+    queryKey: ['/api/admin/ai/cache-stats'],
+    enabled: currentUser?.role === 'admin',
+  });
+
   // Update user mutation
   const updateUser = useMutation({
     mutationFn: async (data: { id: string; role: string; username?: string; newPassword?: string }) => {
@@ -568,6 +582,28 @@ export default function Admin() {
       toast({
         title: "Error",
         description: error.message || "Failed to delete user",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Clear AI cache mutation
+  const clearAICache = useMutation({
+    mutationFn: async () => {
+      return apiRequest('/api/admin/ai/cache', 'DELETE');
+    },
+    onSuccess: () => {
+      refetchCacheStats();
+      toast({
+        title: "Cache cleared",
+        description: "All AI-generated content cache has been cleared. New assessments will generate fresh content.",
+      });
+      setShowCacheDialog(false);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to clear AI cache",
         variant: "destructive",
       });
     },
@@ -2994,6 +3030,57 @@ export default function Admin() {
                       </Table>
                     )}
                   </Card>
+
+                  {/* AI Cache Management Card */}
+                  <Card className="p-6">
+                    <div className="flex justify-between items-center mb-6">
+                      <div>
+                        <h3 className="text-lg font-semibold">AI Content Cache</h3>
+                        <p className="text-sm text-muted-foreground">
+                          Manage cached AI-generated content for assessments
+                        </p>
+                      </div>
+                      <Button
+                        variant="destructive"
+                        onClick={() => setShowCacheDialog(true)}
+                        data-testid="button-clear-cache"
+                      >
+                        <Trash className="mr-2 h-4 w-4" />
+                        Clear All Cache
+                      </Button>
+                    </div>
+
+                    {cacheStats && (
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <Card className="p-4">
+                          <div className="text-2xl font-bold text-primary">{cacheStats.total}</div>
+                          <div className="text-sm text-muted-foreground">Total Cached</div>
+                        </Card>
+                        <Card className="p-4">
+                          <div className="text-2xl font-bold text-green-600 dark:text-green-400">{cacheStats.valid}</div>
+                          <div className="text-sm text-muted-foreground">Valid</div>
+                        </Card>
+                        <Card className="p-4">
+                          <div className="text-2xl font-bold text-orange-600 dark:text-orange-400">{cacheStats.expired}</div>
+                          <div className="text-sm text-muted-foreground">Expired</div>
+                        </Card>
+                        <Card className="p-4">
+                          <div className="text-2xl font-bold text-secondary">{Object.keys(cacheStats.byType).length}</div>
+                          <div className="text-sm text-muted-foreground">Content Types</div>
+                        </Card>
+                      </div>
+                    )}
+
+                    <div className="mt-6 p-4 bg-muted rounded-lg">
+                      <h4 className="font-semibold mb-2">About AI Cache</h4>
+                      <p className="text-sm text-muted-foreground mb-2">
+                        AI-generated content is cached for 90 days to improve performance and reduce costs.
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        <strong>Automatic regeneration:</strong> When you add new knowledge documents, the cache should automatically invalidate and regenerate with the new information. If you're not seeing updated content, use the "Clear All Cache" button above to force regeneration.
+                      </p>
+                    </div>
+                  </Card>
                 </div>
               )}
             </div>
@@ -4426,6 +4513,52 @@ export default function Admin() {
               data-testid="button-save-general-resources"
             >
               Save Changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* AI Cache Clear Confirmation Dialog */}
+      <Dialog open={showCacheDialog} onOpenChange={setShowCacheDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Clear AI Content Cache?</DialogTitle>
+            <DialogDescription>
+              This will permanently delete all cached AI-generated content. New assessments will regenerate fresh content using the latest knowledge documents.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="py-4 space-y-4">
+            <div className="p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
+              <p className="text-sm font-semibold text-yellow-700 dark:text-yellow-400 mb-2">
+                ⚠️ This action cannot be undone
+              </p>
+              <p className="text-sm text-muted-foreground">
+                All {cacheStats?.total || 0} cached items will be deleted. This may temporarily slow down assessments as content is regenerated.
+              </p>
+            </div>
+
+            <div className="space-y-2 text-sm text-muted-foreground">
+              <p><strong>When to clear cache:</strong></p>
+              <ul className="list-disc pl-5 space-y-1">
+                <li>You've added new knowledge documents and want to ensure they're used immediately</li>
+                <li>You're experiencing issues with outdated AI content</li>
+                <li>You want to test how new documents affect AI recommendations</li>
+              </ul>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowCacheDialog(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => clearAICache.mutate()}
+              disabled={clearAICache.isPending}
+              data-testid="button-confirm-clear-cache"
+            >
+              {clearAICache.isPending ? "Clearing..." : "Clear All Cache"}
             </Button>
           </DialogFooter>
         </DialogContent>

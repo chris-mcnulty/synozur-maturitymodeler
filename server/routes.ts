@@ -157,6 +157,66 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Clear AI cache for a specific model or all models
+  app.delete('/api/admin/ai/cache', ensureAdmin, async (req, res) => {
+    try {
+      const { modelId } = req.query;
+      
+      if (modelId) {
+        // Clear cache for specific model - this is tricky since we don't store modelId directly
+        // We'll just clear all cache and let it regenerate
+        await db.delete(schema.aiGeneratedContent);
+        res.json({ 
+          success: true, 
+          message: `All AI cache cleared (model-specific clearing not available)` 
+        });
+      } else {
+        // Clear all AI cache
+        await db.delete(schema.aiGeneratedContent);
+        res.json({ 
+          success: true, 
+          message: 'All AI cache cleared successfully' 
+        });
+      }
+    } catch (error) {
+      console.error('Error clearing AI cache:', error);
+      res.status(500).json({ error: "Failed to clear AI cache" });
+    }
+  });
+
+  // Get AI cache statistics
+  app.get('/api/admin/ai/cache-stats', ensureAdmin, async (req, res) => {
+    try {
+      const now = new Date();
+      
+      // Count total cached items
+      const allCache = await db.select().from(schema.aiGeneratedContent);
+      const totalCount = allCache.length;
+      
+      // Count expired items
+      const expiredCount = allCache.filter(item => new Date(item.expiresAt) < now).length;
+      
+      // Count valid items
+      const validCount = totalCount - expiredCount;
+      
+      // Group by type
+      const byType: Record<string, number> = {};
+      allCache.forEach(item => {
+        byType[item.type] = (byType[item.type] || 0) + 1;
+      });
+      
+      res.json({
+        total: totalCount,
+        valid: validCount,
+        expired: expiredCount,
+        byType
+      });
+    } catch (error) {
+      console.error('Error getting cache stats:', error);
+      res.status(500).json({ error: "Failed to get cache statistics" });
+    }
+  });
+
   // Admin manual email verification
   app.put('/api/admin/users/:id/verify-email', ensureAdmin, async (req, res) => {
     try {
