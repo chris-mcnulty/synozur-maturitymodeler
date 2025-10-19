@@ -129,6 +129,14 @@ export const assessments = pgTable("assessments", {
   completedAt: timestamp("completed_at"),
   sessionId: text("session_id"), // For anonymous users
   importBatchId: varchar("import_batch_id").references(() => importBatches.id, { onDelete: "cascade" }), // Null for non-imported data
+  // Proxy assessment fields - for admins/modelers to create assessments on behalf of prospects
+  isProxy: boolean("is_proxy").notNull().default(false),
+  proxyName: text("proxy_name"), // Full name of the prospect
+  proxyCompany: text("proxy_company"),
+  proxyJobTitle: text("proxy_job_title"),
+  proxyIndustry: text("proxy_industry"),
+  proxyCompanySize: text("proxy_company_size"),
+  proxyCountry: text("proxy_country"),
 });
 
 // Assessment responses table

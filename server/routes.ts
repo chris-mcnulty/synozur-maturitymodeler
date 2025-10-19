@@ -62,6 +62,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(safeUser);
   });
 
+  // Get user profile by ID (for viewing assessment owner's profile)
+  // Only accessible by: admin/modeler OR the user themselves
+  app.get('/api/users/:id', async (req, res) => {
+    try {
+      // Require authentication
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
+
+      const requestingUser = req.user!;
+      const targetUserId = req.params.id;
+
+      // Check authorization: must be admin/modeler OR requesting own profile
+      const isAuthorized = 
+        requestingUser.id === targetUserId || 
+        requestingUser.role === 'admin' || 
+        requestingUser.role === 'modeler';
+
+      if (!isAuthorized) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+
+      const user = await storage.getUser(targetUserId);
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      // Remove password and sensitive fields from response
+      const { password, verificationToken, verificationTokenExpiry, ...safeUser } = user;
+      res.json(safeUser);
+    } catch (error) {
+      console.error('Error fetching user:', error);
+      res.status(500).json({ error: "Failed to fetch user" });
+    }
+  });
+
   // Update current user's profile
   app.put('/api/profile', ensureAuthenticated, async (req, res) => {
     try {

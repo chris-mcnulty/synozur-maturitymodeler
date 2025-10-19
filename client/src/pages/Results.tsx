@@ -88,6 +88,21 @@ export default function Results() {
     enabled: !!assessmentId,
   });
 
+  // Fetch the assessment owner's profile (for AI generation context)
+  // Note: This may return null if not authenticated or not authorized
+  const { data: assessmentOwner } = useQuery<User | null>({
+    queryKey: ['/api/users', assessment?.userId],
+    queryFn: async () => {
+      if (!assessment?.userId) return null;
+      const res = await fetch(`/api/users/${assessment.userId}`);
+      // Return null for 401/403 (not authenticated/authorized) or 404 (not found)
+      if (!res.ok) return null;
+      return res.json();
+    },
+    enabled: !!assessment?.userId,
+    retry: false, // Don't retry on auth failures
+  });
+
   // Fetch model with dimensions
   const { data: model } = useQuery<Model & { dimensions: Dimension[] }>({
     queryKey: ['/api/models', 'by-id', assessment?.modelId],
@@ -224,6 +239,8 @@ export default function Results() {
         });
 
         // Fetch maturity summary
+        // IMPORTANT: Use assessment owner's profile, not viewing user's profile
+        const profileForAI = assessmentOwner || user;
         const maturityResponse = await fetch('/api/ai/generate-maturity-summary', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -231,10 +248,10 @@ export default function Results() {
             overallScore: result.overallScore,
             dimensionScores: dimensionScoresForAI,
             modelName: model.name,
-            userContext: user ? {
-              industry: user.industry,
-              companySize: user.companySize,
-              jobTitle: user.jobTitle
+            userContext: profileForAI ? {
+              industry: profileForAI.industry,
+              companySize: profileForAI.companySize,
+              jobTitle: profileForAI.jobTitle
             } : undefined
           })
         });
@@ -255,10 +272,10 @@ export default function Results() {
                 description: r.description
               })),
               modelName: model.name,
-              userContext: user ? {
-                industry: user.industry,
-                companySize: user.companySize,
-                jobTitle: user.jobTitle
+              userContext: profileForAI ? {
+                industry: profileForAI.industry,
+                companySize: profileForAI.companySize,
+                jobTitle: profileForAI.jobTitle
               } : undefined
             })
           });
@@ -281,7 +298,7 @@ export default function Results() {
     };
 
     fetchAISummaries();
-  }, [result, model, user, recommendations]);
+  }, [result, model, user, assessmentOwner, recommendations]);
 
   // Memoize improvement resources to ensure consistent hook order
   const improvementResources = useMemo(() => {
