@@ -1572,142 +1572,100 @@ export default function Admin() {
   };
 
   return (
-    <SidebarProvider style={sidebarWidth as React.CSSProperties} defaultOpen={true}>
-      <div className="flex h-screen w-full overflow-hidden">
-        <Sidebar collapsible="icon">
-          <SidebarContent>
-            <TooltipProvider delayDuration={0}>
-              {/* Dashboard Navigation */}
+    <TooltipProvider delayDuration={0}>
+      <SidebarProvider style={sidebarWidth as React.CSSProperties} defaultOpen={true}>
+        <div className="flex h-screen w-full overflow-hidden">
+          <Sidebar collapsible="icon">
+            <SidebarContent>
+              {/* Models Navigation */}
               <SidebarGroup>
-              <SidebarGroupLabel>Overview</SidebarGroupLabel>
-              <SidebarGroupContent>
-                <SidebarMenu>
-                  <SidebarMenuItem>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <SidebarMenuButton 
-                          onClick={() => setActiveSection('models')}
-                          isActive={activeSection === 'models'}
-                          data-testid="tab-models"
-                        >
-                          <Home className="h-4 w-4" />
-                          <span>Dashboard</span>
-                        </SidebarMenuButton>
-                      </TooltipTrigger>
-                      <TooltipContent side="right">
-                        <p>Admin Dashboard - Models Overview</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </SidebarMenuItem>
-                  <SidebarMenuItem>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <SidebarMenuButton 
-                          onClick={() => setActiveSection('dimensions')}
-                          isActive={activeSection === 'dimensions'}
-                          data-testid="tab-dimensions"
-                        >
-                          <BarChart3 className="h-4 w-4" />
-                          <span>Dimensions</span>
-                        </SidebarMenuButton>
-                      </TooltipTrigger>
-                      <TooltipContent side="right">
-                        <p>Manage Dimensions</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </SidebarMenuItem>
-                  <SidebarMenuItem>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <SidebarMenuButton 
-                          onClick={() => setActiveSection('questions')}
-                          isActive={activeSection === 'questions'}
-                          data-testid="tab-questions"
-                        >
-                          <FileText className="h-4 w-4" />
-                          <span>Questions</span>
-                        </SidebarMenuButton>
-                      </TooltipTrigger>
-                      <TooltipContent side="right">
-                        <p>Manage Questions</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </SidebarMenuItem>
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
+                <SidebarGroupLabel>Models</SidebarGroupLabel>
+                <SidebarGroupContent>
+                  <SidebarMenu>
+                    <SidebarMenuItem>
+                      <SidebarMenuButton 
+                        onClick={() => setActiveSection('models')}
+                        isActive={activeSection === 'models'}
+                        data-testid="tab-models"
+                        tooltip="All Models"
+                      >
+                        <Home className="h-4 w-4" />
+                        <span>All Models</span>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                    <SidebarMenuItem>
+                      <SidebarMenuButton 
+                        onClick={() => setActiveSection('dimensions')}
+                        isActive={activeSection === 'dimensions'}
+                        data-testid="tab-dimensions"
+                        tooltip="Dimensions"
+                      >
+                        <BarChart3 className="h-4 w-4" />
+                        <span>Dimensions</span>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                    <SidebarMenuItem>
+                      <SidebarMenuButton 
+                        onClick={() => setActiveSection('questions')}
+                        isActive={activeSection === 'questions'}
+                        data-testid="tab-questions"
+                        tooltip="Questions"
+                      >
+                        <FileText className="h-4 w-4" />
+                        <span>Questions</span>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  </SidebarMenu>
+                </SidebarGroupContent>
+              </SidebarGroup>
 
             <SidebarGroup>
               <SidebarGroupLabel>Data</SidebarGroupLabel>
               <SidebarGroupContent>
                 <SidebarMenu>
                   <SidebarMenuItem>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <SidebarMenuButton 
-                          onClick={() => setActiveSection('results')}
-                          isActive={activeSection === 'results'}
-                          data-testid="tab-results"
-                        >
-                          <Eye className="h-4 w-4" />
-                          <span>Results</span>
-                        </SidebarMenuButton>
-                      </TooltipTrigger>
-                      <TooltipContent side="right">
-                        <p>View Results</p>
-                      </TooltipContent>
-                    </Tooltip>
+                    <SidebarMenuButton 
+                      onClick={() => setActiveSection('results')}
+                      isActive={activeSection === 'results'}
+                      data-testid="tab-results"
+                      tooltip="Results"
+                    >
+                      <Eye className="h-4 w-4" />
+                      <span>Results</span>
+                    </SidebarMenuButton>
                   </SidebarMenuItem>
                   <SidebarMenuItem>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <SidebarMenuButton 
-                          onClick={() => setActiveSection('benchmarks')}
-                          isActive={activeSection === 'benchmarks'}
-                          data-testid="tab-benchmarks"
-                        >
-                          <BarChart3 className="h-4 w-4" />
-                          <span>Benchmarks</span>
-                        </SidebarMenuButton>
-                      </TooltipTrigger>
-                      <TooltipContent side="right">
-                        <p>Benchmark Data</p>
-                      </TooltipContent>
-                    </Tooltip>
+                    <SidebarMenuButton 
+                      onClick={() => setActiveSection('benchmarks')}
+                      isActive={activeSection === 'benchmarks'}
+                      data-testid="tab-benchmarks"
+                      tooltip="Benchmarks"
+                    >
+                      <BarChart3 className="h-4 w-4" />
+                      <span>Benchmarks</span>
+                    </SidebarMenuButton>
                   </SidebarMenuItem>
                   <SidebarMenuItem>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <SidebarMenuButton 
-                          onClick={() => setActiveSection('import')}
-                          isActive={activeSection === 'import'}
-                          data-testid="tab-import"
-                        >
-                          <Upload className="h-4 w-4" />
-                          <span>Import</span>
-                        </SidebarMenuButton>
-                      </TooltipTrigger>
-                      <TooltipContent side="right">
-                        <p>Import Data</p>
-                      </TooltipContent>
-                    </Tooltip>
+                    <SidebarMenuButton 
+                      onClick={() => setActiveSection('import')}
+                      isActive={activeSection === 'import'}
+                      data-testid="tab-import"
+                      tooltip="Import Data"
+                    >
+                      <Upload className="h-4 w-4" />
+                      <span>Import</span>
+                    </SidebarMenuButton>
                   </SidebarMenuItem>
                   <SidebarMenuItem>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <SidebarMenuButton 
-                          onClick={() => setActiveSection('audit')}
-                          isActive={activeSection === 'audit'}
-                          data-testid="tab-audit"
-                        >
-                          <ClipboardList className="h-4 w-4" />
-                          <span>Audit Log</span>
-                        </SidebarMenuButton>
-                      </TooltipTrigger>
-                      <TooltipContent side="right">
-                        <p>Audit Trail</p>
-                      </TooltipContent>
-                    </Tooltip>
+                    <SidebarMenuButton 
+                      onClick={() => setActiveSection('audit')}
+                      isActive={activeSection === 'audit'}
+                      data-testid="tab-audit"
+                      tooltip="Audit Log"
+                    >
+                      <ClipboardList className="h-4 w-4" />
+                      <span>Audit Log</span>
+                    </SidebarMenuButton>
                   </SidebarMenuItem>
                 </SidebarMenu>
               </SidebarGroupContent>
@@ -1718,60 +1676,42 @@ export default function Admin() {
               <SidebarGroupContent>
                 <SidebarMenu>
                   <SidebarMenuItem>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <SidebarMenuButton 
-                          onClick={() => setActiveSection('content')}
-                          isActive={activeSection === 'content'}
-                          data-testid="tab-content"
-                        >
-                          <BookOpen className="h-4 w-4" />
-                          <span>Content</span>
-                        </SidebarMenuButton>
-                      </TooltipTrigger>
-                      <TooltipContent side="right">
-                        <p>Manage Content</p>
-                      </TooltipContent>
-                    </Tooltip>
+                    <SidebarMenuButton 
+                      onClick={() => setActiveSection('content')}
+                      isActive={activeSection === 'content'}
+                      data-testid="tab-content"
+                      tooltip="Content"
+                    >
+                      <BookOpen className="h-4 w-4" />
+                      <span>Content</span>
+                    </SidebarMenuButton>
                   </SidebarMenuItem>
                   <SidebarMenuItem>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <SidebarMenuButton 
-                          onClick={() => setActiveSection('knowledge')}
-                          isActive={activeSection === 'knowledge'}
-                          data-testid="tab-knowledge"
-                        >
-                          <FileText className="h-4 w-4" />
-                          <span>Knowledge Base</span>
-                        </SidebarMenuButton>
-                      </TooltipTrigger>
-                      <TooltipContent side="right">
-                        <p>Knowledge Documents</p>
-                      </TooltipContent>
-                    </Tooltip>
+                    <SidebarMenuButton 
+                      onClick={() => setActiveSection('knowledge')}
+                      isActive={activeSection === 'knowledge'}
+                      data-testid="tab-knowledge"
+                      tooltip="Knowledge Base"
+                    >
+                      <FileText className="h-4 w-4" />
+                      <span>Knowledge Base</span>
+                    </SidebarMenuButton>
                   </SidebarMenuItem>
                   <SidebarMenuItem>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <SidebarMenuButton 
-                          onClick={() => setActiveSection('ai-review')}
-                          isActive={activeSection === 'ai-review'}
-                          data-testid="tab-ai-review"
-                        >
-                          <Sparkles className="h-4 w-4" />
-                          <span>AI Review</span>
-                          {pendingReviews.length > 0 && (
-                            <Badge variant="secondary" className="ml-auto" data-testid="badge-pending-reviews">
-                              {pendingReviews.length}
-                            </Badge>
-                          )}
-                        </SidebarMenuButton>
-                      </TooltipTrigger>
-                      <TooltipContent side="right">
-                        <p>Review AI Content</p>
-                      </TooltipContent>
-                    </Tooltip>
+                    <SidebarMenuButton 
+                      onClick={() => setActiveSection('ai-review')}
+                      isActive={activeSection === 'ai-review'}
+                      data-testid="tab-ai-review"
+                      tooltip="AI Review"
+                    >
+                      <Sparkles className="h-4 w-4" />
+                      <span>AI Review</span>
+                      {pendingReviews.length > 0 && (
+                        <Badge variant="secondary" className="ml-auto" data-testid="badge-pending-reviews">
+                          {pendingReviews.length}
+                        </Badge>
+                      )}
+                    </SidebarMenuButton>
                   </SidebarMenuItem>
                 </SidebarMenu>
               </SidebarGroupContent>
@@ -1782,21 +1722,15 @@ export default function Admin() {
               <SidebarGroupContent>
                 <SidebarMenu>
                   <SidebarMenuItem>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <SidebarMenuButton 
-                          onClick={() => setActiveSection('ai-usage')}
-                          isActive={activeSection === 'ai-usage'}
-                          data-testid="tab-ai-usage"
-                        >
-                          <Brain className="h-4 w-4" />
-                          <span>AI Usage</span>
-                        </SidebarMenuButton>
-                      </TooltipTrigger>
-                      <TooltipContent side="right">
-                        <p>AI Analytics</p>
-                      </TooltipContent>
-                    </Tooltip>
+                    <SidebarMenuButton 
+                      onClick={() => setActiveSection('ai-usage')}
+                      isActive={activeSection === 'ai-usage'}
+                      data-testid="tab-ai-usage"
+                      tooltip="AI Usage"
+                    >
+                      <Brain className="h-4 w-4" />
+                      <span>AI Usage</span>
+                    </SidebarMenuButton>
                   </SidebarMenuItem>
                 </SidebarMenu>
               </SidebarGroupContent>
@@ -1808,27 +1742,20 @@ export default function Admin() {
                 <SidebarGroupContent>
                   <SidebarMenu>
                     <SidebarMenuItem>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <SidebarMenuButton 
-                            onClick={() => setActiveSection('users')}
-                            isActive={activeSection === 'users'}
-                            data-testid="tab-users"
-                          >
-                            <Users className="h-4 w-4" />
-                            <span>Users</span>
-                          </SidebarMenuButton>
-                        </TooltipTrigger>
-                        <TooltipContent side="right">
-                          <p>Manage Users</p>
-                        </TooltipContent>
-                      </Tooltip>
+                      <SidebarMenuButton 
+                        onClick={() => setActiveSection('users')}
+                        isActive={activeSection === 'users'}
+                        data-testid="tab-users"
+                        tooltip="Users"
+                      >
+                        <Users className="h-4 w-4" />
+                        <span>Users</span>
+                      </SidebarMenuButton>
                     </SidebarMenuItem>
                   </SidebarMenu>
                 </SidebarGroupContent>
               </SidebarGroup>
             )}
-          </TooltipProvider>
           </SidebarContent>
         </Sidebar>
 
@@ -4517,5 +4444,6 @@ export default function Admin() {
       </Dialog>
 
     </SidebarProvider>
+    </TooltipProvider>
   );
 }
