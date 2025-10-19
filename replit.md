@@ -12,14 +12,15 @@ Maturity Modeler is a comprehensive fullstack JavaScript application designed fo
 The application uses a modern fullstack architecture:
 - **Frontend**: React, Vite, TypeScript, Wouter for routing, and Shadcn UI for component styling.
 - **Backend**: Express.js for the API, PostgreSQL for the database, and Drizzle ORM for database interactions.
-- **Storage**: PostgreSQL for relational data and object storage (Google Cloud Storage) for assets like model images.
+- **Storage**: PostgreSQL for relational data and object storage (Google Cloud Storage) for assets like model images and knowledge documents.
 - **Authentication**: Passport-based session management with role-based access control (admin, modeler, user).
-- **UI/UX**: Features a dark-mode-first UI with a primary purple (#810FFB) and accent pink (#E60CB3) color scheme, utilizing the Inter font family. Responsive gradient styling is applied to hero titles.
+- **UI/UX**: Features a dark-mode-first UI with a primary purple (#810FFB) and accent pink (#E60CB3) color scheme, utilizing the Inter font family. Responsive gradient styling is applied to hero titles. Admin sidebar is collapsible with icon-only mode and hover tooltips.
 - **Core Features**: Dynamic model routing (/:modelSlug), assessment wizard with autosave, 100-500 point scoring engine, profile gating for results, email-delivered PDF reports, benchmarking, and a comprehensive admin console.
 - **Model Management**: CSV-driven import/export of models, dimensions, answer options, and resource editing. Models can be featured on the homepage.
 - **User Management**: Admin panel for user CRUD, role assignment, and email verification management. Self-registration defaults to 'user' role.
 - **Email System**: Integrated email verification, password reset, and PDF report delivery via SendGrid. Email templates support dynamic content and consistent branding.
 - **AI Integration**: Leverages Azure OpenAI GPT-5 for generating personalized recommendations, interpretations, and roadmaps, with a 90-day caching mechanism for cost efficiency. Includes an AI content review workflow for admin approval.
+- **Knowledge Base**: User-uploadable documents (PDF, DOCX, DOC, TXT, MD) for AI grounding. Supports company-wide and model-specific scopes. Documents stored in object storage with metadata in `knowledge_documents` table (field: `name` for filename, not `fileName`).
 - **Data Import**: System for importing anonymized assessment data with validation, fuzzy text matching for question mapping, and batch tracking.
 - **Reporting**: Admin dashboard with statistics displaying actual user names and companies. CSV exports include real user data for assessment results and user accounts. Anonymous/imported assessments display as "Anonymous".
 - **Profile Management**: User profile editing with standardized dropdowns for job title, industry, company size, and country, all with required validation.

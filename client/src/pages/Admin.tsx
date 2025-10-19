@@ -1071,7 +1071,7 @@ export default function Admin() {
       const fileExtension = file.name.split('.').pop()?.toLowerCase() || '';
       
       return apiRequest('/api/knowledge/documents', 'POST', {
-        fileName: file.name,
+        name: file.name,
         fileUrl: uploadURL.split('?')[0], // Remove query params
         fileSize: file.size,
         fileType: fileExtension, // Send file extension, not MIME type
@@ -2967,9 +2967,9 @@ export default function Admin() {
 
                             return (
                               <TableRow key={doc.id} data-testid={`doc-row-${doc.id}`}>
-                                <TableCell className="font-medium">{doc.fileName}</TableCell>
+                                <TableCell className="font-medium">{doc.name}</TableCell>
                                 <TableCell>
-                                  <Badge variant="outline">{getFileType(doc.fileName)}</Badge>
+                                  <Badge variant="outline">{getFileType(doc.name)}</Badge>
                                 </TableCell>
                                 <TableCell>{formatFileSize(doc.fileSize)}</TableCell>
                                 <TableCell>
@@ -2993,7 +2993,7 @@ export default function Admin() {
                                       variant="ghost"
                                       size="sm"
                                       onClick={() => {
-                                        if (confirm(`Delete "${doc.fileName}"?`)) {
+                                        if (confirm(`Delete "${doc.name}"?`)) {
                                           deleteKnowledgeDoc.mutate(doc.id);
                                         }
                                       }}

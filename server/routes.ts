@@ -3051,7 +3051,7 @@ If you didn't request this, please ignore this email—your password will remain
   // Create knowledge document metadata after file upload
   app.post("/api/knowledge/documents", ensureAdminOrModeler, async (req, res) => {
     try {
-      const { fileName, fileUrl, fileSize, fileType, scope, modelId, description } = req.body;
+      const { name, fileUrl, fileSize, fileType, scope, modelId, description } = req.body;
       
       // Validate file type
       const allowedTypes = ['pdf', 'docx', 'doc', 'txt', 'md'];
@@ -3096,7 +3096,7 @@ If you didn't request this, please ignore this email—your password will remain
       
       // Create document record in database
       const document = await db.insert(schema.knowledgeDocuments).values({
-        fileName,
+        name,
         fileUrl: normalizedPath,
         fileSize,
         fileType: fileType.toLowerCase(),
