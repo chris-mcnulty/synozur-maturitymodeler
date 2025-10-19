@@ -1555,7 +1555,7 @@ export default function Admin() {
 
   return (
     <SidebarProvider style={sidebarWidth as React.CSSProperties} defaultOpen={true}>
-      <div className="flex h-screen w-full">
+      <div className="flex h-screen w-full overflow-hidden">
         <Sidebar collapsible="icon">
           <SidebarContent>
             <TooltipProvider delayDuration={0}>
