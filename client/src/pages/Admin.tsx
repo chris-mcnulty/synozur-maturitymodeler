@@ -256,47 +256,65 @@ function BenchmarksByModel() {
       </div>
 
       {selectedModelId && benchmarksLoading && (
-        <p className="text-muted-foreground">Loading benchmarks...</p>
+        <Card className="p-6">
+          <p className="text-muted-foreground">Loading benchmarks...</p>
+        </Card>
       )}
 
-      {selectedModelId && benchmarks && benchmarks.length === 0 && (
-        <p className="text-muted-foreground">
-          No benchmarks available for this model. Click "Calculate Benchmarks" to generate them.
-        </p>
+      {selectedModelId && !benchmarksLoading && (!benchmarks || benchmarks.length === 0) && (
+        <Card className="p-6">
+          <div className="text-center space-y-4">
+            <BarChart3 className="h-12 w-12 mx-auto text-muted-foreground" />
+            <div>
+              <h3 className="font-semibold mb-2">No Benchmarks Available</h3>
+              <p className="text-muted-foreground text-sm">
+                No benchmarks have been calculated for this model yet. Click "Calculate Benchmarks" above to generate them from existing assessment data.
+              </p>
+            </div>
+          </div>
+        </Card>
       )}
 
-      {selectedModelId && benchmarks && benchmarks.length > 0 && (
+      {selectedModelId && !benchmarksLoading && benchmarks && benchmarks.length > 0 && (
         <div className="space-y-4">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Segment Type</TableHead>
-                <TableHead>Industry</TableHead>
-                <TableHead>Company Size</TableHead>
-                <TableHead>Country</TableHead>
-                <TableHead>Mean Score</TableHead>
-                <TableHead>Sample Size</TableHead>
-                <TableHead>Updated At</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {benchmarks.map((benchmark: any) => (
-                <TableRow key={benchmark.id} data-testid={`benchmark-row-${benchmark.id}`}>
-                  <TableCell>
-                    <Badge variant={benchmark.segmentType === 'overall' ? 'default' : 'secondary'}>
-                      {benchmark.segmentType.replace(/_/g, ' ')}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>{benchmark.industry || '-'}</TableCell>
-                  <TableCell>{benchmark.companySize || '-'}</TableCell>
-                  <TableCell>{benchmark.country || '-'}</TableCell>
-                  <TableCell className="font-bold">{benchmark.meanScore}</TableCell>
-                  <TableCell>{benchmark.sampleSize}</TableCell>
-                  <TableCell>{new Date(benchmark.updatedAt).toLocaleDateString()}</TableCell>
+          <Card className="p-6">
+            <div className="mb-4">
+              <h3 className="font-semibold mb-1">Benchmark Data</h3>
+              <p className="text-sm text-muted-foreground">
+                {benchmarks.length} benchmark segment{benchmarks.length !== 1 ? 's' : ''} calculated
+              </p>
+            </div>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Segment Type</TableHead>
+                  <TableHead>Industry</TableHead>
+                  <TableHead>Company Size</TableHead>
+                  <TableHead>Country</TableHead>
+                  <TableHead className="text-right">Mean Score</TableHead>
+                  <TableHead className="text-right">Sample Size</TableHead>
+                  <TableHead>Updated At</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {benchmarks.map((benchmark: any) => (
+                  <TableRow key={benchmark.id} data-testid={`benchmark-row-${benchmark.id}`}>
+                    <TableCell>
+                      <Badge variant={benchmark.segmentType === 'overall' ? 'default' : 'secondary'}>
+                        {benchmark.segmentType.replace(/_/g, ' ')}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>{benchmark.industry || '-'}</TableCell>
+                    <TableCell>{benchmark.companySize || '-'}</TableCell>
+                    <TableCell>{benchmark.country || '-'}</TableCell>
+                    <TableCell className="font-bold text-right">{Math.round(benchmark.meanScore)}</TableCell>
+                    <TableCell className="text-right">{benchmark.sampleSize}</TableCell>
+                    <TableCell>{new Date(benchmark.updatedAt).toLocaleDateString()}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </Card>
         </div>
       )}
     </div>
