@@ -1775,8 +1775,8 @@ export default function Admin() {
             </Button>
           </header>
 
-          <main className="flex-1 overflow-y-auto p-6">
-            <div className="max-w-7xl mx-auto space-y-6">
+          <main className="flex-1 overflow-y-auto overflow-x-hidden p-6">
+            <div className="w-full max-w-7xl mx-auto space-y-6">
               {activeSection === 'models' && (
               <Card className="p-6">
                 <div className="flex justify-between items-center mb-6">
