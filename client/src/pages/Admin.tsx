@@ -892,10 +892,11 @@ export default function Admin() {
         description: "The new question has been added successfully.",
       });
     },
-    onError: () => {
+    onError: (error: Error) => {
+      console.error('Question creation error:', error);
       toast({
         title: "Error",
-        description: "Failed to create question.",
+        description: error.message || "Failed to create question.",
         variant: "destructive",
       });
     },
@@ -916,10 +917,11 @@ export default function Admin() {
         description: "The question has been updated successfully.",
       });
     },
-    onError: () => {
+    onError: (error: Error) => {
+      console.error('Question update error:', error);
       toast({
         title: "Error",
-        description: "Failed to update question.",
+        description: error.message || "Failed to update question.",
         variant: "destructive",
       });
     },

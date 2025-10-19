@@ -307,6 +307,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/questions", ensureAdminOrModeler, async (req, res) => {
     try {
+      console.log('[Question Creation] Request body:', JSON.stringify(req.body, null, 2));
+      
       // Get existing questions to determine the order
       const existingQuestions = await storage.getQuestionsByModelId(req.body.modelId);
       const maxOrder = existingQuestions.reduce((max, q) => Math.max(max, q.order || 0), 0);
@@ -317,7 +319,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         order: maxOrder + 1,
       };
       
+      console.log('[Question Creation] Data to validate:', JSON.stringify(questionData, null, 2));
+      
       const validatedData = insertQuestionSchema.parse(questionData);
+      console.log('[Question Creation] Validated data:', JSON.stringify(validatedData, null, 2));
+      
       const question = await storage.createQuestion(validatedData);
       
       // Create default answers if it's a multiple choice question
@@ -336,9 +342,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       res.json(question);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating question:', error);
-      res.status(400).json({ error: "Invalid question data" });
+      
+      // Provide more specific error message for Zod validation errors
+      if (error?.issues) {
+        const zodErrors = error.issues.map((issue: any) => `${issue.path.join('.')}: ${issue.message}`).join(', ');
+        return res.status(400).json({ error: `Validation error: ${zodErrors}` });
+      }
+      
+      res.status(400).json({ error: error?.message || "Invalid question data" });
     }
   });
 
