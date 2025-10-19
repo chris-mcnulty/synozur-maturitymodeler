@@ -349,7 +349,7 @@ export const insertAiContentReviewSchema = createInsertSchema(aiContentReviews).
 // Knowledge documents table for company-wide and model-specific reference materials
 export const knowledgeDocuments = pgTable("knowledge_documents", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  name: text("name").notNull(),
+  fileName: text("file_name").notNull(),
   fileUrl: text("file_url").notNull(),
   fileSize: integer("file_size").notNull(), // in bytes
   fileType: text("file_type").notNull(), // pdf, docx, doc, txt, md
