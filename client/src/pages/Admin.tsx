@@ -1559,8 +1559,9 @@ export default function Admin() {
         <Sidebar collapsible="icon">
           <SidebarContent>
             <TooltipProvider delayDuration={0}>
-              {/* Main Navigation - Models as anchor */}
+              {/* Dashboard Navigation */}
               <SidebarGroup>
+              <SidebarGroupLabel>Overview</SidebarGroupLabel>
               <SidebarGroupContent>
                 <SidebarMenu>
                   <SidebarMenuItem>
@@ -1570,14 +1571,13 @@ export default function Admin() {
                           onClick={() => setActiveSection('models')}
                           isActive={activeSection === 'models'}
                           data-testid="tab-models"
-                          className="font-semibold"
                         >
                           <Home className="h-4 w-4" />
-                          <span>Models</span>
+                          <span>Dashboard</span>
                         </SidebarMenuButton>
                       </TooltipTrigger>
                       <TooltipContent side="right">
-                        <p>Models Overview</p>
+                        <p>Admin Dashboard - Models Overview</p>
                       </TooltipContent>
                     </Tooltip>
                   </SidebarMenuItem>

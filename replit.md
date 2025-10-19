@@ -14,7 +14,7 @@ The application uses a modern fullstack architecture:
 - **Backend**: Express.js for the API, PostgreSQL for the database, and Drizzle ORM for database interactions.
 - **Storage**: PostgreSQL for relational data and object storage (Google Cloud Storage) for assets like model images and knowledge documents.
 - **Authentication**: Passport-based session management with role-based access control (admin, modeler, user).
-- **UI/UX**: Features a dark-mode-first UI with a primary purple (#810FFB) and accent pink (#E60CB3) color scheme, utilizing the Inter font family. Responsive gradient styling is applied to hero titles. Admin sidebar is collapsible with icon-only mode and hover tooltips.
+- **UI/UX**: Features a dark-mode-first UI with a primary purple (#810FFB) and accent pink (#E60CB3) color scheme, utilizing the Inter font family. Responsive gradient styling is applied to hero titles. Admin sidebar is collapsible with icon-only mode via toggle button in header, with hover tooltips for all menu items. Dashboard home button provides quick access to model management screen.
 - **Core Features**: Dynamic model routing (/:modelSlug), assessment wizard with autosave, 100-500 point scoring engine, profile gating for results, email-delivered PDF reports, benchmarking, and a comprehensive admin console.
 - **Model Management**: CSV-driven import/export of models, dimensions, answer options, and resource editing. Models can be featured on the homepage.
 - **User Management**: Admin panel for user CRUD, role assignment, and email verification management. Self-registration defaults to 'user' role.
