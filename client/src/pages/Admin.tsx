@@ -1593,7 +1593,7 @@ export default function Admin() {
                         tooltip="All Models"
                       >
                         <Home className="h-4 w-4" />
-                        <span>All Models</span>
+                        <span className="group-data-[collapsible=icon]:hidden">All Models</span>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
                     <SidebarMenuItem>
@@ -1604,7 +1604,7 @@ export default function Admin() {
                         tooltip="Dimensions"
                       >
                         <BarChart3 className="h-4 w-4" />
-                        <span>Dimensions</span>
+                        <span className="group-data-[collapsible=icon]:hidden">Dimensions</span>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
                     <SidebarMenuItem>
@@ -1615,7 +1615,7 @@ export default function Admin() {
                         tooltip="Questions"
                       >
                         <FileText className="h-4 w-4" />
-                        <span>Questions</span>
+                        <span className="group-data-[collapsible=icon]:hidden">Questions</span>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
                   </SidebarMenu>
@@ -1634,7 +1634,7 @@ export default function Admin() {
                       tooltip="Results"
                     >
                       <Eye className="h-4 w-4" />
-                      <span>Results</span>
+                      <span className="group-data-[collapsible=icon]:hidden">Results</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                   <SidebarMenuItem>
@@ -1645,7 +1645,7 @@ export default function Admin() {
                       tooltip="Benchmarks"
                     >
                       <BarChart3 className="h-4 w-4" />
-                      <span>Benchmarks</span>
+                      <span className="group-data-[collapsible=icon]:hidden">Benchmarks</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                   <SidebarMenuItem>
@@ -1656,7 +1656,7 @@ export default function Admin() {
                       tooltip="Import Data"
                     >
                       <Upload className="h-4 w-4" />
-                      <span>Import</span>
+                      <span className="group-data-[collapsible=icon]:hidden">Import</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                   <SidebarMenuItem>
@@ -1667,7 +1667,7 @@ export default function Admin() {
                       tooltip="Audit Log"
                     >
                       <ClipboardList className="h-4 w-4" />
-                      <span>Audit Log</span>
+                      <span className="group-data-[collapsible=icon]:hidden">Audit Log</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 </SidebarMenu>
@@ -1686,7 +1686,7 @@ export default function Admin() {
                       tooltip="Content"
                     >
                       <BookOpen className="h-4 w-4" />
-                      <span>Content</span>
+                      <span className="group-data-[collapsible=icon]:hidden">Content</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                   <SidebarMenuItem>
@@ -1697,7 +1697,7 @@ export default function Admin() {
                       tooltip="Knowledge Base"
                     >
                       <FileText className="h-4 w-4" />
-                      <span>Knowledge Base</span>
+                      <span className="group-data-[collapsible=icon]:hidden">Knowledge Base</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                   <SidebarMenuItem>
@@ -1708,7 +1708,7 @@ export default function Admin() {
                       tooltip="AI Review"
                     >
                       <Sparkles className="h-4 w-4" />
-                      <span>AI Review</span>
+                      <span className="group-data-[collapsible=icon]:hidden">AI Review</span>
                       {pendingReviews.length > 0 && (
                         <Badge variant="secondary" className="ml-auto" data-testid="badge-pending-reviews">
                           {pendingReviews.length}
@@ -1732,7 +1732,7 @@ export default function Admin() {
                       tooltip="AI Usage"
                     >
                       <Brain className="h-4 w-4" />
-                      <span>AI Usage</span>
+                      <span className="group-data-[collapsible=icon]:hidden">AI Usage</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 </SidebarMenu>
@@ -1752,7 +1752,7 @@ export default function Admin() {
                         tooltip="Users"
                       >
                         <Users className="h-4 w-4" />
-                        <span>Users</span>
+                        <span className="group-data-[collapsible=icon]:hidden">Users</span>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
                   </SidebarMenu>
