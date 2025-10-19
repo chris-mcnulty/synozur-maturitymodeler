@@ -239,8 +239,26 @@ export default function Results() {
         });
 
         // Fetch maturity summary
-        // IMPORTANT: Use assessment owner's profile, not viewing user's profile
-        const profileForAI = assessmentOwner || user;
+        // IMPORTANT: Use proxy profile for proxy assessments, otherwise use assessment owner's profile
+        let userContext: { industry?: string; companySize?: string; jobTitle?: string } | undefined;
+        
+        if (assessment.isProxy) {
+          // Use proxy profile data for AI context
+          userContext = {
+            industry: assessment.proxyIndustry || undefined,
+            companySize: assessment.proxyCompanySize || undefined,
+            jobTitle: assessment.proxyJobTitle || undefined
+          };
+        } else {
+          // Use real user profile
+          const profileForAI = assessmentOwner || user;
+          userContext = profileForAI ? {
+            industry: profileForAI.industry,
+            companySize: profileForAI.companySize,
+            jobTitle: profileForAI.jobTitle
+          } : undefined;
+        }
+        
         const maturityResponse = await fetch('/api/ai/generate-maturity-summary', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -248,11 +266,7 @@ export default function Results() {
             overallScore: result.overallScore,
             dimensionScores: dimensionScoresForAI,
             modelName: model.name,
-            userContext: profileForAI ? {
-              industry: profileForAI.industry,
-              companySize: profileForAI.companySize,
-              jobTitle: profileForAI.jobTitle
-            } : undefined
+            userContext
           })
         });
 
@@ -272,11 +286,7 @@ export default function Results() {
                 description: r.description
               })),
               modelName: model.name,
-              userContext: profileForAI ? {
-                industry: profileForAI.industry,
-                companySize: profileForAI.companySize,
-                jobTitle: profileForAI.jobTitle
-              } : undefined
+              userContext // Use the same context determined above (proxy or real user)
             })
           });
 
@@ -363,6 +373,26 @@ export default function Results() {
         return;
       }
 
+      // Use proxy profile data for proxy assessments, otherwise use real user profile
+      let pdfUserContext;
+      if (assessment.isProxy) {
+        pdfUserContext = {
+          name: assessment.proxyName || undefined,
+          company: assessment.proxyCompany || undefined,
+          jobTitle: assessment.proxyJobTitle || undefined,
+          industry: assessment.proxyIndustry || undefined,
+          companySize: assessment.proxyCompanySize || undefined
+        };
+      } else {
+        pdfUserContext = user ? {
+          name: user.name || undefined,
+          company: user.company || undefined,
+          jobTitle: user.jobTitle || undefined,
+          industry: user.industry || undefined,
+          companySize: user.companySize || undefined
+        } : undefined;
+      }
+
       const pdf = generateAssessmentPDF({
         result,
         model,
@@ -374,13 +404,7 @@ export default function Results() {
         improvementResources: improvementResources,
         maturitySummary,
         recommendationsSummary,
-        userContext: user ? {
-          name: user.name || undefined,
-          company: user.company || undefined,
-          jobTitle: user.jobTitle || undefined,
-          industry: user.industry || undefined,
-          companySize: user.companySize || undefined
-        } : undefined
+        userContext: pdfUserContext
       });
 
       // Download the PDF with unique filename format: [ModelName]-Report-[YYYY-MM-DD]-[UniqueID].pdf
@@ -402,7 +426,7 @@ export default function Results() {
         variant: "destructive"
       });
     }
-  }, [model, result, benchmark, recommendations, improvementResources, maturitySummary, recommendationsSummary, user, toast]);
+  }, [model, result, benchmark, recommendations, improvementResources, maturitySummary, recommendationsSummary, user, assessment, toast]);
 
   // Send PDF via email
   const sendPdfEmail = useCallback(async (recipientEmail: string, recipientName?: string) => {
@@ -426,6 +450,26 @@ export default function Results() {
         return;
       }
 
+      // Use proxy profile data for proxy assessments, otherwise use real user profile
+      let pdfUserContext;
+      if (assessment.isProxy) {
+        pdfUserContext = {
+          name: assessment.proxyName || undefined,
+          company: assessment.proxyCompany || undefined,
+          jobTitle: assessment.proxyJobTitle || undefined,
+          industry: assessment.proxyIndustry || undefined,
+          companySize: assessment.proxyCompanySize || undefined
+        };
+      } else {
+        pdfUserContext = user ? {
+          name: user.name || undefined,
+          company: user.company || undefined,
+          jobTitle: user.jobTitle || undefined,
+          industry: user.industry || undefined,
+          companySize: user.companySize || undefined
+        } : undefined;
+      }
+
       // Generate PDF
       const pdf = generateAssessmentPDF({
         result,
@@ -438,13 +482,7 @@ export default function Results() {
         improvementResources: improvementResources,
         maturitySummary,
         recommendationsSummary,
-        userContext: user ? {
-          name: user.name || undefined,
-          company: user.company || undefined,
-          jobTitle: user.jobTitle || undefined,
-          industry: user.industry || undefined,
-          companySize: user.companySize || undefined
-        } : undefined
+        userContext: pdfUserContext
       });
 
       // Convert PDF to base64 using Promise wrapper for proper error handling
@@ -497,7 +535,7 @@ export default function Results() {
         variant: "destructive"
       });
     }
-  }, [model, result, benchmark, recommendations, improvementResources, maturitySummary, recommendationsSummary, user, toast]);
+  }, [model, result, benchmark, recommendations, improvementResources, maturitySummary, recommendationsSummary, user, assessment, toast]);
 
   // Handle PDF/Email actions
   const handlePdfAction = useCallback((action: 'download' | 'email') => {
@@ -634,11 +672,35 @@ export default function Results() {
 
           <div className="text-center mb-12">
             <h1 className="text-5xl font-bold mb-4" data-testid="text-title">
-              Your {model.name} Results
+              {assessment.isProxy ? `${model.name} Results` : `Your ${model.name} Results`}
             </h1>
             <p className="text-xl text-muted-foreground">
               Assessment completed on {new Date().toLocaleDateString()}
             </p>
+            
+            {/* Display proxy profile information if this is a proxy assessment */}
+            {assessment.isProxy && (
+              <div className="mt-6 inline-block">
+                <Card className="p-4 bg-primary/5">
+                  <div className="flex items-center gap-3 text-left">
+                    <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                      <span className="text-primary font-bold text-lg">
+                        {assessment.proxyName?.charAt(0).toUpperCase() || 'P'}
+                      </span>
+                    </div>
+                    <div>
+                      <p className="font-semibold" data-testid="text-proxy-name">
+                        {assessment.proxyName}
+                      </p>
+                      <p className="text-sm text-muted-foreground" data-testid="text-proxy-company">
+                        {assessment.proxyCompany}
+                        {assessment.proxyJobTitle && ` • ${assessment.proxyJobTitle}`}
+                      </p>
+                    </div>
+                  </div>
+                </Card>
+              </div>
+            )}
           </div>
 
           {/* Overall Score Card */}

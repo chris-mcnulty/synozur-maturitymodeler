@@ -763,6 +763,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Create proxy assessment (admin/modeler only)
+  app.post("/api/admin/assessments/proxy", ensureAdminOrModeler, async (req, res) => {
+    try {
+      const { modelId, proxyName, proxyCompany, proxyJobTitle, proxyIndustry, proxyCompanySize, proxyCountry } = req.body;
+      
+      // Validate required fields
+      if (!modelId || !proxyName || !proxyCompany) {
+        return res.status(400).json({ error: "Model, name, and company are required" });
+      }
+
+      // Create assessment with proxy profile
+      const assessment = await storage.createAssessment({
+        modelId,
+        userId: req.user!.id, // The admin/modeler creating the assessment
+        status: "in_progress",
+        isProxy: true,
+        proxyName,
+        proxyCompany,
+        proxyJobTitle: proxyJobTitle || null,
+        proxyIndustry: proxyIndustry || null,
+        proxyCompanySize: proxyCompanySize || null,
+        proxyCountry: proxyCountry || null,
+      });
+
+      res.json(assessment);
+    } catch (error) {
+      console.error('Failed to create proxy assessment:', error);
+      res.status(500).json({ error: "Failed to create proxy assessment" });
+    }
+  });
+
   // Get all assessments for current user
   app.get("/api/assessments", async (req, res) => {
     try {

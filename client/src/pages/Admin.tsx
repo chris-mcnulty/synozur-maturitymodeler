@@ -21,6 +21,7 @@ import { AiContentReviewQueue } from "@/components/admin/AiContentReviewQueue";
 import { ContentManagement } from "@/components/admin/ContentManagement";
 import { ImportManager } from "@/components/admin/ImportManager";
 import { ImportBatches } from "@/components/admin/ImportBatches";
+import { ProxyAssessmentDialog } from "@/components/admin/ProxyAssessmentDialog";
 import {
   Sidebar,
   SidebarContent,
@@ -46,6 +47,9 @@ interface AdminResult extends Result {
   company?: string;
   modelName?: string;
   date?: string;
+  isProxy?: boolean;
+  proxyName?: string;
+  proxyCompany?: string;
 }
 
 // Benchmark Configuration Component
@@ -505,6 +509,9 @@ export default function Admin() {
                 userName: assessment.user?.name || null,
                 company: assessment.user?.company || null,
                 date: assessment.startedAt ? new Date(assessment.startedAt).toISOString() : new Date().toISOString(),
+                isProxy: assessment.isProxy || false,
+                proxyName: assessment.proxyName || null,
+                proxyCompany: assessment.proxyCompany || null,
               };
             }
           } catch {
@@ -1837,14 +1844,17 @@ export default function Admin() {
               <SidebarTrigger data-testid="button-sidebar-toggle" />
               <h1 className="text-2xl font-bold">Admin Console</h1>
             </div>
-            <Button 
-              variant="outline" 
-              data-testid="button-settings"
-              onClick={() => setIsSettingsDialogOpen(true)}
-            >
-              <Settings className="mr-2 h-4 w-4" />
-              Settings
-            </Button>
+            <div className="flex items-center gap-2">
+              <ProxyAssessmentDialog models={models} />
+              <Button 
+                variant="outline" 
+                data-testid="button-settings"
+                onClick={() => setIsSettingsDialogOpen(true)}
+              >
+                <Settings className="mr-2 h-4 w-4" />
+                Settings
+              </Button>
+            </div>
           </header>
 
           <main className="flex-1 overflow-y-auto overflow-x-hidden p-6">
@@ -2612,8 +2622,17 @@ export default function Admin() {
                       results.map((result) => (
                         <TableRow key={result.assessmentId} data-testid={`result-row-${result.assessmentId}`}>
                           <TableCell>{new Date(result.date || Date.now()).toLocaleDateString()}</TableCell>
-                          <TableCell>{result.userName || 'Anonymous'}</TableCell>
-                          <TableCell>{result.company || '-'}</TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <span>{result.isProxy ? result.proxyName : (result.userName || 'Anonymous')}</span>
+                              {result.isProxy && (
+                                <Badge variant="secondary" className="text-xs" data-testid={`badge-proxy-${result.assessmentId}`}>
+                                  Proxy
+                                </Badge>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell>{result.isProxy ? result.proxyCompany : (result.company || '-')}</TableCell>
                           <TableCell>{result.modelName}</TableCell>
                           <TableCell>{result.overallScore}</TableCell>
                           <TableCell>
