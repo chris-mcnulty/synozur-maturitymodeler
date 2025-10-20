@@ -586,7 +586,7 @@ The Synozur Alliance LLC will help you navigate this journey with expertise and 
   // Rewrite an answer option to be more contextual to the specific question
   async rewriteAnswer(question: string, answer: string, score: number, modelContext?: string): Promise<string> {
     try {
-      const maturityLevel = this.getMaturityLevel(score * 5);
+      const maturityLevel = this.getMaturityLevel(score);
       
       // Define what each maturity level means in concrete terms
       const levelGuidance: Record<string, string> = {
