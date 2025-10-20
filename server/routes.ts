@@ -1301,35 +1301,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Benchmark routes
-  app.get("/api/benchmarks/:modelId", async (req, res) => {
-    try {
-      // Non-admin users can only access benchmarks for published models
-      const model = await storage.getModel(req.params.modelId);
-      if (!model) {
-        return res.status(404).json({ error: "Model not found" });
-      }
-      if ((!req.isAuthenticated() || req.user?.role !== 'admin') && model.status !== 'published') {
-        return res.status(404).json({ error: "Model not found" });
-      }
-      
-      const { industry, country } = req.query;
-      const benchmark = await storage.getBenchmark(
-        req.params.modelId,
-        industry as string | undefined,
-        country as string | undefined
-      );
-      
-      if (!benchmark) {
-        return res.status(404).json({ error: "Benchmark not found" });
-      }
-      
-      res.json(benchmark);
-    } catch (error) {
-      res.status(500).json({ error: "Failed to fetch benchmark" });
-    }
-  });
-
   // Admin routes for model management
   app.post("/api/admin/models/seed/:modelSlug", ensureAdminOrModeler, async (req, res) => {
     try {
