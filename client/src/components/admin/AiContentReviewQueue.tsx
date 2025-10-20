@@ -415,30 +415,68 @@ export function AiContentReviewQueue() {
         );
 
       case 'answer_rewrite':
+        const getMaturityLevel = (score: number): string => {
+          if (score >= 400) return 'Optimizing';
+          if (score >= 300) return 'Managed';
+          if (score >= 200) return 'Developing';
+          if (score >= 100) return 'Initial';
+          return 'Ad Hoc';
+        };
+        
+        const answerScore = review.metadata?.answerScore || 0;
+        const maturityLevel = getMaturityLevel(answerScore * 5);
+        
         return (
-          <div className={`p-4 rounded-md border ${isItemSelected(reviewId, 'main-content') ? 'bg-primary/5 border-primary' : ''}`}>
-            <div className="flex items-start gap-3">
-              <Checkbox
-                checked={isItemSelected(reviewId, 'main-content')}
-                onCheckedChange={() => toggleItemSelection(reviewId, 'main-content')}
-                data-testid={`checkbox-rewrite-${reviewId}`}
-              />
-              <div className="flex-1 space-y-4">
-                <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-3">
+            {/* Question and Level Context */}
+            <div className="p-3 rounded-md bg-muted/30 border">
+              <div className="space-y-2">
+                <div>
+                  <label className="text-xs font-semibold text-muted-foreground">Question:</label>
+                  <p className="text-sm mt-1">{review.metadata?.questionText || 'N/A'}</p>
+                </div>
+                <div className="flex items-center gap-3">
                   <div>
-                    <label className="text-sm font-semibold text-muted-foreground">Original Answer:</label>
-                    <div className="mt-1 p-3 rounded-md bg-muted/50 border min-h-[100px]">
-                      <p className="text-sm">{review.metadata?.answerText || 'N/A'}</p>
-                    </div>
+                    <label className="text-xs font-semibold text-muted-foreground">Score Level:</label>
+                    <Badge variant="outline" className="ml-2">
+                      {answerScore}/100
+                    </Badge>
                   </div>
                   <div>
-                    <label className="text-sm font-semibold">Rewritten Answer:</label>
-                    <Textarea
-                      value={content?.rewrittenAnswer || ''}
-                      onChange={(e) => handleContentEdit(reviewId, ['rewrittenAnswer'], e.target.value)}
-                      className="mt-1 min-h-[100px]"
-                      data-testid={`textarea-rewrite-${reviewId}`}
-                    />
+                    <label className="text-xs font-semibold text-muted-foreground">Maturity Level:</label>
+                    <Badge variant="secondary" className="ml-2">
+                      {maturityLevel}
+                    </Badge>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            {/* Answer Comparison */}
+            <div className={`p-4 rounded-md border ${isItemSelected(reviewId, 'main-content') ? 'bg-primary/5 border-primary' : ''}`}>
+              <div className="flex items-start gap-3">
+                <Checkbox
+                  checked={isItemSelected(reviewId, 'main-content')}
+                  onCheckedChange={() => toggleItemSelection(reviewId, 'main-content')}
+                  data-testid={`checkbox-rewrite-${reviewId}`}
+                />
+                <div className="flex-1 space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm font-semibold text-muted-foreground">Original Answer:</label>
+                      <div className="mt-1 p-3 rounded-md bg-muted/50 border min-h-[100px]">
+                        <p className="text-sm">{review.metadata?.answerText || 'N/A'}</p>
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-sm font-semibold">Rewritten Answer:</label>
+                      <Textarea
+                        value={content?.rewrittenAnswer || ''}
+                        onChange={(e) => handleContentEdit(reviewId, ['rewrittenAnswer'], e.target.value)}
+                        className="mt-1 min-h-[100px]"
+                        data-testid={`textarea-rewrite-${reviewId}`}
+                      />
+                    </div>
                   </div>
                 </div>
               </div>

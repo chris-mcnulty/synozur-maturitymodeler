@@ -586,21 +586,37 @@ The Synozur Alliance LLC will help you navigate this journey with expertise and 
   // Rewrite an answer option to be more contextual to the specific question
   async rewriteAnswer(question: string, answer: string, score: number, modelContext?: string): Promise<string> {
     try {
-      const prompt = `You are an expert in maturity assessments. Rewrite the following answer option to be more specific and contextual to the question while maintaining the same maturity level.
+      const maturityLevel = this.getMaturityLevel(score * 5);
+      
+      // Define what each maturity level means in concrete terms
+      const levelGuidance: Record<string, string> = {
+        'Ad Hoc': 'Describes MINIMAL or NO formal processes - activities are reactive, informal, and unstructured. Focus on basic awareness or initial exploration.',
+        'Initial': 'Describes BASIC processes that are just beginning to be established - still inconsistent and dependent on individuals. Focus on early-stage implementation.',
+        'Developing': 'Describes DEFINED processes that are documented and becoming standardized - not yet optimized. Focus on systematic implementation.',
+        'Managed': 'Describes MEASURED processes that are actively monitored and controlled - well-established practices. Focus on quantitative management.',
+        'Optimizing': 'Describes CONTINUOUS IMPROVEMENT processes - innovation-focused, predictive, and adaptive. Focus on industry-leading practices.'
+      };
+      
+      const prompt = `You are an expert in maturity assessments. Rewrite this answer option to be more specific to the question while accurately reflecting the ${maturityLevel} maturity level.
 
 Question: ${question}
 Current Answer: ${answer}
-Score Level: ${score}/100 (${this.getMaturityLevel(score * 5)})
+Score: ${score}/100 
+Maturity Level: ${maturityLevel}
 ${modelContext ? `Model Context: ${modelContext}` : ''}
 
-STRICT RULES:
-- MAXIMUM 30 words (2 lines)
-- Be specific to the question
-- Maintain maturity level (${this.getMaturityLevel(score * 5)})
-- Clear and actionable
-- No generic statements
+CRITICAL LEVEL GUIDANCE for ${maturityLevel}:
+${levelGuidance[maturityLevel]}
 
-Return ONLY the rewritten answer text (30 words MAX).`;
+STRICT RULES:
+1. MAXIMUM 20 words (keep it concise!)
+2. Describe CURRENT state capabilities, NOT future aspirations or recommendations
+3. ${maturityLevel === 'Ad Hoc' || maturityLevel === 'Initial' ? 'Use language like: "limited", "informal", "ad hoc", "beginning to", "minimal"' : maturityLevel === 'Developing' ? 'Use language like: "defined", "documented", "standardized", "systematic"' : maturityLevel === 'Managed' ? 'Use language like: "measured", "controlled", "optimized", "data-driven"' : 'Use language like: "continuous", "innovative", "predictive", "industry-leading"'}
+4. Be specific to the question context
+5. Do NOT include recommendations, next steps, or improvement suggestions
+6. Do NOT describe capabilities from higher maturity levels
+
+Return ONLY the rewritten answer text (20 words maximum, no preamble).`;
 
       const completion = await this.callOpenAI(prompt);
       

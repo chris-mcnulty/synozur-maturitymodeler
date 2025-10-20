@@ -1351,8 +1351,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Create benchmarks
       if (seedData.benchmarks) {
         for (const bench of seedData.benchmarks) {
+          // Determine segment type based on which fields are populated
+          let segmentType = 'overall';
+          if (bench.industry && bench.country) {
+            segmentType = 'industry_country';
+          } else if (bench.industry) {
+            segmentType = 'industry';
+          } else if (bench.country) {
+            segmentType = 'country';
+          }
+          
           await storage.createBenchmark({
             modelId: model.id,
+            segmentType,
             industry: bench.industry,
             country: bench.country,
             meanScore: bench.averageScore,
@@ -1878,7 +1889,7 @@ Respond in JSON format:
       if (selectedItemIds && selectedItemIds.length > 0) {
         // For partial rejections, we need to keep the review pending
         // and only remove the rejected items from the generated content
-        let remainingContent = { ...(review.generatedContent || {}) };
+        let remainingContent: any = { ...(review.generatedContent || {}) };
         
         switch (review.contentType) {
           case 'dimension_resources':
@@ -1914,8 +1925,8 @@ Respond in JSON format:
             
             // Remove interpretation if rejected
             if (selectedItemIds.includes('interpretation')) {
-              delete (remainingContent as any).interpretation;
-              delete (remainingContent as any).title;
+              delete remainingContent.interpretation;
+              delete remainingContent.title;
             }
             break;
             
