@@ -33,6 +33,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { UserPlus } from "lucide-react";
+import { JOB_ROLES, INDUSTRIES, COMPANY_SIZES, COUNTRIES } from "@/lib/constants";
 
 const proxyAssessmentSchema = z.object({
   modelId: z.string().min(1, "Model is required"),
@@ -198,13 +199,9 @@ export function ProxyAssessmentDialog({ models }: ProxyAssessmentDialogProps) {
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="C-Level Executive">C-Level Executive</SelectItem>
-                      <SelectItem value="VP / SVP / EVP">VP / SVP / EVP</SelectItem>
-                      <SelectItem value="Director">Director</SelectItem>
-                      <SelectItem value="Manager">Manager</SelectItem>
-                      <SelectItem value="Individual Contributor">Individual Contributor</SelectItem>
-                      <SelectItem value="Consultant">Consultant</SelectItem>
-                      <SelectItem value="Other">Other</SelectItem>
+                      {JOB_ROLES.map((role) => (
+                        <SelectItem key={role} value={role}>{role}</SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                   <FormMessage />
@@ -229,15 +226,9 @@ export function ProxyAssessmentDialog({ models }: ProxyAssessmentDialogProps) {
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="Technology">Technology</SelectItem>
-                      <SelectItem value="Financial Services">Financial Services</SelectItem>
-                      <SelectItem value="Healthcare">Healthcare</SelectItem>
-                      <SelectItem value="Manufacturing">Manufacturing</SelectItem>
-                      <SelectItem value="Retail">Retail</SelectItem>
-                      <SelectItem value="Education">Education</SelectItem>
-                      <SelectItem value="Government">Government</SelectItem>
-                      <SelectItem value="Professional Services">Professional Services</SelectItem>
-                      <SelectItem value="Other">Other</SelectItem>
+                      {INDUSTRIES.map((industry) => (
+                        <SelectItem key={industry} value={industry}>{industry}</SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                   <FormMessage />
@@ -262,11 +253,9 @@ export function ProxyAssessmentDialog({ models }: ProxyAssessmentDialogProps) {
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="1-50">1-50 employees</SelectItem>
-                      <SelectItem value="51-200">51-200 employees</SelectItem>
-                      <SelectItem value="201-1000">201-1000 employees</SelectItem>
-                      <SelectItem value="1001-5000">1001-5000 employees</SelectItem>
-                      <SelectItem value="5001+">5001+ employees</SelectItem>
+                      {COMPANY_SIZES.map((size) => (
+                        <SelectItem key={size.value} value={size.value}>{size.label}</SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                   <FormMessage />
@@ -291,15 +280,9 @@ export function ProxyAssessmentDialog({ models }: ProxyAssessmentDialogProps) {
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="United States">United States</SelectItem>
-                      <SelectItem value="Canada">Canada</SelectItem>
-                      <SelectItem value="United Kingdom">United Kingdom</SelectItem>
-                      <SelectItem value="Germany">Germany</SelectItem>
-                      <SelectItem value="France">France</SelectItem>
-                      <SelectItem value="Australia">Australia</SelectItem>
-                      <SelectItem value="India">India</SelectItem>
-                      <SelectItem value="Singapore">Singapore</SelectItem>
-                      <SelectItem value="Other">Other</SelectItem>
+                      {COUNTRIES.map((country) => (
+                        <SelectItem key={country} value={country}>{country}</SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                   <FormMessage />
