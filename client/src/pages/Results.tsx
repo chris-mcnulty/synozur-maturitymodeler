@@ -242,7 +242,7 @@ export default function Results() {
         // IMPORTANT: Use proxy profile for proxy assessments, otherwise use assessment owner's profile
         let userContext: { industry?: string; companySize?: string; jobTitle?: string } | undefined;
         
-        if (assessment.isProxy) {
+        if (assessment?.isProxy) {
           // Use proxy profile data for AI context
           userContext = {
             industry: assessment.proxyIndustry || undefined,
@@ -253,9 +253,9 @@ export default function Results() {
           // Use real user profile
           const profileForAI = assessmentOwner || user;
           userContext = profileForAI ? {
-            industry: profileForAI.industry,
-            companySize: profileForAI.companySize,
-            jobTitle: profileForAI.jobTitle
+            industry: profileForAI.industry || undefined,
+            companySize: profileForAI.companySize || undefined,
+            jobTitle: profileForAI.jobTitle || undefined
           } : undefined;
         }
         
@@ -375,7 +375,7 @@ export default function Results() {
 
       // Use proxy profile data for proxy assessments, otherwise use real user profile
       let pdfUserContext;
-      if (assessment.isProxy) {
+      if (assessment?.isProxy) {
         pdfUserContext = {
           name: assessment.proxyName || undefined,
           company: assessment.proxyCompany || undefined,
@@ -452,7 +452,7 @@ export default function Results() {
 
       // Use proxy profile data for proxy assessments, otherwise use real user profile
       let pdfUserContext;
-      if (assessment.isProxy) {
+      if (assessment?.isProxy) {
         pdfUserContext = {
           name: assessment.proxyName || undefined,
           company: assessment.proxyCompany || undefined,
@@ -672,14 +672,14 @@ export default function Results() {
 
           <div className="text-center mb-12">
             <h1 className="text-5xl font-bold mb-4" data-testid="text-title">
-              {assessment.isProxy ? `${model.name} Results` : `Your ${model.name} Results`}
+              {assessment?.isProxy ? `${model.name} Results` : `Your ${model.name} Results`}
             </h1>
             <p className="text-xl text-muted-foreground">
               Assessment completed on {new Date().toLocaleDateString()}
             </p>
             
             {/* Display proxy profile information if this is a proxy assessment */}
-            {assessment.isProxy && (
+            {assessment?.isProxy && (
               <div className="mt-6 inline-block">
                 <Card className="p-4 bg-primary/5">
                   <div className="flex items-center gap-3 text-left">
