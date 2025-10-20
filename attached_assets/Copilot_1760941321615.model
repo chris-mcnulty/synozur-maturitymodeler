@@ -1,0 +1,155 @@
+{
+  "formatVersion": "1.0",
+  "exportedAt": "2025-10-20T06:10:00.000Z",
+  "model": {
+    "name": "M365 Copilot Maturity",
+    "slug": "m365-copilot",
+    "description": "Assess organizational maturity for Microsoft 365 Copilot across strategy, tenant readiness, data/security, adoption, enablement, governance, and value realization. Built for business and IT leaders to prioritize investments and track progress.",
+    "version": "1.0.0",
+    "estimatedTime": "10-12 minutes",
+    "status": "published",
+    "featured": true,
+    "imageUrl": "/objects/uploads/m365-copilot-maturity.png"
+  },
+  "maturityScale": [
+    {
+      "id": 1,
+      "name": "Initial / Ad Hoc",
+      "description": "Individuals experiment with Copilot without strategy, governance, or enablement; value is anecdotal and risks are unmanaged.",
+      "minScore": 100,
+      "maxScore": 199
+    },
+    {
+      "id": 2,
+      "name": "Emerging / Structured",
+      "description": "Leaders acknowledge Copilot’s potential; foundational governance, licensing, and training begin; adoption is uneven and value is localized.",
+      "minScore": 200,
+      "maxScore": 299
+    },
+    {
+      "id": 3,
+      "name": "Operational / Integrated",
+      "description": "Copilot is embedded in multiple workflows with measurable KPIs; governance, security, and support are established; usage grows predictably.",
+      "minScore": 300,
+      "maxScore": 399
+    },
+    {
+      "id": 4,
+      "name": "Strategic / Transformational",
+      "description": "Copilot informs process redesign and decision-making; cross-functional leadership drives scaled outcomes and continuous optimization.",
+      "minScore": 400,
+      "maxScore": 449
+    },
+    {
+      "id": 5,
+      "name": "Frontier / AI-First",
+      "description": "Organization operates as AI-first; Copilot and complementary agents are pervasive with strong safety, telemetry, and business impact at scale.",
+      "minScore": 450,
+      "maxScore": 500
+    }
+  ],
+  "generalResources": [
+    {
+      "id": "resource-1760930000001",
+      "title": "Microsoft 365 Copilot Adoption Hub",
+      "description": "Guidance, training, scenarios, and stakeholder kits for Copilot adoption.",
+      "link": "https://adoption.microsoft.com/en-us/copilot/"
+    },
+    {
+      "id": "resource-1760930000002",
+      "title": "Microsoft 365 Copilot documentation",
+      "description": "Core concepts, requirements, data, privacy, and security for Copilot in Microsoft 365.",
+      "link": "https://learn.microsoft.com/microsoft-365-copilot/"
+    },
+    {
+      "id": "resource-1760930000003",
+      "title": "Copilot in Microsoft 365 apps",
+      "description": "Feature guides for Word, Excel, PowerPoint, Outlook, and Teams.",
+      "link": "https://learn.microsoft.com/microsoft-365-copilot/m365-apps"
+    },
+    {
+      "id": "resource-1760930000004",
+      "title": "Microsoft Purview Data Loss Prevention",
+      "description": "Prevent data exfiltration while enabling Copilot productivity scenarios.",
+      "link": "https://learn.microsoft.com/purview/dlp-learn-about-dlp"
+    },
+    {
+      "id": "resource-1760930000005",
+      "title": "Sensitivity labels in Microsoft 365",
+      "description": "Classify and protect data to control what Copilot can access and share.",
+      "link": "https://learn.microsoft.com/microsoft-365/compliance/information-protection-sensitivity-labels"
+    },
+    {
+      "id": "resource-1760930000006",
+      "title": "Microsoft 365 auditing solutions",
+      "description": "Configure unified audit logs and advanced auditing for Copilot oversight.",
+      "link": "https://learn.microsoft.com/microsoft-365/compliance/microsoft-365-auditing"
+    },
+    {
+      "id": "resource-1760930000007",
+      "title": "Copilot Studio",
+      "description": "Build and govern custom copilots and connectors with ALM and telemetry.",
+      "link": "https://learn.microsoft.com/microsoft-copilot-studio/"
+    },
+    {
+      "id": "resource-1760930000008",
+      "title": "Entra ID (Azure AD) – Identity & Access",
+      "description": "RBAC, Conditional Access, SSO, and governance for Copilot and agents.",
+      "link": "https://learn.microsoft.com/entra/identity/"
+    },
+    {
+      "id": "resource-1760930000009",
+      "title": "Synozur Leading AI Playbooks & Strategic Analysis",
+      "description": "Field-tested strategy plays and maturity practices to accelerate AI value.",
+      "link": "https://www.synozur.com/items/leading-ai-playbooks-and-strategic-analysis"
+    }
+  ],
+  "dimensions": [
+    {
+      "key": "strategy_leadership",
+      "label": "Strategy & Leadership",
+      "description": "Vision, sponsorship, funding, and measurable objectives for Copilot aligned to business outcomes.",
+      "order": 1
+    },
+    {
+      "key": "technology_tenant",
+      "label": "Tenant Readiness & Configuration",
+      "description": "Licensing, prerequisites, controls, and configuration of Microsoft 365 for safe, effective Copilot use.",
+      "order": 2
+    },
+    {
+      "key": "data_security",
+      "label": "Data, Security & Compliance",
+      "description": "Information architecture, sensitivity labels, DLP, audit, and risk controls shaping what Copilot can see and do.",
+      "order": 3
+    },
+    {
+      "key": "adoption_change",
+      "label": "Adoption & Change Management",
+      "description": "Communication, champions, feedback loops, and behavioral reinforcement that drive sustainable usage.",
+      "order": 4
+    },
+    {
+      "key": "skills_enablement",
+      "label": "People, Skills & Promptcraft",
+      "description": "AI literacy, role-based training, prompt patterns, and practice communities for Copilot proficiency.",
+      "order": 5
+    },
+    {
+      "key": "usecases_value",
+      "label": "Use Cases & Value Realization",
+      "description": "Portfolio selection, workflow integration, and KPI tracking to prove and scale business impact.",
+      "order": 6
+    },
+    {
+      "key": "governance_responsible_ai",
+      "label": "Governance & Responsible AI",
+      "description": "Policies, accountability, evaluations, and safety-by-design for Copilot and custom agents.",
+      "order": 7
+    }
+  ],
+  "questions": [
+    // ... [18 questions, each as a JSON object, matching the structure above]
+    // For brevity, see previous message for full question/answer objects.
+  ]
+}

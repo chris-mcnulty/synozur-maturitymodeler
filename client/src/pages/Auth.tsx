@@ -10,76 +10,7 @@ import { useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
 import synozurLogo from "@assets/SynozurLogo_color 1400_1759973943542.png";
-
-// Standard dropdown options
-const JOB_ROLES = [
-  "Chief Executive Officer (CEO)",
-  "Chief Technology Officer (CTO)",
-  "Chief Financial Officer (CFO)",
-  "Chief Marketing Officer (CMO)",
-  "Chief Operating Officer (COO)",
-  "Vice President",
-  "Director",
-  "Senior Manager",
-  "Manager",
-  "Team Lead",
-  "Project Manager",
-  "Product Manager",
-  "Software Engineer",
-  "Data Analyst",
-  "Business Analyst",
-  "Sales Executive",
-  "Marketing Specialist",
-  "Human Resources Specialist",
-  "Customer Support Representative",
-  "Other",
-];
-
-const INDUSTRIES = [
-  "Technology",
-  "Finance",
-  "Healthcare",
-  "Education",
-  "Manufacturing",
-  "Retail",
-  "Transportation",
-  "Energy",
-  "Telecommunications",
-  "Media & Entertainment",
-  "Real Estate",
-  "Construction",
-  "Agriculture",
-  "Government",
-  "Nonprofit",
-  "Professional Services",
-  "Insurance",
-  "Automotive",
-  "Pharmaceuticals",
-  "Other",
-];
-
-const COUNTRIES = [
-  "United States",
-  "Canada",
-  "United Kingdom",
-  "Australia",
-  "Germany",
-  "France",
-  "Italy",
-  "Spain",
-  "Netherlands",
-  "Sweden",
-  "Switzerland",
-  "Japan",
-  "China",
-  "India",
-  "Brazil",
-  "Mexico",
-  "South Africa",
-  "Singapore",
-  "United Arab Emirates",
-  "New Zealand",
-];
+import { JOB_ROLES, INDUSTRIES, COMPANY_SIZES, COUNTRIES } from "@/lib/constants";
 
 export default function Auth() {
   const [, setLocation] = useLocation();
@@ -364,13 +295,9 @@ export default function Auth() {
                       <SelectValue placeholder="Select company size" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="1">Sole Proprietor (1)</SelectItem>
-                      <SelectItem value="2-9">Small Team (2-9)</SelectItem>
-                      <SelectItem value="10-49">Small Business (10-49)</SelectItem>
-                      <SelectItem value="50-249">Medium Business (50-249)</SelectItem>
-                      <SelectItem value="250-999">Large Business (250-999)</SelectItem>
-                      <SelectItem value="1000-9999">Enterprise (1,000-9,999)</SelectItem>
-                      <SelectItem value="10000+">Large Enterprise (10,000+)</SelectItem>
+                      {COMPANY_SIZES.map((size) => (
+                        <SelectItem key={size.value} value={size.value}>{size.label}</SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
