@@ -4144,8 +4144,8 @@ export default function Admin() {
                 <p className="text-sm"><strong>Version:</strong> {pendingModelFile?.modelData.model.version}</p>
                 <p className="text-sm mt-2"><strong>Includes:</strong></p>
                 <ul className="text-sm list-disc list-inside ml-2">
-                  <li>{pendingModelFile?.modelData.dimensions.length || 0} dimensions</li>
-                  <li>{pendingModelFile?.modelData.questions.length || 0} questions</li>
+                  <li>{pendingModelFile?.modelData.model.dimensions.length || 0} dimensions</li>
+                  <li>{pendingModelFile?.modelData.model.questions.length || 0} questions</li>
                 </ul>
               </div>
             </div>
