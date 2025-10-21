@@ -428,7 +428,7 @@ Your assessment shows areas of strength and opportunities for growth. The Synozu
       // Fetch knowledge context from uploaded documents (modelId already retrieved above)
       const knowledgeContext = await this.getKnowledgeContext(modelId);
 
-      const prompt = `You are a transformation expert from The Synozur Alliance LLC. Write a comprehensive executive summary with clear structure:
+      const prompt = `You are a transformation expert from The Synozur Alliance LLC. Write a comprehensive executive summary.
 
 ${knowledgeContext}
 
@@ -436,33 +436,27 @@ Assessment: ${modelName}
 Overall Score: ${overallScore}/500
 ${userContext ? `Context: ${userContext.jobTitle || 'Leader'} in ${userContext.industry || 'Industry'}, ${userContext.companySize || 'Company'}` : ''}
 
-Write a structured executive summary with 3-4 paragraphs:
+STRUCTURE (DO NOT include these labels in your output - they are instructions only):
 
-PARAGRAPH 1 (3-4 sentences):
+First paragraph (3-4 sentences):
 Acknowledge their current position with empathy and understanding. Reference the overall score and what it means for their journey. Recognize the unique challenges and opportunities in their context. Use insights from the knowledge base above to provide context and perspective.
 
-PARAGRAPH 2 (use bullet points and full context):
-Your key strengths:
+Second section (with bullet points):
+Describe their key strengths:
 • ${topStrengths[0]}
 • ${topStrengths[1]}
 
-Priority growth areas:
+Then describe priority growth areas:
 • ${opportunities[0]}
 • ${opportunities[1]}
 
-PARAGRAPH 3 (3-4 sentences):
+Third paragraph (3-4 sentences):
 Provide strategic insights about what these strengths and opportunities mean for their transformation. Connect to industry best practices from the knowledge base and potential outcomes. Reference specific success patterns and the strategic value of improvement.
 
-PARAGRAPH 4 (2-3 sentences):
+Final paragraph (2-3 sentences):
 Inspiring close about finding their North Star and how Synozur's expertise can help make the desirable achievable. Emphasize partnership and transformation potential.
 
-FORMATTING RULES:
-- Use clear paragraph breaks between sections
-- Include bullet points for strengths and growth areas
-- Be comprehensive yet readable
-- ${userContext ? `Personalize deeply for ${userContext.jobTitle} perspective in ${userContext.industry}` : 'Maintain strategic focus'}
-- Draw insights from the knowledge base to provide specific, actionable guidance
-- Write naturally without word count constraints`;
+CRITICAL: Write smooth, flowing paragraphs. Do NOT include labels like "Paragraph 1", "Paragraph 2", etc. in your output. Use section headings only where natural (e.g., "Your key strengths:", "Priority growth areas:"). ${userContext ? `Personalize deeply for ${userContext.jobTitle} perspective in ${userContext.industry}.` : 'Maintain strategic focus.'} Draw insights from the knowledge base to provide specific, actionable guidance.`;
 
       const completion = await this.callOpenAI(prompt, undefined, false); // Bypass word limit for comprehensive summary
       
@@ -526,38 +520,28 @@ The Synozur Alliance LLC is here to help you find your North Star and make the d
       // Fetch knowledge context from uploaded documents (modelId already retrieved above)
       const knowledgeContext = await this.getKnowledgeContext(modelId);
 
-      const prompt = `You are a transformation expert from The Synozur Alliance LLC. Write a comprehensive transformation roadmap with clear structure:
+      const prompt = `You are a transformation expert from The Synozur Alliance LLC. Write a comprehensive transformation roadmap.
 
 ${knowledgeContext}
 
 Model: ${modelName}
 ${userContext ? `Context: ${userContext.jobTitle || 'Leader'} in ${userContext.industry || 'Industry'}` : ''}
 
-Write 2-3 detailed paragraphs:
+STRUCTURE (DO NOT include these labels in your output - they are instructions only):
 
-PARAGRAPH 1 (4-5 sentences):
-Frame their unique transformation journey and what it means for their organization. Explain the strategic context and importance of the following priority actions. Use insights from the knowledge base to provide specific guidance:
+First paragraph (4-5 sentences):
+Frame their unique transformation journey and what it means for their organization. Explain the strategic context and importance of focusing on these priority actions. Use insights from the knowledge base to provide specific guidance. Include the three priority actions as a bulleted list:
+• ${topRecs[0]?.title || 'First priority action'}
+• ${topRecs[1]?.title || 'Second priority action'}
+• ${topRecs[2]?.title || 'Third priority action'}
 
-Priority actions to focus on:
-• ${topRecs[0]?.title || 'Priority action 1'}
-• ${topRecs[1]?.title || 'Priority action 2'}
-• ${topRecs[2]?.title || 'Priority action 3'}
-
-PARAGRAPH 2 (3-4 sentences):
+Second paragraph (3-4 sentences):
 Connect these actions to tangible business outcomes and expected transformation results. Explain how implementing these priorities will drive value. Reference strategic value and ROI patterns from the knowledge base above.
 
-PARAGRAPH 3 (2-3 sentences):
+Final paragraph (2-3 sentences):
 Describe how Synozur's expertise and partnership approach will accelerate their journey. End with an inspiring call to action: "Let's find your North Star together."
 
-FORMATTING RULES:
-- Use clear paragraph breaks
-- Include bullet points for the priority actions
-- Be comprehensive and strategic
-- Write naturally without word count constraints
-- Keep language clear and actionable
-- ${userContext ? `Personalize for ${userContext.jobTitle} in ${userContext.industry}` : 'Keep strategic'}
-- Draw specific insights from the knowledge base to provide actionable guidance
-- End with partnership invitation`;
+CRITICAL: Write smooth, flowing paragraphs. Do NOT include labels like "PARAGRAPH 1", "Priority action 2", etc. in your output. Use the actual action titles provided in the bullet list above. ${userContext ? `Personalize for ${userContext.jobTitle} in ${userContext.industry}.` : 'Keep strategic.'} Draw specific insights from the knowledge base to provide actionable guidance.`;
 
       const completion = await this.callOpenAI(prompt, undefined, false); // Bypass word limit for comprehensive roadmap
       

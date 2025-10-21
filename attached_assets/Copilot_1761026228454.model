@@ -1,0 +1,666 @@
+{
+  "formatVersion": 1.0,
+  "model": {
+    "name": "M365 Copilot Maturity Model",
+    "slug": "m365-copilot",
+    "description": "Assess your organization’s maturity in adopting Microsoft 365 Copilot across leadership, people, technology, process, and responsible AI dimensions.",
+    "version": "1.0.0",
+    "estimatedTime": "10-15 minutes",
+    "status": "published",
+    "imageUrl": "", 
+    "maturityScale": [
+      {
+        "id": 1,
+        "name": "Initial",
+        "description": "Copilot used ad-hoc by individuals without strategy or governance; limited value and high risk of \"pilot paralysis.\"",
+        "minScore": 100,
+        "maxScore": 199
+      },
+      {
+        "id": 2,
+        "name": "Emerging",
+        "description": "Early Copilot strategy forming; some pilots and basic governance start, but adoption and impact are limited.",
+        "minScore": 200,
+        "maxScore": 299
+      },
+      {
+        "id": 3,
+        "name": "Operational",
+        "description": "Copilot integrated into multiple workflows; governance and training in place; measurable improvements in productivity.",
+        "minScore": 300,
+        "maxScore": 399
+      },
+      {
+        "id": 4,
+        "name": "Strategic",
+        "description": "Copilot is a strategic driver; strong executive support, enterprise-wide deployment, and significant business innovation and impact.",
+        "minScore": 400,
+        "maxScore": 449
+      },
+      {
+        "id": 5,
+        "name": "Frontier",
+        "description": "AI-first organization: Copilot and AI agents are pervasive, enabling autonomous processes and continuous competitive advantage.",
+        "minScore": 450,
+        "maxScore": 500
+      }
+    ],
+    "dimensions": [
+      {
+        "key": "leadership_governance",
+        "label": "Leadership & Governance",
+        "description": "Executive vision and sponsorship for Copilot, and the governance frameworks (policies, committees) overseeing its use.",
+        "order": 1
+      },
+      {
+        "key": "people_skills",
+        "label": "People & Skills",
+        "description": "Employee readiness, training, and change management for Copilot adoption; AI literacy and talent enablement.",
+        "order": 2
+      },
+      {
+        "key": "technology_data",
+        "label": "Technology & Data",
+        "description": "Technical deployment of Copilot (licensing, access) and data/infrastructure preparedness (integration, quality, security).",
+        "order": 3
+      },
+      {
+        "key": "process_adoption",
+        "label": "Process & Adoption",
+        "description": "Integration of Copilot into business processes and workflows; extent of use cases, adoption rates, and value realization.",
+        "order": 4
+      },
+      {
+        "key": "responsible_ai",
+        "label": "Responsible AI & Risk",
+        "description": "Ethical and secure use of Copilot; existence of responsible AI policies, compliance measures, and risk mitigation practices.",
+        "order": 5
+      }
+    ],
+    "questions": [
+      {
+        "dimensionKey": "leadership_governance",
+        "text": "Does top leadership sponsor and drive a clear Copilot strategy (vision, roadmap, resources)?",
+        "type": "multiple_choice",
+        "order": 0,
+        "answers": [
+          {
+            "text": "No executive sponsorship; Copilot use is ad hoc and unfunded.",
+            "score": 100,
+            "order": 0,
+            "improvementStatement": "Gain executive sponsorship and align Copilot efforts with a clear strategy.",
+            "resourceTitle": "Synozur AI Playbook and Maturity Model",
+            "resourceLink": "https://www.synozur.com/items/leading-ai-playbooks-and-strategic-analysis",
+            "resourceDescription": "Synozur’s guide to AI strategy and maturity, emphasizing leadership and strategic alignment for AI initiatives."
+          },
+          {
+            "text": "Some interest from individual leaders, but no formal Copilot strategy or funding.",
+            "score": 200,
+            "order": 1,
+            "improvementStatement": "Formalize a Copilot adoption strategy with executive backing and initial investment.",
+            "resourceTitle": "Synozur AI Playbook and Maturity Model",
+            "resourceLink": "https://www.synozur.com/items/leading-ai-playbooks-and-strategic-analysis",
+            "resourceDescription": "Synozur’s guide to AI strategy and maturity, emphasizing leadership and strategic alignment for AI initiatives."
+          },
+          {
+            "text": "Executive sponsor appointed; basic Copilot roadmap exists with limited resources.",
+            "score": 300,
+            "order": 2,
+            "improvementStatement": "Strengthen execution of the Copilot strategy and allocate adequate resources.",
+            "resourceTitle": "Synozur AI Playbook and Maturity Model",
+            "resourceLink": "https://www.synozur.com/items/leading-ai-playbooks-and-strategic-analysis",
+            "resourceDescription": "Synozur’s guide to AI strategy and maturity, emphasizing leadership and strategic alignment for AI initiatives."
+          },
+          {
+            "text": "Dedicated C-level champion; Copilot in strategic plans with significant funding and oversight.",
+            "score": 400,
+            "order": 3,
+            "improvementStatement": "Maintain strategic focus and explore advanced Copilot capabilities across the business.",
+            "resourceTitle": "Synozur AI Playbook and Maturity Model",
+            "resourceLink": "https://www.synozur.com/items/leading-ai-playbooks-and-strategic-analysis",
+            "resourceDescription": "Synozur’s guide to AI strategy and maturity, emphasizing leadership and strategic alignment for AI initiatives."
+          },
+          {
+            "text": "Copilot is a board-level priority with full executive support and integration into vision.",
+            "score": 500,
+            "order": 4,
+            "improvementStatement": "Continue to exemplify Copilot strategic leadership and share best practices industry-wide.",
+            "resourceTitle": "Synozur AI Playbook and Maturity Model",
+            "resourceLink": "https://www.synozur.com/items/leading-ai-playbooks-and-strategic-analysis",
+            "resourceDescription": "Synozur’s guide to AI strategy and maturity, emphasizing leadership and strategic alignment for AI initiatives."
+          }
+        ]
+      },
+      {
+        "dimensionKey": "leadership_governance",
+        "text": "Have you established governance structures (policies, roles, committees) for Copilot usage and oversight?",
+        "type": "multiple_choice",
+        "order": 1,
+        "answers": [
+          {
+            "text": "No Copilot governance; usage is ungoverned with potential compliance risks.",
+            "score": 100,
+            "order": 0,
+            "improvementStatement": "Establish basic Copilot policies and an oversight owner or committee for safe use.",
+            "resourceTitle": "Microsoft 365 Copilot Adoption Hub",
+            "resourceLink": "https://adoption.microsoft.com/en-us/copilot/",
+            "resourceDescription": "Microsoft’s official Copilot adoption resources, including guidance on strategy, governance, and best practices."
+          },
+          {
+            "text": "Only ad hoc guidelines or informal rules; no official oversight body.",
+            "score": 200,
+            "order": 1,
+            "improvementStatement": "Formalize Copilot guidelines and create a cross-functional oversight group.",
+            "resourceTitle": "Microsoft 365 Copilot Adoption Hub",
+            "resourceLink": "https://adoption.microsoft.com/en-us/copilot/",
+            "resourceDescription": "Microsoft’s official Copilot adoption resources, including guidance on strategy, governance, and best practices."
+          },
+          {
+            "text": "Basic Copilot policies drafted and an informal working group oversees usage.",
+            "score": 300,
+            "order": 2,
+            "improvementStatement": "Expand the governance framework and involve stakeholders from IT, security, and business units.",
+            "resourceTitle": "Microsoft 365 Copilot Adoption Hub",
+            "resourceLink": "https://adoption.microsoft.com/en-us/copilot/",
+            "resourceDescription": "Microsoft’s official Copilot adoption resources, including guidance on strategy, governance, and best practices."
+          },
+          {
+            "text": "Formal governance committee and policies actively manage Copilot use organization-wide.",
+            "score": 400,
+            "order": 3,
+            "improvementStatement": "Maintain active governance and periodically review/update policies as Copilot usage grows.",
+            "resourceTitle": "Microsoft 365 Copilot Adoption Hub",
+            "resourceLink": "https://adoption.microsoft.com/en-us/copilot/",
+            "resourceDescription": "Microsoft’s official Copilot adoption resources, including guidance on strategy, governance, and best practices."
+          },
+          {
+            "text": "Institutionalized governance with cross-functional oversight and continuous policy improvement for Copilot.",
+            "score": 500,
+            "order": 4,
+            "improvementStatement": "Continue best-in-class governance and share your Copilot oversight model as an industry benchmark.",
+            "resourceTitle": "Microsoft 365 Copilot Adoption Hub",
+            "resourceLink": "https://adoption.microsoft.com/en-us/copilot/",
+            "resourceDescription": "Microsoft’s official Copilot adoption resources, including guidance on strategy, governance, and best practices."
+          }
+        ]
+      },
+      {
+        "dimensionKey": "people_skills",
+        "text": "What training and support do users receive to effectively use Microsoft 365 Copilot?",
+        "type": "multiple_choice",
+        "order": 2,
+        "answers": [
+          {
+            "text": "No Copilot training or support; users self-teach or avoid using it.",
+            "score": 100,
+            "order": 0,
+            "improvementStatement": "Implement foundational Copilot training and provide basic user support resources (FAQs, guides).",
+            "resourceTitle": "Microsoft 365 Copilot Success Kit",
+            "resourceLink": "https://adoption.microsoft.com/en-us/copilot/success-kit/",
+            "resourceDescription": "Microsoft’s Copilot Success Kit with frameworks and resources for training and enabling users."
+          },
+          {
+            "text": "Minimal guidance; perhaps self-help articles but no structured training program.",
+            "score": 200,
+            "order": 1,
+            "improvementStatement": "Develop a structured Copilot learning path and publish how-to guides or videos.",
+            "resourceTitle": "Microsoft 365 Copilot Success Kit",
+            "resourceLink": "https://adoption.microsoft.com/en-us/copilot/success-kit/",
+            "resourceDescription": "Microsoft’s Copilot Success Kit with frameworks and resources for training and enabling users."
+          },
+          {
+            "text": "Basic training for pilot teams; occasional demos or documentation provided.",
+            "score": 300,
+            "order": 2,
+            "improvementStatement": "Expand Copilot training programs and regular workshops; update materials with user feedback.",
+            "resourceTitle": "Microsoft 365 Copilot Success Kit",
+            "resourceLink": "https://adoption.microsoft.com/en-us/copilot/success-kit/",
+            "resourceDescription": "Microsoft’s Copilot Success Kit with frameworks and resources for training and enabling users."
+          },
+          {
+            "text": "Comprehensive Copilot training curriculum and support resources available to most employees.",
+            "score": 400,
+            "order": 3,
+            "improvementStatement": "Keep enhancing training content and encourage knowledge-sharing communities for Copilot best practices.",
+            "resourceTitle": "Microsoft 365 Copilot Success Kit",
+            "resourceLink": "https://adoption.microsoft.com/en-us/copilot/success-kit/",
+            "resourceDescription": "Microsoft’s Copilot Success Kit with frameworks and resources for training and enabling users."
+          },
+          {
+            "text": "Continuous Copilot learning (academy, peer help, communities) fosters an AI-literate workforce.",
+            "score": 500,
+            "order": 4,
+            "improvementStatement": "Sustain your strong learning culture; you are a model for AI upskilling in the workforce.",
+            "resourceTitle": "Microsoft 365 Copilot Success Kit",
+            "resourceLink": "https://adoption.microsoft.com/en-us/copilot/success-kit/",
+            "resourceDescription": "Microsoft’s Copilot Success Kit with frameworks and resources for training and enabling users."
+          }
+        ]
+      },
+      {
+        "dimensionKey": "people_skills",
+        "text": "How are employees adopting Copilot and adapting to AI-driven work processes?",
+        "type": "multiple_choice",
+        "order": 3,
+        "answers": [
+          {
+            "text": "Widespread resistance or low awareness; most employees not using Copilot regularly.",
+            "score": 100,
+            "order": 0,
+            "improvementStatement": "Build awareness and address fears through communication and quick-win Copilot use cases.",
+            "resourceTitle": "Camp Copilot – Driving Adoption (Microsoft IT Story)",
+            "resourceLink": "https://www.microsoft.com/insidetrack/blog/camp-copilot-try-our-7-tips-for-driving-microsoft-365-copilot-adoption-with-a-virtual-skilling-event/",
+            "resourceDescription": "Microsoft’s internal “Camp Copilot” case study with tips for boosting user engagement and adoption."
+          },
+          {
+            "text": "Some early adopters; overall usage is patchy and many are hesitant or skeptical.",
+            "score": 200,
+            "order": 1,
+            "improvementStatement": "Encourage broader experimentation and share success stories to build confidence in Copilot.",
+            "resourceTitle": "Camp Copilot – Driving Adoption (Microsoft IT Story)",
+            "resourceLink": "https://www.microsoft.com/insidetrack/blog/camp-copilot-try-our-7-tips-for-driving-microsoft-365-copilot-adoption-with-a-virtual-skilling-event/",
+            "resourceDescription": "Microsoft’s internal “Camp Copilot” case study with tips for boosting user engagement and adoption."
+          },
+          {
+            "text": "Growing acceptance; pockets of enthusiasm and usage expanding beyond pilot users.",
+            "score": 300,
+            "order": 2,
+            "improvementStatement": "Scale change management efforts; strengthen Copilot champions network and peer learning.",
+            "resourceTitle": "Camp Copilot – Driving Adoption (Microsoft IT Story)",
+            "resourceLink": "https://www.microsoft.com/insidetrack/blog/camp-copilot-try-our-7-tips-for-driving-microsoft-365-copilot-adoption-with-a-virtual-skilling-event/",
+            "resourceDescription": "Microsoft’s internal “Camp Copilot” case study with tips for boosting user engagement and adoption."
+          },
+          {
+            "text": "Broad adoption; majority incorporate Copilot into workflows, aided by champions and support.",
+            "score": 400,
+            "order": 3,
+            "improvementStatement": "Maintain momentum with ongoing support, recognition, and sharing of Copilot-driven improvements.",
+            "resourceTitle": "Camp Copilot – Driving Adoption (Microsoft IT Story)",
+            "resourceLink": "https://www.microsoft.com/insidetrack/blog/camp-copilot-try-our-7-tips-for-driving-microsoft-365-copilot-adoption-with-a-virtual-skilling-event/",
+            "resourceDescription": "Microsoft’s internal “Camp Copilot” case study with tips for boosting user engagement and adoption."
+          },
+          {
+            "text": "Copilot is embraced as routine; strong innovation culture with high user enthusiasm.",
+            "score": 500,
+            "order": 4,
+            "improvementStatement": "Keep nurturing the innovation culture; leverage your high adoption to pilot new AI capabilities.",
+            "resourceTitle": "Camp Copilot – Driving Adoption (Microsoft IT Story)",
+            "resourceLink": "https://www.microsoft.com/insidetrack/blog/camp-copilot-try-our-7-tips-for-driving-microsoft-365-copilot-adoption-with-a-virtual-skilling-event/",
+            "resourceDescription": "Microsoft’s internal “Camp Copilot” case study with tips for boosting user engagement and adoption."
+          }
+        ]
+      },
+      {
+        "dimensionKey": "technology_data",
+        "text": "What is the status of Microsoft 365 Copilot deployment and access in your organization?",
+        "type": "multiple_choice",
+        "order": 4,
+        "answers": [
+          {
+            "text": "Copilot not deployed; no licenses provisioned or it’s blocked for users.",
+            "score": 100,
+            "order": 0,
+            "improvementStatement": "Obtain Copilot licensing and enable a safe pilot deployment to evaluate value.",
+            "resourceTitle": "Microsoft 365 Copilot – Licensing",
+            "resourceLink": "https://learn.microsoft.com/microsoft-365-copilot/licensing",
+            "resourceDescription": "Microsoft documentation on Copilot licensing options and requirements."
+          },
+          {
+            "text": "Very limited or trial use by a few individuals; no broad deployment or official support.",
+            "score": 200,
+            "order": 1,
+            "improvementStatement": "Expand sanctioned Copilot access with IT support; begin monitoring usage and feedback.",
+            "resourceTitle": "Microsoft 365 Copilot – Licensing",
+            "resourceLink": "https://learn.microsoft.com/microsoft-365-copilot/licensing",
+            "resourceDescription": "Microsoft documentation on Copilot licensing options and requirements."
+          },
+          {
+            "text": "Copilot licensed for select users/teams; initial deployment with basic IT support in place.",
+            "score": 300,
+            "order": 2,
+            "improvementStatement": "Broaden Copilot deployment where value is proven; increase support and training for new users.",
+            "resourceTitle": "Microsoft 365 Copilot – Licensing",
+            "resourceLink": "https://learn.microsoft.com/microsoft-365-copilot/licensing",
+            "resourceDescription": "Microsoft documentation on Copilot licensing options and requirements."
+          },
+          {
+            "text": "Copilot widely deployed across multiple departments; governed access with SSO and compliance controls.",
+            "score": 400,
+            "order": 3,
+            "improvementStatement": "Scale Copilot to remaining areas as appropriate; refine governance and optimize licensing/costs.",
+            "resourceTitle": "Microsoft 365 Copilot – Licensing",
+            "resourceLink": "https://learn.microsoft.com/microsoft-365-copilot/licensing",
+            "resourceDescription": "Microsoft documentation on Copilot licensing options and requirements."
+          },
+          {
+            "text": "Copilot universally available enterprise-wide; all eligible users have access under robust management.",
+            "score": 500,
+            "order": 4,
+            "improvementStatement": "Continuously optimize license usage and support; maintain enterprise-wide enablement at this best-practice level.",
+            "resourceTitle": "Microsoft 365 Copilot – Licensing",
+            "resourceLink": "https://learn.microsoft.com/microsoft-365-copilot/licensing",
+            "resourceDescription": "Microsoft documentation on Copilot licensing options and requirements."
+          }
+        ]
+      },
+      {
+        "dimensionKey": "technology_data",
+        "text": "How prepared and integrated is your data and technical environment for Copilot (content, systems, security)?",
+        "type": "multiple_choice",
+        "order": 5,
+        "answers": [
+          {
+            "text": "Disconnected, siloed data; Copilot cannot access needed information reliably.",
+            "score": 100,
+            "order": 0,
+            "improvementStatement": "Integrate critical data sources and improve data quality/governance to support Copilot.",
+            "resourceTitle": "Copilot Adoption & Onboarding Guide (Microsoft Learn)",
+            "resourceLink": "https://learn.microsoft.com/en-us/copilot/microsoft-365/microsoft-365-copilot-enablement-resources",
+            "resourceDescription": "Microsoft’s guide for Copilot adoption, covering data readiness, governance, and technical prerequisites."
+          },
+          {
+            "text": "Some data accessible to Copilot; many silos and quality issues remain.",
+            "score": 200,
+            "order": 1,
+            "improvementStatement": "Address data silos and implement governance for key content needed by Copilot.",
+            "resourceTitle": "Copilot Adoption & Onboarding Guide (Microsoft Learn)",
+            "resourceLink": "https://learn.microsoft.com/en-us/copilot/microsoft-365/microsoft-365-copilot-enablement-resources",
+            "resourceDescription": "Microsoft’s guide for Copilot adoption, covering data readiness, governance, and technical prerequisites."
+          },
+          {
+            "text": "Key content and systems integrated with Microsoft Graph; moderate data quality and security controls in place.",
+            "score": 300,
+            "order": 2,
+            "improvementStatement": "Enhance data integration and strengthen security/compliance controls for Copilot-accessible information.",
+            "resourceTitle": "Copilot Adoption & Onboarding Guide (Microsoft Learn)",
+            "resourceLink": "https://learn.microsoft.com/en-us/copilot/microsoft-365/microsoft-365-copilot-enablement-resources",
+            "resourceDescription": "Microsoft’s guide for Copilot adoption, covering data readiness, governance, and technical prerequisites."
+          },
+          {
+            "text": "Broad data integration; high-quality, governed data sources readily available to Copilot under security policies.",
+            "score": 400,
+            "order": 3,
+            "improvementStatement": "Continue optimizing data pipelines and quality; review data governance periodically as Copilot use grows.",
+            "resourceTitle": "Copilot Adoption & Onboarding Guide (Microsoft Learn)",
+            "resourceLink": "https://learn.microsoft.com/en-us/copilot/microsoft-365/microsoft-365-copilot-enablement-resources",
+            "resourceDescription": "Microsoft’s guide for Copilot adoption, covering data readiness, governance, and technical prerequisites."
+          },
+          {
+            "text": "Fully integrated, real-time enterprise data environment with strong governance enabling rich Copilot insights.",
+            "score": 500,
+            "order": 4,
+            "improvementStatement": "Maintain your best-in-class integrated data foundation and continuously monitor for new data needs or risks.",
+            "resourceTitle": "Copilot Adoption & Onboarding Guide (Microsoft Learn)",
+            "resourceLink": "https://learn.microsoft.com/en-us/copilot/microsoft-365/microsoft-365-copilot-enablement-resources",
+            "resourceDescription": "Microsoft’s guide for Copilot adoption, covering data readiness, governance, and technical prerequisites."
+          }
+        ]
+      },
+      {
+        "dimensionKey": "technology_data",
+        "text": "Are you customizing or extending Copilot (e.g., building custom Copilot Studio solutions or integrating with business systems)?",
+        "type": "multiple_choice",
+        "order": 6,
+        "answers": [
+          {
+            "text": "No Copilot customization; only out-of-the-box features are used (if at all).",
+            "score": 100,
+            "order": 0,
+            "improvementStatement": "Identify opportunities for custom Copilot solutions and start with a small, safe pilot project.",
+            "resourceTitle": "Copilot Studio – Build Custom Copilots",
+            "resourceLink": "https://learn.microsoft.com/microsoft-copilot-studio/",
+            "resourceDescription": "Microsoft documentation on using Copilot Studio to create custom copilots and extend Copilot capabilities."
+          },
+          {
+            "text": "Exploring custom Copilot ideas; nothing built yet or only basic experiments in progress.",
+            "score": 200,
+            "order": 1,
+            "improvementStatement": "Define a few high-value use cases and develop your first Copilot Studio prototype or integration.",
+            "resourceTitle": "Copilot Studio – Build Custom Copilots",
+            "resourceLink": "https://learn.microsoft.com/microsoft-copilot-studio/",
+            "resourceDescription": "Microsoft documentation on using Copilot Studio to create custom copilots and extend Copilot capabilities."
+          },
+          {
+            "text": "Some low-code custom Copilot solutions or connectors developed for specific team needs.",
+            "score": 300,
+            "order": 2,
+            "improvementStatement": "Expand custom Copilot development to additional scenarios; establish support and governance for these solutions.",
+            "resourceTitle": "Copilot Studio – Build Custom Copilots",
+            "resourceLink": "https://learn.microsoft.com/microsoft-copilot-studio/",
+            "resourceDescription": "Microsoft documentation on using Copilot Studio to create custom copilots and extend Copilot capabilities."
+          },
+          {
+            "text": "Multiple custom Copilot agents or integrations in use; tailored AI tools support various functions.",
+            "score": 400,
+            "order": 3,
+            "improvementStatement": "Scale your custom Copilot solutions with proper lifecycle management, and share successes across the enterprise.",
+            "resourceTitle": "Copilot Studio – Build Custom Copilots",
+            "resourceLink": "https://learn.microsoft.com/microsoft-copilot-studio/",
+            "resourceDescription": "Microsoft documentation on using Copilot Studio to create custom copilots and extend Copilot capabilities."
+          },
+          {
+            "text": "Advanced custom AI assistants fully integrated into business processes; proactive development and maintenance in place.",
+            "score": 500,
+            "order": 4,
+            "improvementStatement": "Continue innovating with custom Copilots; you’re at the frontier of enterprise AI customization—maintain this leadership.",
+            "resourceTitle": "Copilot Studio – Build Custom Copilots",
+            "resourceLink": "https://learn.microsoft.com/microsoft-copilot-studio/",
+            "resourceDescription": "Microsoft documentation on using Copilot Studio to create custom copilots and extend Copilot capabilities."
+          }
+        ]
+      },
+      {
+        "dimensionKey": "process_adoption",
+        "text": "How embedded is Copilot in your business processes and workflows across the organization?",
+        "type": "multiple_choice",
+        "order": 7,
+        "answers": [
+          {
+            "text": "Not embedded; Copilot is used sporadically or not at all in formal processes.",
+            "score": 100,
+            "order": 0,
+            "improvementStatement": "Pilot Copilot in one or two key processes to demonstrate value and learn integration challenges.",
+            "resourceTitle": "Estée Lauder – AI-Powered Research with Copilot",
+            "resourceLink": "https://www.microsoft.com/en/customers/story/23488-the-estee-lauder-companies-microsoft-copilot-studio",
+            "resourceDescription": "Customer story: How Estée Lauder integrated Copilot (via Copilot Studio) into research, drastically speeding up analysis."
+          },
+          {
+            "text": "Isolated use cases in a few teams; Copilot not part of standard operating procedures.",
+            "score": 200,
+            "order": 1,
+            "improvementStatement": "Expand Copilot to additional workflows and document standard usage guidelines where it adds value.",
+            "resourceTitle": "Estée Lauder – AI-Powered Research with Copilot",
+            "resourceLink": "https://www.microsoft.com/en/customers/story/23488-the-estee-lauder-companies-microsoft-copilot-studio",
+            "resourceDescription": "Customer story: How Estée Lauder integrated Copilot (via Copilot Studio) into research, drastically speeding up analysis."
+          },
+          {
+            "text": "Several departments have Copilot integrated into workflows; part of some standard procedures.",
+            "score": 300,
+            "order": 2,
+            "improvementStatement": "Formalize Copilot-enabled SOPs and scale successful integrations to more business areas.",
+            "resourceTitle": "Estée Lauder – AI-Powered Research with Copilot",
+            "resourceLink": "https://www.microsoft.com/en/customers/story/23488-the-estee-lauder-companies-microsoft-copilot-studio",
+            "resourceDescription": "Customer story: How Estée Lauder integrated Copilot (via Copilot Studio) into research, drastically speeding up analysis."
+          },
+          {
+            "text": "Copilot regularly used in core workflows across the business; many processes have AI assistance built-in.",
+            "score": 400,
+            "order": 3,
+            "improvementStatement": "Continuously optimize workflows with Copilot and share best practices across departments for further adoption.",
+            "resourceTitle": "Estée Lauder – AI-Powered Research with Copilot",
+            "resourceLink": "https://www.microsoft.com/en/customers/story/23488-the-estee-lauder-companies-microsoft-copilot-studio",
+            "resourceDescription": "Customer story: How Estée Lauder integrated Copilot (via Copilot Studio) into research, drastically speeding up analysis."
+          },
+          {
+            "text": "Copilot deeply embedded enterprise-wide; nearly all applicable processes leverage AI assistance by default.",
+            "score": 500,
+            "order": 4,
+            "improvementStatement": "Sustain enterprise-wide Copilot integration and focus on continuous improvement and innovation in process design.",
+            "resourceTitle": "Estée Lauder – AI-Powered Research with Copilot",
+            "resourceLink": "https://www.microsoft.com/en/customers/story/23488-the-estee-lauder-companies-microsoft-copilot-studio",
+            "resourceDescription": "Customer story: How Estée Lauder integrated Copilot (via Copilot Studio) into research, drastically speeding up analysis."
+          }
+        ]
+      },
+      {
+        "dimensionKey": "process_adoption",
+        "text": "How is the business value of Copilot (ROI, productivity, outcomes) being measured and achieved?",
+        "type": "multiple_choice",
+        "order": 8,
+        "answers": [
+          {
+            "text": "No measurable value yet; no tracking of Copilot’s impact on business metrics.",
+            "score": 100,
+            "order": 0,
+            "improvementStatement": "Define clear success metrics and quick-win targets to start measuring Copilot’s impact.",
+            "resourceTitle": "Newman’s Own – Copilot Saves Time and Money",
+            "resourceLink": "https://www.microsoft.com/en/customers/story/23048-newmans-own-microsoft-365-copilot",
+            "resourceDescription": "Customer story: Newman’s Own quantified significant cost and time savings from Copilot usage, illustrating ROI."
+          },
+          {
+            "text": "Anecdotal benefits observed; little formal measurement of Copilot outcomes.",
+            "score": 200,
+            "order": 1,
+            "improvementStatement": "Implement basic tracking for Copilot-driven outcomes and gather success stories to build a case for ROI.",
+            "resourceTitle": "Newman’s Own – Copilot Saves Time and Money",
+            "resourceLink": "https://www.microsoft.com/en/customers/story/23048-newmans-own-microsoft-365-copilot",
+            "resourceDescription": "Customer story: Newman’s Own quantified significant cost and time savings from Copilot usage, illustrating ROI."
+          },
+          {
+            "text": "Some KPIs defined; initial ROI demonstrated in certain Copilot projects or departments.",
+            "score": 300,
+            "order": 2,
+            "improvementStatement": "Standardize ROI measurement across projects and expand measurement to more Copilot use cases.",
+            "resourceTitle": "Newman’s Own – Copilot Saves Time and Money",
+            "resourceLink": "https://www.microsoft.com/en/customers/story/23048-newmans-own-microsoft-365-copilot",
+            "resourceDescription": "Customer story: Newman’s Own quantified significant cost and time savings from Copilot usage, illustrating ROI."
+          },
+          {
+            "text": "Clear metrics and regular reports show significant productivity or quality gains from Copilot.",
+            "score": 400,
+            "order": 3,
+            "improvementStatement": "Integrate Copilot impact into business reviews and update KPIs over time to capture full value.",
+            "resourceTitle": "Newman’s Own – Copilot Saves Time and Money",
+            "resourceLink": "https://www.microsoft.com/en/customers/story/23048-newmans-own-microsoft-365-copilot",
+            "resourceDescription": "Customer story: Newman’s Own quantified significant cost and time savings from Copilot usage, illustrating ROI."
+          },
+          {
+            "text": "Copilot delivers transformative value; a key driver of business metrics and competitive advantage.",
+            "score": 500,
+            "order": 4,
+            "improvementStatement": "Leverage your strong Copilot ROI as a proof point for further AI investments; continue pushing innovation.",
+            "resourceTitle": "Newman’s Own – Copilot Saves Time and Money",
+            "resourceLink": "https://www.microsoft.com/en/customers/story/23048-newmans-own-microsoft-365-copilot",
+            "resourceDescription": "Customer story: Newman’s Own quantified significant cost and time savings from Copilot usage, illustrating ROI."
+          }
+        ]
+      },
+      {
+        "dimensionKey": "responsible_ai",
+        "text": "Do you have policies and controls to ensure responsible, secure use of Copilot (privacy, compliance, ethics)?",
+        "type": "multiple_choice",
+        "order": 9,
+        "answers": [
+          {
+            "text": "No Copilot-specific policies; ethical and compliance considerations not addressed.",
+            "score": 100,
+            "order": 0,
+            "improvementStatement": "Establish fundamental Copilot usage policies and ethical guidelines (data privacy, acceptable use).",
+            "resourceTitle": "Responsible AI Principles (Microsoft Learn)",
+            "resourceLink": "https://learn.microsoft.com/azure/ai-services/openai/overview-responsible-use",
+            "resourceDescription": "Microsoft’s responsible AI usage guidelines and principles for ethical AI (Azure OpenAI example)."
+          },
+          {
+            "text": "Basic acceptable-use guidelines exist; nothing formally enforced or tailored to Copilot.",
+            "score": 200,
+            "order": 1,
+            "improvementStatement": "Formalize responsible AI policies for Copilot and enforce compliance checks (privacy, data handling).",
+            "resourceTitle": "Responsible AI Principles (Microsoft Learn)",
+            "resourceLink": "https://learn.microsoft.com/azure/ai-services/openai/overview-responsible-use",
+            "resourceDescription": "Microsoft’s responsible AI usage guidelines and principles for ethical AI (Azure OpenAI example)."
+          },
+          {
+            "text": "Formal Copilot usage policies in place; security, privacy, and compliance reviews occur.",
+            "score": 300,
+            "order": 2,
+            "improvementStatement": "Enhance oversight (e.g., regular audits) to ensure Copilot policies are followed and updated as needed.",
+            "resourceTitle": "Responsible AI Principles (Microsoft Learn)",
+            "resourceLink": "https://learn.microsoft.com/azure/ai-services/openai/overview-responsible-use",
+            "resourceDescription": "Microsoft’s responsible AI usage guidelines and principles for ethical AI (Azure OpenAI example)."
+          },
+          {
+            "text": "Comprehensive responsible AI policies cover Copilot; regular audits and user training on compliance.",
+            "score": 400,
+            "order": 3,
+            "improvementStatement": "Maintain high standards and adapt policies as Copilot capabilities and regulations evolve.",
+            "resourceTitle": "Responsible AI Principles (Microsoft Learn)",
+            "resourceLink": "https://learn.microsoft.com/azure/ai-services/openai/overview-responsible-use",
+            "resourceDescription": "Microsoft’s responsible AI usage guidelines and principles for ethical AI (Azure OpenAI example)."
+          },
+          {
+            "text": "Industry-leading responsible AI governance for Copilot; usage is fully compliant, transparent, and ethical.",
+            "score": 500,
+            "order": 4,
+            "improvementStatement": "Continue to lead in AI governance; share your responsible Copilot practices as an industry model.",
+            "resourceTitle": "Responsible AI Principles (Microsoft Learn)",
+            "resourceLink": "https://learn.microsoft.com/azure/ai-services/openai/overview-responsible-use",
+            "resourceDescription": "Microsoft’s responsible AI usage guidelines and principles for ethical AI (Azure OpenAI example)."
+          }
+        ]
+      },
+      {
+        "dimensionKey": "responsible_ai",
+        "text": "How do you monitor and mitigate risks (e.g., data leakage, inaccuracies, biases) in Copilot outputs?",
+        "type": "multiple_choice",
+        "order": 10,
+        "answers": [
+          {
+            "text": "No monitoring of Copilot’s outputs or risks; issues and errors often go unnoticed.",
+            "score": 100,
+            "order": 0,
+            "improvementStatement": "Implement basic oversight on Copilot outputs and educate users to report issues.",
+            "resourceTitle": "Synozur Insight – Balancing AI Innovation and Governance",
+            "resourceLink": "https://www.synozur.com/post/why-agentic-ai-needs-a-human-heart-and-a-historical-compass",
+            "resourceDescription": "Synozur blog discussing the importance of AI governance, ethics, and monitoring the risks of autonomous AI."
+          },
+          {
+            "text": "Ad hoc monitoring; rely on users to catch problems, with few formal mitigation processes.",
+            "score": 200,
+            "order": 1,
+            "improvementStatement": "Introduce periodic reviews of Copilot outputs and define processes to handle errors or misuse.",
+            "resourceTitle": "Synozur Insight – Balancing AI Innovation and Governance",
+            "resourceLink": "https://www.synozur.com/post/why-agentic-ai-needs-a-human-heart-and-a-historical-compass",
+            "resourceDescription": "Synozur blog discussing the importance of AI governance, ethics, and monitoring the risks of autonomous AI."
+          },
+          {
+            "text": "Regular spot-checks of Copilot outputs; some procedures exist to correct errors or biases when found.",
+            "score": 300,
+            "order": 2,
+            "improvementStatement": "Automate some monitoring (e.g., content filters) and establish a feedback loop to improve Copilot responses.",
+            "resourceTitle": "Synozur Insight – Balancing AI Innovation and Governance",
+            "resourceLink": "https://www.synozur.com/post/why-agentic-ai-needs-a-human-heart-and-a-historical-compass",
+            "resourceDescription": "Synozur blog discussing the importance of AI governance, ethics, and monitoring the risks of autonomous AI."
+          },
+          {
+            "text": "Proactive monitoring with tools/metrics; defined procedures to mitigate any Copilot risk promptly.",
+            "score": 400,
+            "order": 3,
+            "improvementStatement": "Expand automated guardrails and real-time alerts for Copilot outputs; regularly refine risk controls.",
+            "resourceTitle": "Synozur Insight – Balancing AI Innovation and Governance",
+            "resourceLink": "https://www.synozur.com/post/why-agentic-ai-needs-a-human-heart-and-a-historical-compass",
+            "resourceDescription": "Synozur blog discussing the importance of AI governance, ethics, and monitoring the risks of autonomous AI."
+          },
+          {
+            "text": "Continuous, automated monitoring for errors/bias; robust mitigation and feedback loops in place.",
+            "score": 500,
+            "order": 4,
+            "improvementStatement": "Keep refining your advanced monitoring system; your AI risk management is a model for others.",
+            "resourceTitle": "Synozur Insight – Balancing AI Innovation and Governance",
+            "resourceLink": "https://www.synozur.com/post/why-agentic-ai-needs-a-human-heart-and-a-historical-compass",
+            "resourceDescription": "Synozur blog discussing the importance of AI governance, ethics, and monitoring the risks of autonomous AI."
+          }
+        ]
+      }
+    ]
+  }
+}
