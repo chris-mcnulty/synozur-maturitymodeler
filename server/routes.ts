@@ -421,8 +421,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       let status = req.query.status as string | undefined;
       
-      // Non-admin users can only see published models
-      if (!req.isAuthenticated() || req.user?.role !== 'admin') {
+      // Only admins and modelers can see draft models
+      if (!req.isAuthenticated() || (req.user?.role !== 'admin' && req.user?.role !== 'modeler')) {
         status = 'published';
       }
       
@@ -638,8 +638,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Model not found" });
       }
 
-      // Non-admin users can only access published models
-      if ((!req.isAuthenticated() || req.user?.role !== 'admin') && model.status !== 'published') {
+      // Only admins and modelers can access draft models
+      if ((!req.isAuthenticated() || (req.user?.role !== 'admin' && req.user?.role !== 'modeler')) && model.status !== 'published') {
         return res.status(404).json({ error: "Model not found" });
       }
 
@@ -657,8 +657,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Model not found" });
       }
 
-      // Non-admin users can only access published models
-      if ((!req.isAuthenticated() || req.user?.role !== 'admin') && model.status !== 'published') {
+      // Only admins and modelers can access draft models
+      if ((!req.isAuthenticated() || (req.user?.role !== 'admin' && req.user?.role !== 'modeler')) && model.status !== 'published') {
         return res.status(404).json({ error: "Model not found" });
       }
 
@@ -672,12 +672,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Dimension routes
   app.get("/api/dimensions/:modelId", async (req, res) => {
     try {
-      // Non-admin users can only access dimensions for published models
+      // Only admins and modelers can access dimensions for draft models
       const model = await storage.getModel(req.params.modelId);
       if (!model) {
         return res.status(404).json({ error: "Model not found" });
       }
-      if ((!req.isAuthenticated() || req.user?.role !== 'admin') && model.status !== 'published') {
+      if ((!req.isAuthenticated() || (req.user?.role !== 'admin' && req.user?.role !== 'modeler')) && model.status !== 'published') {
         return res.status(404).json({ error: "Model not found" });
       }
       
@@ -728,8 +728,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Model not found" });
       }
 
-      // Non-admin users can only access questions for published models
-      if ((!req.isAuthenticated() || req.user?.role !== 'admin') && model.status !== 'published') {
+      // Only admins and modelers can access questions for draft models
+      if ((!req.isAuthenticated() || (req.user?.role !== 'admin' && req.user?.role !== 'modeler')) && model.status !== 'published') {
         return res.status(404).json({ error: "Model not found" });
       }
 
@@ -2195,8 +2195,8 @@ Respond in JSON format:
         return res.status(404).json({ error: "Model not found" });
       }
 
-      // Non-admin users can only export published models
-      if ((!req.isAuthenticated() || req.user?.role !== 'admin') && model.status !== 'published') {
+      // Only admins and modelers can export draft models
+      if ((!req.isAuthenticated() || (req.user?.role !== 'admin' && req.user?.role !== 'modeler')) && model.status !== 'published') {
         return res.status(404).json({ error: "Model not found" });
       }
 
