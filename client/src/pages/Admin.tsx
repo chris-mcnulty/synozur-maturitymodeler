@@ -4223,18 +4223,19 @@ export default function Admin() {
               <Label>User Role</Label>
               <Select
                 value={userForm.role}
-                onValueChange={(value) => setUserForm({ ...userForm, role: value as 'user' | 'admin' })}
+                onValueChange={(value) => setUserForm({ ...userForm, role: value as 'user' | 'admin' | 'modeler' })}
               >
                 <SelectTrigger data-testid="select-user-role">
                   <SelectValue placeholder="Select role" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="user">User</SelectItem>
+                  <SelectItem value="modeler">Modeler</SelectItem>
                   <SelectItem value="admin">Admin</SelectItem>
                 </SelectContent>
               </Select>
               <p className="text-sm text-muted-foreground">
-                Admins have full access to the admin panel and can manage all content.
+                Admins have full access. Modelers can manage models and content. Users can take assessments.
               </p>
             </div>
 
