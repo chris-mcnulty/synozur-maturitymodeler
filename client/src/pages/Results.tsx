@@ -658,8 +658,17 @@ export default function Results() {
   return (
     <div className="min-h-screen flex flex-col bg-background">
       {/* Hero Section */}
-      <section className="bg-gradient-to-b from-primary/5 to-background py-16">
-        <div className="container mx-auto px-4 max-w-6xl">
+      <section className="relative bg-gradient-to-b from-primary/5 to-background py-16 overflow-hidden">
+        {model.imageUrl && (
+          <div className="absolute inset-0 z-0">
+            <img 
+              src={model.imageUrl}
+              alt={model.name}
+              className="w-full h-full object-cover opacity-10"
+            />
+          </div>
+        )}
+        <div className="container relative z-10 mx-auto px-4 max-w-6xl">
           <Button
             variant="ghost"
             onClick={() => setLocation('/')}

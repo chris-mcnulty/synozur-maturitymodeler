@@ -110,7 +110,7 @@ export default function ModelHome() {
         <section className="relative min-h-[400px] flex items-center overflow-hidden bg-primary">
           <div className="absolute inset-0 z-0">
             <img 
-              src={openingGraphic}
+              src={model.imageUrl || openingGraphic}
               alt={model.name}
               className="w-full h-full object-cover opacity-20"
             />

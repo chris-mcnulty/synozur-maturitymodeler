@@ -383,7 +383,7 @@ export default function Admin() {
   const [editingUser, setEditingUser] = useState<Omit<User, 'password'> | null>(null);
   const [isUserDialogOpen, setIsUserDialogOpen] = useState(false);
   const [userForm, setUserForm] = useState({
-    role: 'user' as 'user' | 'admin',
+    role: 'user' as 'user' | 'admin' | 'modeler',
     username: '',
     newPassword: '',
   });
@@ -2527,7 +2527,7 @@ export default function Admin() {
                                   onClick={() => {
                                     setEditingUser(user);
                                     setUserForm({ 
-                                      role: (user.role as 'user' | 'admin') || 'user',
+                                      role: (user.role as 'user' | 'admin' | 'modeler') || 'user',
                                       username: user.username,
                                       newPassword: '',
                                     });
