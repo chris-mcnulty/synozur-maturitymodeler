@@ -242,16 +242,29 @@ export default function Landing() {
                 {regularModels.map((model, index) => (
                   <Card 
                     key={model.id}
-                    className="group relative overflow-hidden hover-elevate transition-all duration-300 cursor-pointer border-2 hover:border-primary/50"
+                    className="group relative overflow-hidden hover-elevate transition-all duration-300 cursor-pointer border-2 hover:border-primary/50 p-0"
                     onClick={() => setLocation(`/${model.slug}`)}
                     data-testid={`card-model-${model.slug}`}
                   >
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-primary/20 to-transparent rounded-bl-full"></div>
+                    {model.imageUrl ? (
+                      <div className="relative w-full aspect-video overflow-hidden">
+                        <img 
+                          src={model.imageUrl} 
+                          alt={model.name}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
+                      </div>
+                    ) : (
+                      <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-primary/20 to-transparent rounded-bl-full"></div>
+                    )}
                     <div className="p-6 relative z-10">
                       <div className="flex items-start justify-between mb-4">
-                        <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-                          <BarChart3 className="h-6 w-6 text-primary" />
-                        </div>
+                        {!model.imageUrl && (
+                          <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+                            <BarChart3 className="h-6 w-6 text-primary" />
+                          </div>
+                        )}
                         {model.id === aiModel?.id && (
                           <Badge className="bg-primary/10 text-primary border-primary/20">
                             Featured
