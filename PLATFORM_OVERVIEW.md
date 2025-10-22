@@ -9,6 +9,51 @@ Maturity Modeler is Synozur's comprehensive digital maturity assessment platform
 
 ---
 
+## Recent Enhancements (December 2024)
+
+### Visual & UX Improvements
+
+**Custom Model Image Display** (December 19-21, 2024)
+- **Homepage Model Cards**: Custom model images now display with proper 16:9 aspect ratio, professional hover scale effects, and consistent sizing across all featured and available models
+- **Model Launch Pages**: Hero background images display with 20% opacity overlay, creating elegant visual depth while maintaining text readability
+- **Results Pages**: Background images appear with 10% opacity for subtle branding without distracting from assessment results
+- **Fallback Graphics**: Automatic fallback to default Synozur graphic when custom images aren't uploaded
+- **Image Upload**: Streamlined admin interface for uploading and managing model images via object storage
+
+**Responsive Image Handling**
+- Object storage integration ensures fast, reliable image delivery
+- Automatic aspect ratio preservation prevents image distortion
+- Optimized loading states and error handling for graceful degradation
+
+### AI Roadmap Formatting Enhancements (December 20-21, 2024)
+
+**Structured Roadmap Output**
+Enhanced AI-generated transformation roadmaps now follow a consistent, professional format:
+
+1. **Opening Context Section**: Begins with personalized context paragraph ending with "Priority actions to focus on:" followed by exactly 3 bulleted action titles
+2. **Descriptive Action Titles**: Each of the 3 priority actions uses the actual recommendation title (e.g., "Getting Started", "Establish Operating Rhythms", "Scale and Sustain") instead of generic labels like "Priority action 2"
+3. **Clear Paragraph Separation**: Proper spacing between each priority action section for improved readability
+4. **Mandatory Closing**: All roadmaps end with Synozur's signature call-to-action: "Let's find your North Star together."
+
+**AI Cache Management**
+- Cleared AI response cache to immediately apply new formatting rules
+- Future roadmap generations automatically use enhanced structure
+- Improved consistency across all assessment results
+
+### Admin Console Fixes (December 22, 2024)
+
+**Benchmark Calculation UI Fix**
+- **Fixed Critical Bug**: Resolved cache invalidation issue where benchmark calculations succeeded on backend but UI didn't refresh
+- **Root Cause**: Mutation's `onSuccess` callback was using stale `selectedModelId` from closure instead of actual `modelId` parameter
+- **Solution**: Updated React Query mutation to use correct mutation parameter for cache invalidation
+- **Impact**: Benchmark data now appears immediately after calculation without requiring page refresh
+- **User Experience**: Administrators can now see real-time feedback when calculating benchmarks for any model
+
+**Technical Improvement**
+The fix ensures proper cache key invalidation: `['/api/benchmarks', modelId, 'all']` where `modelId` comes from mutation parameters rather than component state, eliminating race conditions and ensuring UI consistency.
+
+---
+
 ## Core User Features
 
 ### 1. Multi-Model Maturity Assessments
