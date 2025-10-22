@@ -529,19 +529,37 @@ ${userContext ? `Context: ${userContext.jobTitle || 'Leader'} in ${userContext.i
 
 STRUCTURE (DO NOT include these labels in your output - they are instructions only):
 
-First paragraph (4-5 sentences):
-Frame their unique transformation journey and what it means for their organization. Explain the strategic context and importance of focusing on these priority actions. Use insights from the knowledge base to provide specific guidance. Include the three priority actions as a bulleted list:
+Opening paragraph (3-4 sentences):
+Frame their unique transformation journey and what it means for their organization. Explain the strategic context and why focusing on these priority actions matters. Use insights from the knowledge base to provide specific guidance. End your paragraph with the exact phrase "Priority actions to focus on:" followed by EXACTLY these three bulleted items (NO MORE, NO LESS):
 • ${topRecs[0]?.title || 'First priority action'}
 • ${topRecs[1]?.title || 'Second priority action'}
 • ${topRecs[2]?.title || 'Third priority action'}
 
-Second paragraph (3-4 sentences):
-Connect these actions to tangible business outcomes and expected transformation results. Explain how implementing these priorities will drive value. Reference strategic value and ROI patterns from the knowledge base above.
+Priority Action 1 paragraph (3-4 sentences):
+Start with the exact title "${topRecs[0]?.title || 'First priority action'}" (bold if possible, but NO "Priority action 1" label). Explain what this action means in practical terms, what specific steps it involves, and why it's critical for their transformation. Draw from the knowledge base for specific, actionable guidance.
 
-Final paragraph (2-3 sentences):
-Describe how Synozur's expertise and partnership approach will accelerate their journey. End with an inspiring call to action: "Let's find your North Star together."
+Priority Action 2 paragraph (3-4 sentences):
+Start with the exact title "${topRecs[1]?.title || 'Second priority action'}" (bold if possible, but NO "Priority action 2" label). Explain what this action means in practical terms, what specific steps it involves, and how it builds on the first action. Draw from the knowledge base for specific, actionable guidance.
 
-CRITICAL: Write smooth, flowing paragraphs. Do NOT include labels like "PARAGRAPH 1", "Priority action 2", etc. in your output. Use the actual action titles provided in the bullet list above. ${userContext ? `Personalize for ${userContext.jobTitle} in ${userContext.industry}.` : 'Keep strategic.'} Draw specific insights from the knowledge base to provide actionable guidance.`;
+Priority Action 3 paragraph (3-4 sentences):
+Start with the exact title "${topRecs[2]?.title || 'Third priority action'}" (bold if possible, but NO "Priority action 3" label). Explain what this action means in practical terms, what specific steps it involves, and how it completes the transformation framework. Draw from the knowledge base for specific, actionable guidance.
+
+Business Outcomes paragraph (3-4 sentences):
+Connect all three priority actions to tangible business outcomes and expected transformation results. Explain the ROI, measurable improvements, and value they'll see. Reference strategic value patterns from the knowledge base.
+
+Closing paragraph (2-3 sentences):
+Describe how Synozur's expertise and partnership approach will accelerate their journey. MUST end with EXACTLY this phrase: "Let's find your North Star together." (no variations, no quotes around it in output, exact wording required)
+
+CRITICAL FORMATTING RULES:
+- The bulleted list in the opening paragraph MUST contain EXACTLY 3 items (the three priority action titles listed above)
+- Write each priority action as its own separate paragraph
+- Start each priority action paragraph with the actual action title (e.g., "Getting Started" NOT "Priority action 1")
+- Do NOT use labels like "Priority action 1", "Priority action 2", "Priority action 3" anywhere in your output
+- Each paragraph should be clearly separated with blank lines
+- Write smooth, flowing paragraphs that tell a coherent story
+- The closing paragraph MUST end with the EXACT phrase: "Let's find your North Star together." (no variations allowed)
+${userContext ? `- Personalize for ${userContext.jobTitle} in ${userContext.industry}` : '- Keep strategic'}
+- Draw specific insights from the knowledge base to provide actionable guidance`;
 
       const completion = await this.callOpenAI(prompt, undefined, false); // Bypass word limit for comprehensive roadmap
       
