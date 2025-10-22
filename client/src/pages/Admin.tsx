@@ -4139,13 +4139,13 @@ export default function Admin() {
             <div className="space-y-2">
               <Label>Original Model Details</Label>
               <div className="p-3 bg-muted rounded-md">
-                <p className="text-sm"><strong>Name:</strong> {pendingModelFile?.modelData.model.name}</p>
-                <p className="text-sm"><strong>Slug:</strong> {pendingModelFile?.modelData.model.slug}</p>
-                <p className="text-sm"><strong>Version:</strong> {pendingModelFile?.modelData.model.version}</p>
+                <p className="text-sm"><strong>Name:</strong> {pendingModelFile?.modelData?.model?.name || 'N/A'}</p>
+                <p className="text-sm"><strong>Slug:</strong> {pendingModelFile?.modelData?.model?.slug || 'N/A'}</p>
+                <p className="text-sm"><strong>Version:</strong> {pendingModelFile?.modelData?.model?.version || 'N/A'}</p>
                 <p className="text-sm mt-2"><strong>Includes:</strong></p>
                 <ul className="text-sm list-disc list-inside ml-2">
-                  <li>{pendingModelFile?.modelData.model.dimensions.length || 0} dimensions</li>
-                  <li>{pendingModelFile?.modelData.model.questions.length || 0} questions</li>
+                  <li>{pendingModelFile?.modelData?.model?.dimensions?.length || 0} dimensions</li>
+                  <li>{pendingModelFile?.modelData?.model?.questions?.length || 0} questions</li>
                 </ul>
               </div>
             </div>
@@ -4156,7 +4156,7 @@ export default function Admin() {
                 id="import-model-name"
                 value={modelImportName}
                 onChange={(e) => setModelImportName(e.target.value)}
-                placeholder={pendingModelFile?.modelData.model.name || 'Leave empty to use original name'}
+                placeholder={pendingModelFile?.modelData?.model?.name || 'Leave empty to use original name'}
                 data-testid="input-import-model-name"
               />
               <p className="text-sm text-muted-foreground">
@@ -4170,7 +4170,7 @@ export default function Admin() {
                 id="import-model-slug"
                 value={modelImportSlug}
                 onChange={(e) => setModelImportSlug(e.target.value)}
-                placeholder={pendingModelFile?.modelData.model.slug || 'Leave empty to use original slug'}
+                placeholder={pendingModelFile?.modelData?.model?.slug || 'Leave empty to use original slug'}
                 data-testid="input-import-model-slug"
               />
               <p className="text-sm text-muted-foreground">
