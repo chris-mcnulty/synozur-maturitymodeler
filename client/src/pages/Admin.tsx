@@ -744,14 +744,22 @@ export default function Admin() {
   }, []);
 
   const handleUploadComplete = useCallback((result: any) => {
-    if (result.successful && result.successful[0] && editingModel) {
+    console.log('Upload complete:', result);
+    if (result.successful && result.successful[0]) {
       const uploadURL = result.successful[0].uploadURL;
-      if (uploadURL) {
+      console.log('Upload URL:', uploadURL);
+      console.log('Editing model:', editingModel);
+      if (uploadURL && editingModel) {
+        console.log('Calling uploadModelImage mutation');
         uploadModelImage.mutate({
           modelId: editingModel.id,
           imageUrl: uploadURL,
         });
+      } else if (uploadURL && !editingModel) {
+        console.error('editingModel is null, cannot save image URL');
       }
+    } else {
+      console.log('Upload result missing successful files');
     }
   }, [editingModel, uploadModelImage]);
 
