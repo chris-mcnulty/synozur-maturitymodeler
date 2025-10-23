@@ -1436,6 +1436,36 @@ export default function Admin() {
     }
   };
 
+  // Export interview guide as markdown
+  const exportInterviewGuide = async (modelId: string) => {
+    try {
+      const response = await fetch(`/api/models/${modelId}/export-interview`);
+      if (!response.ok) throw new Error('Export failed');
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const model = models.find(m => m.id === modelId);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${model?.slug || 'model'}-interview-guide.md`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+      
+      toast({
+        title: "Export successful",
+        description: `Interview guide exported successfully.`,
+      });
+    } catch (error) {
+      toast({
+        title: "Export failed",
+        description: "Failed to export interview guide. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
   // Import complete model definition from .model JSON file
   const handleModelImportClick = () => {
     const input = document.createElement('input');
@@ -1984,6 +2014,15 @@ export default function Admin() {
                                 title="Export Model Definition (.model file)"
                               >
                                 <Database className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => exportInterviewGuide(model.id)}
+                                data-testid={`button-export-interview-${model.id}`}
+                                title="Export Interview Guide (Markdown)"
+                              >
+                                <FileText className="h-4 w-4" />
                               </Button>
                               <Button 
                                 variant="ghost" 
@@ -3369,16 +3408,32 @@ export default function Admin() {
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsModelDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button 
-              onClick={handleSaveModel} 
-              disabled={createModel.isPending || updateModel.isPending} 
-              data-testid="button-save-model"
-            >
-              {createModel.isPending || updateModel.isPending ? 'Saving...' : editingModel ? 'Update Model' : 'Create Model'}
-            </Button>
+            <div className="flex w-full justify-between items-center">
+              <div>
+                {editingModel && (
+                  <Button 
+                    variant="outline" 
+                    onClick={() => exportInterviewGuide(editingModel.id)}
+                    data-testid="button-export-interview-dialog"
+                  >
+                    <FileText className="mr-2 h-4 w-4" />
+                    Export Interview Guide
+                  </Button>
+                )}
+              </div>
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={() => setIsModelDialogOpen(false)}>
+                  Cancel
+                </Button>
+                <Button 
+                  onClick={handleSaveModel} 
+                  disabled={createModel.isPending || updateModel.isPending} 
+                  data-testid="button-save-model"
+                >
+                  {createModel.isPending || updateModel.isPending ? 'Saving...' : editingModel ? 'Update Model' : 'Create Model'}
+                </Button>
+              </div>
+            </div>
           </DialogFooter>
         </DialogContent>
       </Dialog>
