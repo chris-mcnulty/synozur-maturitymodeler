@@ -527,39 +527,71 @@ ${knowledgeContext}
 Model: ${modelName}
 ${userContext ? `Context: ${userContext.jobTitle || 'Leader'} in ${userContext.industry || 'Industry'}` : ''}
 
-STRUCTURE (DO NOT include these labels in your output - they are instructions only):
+PRIORITY ACTION TITLES YOU MUST USE:
+1. "${topRecs[0]?.title || 'First priority action'}"
+2. "${topRecs[1]?.title || 'Second priority action'}"
+3. "${topRecs[2]?.title || 'Third priority action'}"
 
-Opening paragraph (3-4 sentences):
-Frame their unique transformation journey and what it means for their organization. Explain the strategic context and why focusing on these priority actions matters. Use insights from the knowledge base to provide specific guidance. End your paragraph with the exact phrase "Priority actions to focus on:" followed by EXACTLY these three bulleted items (NO MORE, NO LESS):
+STRUCTURE:
+
+Paragraph 1 - Opening (3-4 sentences):
+Frame their unique transformation journey and what it means for their organization. Explain the strategic context and why focusing on these priority actions matters. Use insights from the knowledge base to provide specific guidance. End with "Priority actions to focus on:" followed by EXACTLY these three bulleted items:
 • ${topRecs[0]?.title || 'First priority action'}
 • ${topRecs[1]?.title || 'Second priority action'}
 • ${topRecs[2]?.title || 'Third priority action'}
 
-Priority Action 1 paragraph (3-4 sentences):
-Start with the exact title "${topRecs[0]?.title || 'First priority action'}" (bold if possible, but NO "Priority action 1" label). Explain what this action means in practical terms, what specific steps it involves, and why it's critical for their transformation. Draw from the knowledge base for specific, actionable guidance.
+[BLANK LINE]
 
-Priority Action 2 paragraph (3-4 sentences):
-Start with the exact title "${topRecs[1]?.title || 'Second priority action'}" (bold if possible, but NO "Priority action 2" label). Explain what this action means in practical terms, what specific steps it involves, and how it builds on the first action. Draw from the knowledge base for specific, actionable guidance.
+Paragraph 2 - First Priority Action (3-4 sentences):
+Start with ONLY the title "${topRecs[0]?.title || 'First priority action'}" - DO NOT add "Priority Action 1" or any numbering. Explain what this action means in practical terms, what specific steps it involves, and why it's critical for their transformation. Draw from the knowledge base for specific, actionable guidance.
 
-Priority Action 3 paragraph (3-4 sentences):
-Start with the exact title "${topRecs[2]?.title || 'Third priority action'}" (bold if possible, but NO "Priority action 3" label). Explain what this action means in practical terms, what specific steps it involves, and how it completes the transformation framework. Draw from the knowledge base for specific, actionable guidance.
+[BLANK LINE]
 
-Business Outcomes paragraph (3-4 sentences):
+Paragraph 3 - Second Priority Action (3-4 sentences):
+Start with ONLY the title "${topRecs[1]?.title || 'Second priority action'}" - DO NOT add "Priority Action 2" or any numbering. Explain what this action means in practical terms, what specific steps it involves, and how it builds on the first action. Draw from the knowledge base for specific, actionable guidance.
+
+[BLANK LINE]
+
+Paragraph 4 - Third Priority Action (3-4 sentences):
+Start with ONLY the title "${topRecs[2]?.title || 'Third priority action'}" - DO NOT add "Priority Action 3" or any numbering. Explain what this action means in practical terms, what specific steps it involves, and how it completes the transformation framework. Draw from the knowledge base for specific, actionable guidance.
+
+[BLANK LINE]
+
+Paragraph 5 - Business Outcomes (3-4 sentences):
 Connect all three priority actions to tangible business outcomes and expected transformation results. Explain the ROI, measurable improvements, and value they'll see. Reference strategic value patterns from the knowledge base.
 
-Closing paragraph (2-3 sentences):
-Describe how Synozur's expertise and partnership approach will accelerate their journey. MUST end with EXACTLY this phrase: "Let's find your North Star together." (no variations, no quotes around it in output, exact wording required)
+[BLANK LINE]
 
-CRITICAL FORMATTING RULES:
-- The bulleted list in the opening paragraph MUST contain EXACTLY 3 items (the three priority action titles listed above)
-- Write each priority action as its own separate paragraph
-- Start each priority action paragraph with the actual action title (e.g., "Getting Started" NOT "Priority action 1")
-- Do NOT use labels like "Priority action 1", "Priority action 2", "Priority action 3" anywhere in your output
-- Each paragraph should be clearly separated with blank lines
-- Write smooth, flowing paragraphs that tell a coherent story
-- The closing paragraph MUST end with the EXACT phrase: "Let's find your North Star together." (no variations allowed)
-${userContext ? `- Personalize for ${userContext.jobTitle} in ${userContext.industry}` : '- Keep strategic'}
-- Draw specific insights from the knowledge base to provide actionable guidance`;
+Paragraph 6 - Closing (2-3 sentences):
+Describe how Synozur's expertise and partnership approach will accelerate their journey. MUST end with EXACTLY this phrase: "Let's find your North Star together."
+
+ABSOLUTELY CRITICAL FORMATTING RULES - FAILURE TO FOLLOW WILL RESULT IN REJECTION:
+1. NEVER use generic labels like "Priority Action 1", "Priority Action 2", "Priority Action 3", "Strategy Action 1", etc.
+2. ALWAYS use the EXACT titles provided above: "${topRecs[0]?.title || 'First priority action'}", "${topRecs[1]?.title || 'Second priority action'}", "${topRecs[2]?.title || 'Third priority action'}"
+3. Each paragraph MUST be separated by a blank line (double newline: \\n\\n)
+4. The opening bulleted list must have EXACTLY 3 items
+5. Write in a smooth, flowing narrative style
+6. End with the EXACT phrase: "Let's find your North Star together."
+${userContext ? `7. Personalize for ${userContext.jobTitle} in ${userContext.industry}` : '7. Keep strategic and professional'}
+8. Draw specific insights from the knowledge base to provide actionable guidance
+
+OUTPUT FORMAT EXAMPLE (structure only, not actual content):
+[Opening paragraph text here...]
+
+Priority actions to focus on:
+• [Title 1]
+• [Title 2]  
+• [Title 3]
+
+[Title 1 here as the first words] [explanation paragraph...]
+
+[Title 2 here as the first words] [explanation paragraph...]
+
+[Title 3 here as the first words] [explanation paragraph...]
+
+[Business outcomes paragraph...]
+
+[Closing paragraph...] Let's find your North Star together.`;
 
       const completion = await this.callOpenAI(prompt, undefined, false); // Bypass word limit for comprehensive roadmap
       
