@@ -220,8 +220,9 @@ function BenchmarksByModel() {
   const calculateBenchmarks = useMutation({
     mutationFn: (modelId: string) =>
       apiRequest(`/api/benchmarks/calculate/${modelId}`, 'POST'),
-    onSuccess: (_data, modelId) => {
-      queryClient.invalidateQueries({ queryKey: ['/api/benchmarks', modelId, 'all'] });
+    onSuccess: async (_data, modelId) => {
+      await queryClient.invalidateQueries({ queryKey: ['/api/benchmarks', modelId, 'all'] });
+      await queryClient.refetchQueries({ queryKey: ['/api/benchmarks', modelId, 'all'] });
       toast({ title: 'Benchmarks calculated successfully' });
     },
     onError: () => {
