@@ -114,10 +114,22 @@ export default function Results() {
   });
 
   // Fetch benchmark data
-  const { data: benchmark } = useQuery<{ meanScore: number; sampleSize: number }>({
+  const { data: benchmarkData } = useQuery<{
+    overall?: { meanScore: number; dimensionScores: Record<string, number>; sampleSize: number };
+    segments: Array<{
+      type: string;
+      label: string;
+      meanScore: number;
+      dimensionScores: Record<string, number>;
+      sampleSize: number;
+    }>;
+  }>({
     queryKey: ['/api/benchmarks', assessment?.modelId],
     enabled: !!assessment?.modelId,
   });
+  
+  // Extract overall benchmark for easier access
+  const benchmark = benchmarkData?.overall;
 
   // Fetch user's responses with questions and answers for resource display
   const { data: responses = [] } = useQuery<Array<{

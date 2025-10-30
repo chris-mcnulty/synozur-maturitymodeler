@@ -199,12 +199,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { modelId } = req.query;
       
       if (modelId) {
-        // Clear cache for specific model - this is tricky since we don't store modelId directly
-        // We'll just clear all cache and let it regenerate
-        await db.delete(schema.aiGeneratedContent);
+        // Get model name to match against cache metadata
+        const model = await storage.getModel(modelId as string);
+        if (!model) {
+          return res.status(404).json({ error: "Model not found" });
+        }
+        
+        // Get all cache entries
+        const allCache = await db.select().from(schema.aiGeneratedContent);
+        
+        // Filter cache entries that contain this model name in their metadata
+        const entriesToDelete = allCache.filter(entry => {
+          const metadata = entry.metadata as any;
+          if (!metadata) return false;
+          // Check if the metadata contains this model's name
+          // Metadata can be either { modelName: ... } or { context: { modelName: ... } }
+          const modelName = metadata.modelName || metadata.context?.modelName;
+          return modelName === model.name;
+        });
+        
+        // Delete filtered entries
+        let deletedCount = 0;
+        for (const entry of entriesToDelete) {
+          await db.delete(schema.aiGeneratedContent)
+            .where(eq(schema.aiGeneratedContent.id, entry.id));
+          deletedCount++;
+        }
+        
         res.json({ 
           success: true, 
-          message: `All AI cache cleared (model-specific clearing not available)` 
+          message: `Cleared ${deletedCount} cache entries for ${model.name}`,
+          deletedCount
         });
       } else {
         // Clear all AI cache

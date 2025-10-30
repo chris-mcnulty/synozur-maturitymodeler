@@ -425,6 +425,7 @@ export default function Admin() {
   
   // AI Cache management state
   const [showCacheDialog, setShowCacheDialog] = useState(false);
+  const [cacheClearModelId, setCacheClearModelId] = useState<string>('');
   
   // Delete data confirmation dialog state
   const [isDeleteDataDialogOpen, setIsDeleteDataDialogOpen] = useState(false);
@@ -596,16 +597,18 @@ export default function Admin() {
 
   // Clear AI cache mutation
   const clearAICache = useMutation({
-    mutationFn: async () => {
-      return apiRequest('/api/admin/ai/cache', 'DELETE');
+    mutationFn: async (modelId?: string) => {
+      const url = modelId ? `/api/admin/ai/cache?modelId=${modelId}` : '/api/admin/ai/cache';
+      return apiRequest(url, 'DELETE');
     },
-    onSuccess: () => {
+    onSuccess: (data: any) => {
       refetchCacheStats();
       toast({
         title: "Cache cleared",
-        description: "All AI-generated content cache has been cleared. New assessments will generate fresh content.",
+        description: data.message || "AI cache has been cleared. New assessments will generate fresh content.",
       });
       setShowCacheDialog(false);
+      setCacheClearModelId('');
     },
     onError: (error: Error) => {
       toast({
@@ -4604,22 +4607,47 @@ export default function Admin() {
       </Dialog>
 
       {/* AI Cache Clear Confirmation Dialog */}
-      <Dialog open={showCacheDialog} onOpenChange={setShowCacheDialog}>
+      <Dialog open={showCacheDialog} onOpenChange={(open) => {
+        setShowCacheDialog(open);
+        if (!open) setCacheClearModelId('');
+      }}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Clear AI Content Cache?</DialogTitle>
             <DialogDescription>
-              This will permanently delete all cached AI-generated content. New assessments will regenerate fresh content using the latest knowledge documents.
+              Clear cached AI-generated content for all models or a specific model. New assessments will regenerate fresh content using the latest knowledge documents.
             </DialogDescription>
           </DialogHeader>
 
           <div className="py-4 space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="cache-clear-model">Model (optional)</Label>
+              <Select value={cacheClearModelId} onValueChange={setCacheClearModelId}>
+                <SelectTrigger id="cache-clear-model" data-testid="select-cache-clear-model">
+                  <SelectValue placeholder="All models" />
+                </SelectTrigger>
+                <SelectContent>
+                  {models.map((model) => (
+                    <SelectItem key={model.id} value={model.id}>
+                      {model.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                Leave unselected to clear cache for all models, or select a specific model
+              </p>
+            </div>
+
             <div className="p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
               <p className="text-sm font-semibold text-yellow-700 dark:text-yellow-400 mb-2">
                 ⚠️ This action cannot be undone
               </p>
               <p className="text-sm text-muted-foreground">
-                All {cacheStats?.total || 0} cached items will be deleted. This may temporarily slow down assessments as content is regenerated.
+                {cacheClearModelId 
+                  ? `Cache entries for the selected model will be deleted.`
+                  : `All ${cacheStats?.total || 0} cached items will be deleted.`
+                } This may temporarily slow down assessments as content is regenerated.
               </p>
             </div>
 
@@ -4634,16 +4662,19 @@ export default function Admin() {
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowCacheDialog(false)}>
+            <Button variant="outline" onClick={() => {
+              setShowCacheDialog(false);
+              setCacheClearModelId('');
+            }}>
               Cancel
             </Button>
             <Button
               variant="destructive"
-              onClick={() => clearAICache.mutate()}
+              onClick={() => clearAICache.mutate(cacheClearModelId || undefined)}
               disabled={clearAICache.isPending}
               data-testid="button-confirm-clear-cache"
             >
-              {clearAICache.isPending ? "Clearing..." : "Clear All Cache"}
+              {clearAICache.isPending ? "Clearing..." : cacheClearModelId ? "Clear Model Cache" : "Clear All Cache"}
             </Button>
           </DialogFooter>
         </DialogContent>
