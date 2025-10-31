@@ -102,7 +102,7 @@ export default function Landing() {
               Take Synozur's comprehensive assessments to identify where your organization stands on your transformation journey. 
               Receive a precise Maturity Score and personalized recommendations to advance your capabilities.
             </p>
-            <p className="text-lg text-white/80 mb-12 max-w-3xl mx-auto">
+            <p className="text-lg text-white/80 max-w-3xl mx-auto">
               Orion is still in beta.{' '}
               <a 
                 href="https://www.synozur.com/join" 
