@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -62,6 +63,7 @@ function BenchmarkConfig() {
     minSampleSizeCompanySize: 10,
     minSampleSizeCountry: 10,
     minSampleSizeIndustryCompanySize: 15,
+    includeAnonymous: false,
   });
 
   const { data: config, isLoading } = useQuery<typeof configForm>({
@@ -112,6 +114,15 @@ function BenchmarkConfig() {
             <p className="text-2xl font-bold">{config.minSampleSizeIndustryCompanySize}</p>
             <p className="text-xs text-muted-foreground">minimum samples</p>
           </div>
+        </div>
+        <div className="p-4 border rounded-md">
+          <p className="text-sm font-medium">Include Anonymous/Imported Assessments</p>
+          <p className="text-2xl font-bold">{config.includeAnonymous ? 'Yes' : 'No'}</p>
+          <p className="text-xs text-muted-foreground">
+            {config.includeAnonymous 
+              ? 'Benchmarks include all assessment data' 
+              : 'Benchmarks exclude imported anonymous data'}
+          </p>
         </div>
         <Button onClick={() => {
           setConfigForm(config);
@@ -181,6 +192,23 @@ function BenchmarkConfig() {
             onChange={(e) => setConfigForm({ ...configForm, minSampleSizeIndustryCompanySize: parseInt(e.target.value) })}
             data-testid="input-min-sample-industry-company-size"
           />
+        </div>
+      </div>
+      <div className="flex items-center space-x-2 p-4 border rounded-md">
+        <Switch
+          id="includeAnonymous"
+          checked={configForm.includeAnonymous}
+          onCheckedChange={(checked) => setConfigForm({ ...configForm, includeAnonymous: checked })}
+          data-testid="switch-include-anonymous"
+        />
+        <div className="flex-1">
+          <Label htmlFor="includeAnonymous" className="cursor-pointer">
+            Include Anonymous/Imported Assessments in Benchmarks
+          </Label>
+          <p className="text-xs text-muted-foreground mt-1">
+            When enabled, benchmarks will include all assessment data including imported/anonymous entries. 
+            When disabled, only assessments from registered users with complete profiles are included.
+          </p>
         </div>
       </div>
       <div className="flex gap-2">

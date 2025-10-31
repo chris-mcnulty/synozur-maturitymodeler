@@ -67,35 +67,57 @@ async function calculateSegmentBenchmark(
   const conditions = [
     eq(assessments.modelId, modelId),
     eq(assessments.status, 'completed'),
-    isNotNull(assessments.userId),
   ];
   
   // Conditionally exclude imported anonymous data based on configuration
   if (!includeAnonymous) {
     conditions.push(sql`${assessments.importBatchId} IS NULL`);
-  }
-
-  if (filter.industry) {
-    conditions.push(eq(users.industry, filter.industry));
-  }
-  if (filter.companySize) {
-    conditions.push(eq(users.companySize, filter.companySize));
-  }
-  if (filter.country) {
-    conditions.push(eq(users.country, filter.country));
+    conditions.push(eq(assessments.isProxy, false));
+    conditions.push(isNotNull(assessments.userId));
   }
 
   // Get all completed assessments with results for this segment
-  const assessmentData = await db
+  // Use left join to users so we can include proxy/imported assessments
+  const baseData = await db
     .select({
       assessmentId: assessments.id,
       overallScore: results.overallScore,
       dimensionScores: results.dimensionScores,
+      // Get profile data from users table (for regular assessments)
+      userIndustry: users.industry,
+      userCompanySize: users.companySize,
+      userCountry: users.country,
+      // Get profile data from proxy fields (for proxy assessments)
+      proxyIndustry: assessments.proxyIndustry,
+      proxyCompanySize: assessments.proxyCompanySize,
+      proxyCountry: assessments.proxyCountry,
+      isProxy: assessments.isProxy,
     })
     .from(assessments)
     .innerJoin(results, eq(results.assessmentId, assessments.id))
-    .innerJoin(users, eq(users.id, assessments.userId))
+    .leftJoin(users, eq(users.id, assessments.userId))
     .where(and(...conditions));
+
+  // Filter by segment criteria, using proxy fields for proxy assessments and user fields for regular ones
+  const assessmentData = baseData.filter(item => {
+    // Determine which profile to use (proxy takes precedence if it exists)
+    const industry = item.isProxy ? item.proxyIndustry : item.userIndustry;
+    const companySize = item.isProxy ? item.proxyCompanySize : item.userCompanySize;
+    const country = item.isProxy ? item.proxyCountry : item.userCountry;
+
+    // Apply segment filters - if a filter is specified, the assessment must have that field
+    if (filter.industry) {
+      if (!industry || industry !== filter.industry) return false;
+    }
+    if (filter.companySize) {
+      if (!companySize || companySize !== filter.companySize) return false;
+    }
+    if (filter.country) {
+      if (!country || country !== filter.country) return false;
+    }
+    
+    return true;
+  });
 
   const sampleSize = assessmentData.length;
 
@@ -159,28 +181,45 @@ export async function calculateBenchmarks(modelId: string): Promise<void> {
   }
 
   // 2. Get all unique industries, company sizes, and countries
+  // Build conditions for the segment query
+  const segmentConditions = [
+    eq(assessments.modelId, modelId),
+    eq(assessments.status, 'completed'),
+  ];
+  
+  if (!config.includeAnonymous) {
+    segmentConditions.push(sql`${assessments.importBatchId} IS NULL`);
+    segmentConditions.push(eq(assessments.isProxy, false));
+  }
+
   const uniqueSegments = await db
-    .selectDistinct({
-      industry: users.industry,
-      companySize: users.companySize,
-      country: users.country,
+    .select({
+      userIndustry: users.industry,
+      userCompanySize: users.companySize,
+      userCountry: users.country,
+      proxyIndustry: assessments.proxyIndustry,
+      proxyCompanySize: assessments.proxyCompanySize,
+      proxyCountry: assessments.proxyCountry,
+      isProxy: assessments.isProxy,
     })
-    .from(users)
-    .innerJoin(assessments, and(
-      eq(assessments.userId, users.id),
-      eq(assessments.modelId, modelId),
-      eq(assessments.status, 'completed'),
-      sql`${assessments.importBatchId} IS NULL`
-    ));
+    .from(assessments)
+    .leftJoin(users, eq(users.id, assessments.userId))
+    .where(and(...segmentConditions));
 
   const industries = new Set<string>();
   const companySizes = new Set<string>();
   const countries = new Set<string>();
 
   uniqueSegments.forEach((seg) => {
-    if (seg.industry) industries.add(seg.industry);
-    if (seg.companySize) companySizes.add(seg.companySize);
-    if (seg.country) countries.add(seg.country);
+    // Use proxy fields for proxy assessments, user fields for regular assessments
+    const industry = seg.isProxy ? seg.proxyIndustry : seg.userIndustry;
+    const companySize = seg.isProxy ? seg.proxyCompanySize : seg.userCompanySize;
+    const country = seg.isProxy ? seg.proxyCountry : seg.userCountry;
+    
+    // Only add non-null, non-empty values to segments
+    if (industry && industry.trim()) industries.add(industry);
+    if (companySize && companySize.trim()) companySizes.add(companySize);
+    if (country && country.trim()) countries.add(country);
   });
 
   // 3. Calculate industry benchmarks
@@ -249,8 +288,12 @@ export async function calculateBenchmarks(modelId: string): Promise<void> {
   // 6. Calculate industry + company size combination benchmarks
   const combinations = new Set<string>();
   uniqueSegments.forEach((seg) => {
-    if (seg.industry && seg.companySize) {
-      combinations.add(`${seg.industry}|${seg.companySize}`);
+    const industry = seg.isProxy ? seg.proxyIndustry : seg.userIndustry;
+    const companySize = seg.isProxy ? seg.proxyCompanySize : seg.userCompanySize;
+    
+    // Only create combinations where both fields are populated
+    if (industry && industry.trim() && companySize && companySize.trim()) {
+      combinations.add(`${industry}|${companySize}`);
     }
   });
 
