@@ -487,11 +487,20 @@ The Synozur Alliance LLC is here to help you find your North Star and make the d
     modelName: string,
     userContext?: { industry?: string; companySize?: string; jobTitle?: string }
   ): Promise<string> {
+    // Log the user context for debugging
+    console.log('[AI Service] Generating roadmap for:', {
+      modelName,
+      userContext: userContext || 'No context provided',
+      recommendationTitles: recommendations.slice(0, 3).map(r => r.title)
+    });
+    
     // Get model ID to fetch knowledge version
     let modelId: string | undefined;
+    let modelSlug: string | undefined;
     try {
       const models = await db.select().from(schema.models).where(eq(schema.models.name, modelName)).limit(1);
       modelId = models[0]?.id;
+      modelSlug = models[0]?.slug;
     } catch (error) {
       console.error('Error fetching modelId for knowledge context:', error);
     }
@@ -499,19 +508,29 @@ The Synozur Alliance LLC is here to help you find your North Star and make the d
     // Get knowledge version hash for cache invalidation
     const knowledgeVersion = await this.getKnowledgeVersionHash(modelId);
 
-    // Create cache context including knowledge version
+    // Create a stable, detailed cache context
+    // Include a stable string representation of userContext to ensure proper cache separation
+    const userContextKey = userContext ? JSON.stringify({
+      jobTitle: userContext.jobTitle || '',
+      industry: userContext.industry || '',
+      companySize: userContext.companySize || ''
+    }) : 'no-context';
+    
     const cacheContext = {
-      recommendations,
+      recommendations: recommendations.slice(0, 3).map(r => ({ title: r.title, desc: r.description.substring(0, 100) })),
       modelName,
-      userContext: userContext || {},
+      userContextKey, // Use stable string instead of object
       knowledgeVersion
     };
     
     // Check cache first
     const cached = await this.getCachedContent('recommendations_summary', cacheContext);
     if (cached) {
+      console.log('[AI Service] Using cached roadmap content');
       return cached;
     }
+    
+    console.log('[AI Service] Generating new roadmap content (cache miss)');
     
     try {
       // Take top 3 recommendations for the summary
@@ -524,8 +543,15 @@ The Synozur Alliance LLC is here to help you find your North Star and make the d
 
 ${knowledgeContext}
 
-Model: ${modelName}
-${userContext ? `Context: ${userContext.jobTitle || 'Leader'} in ${userContext.industry || 'Industry'}` : ''}
+CRITICAL CONTEXT - YOU MUST USE THIS EXACT INFORMATION:
+Model: ${modelName}${modelSlug ? ` (${modelSlug})` : ''}
+${userContext ? `User Profile: ${userContext.jobTitle || 'Leader'} role in ${userContext.industry || 'their industry'} sector${userContext.companySize ? `, ${userContext.companySize} company` : ''}` : 'General professional context'}
+
+ABSOLUTELY CRITICAL PERSONALIZATION RULES:
+1. You MUST write for a ${userContext?.jobTitle || 'Leader'} in ${userContext?.industry || 'the industry'} - DO NOT use any other role or industry
+2. Only use knowledge base content that is relevant to "${modelName}" - IGNORE content about other models or topics
+3. DO NOT include GTM (go-to-market), ISV, SI, or Microsoft partner content UNLESS this is explicitly a GTM-focused model
+4. Focus ALL guidance on the specific context: ${userContext?.jobTitle || 'Leader'} in ${userContext?.industry || 'the industry'}
 
 PRIORITY ACTION TITLES YOU MUST USE:
 1. "${topRecs[0]?.title || 'First priority action'}"

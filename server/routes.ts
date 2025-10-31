@@ -2123,6 +2123,22 @@ Respond in JSON format:
     }
   });
 
+  // Clear AI cache for a specific model (admin only)
+  app.post("/api/admin/ai/clear-cache/:modelId", ensureAdmin, async (req, res) => {
+    try {
+      const { modelId } = req.params;
+      
+      // Delete all cached AI content for this model
+      await db.delete(schema.aiGeneratedContent)
+        .where(eq(schema.aiGeneratedContent.type, 'recommendations_summary'));
+      
+      res.json({ success: true, message: 'AI cache cleared successfully' });
+    } catch (error) {
+      console.error('Failed to clear AI cache:', error);
+      res.status(500).json({ error: "Failed to clear AI cache" });
+    }
+  });
+  
   // Get AI usage statistics for admin dashboard
   app.get("/api/admin/ai/usage", ensureAdminOrModeler, async (req, res) => {
     try {
