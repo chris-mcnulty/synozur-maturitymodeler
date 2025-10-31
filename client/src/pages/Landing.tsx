@@ -103,8 +103,16 @@ export default function Landing() {
               Receive a precise Maturity Score and personalized recommendations to advance your capabilities.
             </p>
             <p className="text-lg text-white/80 mb-12 max-w-3xl mx-auto">
-              This is our beta version; signup to learn more when we release the full version with weights, 
-              industry benchmarks, and over-time comparisons.
+              Orion is still in beta.{' '}
+              <a 
+                href="https://www.synozur.com/join" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="underline hover:text-white transition-colors"
+              >
+                Sign up
+              </a>
+              {' '}for news and updates on new features and models.
             </p>
           </div>
         </section>
