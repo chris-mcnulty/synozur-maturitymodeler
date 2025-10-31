@@ -119,7 +119,7 @@ export default function Landing() {
 
         {/* Featured Model Section */}
         {featuredModel && (
-          <section className="py-20 bg-gradient-to-br from-primary/5 via-background to-accent/5">
+          <section className="pt-12 pb-20 bg-gradient-to-br from-primary/5 via-background to-accent/5">
             <div className="container mx-auto px-4">
               <div className="max-w-6xl mx-auto">
                 <Badge className="mb-6 px-4 py-1 text-sm bg-primary/10 text-primary border-primary/20">
