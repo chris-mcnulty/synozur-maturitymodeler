@@ -547,11 +547,19 @@ CRITICAL CONTEXT - YOU MUST USE THIS EXACT INFORMATION:
 Model: ${modelName}${modelSlug ? ` (${modelSlug})` : ''}
 ${userContext ? `User Profile: ${userContext.jobTitle || 'Leader'} role in ${userContext.industry || 'their industry'} sector${userContext.companySize ? `, ${userContext.companySize} company` : ''}` : 'General professional context'}
 
-ABSOLUTELY CRITICAL PERSONALIZATION RULES:
+ABSOLUTELY CRITICAL PERSONALIZATION RULES - VIOLATION WILL RESULT IN REJECTION:
 1. You MUST write for a ${userContext?.jobTitle || 'Leader'} in ${userContext?.industry || 'the industry'} - DO NOT use any other role or industry
-2. Only use knowledge base content that is relevant to "${modelName}" - IGNORE content about other models or topics
-3. DO NOT include GTM (go-to-market), ISV, SI, or Microsoft partner content UNLESS this is explicitly a GTM-focused model
-4. Focus ALL guidance on the specific context: ${userContext?.jobTitle || 'Leader'} in ${userContext?.industry || 'the industry'}
+2. Only use knowledge base content that is directly relevant to "${modelName}" - IGNORE all other content
+3. STRICTLY FORBIDDEN unless model name contains "GTM" or "Go-to-Market":
+   - GTM (go-to-market) terminology
+   - ISV (Independent Software Vendor) or SI (Systems Integrator) references
+   - Microsoft partner program language
+   - Partner development, partner ecosystems, or partner enablement
+   - Technical implementation details like "Power Platform", "Power Automate", "connectors", or "APIs"
+   - Solution provider or reseller guidance
+4. Focus EXCLUSIVELY on strategic transformation guidance for ${userContext?.jobTitle || 'Leader'} in ${userContext?.industry || 'the industry'}
+5. Keep language business-focused and role-appropriate, NOT technical or implementation-focused
+6. If knowledge base contains GTM/partner/technical content, COMPLETELY IGNORE IT - use only strategic guidance
 
 PRIORITY ACTION TITLES YOU MUST USE:
 1. "${topRecs[0]?.title || 'First priority action'}"
@@ -800,7 +808,7 @@ Return ONLY the rewritten answer text (20 words maximum, no preamble).`;
         // For comprehensive summaries and roadmaps, use a different system message
         const systemMessage = enforceShortResponse
           ? 'You are an expert maturity assessment consultant. CRITICAL RULES: ALL responses must be MAXIMUM 30 words (2 lines). Be specific, actionable, and concise. NEVER generate URLs or links - these will be added manually. Focus on clear improvement actions only.'
-          : 'You are an expert transformation consultant from The Synozur Alliance LLC. Provide comprehensive, insightful analysis that helps organizations find their North Star. Be detailed, strategic, and empathetic. NEVER generate URLs or links - these will be added manually.';
+          : 'You are an expert transformation consultant from The Synozur Alliance LLC. Provide comprehensive, insightful analysis that helps organizations find their North Star. Be detailed, strategic, and empathetic. NEVER generate URLs or links - these will be added manually.\n\nCRITICAL CONTENT RESTRICTIONS:\n- Write for business leaders, NOT technical implementers\n- Use strategic language, NOT technical jargon\n- ABSOLUTELY FORBIDDEN unless model explicitly mentions GTM/Go-to-Market: GTM terminology, ISV, SI, Microsoft partner programs, Power Platform, Power Automate, connectors, APIs, technical implementation details, partner ecosystems\n- If knowledge base contains technical/GTM content that is irrelevant to the current model, completely ignore it\n- Focus exclusively on strategic business transformation appropriate for the user\'s role and industry';
         
         const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
           {
