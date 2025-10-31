@@ -8,6 +8,7 @@ interface BenchmarkConfig {
   minSampleSizeCompanySize: number;
   minSampleSizeCountry: number;
   minSampleSizeIndustryCompanySize: number;
+  includeAnonymous: boolean;
 }
 
 const DEFAULT_BENCHMARK_CONFIG: BenchmarkConfig = {
@@ -16,6 +17,7 @@ const DEFAULT_BENCHMARK_CONFIG: BenchmarkConfig = {
   minSampleSizeCompanySize: 10,
   minSampleSizeCountry: 10,
   minSampleSizeIndustryCompanySize: 15,
+  includeAnonymous: false,
 };
 
 export async function getBenchmarkConfig(): Promise<BenchmarkConfig> {
@@ -58,15 +60,20 @@ interface SegmentFilter {
 async function calculateSegmentBenchmark(
   modelId: string,
   filter: SegmentFilter,
-  minSampleSize: number
+  minSampleSize: number,
+  includeAnonymous: boolean = false
 ): Promise<{ meanScore: number; dimensionScores: Record<string, number>; sampleSize: number } | null> {
   // Build WHERE conditions
   const conditions = [
     eq(assessments.modelId, modelId),
     eq(assessments.status, 'completed'),
     isNotNull(assessments.userId),
-    sql`${assessments.importBatchId} IS NULL`, // Exclude imported anonymous data from benchmarks
   ];
+  
+  // Conditionally exclude imported anonymous data based on configuration
+  if (!includeAnonymous) {
+    conditions.push(sql`${assessments.importBatchId} IS NULL`);
+  }
 
   if (filter.industry) {
     conditions.push(eq(users.industry, filter.industry));
@@ -137,7 +144,8 @@ export async function calculateBenchmarks(modelId: string): Promise<void> {
   const overallBenchmark = await calculateSegmentBenchmark(
     modelId,
     { segmentType: 'overall' },
-    config.minSampleSizeOverall
+    config.minSampleSizeOverall,
+    config.includeAnonymous
   );
 
   if (overallBenchmark) {
@@ -180,7 +188,8 @@ export async function calculateBenchmarks(modelId: string): Promise<void> {
     const benchmark = await calculateSegmentBenchmark(
       modelId,
       { segmentType: 'industry', industry },
-      config.minSampleSizeIndustry
+      config.minSampleSizeIndustry,
+      config.includeAnonymous
     );
 
     if (benchmark) {
@@ -200,7 +209,8 @@ export async function calculateBenchmarks(modelId: string): Promise<void> {
     const benchmark = await calculateSegmentBenchmark(
       modelId,
       { segmentType: 'company_size', companySize },
-      config.minSampleSizeCompanySize
+      config.minSampleSizeCompanySize,
+      config.includeAnonymous
     );
 
     if (benchmark) {
@@ -220,7 +230,8 @@ export async function calculateBenchmarks(modelId: string): Promise<void> {
     const benchmark = await calculateSegmentBenchmark(
       modelId,
       { segmentType: 'country', country },
-      config.minSampleSizeCountry
+      config.minSampleSizeCountry,
+      config.includeAnonymous
     );
 
     if (benchmark) {
@@ -248,7 +259,8 @@ export async function calculateBenchmarks(modelId: string): Promise<void> {
     const benchmark = await calculateSegmentBenchmark(
       modelId,
       { segmentType: 'industry_company_size', industry, companySize },
-      config.minSampleSizeIndustryCompanySize
+      config.minSampleSizeIndustryCompanySize,
+      config.includeAnonymous
     );
 
     if (benchmark) {
