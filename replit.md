@@ -1,7 +1,7 @@
-# Maturity Modeler - Synozur Multi-Model Maturity Platform
+# Orion - Synozur Multi-Model Maturity Platform
 
 ## Overview
-Maturity Modeler is a comprehensive fullstack JavaScript application designed for multi-model maturity assessments. Its core purpose is to provide dynamic routing for assessments, manage models via CSV, generate gated PDF results, offer benchmarking capabilities, and provide extensive administrative controls. The platform aims to help users "Find Their North Star" through insightful maturity assessments, aligning with Synozur's vision as "the Transformation Company."
+Orion is a comprehensive fullstack JavaScript application designed for multi-model maturity assessments. Its core purpose is to provide dynamic routing for assessments, manage models via CSV, generate gated PDF results, offer benchmarking capabilities, and provide extensive administrative controls. The platform aims to help users "Find Their North Star" through insightful maturity assessments, aligning with Synozur's vision as "the Transformation Company."
 
 ## User Preferences
 - Uses SendGrid for email delivery (API key method, not Replit connector)
