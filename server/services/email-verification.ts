@@ -37,8 +37,8 @@ export async function sendVerificationEmail(
   const msg = {
     to: email,
     from: fromEmail,
-    subject: 'Welcome to Synozur Maturity Modeler – Please Verify Your Email',
-    text: `Welcome to Synozur Maturity Modeler!
+    subject: 'Welcome to Orion by Synozur – Please Verify Your Email',
+    text: `Welcome to Orion by Synozur!
 
 We're excited to guide you on your journey to business excellence. To unlock all features—including downloadable PDF reports—please verify your email address by clicking the link below:
 
@@ -66,7 +66,7 @@ If you didn't create an account, you can safely ignore this email.
         <div class="container">
           <img src="${emailHeaderUrl}" alt="Synozur Alliance" class="header-image" />
           <div class="content">
-            <p>Welcome to Synozur Maturity Modeler!</p>
+            <p>Welcome to Orion by Synozur!</p>
             <p>We're excited to guide you on your journey to business excellence. To unlock all features—including downloadable PDF reports—please verify your email address:</p>
             <p style="text-align: center;">
               <a href="${verificationUrl}" class="button">Verify Email Address</a>

@@ -42,7 +42,7 @@ export function Header() {
           </a>
           <div className="h-6 w-px bg-border"></div>
           <Link href="/" className="text-lg font-bold text-foreground hover:text-primary transition-colors">
-            Maturity Modeler
+            Orion
           </Link>
         </div>
         

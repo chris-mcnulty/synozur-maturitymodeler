@@ -115,7 +115,7 @@ export default function Auth() {
                   className="w-24 h-24 object-contain"
                 />
               </div>
-              <h2 className="text-xl font-semibold mt-2">Maturity Modeler</h2>
+              <h2 className="text-xl font-semibold mt-2">Orion</h2>
               <p className="text-muted-foreground mt-2">Find Your North Star</p>
             </div>
 
