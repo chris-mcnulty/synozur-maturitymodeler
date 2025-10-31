@@ -95,7 +95,7 @@ export default function Landing() {
           </div>
           
           <div className="container relative z-10 mx-auto px-4 py-20 text-center">
-            <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold mb-6 text-white md:bg-gradient-to-r md:from-blue-400 md:via-purple-400 md:to-pink-400 md:bg-clip-text md:text-transparent">
+            <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold mb-6 leading-[1.15] text-white md:bg-gradient-to-r md:from-blue-400 md:via-purple-400 md:to-pink-400 md:bg-clip-text md:text-transparent">
               Digital Transformation Maturity Models
             </h1>
             <p className="text-xl md:text-2xl text-white/90 max-w-4xl mx-auto mb-8">
