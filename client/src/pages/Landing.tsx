@@ -106,17 +106,6 @@ export default function Landing() {
               This is our beta version; signup to learn more when we release the full version with weights, 
               industry benchmarks, and over-time comparisons.
             </p>
-            <div className="flex flex-wrap gap-4 justify-center">
-              <Button 
-                size="lg" 
-                variant="outline" 
-                className="bg-white/10 text-white border-white/30 hover:bg-white/20 px-8 py-6 text-lg"
-                onClick={() => window.open('https://www.synozur.com/join', '_blank')}
-                data-testid="button-sign-up"
-              >
-                Sign Up
-              </Button>
-            </div>
           </div>
         </section>
 
