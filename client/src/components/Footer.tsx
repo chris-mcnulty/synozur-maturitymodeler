@@ -10,7 +10,7 @@ export function Footer() {
               Orion
             </h3>
             <p className="text-sm text-muted-foreground">
-              Science-backed maturity assessments trusted by leading enterprises.
+              Chart your course with confidence.
             </p>
           </div>
           
