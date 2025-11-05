@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { db } from "./db";
-import { eq, inArray, desc } from "drizzle-orm";
+import { eq, inArray, desc, gte, lt, and } from "drizzle-orm";
 import * as schema from "@shared/schema";
 import { insertAssessmentSchema, insertAssessmentResponseSchema, insertResultSchema, insertModelSchema, insertDimensionSchema, insertQuestionSchema, insertAnswerSchema, Answer } from "@shared/schema";
 import { readFileSync } from "fs";
@@ -836,8 +836,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get all assessments with user data (admin only)
   app.get("/api/admin/assessments", ensureAdmin, async (req, res) => {
     try {
-      // Fetch all assessments
-      const allAssessments = await db.select().from(schema.assessments);
+      const { startDate, endDate, status } = req.query;
+      
+      // Build query conditions
+      let query = db.select().from(schema.assessments);
+      let conditions = [];
+      
+      // Apply date range filter
+      if (startDate) {
+        conditions.push(gte(schema.assessments.startedAt, new Date(startDate as string)));
+      }
+      if (endDate) {
+        // Include the entire end date by adding one day
+        const endDateTime = new Date(endDate as string);
+        endDateTime.setDate(endDateTime.getDate() + 1);
+        conditions.push(lt(schema.assessments.startedAt, endDateTime));
+      }
+      
+      // Apply status filter
+      if (status && status !== 'all') {
+        conditions.push(eq(schema.assessments.status, status as string));
+      }
+      
+      // Fetch assessments with conditions
+      const allAssessments = conditions.length > 0 
+        ? await db.select().from(schema.assessments).where(and(...conditions))
+        : await db.select().from(schema.assessments);
       
       // Fetch user data for each assessment
       const assessmentsWithUsers = await Promise.all(
@@ -868,6 +892,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.json(assessmentsWithUsers);
     } catch (error) {
+      console.error('Failed to fetch assessments:', error);
       res.status(500).json({ error: "Failed to fetch all assessments" });
     }
   });
