@@ -48,6 +48,7 @@ interface AdminResult extends Result {
   company?: string;
   modelName?: string;
   date?: string;
+  status?: string;
   isProxy?: boolean;
   proxyName?: string;
   proxyCompany?: string;
@@ -515,12 +516,27 @@ export default function Admin() {
     },
   });
 
+  // Results filters state
+  const [resultsStartDate, setResultsStartDate] = useState(() => {
+    const date = new Date();
+    date.setDate(date.getDate() - 30); // Default to last 30 days
+    return date.toISOString().split('T')[0];
+  });
+  const [resultsEndDate, setResultsEndDate] = useState(() => new Date().toISOString().split('T')[0]);
+  const [resultsStatus, setResultsStatus] = useState<string>('completed'); // Default to completed only
+
   // Fetch all assessments with results
   const { data: results = [], isLoading: resultsLoading } = useQuery<AdminResult[]>({
-    queryKey: ['/api/admin/results'],
+    queryKey: ['/api/admin/results', resultsStartDate, resultsEndDate, resultsStatus],
     queryFn: async () => {
-      // Fetch all assessments with user data (admin endpoint)
-      const assessments = await fetch('/api/admin/assessments').then(r => r.json());
+      // Build query params
+      const params = new URLSearchParams();
+      if (resultsStartDate) params.append('startDate', resultsStartDate);
+      if (resultsEndDate) params.append('endDate', resultsEndDate);
+      if (resultsStatus) params.append('status', resultsStatus);
+      
+      // Fetch all assessments with user data (admin endpoint) with filters
+      const assessments = await fetch(`/api/admin/assessments?${params.toString()}`).then(r => r.json());
       
       // Fetch results and models for each assessment
       const resultsWithDetails = await Promise.all(
@@ -535,6 +551,7 @@ export default function Admin() {
               return {
                 ...result,
                 assessmentId: assessment.id,
+                status: assessment.status,
                 modelName: model?.name || 'Unknown Model',
                 userName: assessment.user?.name || null,
                 company: assessment.user?.company || null,
@@ -550,7 +567,9 @@ export default function Admin() {
         })
       );
       
-      return resultsWithDetails.filter(Boolean);
+      // Sort by date descending (most recent first)
+      const filtered = resultsWithDetails.filter(Boolean);
+      return filtered.sort((a, b) => new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime());
     },
   });
 
@@ -2675,6 +2694,44 @@ export default function Admin() {
                     </Button>
                   </div>
                 </div>
+
+                {/* Filters */}
+                <div className="mb-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="results-start-date">Start Date</Label>
+                    <Input
+                      id="results-start-date"
+                      type="date"
+                      value={resultsStartDate}
+                      onChange={(e) => setResultsStartDate(e.target.value)}
+                      data-testid="input-results-start-date"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="results-end-date">End Date</Label>
+                    <Input
+                      id="results-end-date"
+                      type="date"
+                      value={resultsEndDate}
+                      onChange={(e) => setResultsEndDate(e.target.value)}
+                      data-testid="input-results-end-date"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="results-status">Status</Label>
+                    <Select value={resultsStatus} onValueChange={setResultsStatus}>
+                      <SelectTrigger id="results-status" data-testid="select-results-status">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Statuses</SelectItem>
+                        <SelectItem value="completed">Completed Only</SelectItem>
+                        <SelectItem value="in_progress">In Progress</SelectItem>
+                        <SelectItem value="abandoned">Abandoned</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
                 
                 <Table>
                   <TableHeader>
@@ -2684,7 +2741,7 @@ export default function Admin() {
                       <TableHead>Company</TableHead>
                       <TableHead>Model</TableHead>
                       <TableHead>Score</TableHead>
-                      <TableHead>Level</TableHead>
+                      <TableHead>Status</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -2698,37 +2755,70 @@ export default function Admin() {
                         <TableCell colSpan={7} className="text-center">No results found</TableCell>
                       </TableRow>
                     ) : (
-                      results.map((result) => (
-                        <TableRow key={result.assessmentId} data-testid={`result-row-${result.assessmentId}`}>
-                          <TableCell>{new Date(result.date || Date.now()).toLocaleDateString()}</TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-2">
-                              <span>{result.isProxy ? result.proxyName : (result.userName || 'Anonymous')}</span>
-                              {result.isProxy && (
-                                <Badge variant="secondary" className="text-xs" data-testid={`badge-proxy-${result.assessmentId}`}>
-                                  Proxy
-                                </Badge>
-                              )}
-                            </div>
-                          </TableCell>
-                          <TableCell>{result.isProxy ? result.proxyCompany : (result.company || '-')}</TableCell>
-                          <TableCell>{result.modelName}</TableCell>
-                          <TableCell>{result.overallScore}</TableCell>
-                          <TableCell>
-                            <Badge>{result.label}</Badge>
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <Button 
-                              variant="ghost" 
-                              size="sm"
-                              onClick={() => window.open(`/results/${result.assessmentId}`, '_blank')}
-                              data-testid={`button-view-result-${result.assessmentId}`}
-                            >
-                              View
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))
+                      (() => {
+                        // Group results by date
+                        const groupedByDate = results.reduce((acc, result) => {
+                          const dateKey = new Date(result.date || Date.now()).toLocaleDateString();
+                          if (!acc[dateKey]) {
+                            acc[dateKey] = [];
+                          }
+                          acc[dateKey].push(result);
+                          return acc;
+                        }, {} as Record<string, typeof results>);
+
+                        // Render grouped results with subtotals
+                        return Object.entries(groupedByDate).map(([date, dateResults]) => {
+                          const dateTotal = dateResults.reduce((sum, r) => sum + r.overallScore, 0);
+                          const dateAvg = Math.round(dateTotal / dateResults.length);
+                          
+                          return [
+                            // Date header row
+                            <TableRow key={`header-${date}`} className="bg-muted/50">
+                              <TableCell colSpan={4} className="font-semibold">
+                                {date} ({dateResults.length} assessment{dateResults.length !== 1 ? 's' : ''})
+                              </TableCell>
+                              <TableCell className="font-semibold">
+                                Avg: {dateAvg}
+                              </TableCell>
+                              <TableCell colSpan={2}></TableCell>
+                            </TableRow>,
+                            // Individual results for this date
+                            ...dateResults.map((result) => (
+                              <TableRow key={result.assessmentId} data-testid={`result-row-${result.assessmentId}`}>
+                                <TableCell className="pl-8">{new Date(result.date || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</TableCell>
+                                <TableCell>
+                                  <div className="flex items-center gap-2">
+                                    <span>{result.isProxy ? result.proxyName : (result.userName || 'Anonymous')}</span>
+                                    {result.isProxy && (
+                                      <Badge variant="secondary" className="text-xs" data-testid={`badge-proxy-${result.assessmentId}`}>
+                                        Proxy
+                                      </Badge>
+                                    )}
+                                  </div>
+                                </TableCell>
+                                <TableCell>{result.isProxy ? result.proxyCompany : (result.company || '-')}</TableCell>
+                                <TableCell>{result.modelName}</TableCell>
+                                <TableCell>{result.overallScore}</TableCell>
+                                <TableCell>
+                                  <Badge variant={result.status === 'completed' ? 'default' : 'secondary'}>
+                                    {result.status || result.label}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell className="text-right">
+                                  <Button 
+                                    variant="ghost" 
+                                    size="sm"
+                                    onClick={() => window.open(`/results/${result.assessmentId}`, '_blank')}
+                                    data-testid={`button-view-result-${result.assessmentId}`}
+                                  >
+                                    View
+                                  </Button>
+                                </TableCell>
+                              </TableRow>
+                            ))
+                          ];
+                        }).flat();
+                      })()
                     )}
                   </TableBody>
                 </Table>
