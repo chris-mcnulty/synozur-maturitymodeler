@@ -12,7 +12,7 @@ import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Download, Plus, Edit, Trash, FileSpreadsheet, Eye, BarChart3, Settings, FileDown, FileUp, ListOrdered, Users, Star, Upload, X, Sparkles, CheckCircle2, XCircle, Database, FileText, Brain, BookOpen, ClipboardList, Home } from "lucide-react";
+import { Download, Plus, Edit, Trash, FileSpreadsheet, Eye, BarChart3, Settings, FileDown, FileUp, ListOrdered, Users, Star, Upload, X, Sparkles, CheckCircle2, XCircle, Database, FileText, Brain, BookOpen, ClipboardList, Home, Building2 } from "lucide-react";
 import type { Model, Result, Assessment, Dimension, Question, Answer, User } from "@shared/schema";
 import { useAuth } from "@/hooks/use-auth";
 import { ObjectUploader } from "@/components/ObjectUploader";
@@ -23,6 +23,7 @@ import { ContentManagement } from "@/components/admin/ContentManagement";
 import { ImportManager } from "@/components/admin/ImportManager";
 import { ImportBatches } from "@/components/admin/ImportBatches";
 import { ProxyAssessmentDialog } from "@/components/admin/ProxyAssessmentDialog";
+import { TenantManagement } from "@/components/admin/TenantManagement";
 import {
   Sidebar,
   SidebarContent,
@@ -1924,6 +1925,27 @@ export default function Admin() {
                 </SidebarGroupContent>
               </SidebarGroup>
             )}
+
+            {currentUser?.role === 'admin' && (
+              <SidebarGroup>
+                <SidebarGroupLabel>System</SidebarGroupLabel>
+                <SidebarGroupContent>
+                  <SidebarMenu>
+                    <SidebarMenuItem>
+                      <SidebarMenuButton 
+                        onClick={() => setActiveSection('tenants')}
+                        isActive={activeSection === 'tenants'}
+                        data-testid="tab-tenants"
+                        tooltip="Tenants"
+                      >
+                        <Building2 className="h-4 w-4" />
+                        <span className="group-data-[collapsible=icon]:hidden">Tenants</span>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  </SidebarMenu>
+                </SidebarGroupContent>
+              </SidebarGroup>
+            )}
           </SidebarContent>
         </Sidebar>
 
@@ -3273,6 +3295,8 @@ export default function Admin() {
                   </Card>
                 </div>
               )}
+
+              {activeSection === 'tenants' && <TenantManagement />}
             </div>
 
             {/* Footer Stats */}

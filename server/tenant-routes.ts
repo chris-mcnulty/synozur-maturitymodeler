@@ -156,21 +156,44 @@ router.put("/api/tenants/:id", requireAdmin, async (req, res) => {
   }
 });
 
-// Delete tenant
+// Delete tenant (with cascade deletion of related records)
 router.delete("/api/tenants/:id", requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     
+    // First, check if tenant exists
+    const tenant = await db.select().from(tenants).where(eq(tenants.id, id)).limit(1);
+    if (!tenant.length) {
+      return res.status(404).json({ error: "Tenant not found" });
+    }
+    
+    // Log the deletion before actually deleting
+    await db.insert(tenantAuditLog).values({
+      tenantId: id,
+      actorUserId: req.user!.id,
+      action: "delete_tenant",
+      targetType: "tenant",
+      targetId: id,
+      metadata: { tenantName: tenant[0].name },
+    });
+    
+    // Cascade delete related records (in order to avoid FK violations)
+    // 1. Delete tenant entitlements
+    await db.delete(tenantEntitlements).where(eq(tenantEntitlements.tenantId, id));
+    
+    // 2. Delete tenant domains
+    await db.delete(tenantDomains).where(eq(tenantDomains.tenantId, id));
+    
+    // 3. Delete model-tenant associations
+    await db.delete(modelTenants).where(eq(modelTenants.tenantId, id));
+    
+    // 4. Finally, delete the tenant itself
     const [deletedTenant] = await db
       .delete(tenants)
       .where(eq(tenants.id, id))
       .returning();
     
-    if (!deletedTenant) {
-      return res.status(404).json({ error: "Tenant not found" });
-    }
-    
-    res.json({ success: true, message: "Tenant deleted successfully" });
+    res.json({ success: true, message: "Tenant and all related records deleted successfully" });
   } catch (error) {
     console.error("Error deleting tenant:", error);
     res.status(500).json({ error: "Failed to delete tenant" });

@@ -603,15 +603,25 @@ export type ModelExportFormat = z.infer<typeof modelExportFormatSchema>;
 
 // ========== MULTI-TENANT INSERT SCHEMAS ==========
 
+// Hex color regex: #RRGGBB or #RGB
+const hexColorRegex = /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/;
+
 export const insertTenantSchema = createInsertSchema(tenants).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
+}).extend({
+  name: z.string().min(1, "Tenant name is required").max(255),
+  logoUrl: z.string().url("Invalid URL format").max(500).nullable().or(z.literal('')).transform(val => val === '' ? null : val),
+  primaryColor: z.string().regex(hexColorRegex, "Invalid hex color format (e.g., #810FFB)").nullable().or(z.literal('')).transform(val => val === '' ? null : val),
+  secondaryColor: z.string().regex(hexColorRegex, "Invalid hex color format (e.g., #E60CB3)").nullable().or(z.literal('')).transform(val => val === '' ? null : val),
 });
 
 export const insertTenantDomainSchema = createInsertSchema(tenantDomains).omit({
   id: true,
   createdAt: true,
+}).extend({
+  domain: z.string().min(1, "Domain is required").max(255).regex(/^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/, "Invalid domain format"),
 });
 
 export const insertTenantEntitlementSchema = createInsertSchema(tenantEntitlements).omit({
