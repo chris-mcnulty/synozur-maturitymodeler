@@ -15,6 +15,7 @@ import { validateImportData, executeImport, type ImportExportData } from "./serv
 import { z } from "zod";
 import { scrypt, randomBytes, createHash, timingSafeEqual } from "crypto";
 import { promisify } from "util";
+import tenantRoutes from "./tenant-routes";
 
 const scryptAsync = promisify(scrypt);
 
@@ -45,6 +46,9 @@ const __dirname = dirname(__filename);
 export async function registerRoutes(app: Express): Promise<Server> {
   // Set up authentication routes
   setupAuth(app);
+
+  // Register multi-tenant routes (Phase 1 - behind testing/staging wall)
+  app.use(tenantRoutes);
 
   // Serve email header image
   app.get('/email-header.jpg', (req, res) => {
