@@ -19,8 +19,13 @@ export const users = pgTable("users", {
   emailVerified: boolean("email_verified").notNull().default(false),
   verificationToken: varchar("verification_token"),
   verificationTokenExpiry: timestamp("verification_token_expiry"),
+  // Multi-tenant fields (nullable for backward compatibility)
+  tenantId: varchar("tenant_id"),
+  tenantRole: text("tenant_role"), // 'admin', 'user' - role within the tenant
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+}, (table) => ({
+  tenantIdx: index("idx_users_tenant").on(table.tenantId),
+}));
 
 // Password reset tokens table
 export const passwordResetTokens = pgTable("password_reset_tokens", {
@@ -57,9 +62,17 @@ export const models = pgTable("models", {
     description?: string;
     link?: string;
   }>>(),
+  // Multi-tenant fields (nullable for backward compatibility)
+  ownerTenantId: varchar("owner_tenant_id"), // Tenant that owns this model (if private)
+  visibility: text("visibility").notNull().default("public"), // 'public', 'private', 'individual'
+  modelClass: text("model_class").notNull().default("organizational"), // 'organizational', 'individual'
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
+}, (table) => ({
+  ownerTenantIdx: index("idx_models_owner_tenant").on(table.ownerTenantId),
+  visibilityIdx: index("idx_models_visibility").on(table.visibility),
+  statusVisibilityIdx: index("idx_models_status_visibility").on(table.status, table.visibility),
+}));
 
 // Dimensions table
 export const dimensions = pgTable("dimensions", {
@@ -137,7 +150,11 @@ export const assessments = pgTable("assessments", {
   proxyIndustry: text("proxy_industry"),
   proxyCompanySize: text("proxy_company_size"),
   proxyCountry: text("proxy_country"),
-});
+  // Multi-tenant field (nullable for backward compatibility)
+  tenantId: varchar("tenant_id"), // Tenant context for this assessment
+}, (table) => ({
+  tenantStatusIdx: index("idx_assessments_tenant_status").on(table.tenantId, table.status),
+}));
 
 // Assessment responses table
 export const assessmentResponses = pgTable("assessment_responses", {
@@ -190,6 +207,106 @@ export const settings = pgTable("settings", {
   value: json("value").notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
+
+// ========== MULTI-TENANT TABLES (Phase 1) ==========
+
+// Tenants table
+export const tenants = pgTable("tenants", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  logoUrl: text("logo_url"),
+  primaryColor: varchar("primary_color", { length: 7 }), // Hex color #RRGGBB
+  secondaryColor: varchar("secondary_color", { length: 7 }), // Hex color #RRGGBB
+  autoCreateUsers: boolean("auto_create_users").notNull().default(false),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Tenant domains table - supports multiple domains per tenant
+export const tenantDomains = pgTable("tenant_domains", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").notNull().references(() => tenants.id, { onDelete: "cascade" }),
+  domain: text("domain").notNull().unique(), // e.g., 'acme.com'
+  verified: boolean("verified").notNull().default(false), // Domain ownership verification
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  tenantDomainIdx: index("idx_tenant_domains_tenant").on(table.tenantId),
+  domainIdx: index("idx_tenant_domains_domain").on(table.domain),
+}));
+
+// Application entitlements per tenant
+export const tenantEntitlements = pgTable("tenant_entitlements", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").notNull().references(() => tenants.id, { onDelete: "cascade" }),
+  application: text("application").notNull(), // 'orion', 'nebula', 'vega'
+  enabled: boolean("enabled").notNull().default(true),
+  features: json("features").$type<Record<string, boolean>>(), // Feature flags
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => ({
+  tenantAppUnique: unique().on(table.tenantId, table.application),
+  tenantIdx: index("idx_tenant_entitlements_tenant").on(table.tenantId),
+}));
+
+// Model tenant visibility - junction table
+export const modelTenants = pgTable("model_tenants", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  modelId: varchar("model_id").notNull().references(() => models.id, { onDelete: "cascade" }),
+  tenantId: varchar("tenant_id").notNull().references(() => tenants.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  modelTenantUnique: unique().on(table.modelId, table.tenantId),
+  modelIdx: index("idx_model_tenants_model").on(table.modelId),
+  tenantIdx: index("idx_model_tenants_tenant").on(table.tenantId),
+}));
+
+// OAuth clients for external applications
+export const oauthClients = pgTable("oauth_clients", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  clientId: varchar("client_id", { length: 255 }).notNull().unique(),
+  clientSecretHash: text("client_secret_hash").notNull(), // Hashed with bcrypt
+  name: text("name").notNull(),
+  redirectUris: text("redirect_uris").array().notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => ({
+  clientIdIdx: index("idx_oauth_clients_client_id").on(table.clientId),
+}));
+
+// OAuth tokens for authentication
+export const oauthTokens = pgTable("oauth_tokens", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  clientId: varchar("client_id").notNull().references(() => oauthClients.id, { onDelete: "cascade" }),
+  accessTokenHash: text("access_token_hash").notNull(), // Hashed with bcrypt
+  refreshTokenHash: text("refresh_token_hash"), // Hashed with bcrypt
+  tokenType: text("token_type").notNull().default("Bearer"),
+  scopes: text("scopes").array(),
+  expiresAt: timestamp("expires_at").notNull(),
+  revokedAt: timestamp("revoked_at"),
+  rotatedAt: timestamp("rotated_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  userIdx: index("idx_oauth_tokens_user").on(table.userId),
+  clientIdx: index("idx_oauth_tokens_client").on(table.clientId),
+  expiresIdx: index("idx_oauth_tokens_expires").on(table.expiresAt),
+}));
+
+// Tenant audit log for compliance
+export const tenantAuditLog = pgTable("tenant_audit_log", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").notNull().references(() => tenants.id, { onDelete: "cascade" }),
+  actorUserId: varchar("actor_user_id").references(() => users.id, { onDelete: "set null" }),
+  action: text("action").notNull(), // 'create_user', 'update_model', 'delete_assessment', etc.
+  targetType: text("target_type"), // 'user', 'model', 'assessment', etc.
+  targetId: varchar("target_id"),
+  metadata: json("metadata").$type<Record<string, any>>(), // Additional context
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  tenantIdx: index("idx_tenant_audit_tenant").on(table.tenantId),
+  actorIdx: index("idx_tenant_audit_actor").on(table.actorUserId),
+  createdIdx: index("idx_tenant_audit_created").on(table.createdAt),
+}));
 
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users).omit({
@@ -483,3 +600,65 @@ export const modelExportFormatSchema = z.object({
 });
 
 export type ModelExportFormat = z.infer<typeof modelExportFormatSchema>;
+
+// ========== MULTI-TENANT INSERT SCHEMAS ==========
+
+export const insertTenantSchema = createInsertSchema(tenants).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertTenantDomainSchema = createInsertSchema(tenantDomains).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertTenantEntitlementSchema = createInsertSchema(tenantEntitlements).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertModelTenantSchema = createInsertSchema(modelTenants).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertOauthClientSchema = createInsertSchema(oauthClients).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertOauthTokenSchema = createInsertSchema(oauthTokens).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertTenantAuditLogSchema = createInsertSchema(tenantAuditLog).omit({
+  id: true,
+  createdAt: true,
+});
+
+// TypeScript types for multi-tenant tables
+export type Tenant = typeof tenants.$inferSelect;
+export type InsertTenant = z.infer<typeof insertTenantSchema>;
+
+export type TenantDomain = typeof tenantDomains.$inferSelect;
+export type InsertTenantDomain = z.infer<typeof insertTenantDomainSchema>;
+
+export type TenantEntitlement = typeof tenantEntitlements.$inferSelect;
+export type InsertTenantEntitlement = z.infer<typeof insertTenantEntitlementSchema>;
+
+export type ModelTenant = typeof modelTenants.$inferSelect;
+export type InsertModelTenant = z.infer<typeof insertModelTenantSchema>;
+
+export type OauthClient = typeof oauthClients.$inferSelect;
+export type InsertOauthClient = z.infer<typeof insertOauthClientSchema>;
+
+export type OauthToken = typeof oauthTokens.$inferSelect;
+export type InsertOauthToken = z.infer<typeof insertOauthTokenSchema>;
+
+export type TenantAuditLog = typeof tenantAuditLog.$inferSelect;
+export type InsertTenantAuditLog = z.infer<typeof insertTenantAuditLogSchema>;
