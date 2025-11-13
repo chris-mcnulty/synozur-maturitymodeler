@@ -617,13 +617,13 @@ export default function Admin() {
   // Fetch all users (admin only)
   const { data: users = [], isLoading: usersLoading } = useQuery<Omit<User, 'password'>[]>({
     queryKey: ['/api/users'],
-    enabled: currentUser?.role === 'admin',
+    enabled: isAdminUser(currentUser),
   });
 
   // Fetch all tenants (admin only)
   const { data: tenants = [] } = useQuery<any[]>({
     queryKey: ['/api/tenants'],
-    enabled: currentUser?.role === 'admin',
+    enabled: isAdminUser(currentUser),
   });
 
   // Filter users by tenant
@@ -636,7 +636,7 @@ export default function Admin() {
   // Fetch pending AI reviews count
   const { data: pendingReviews = [] } = useQuery<any[]>({
     queryKey: ['/api/admin/ai/pending-reviews'],
-    enabled: currentUser?.role === 'admin' || currentUser?.role === 'modeler',
+    enabled: canManageModels(currentUser),
   });
 
   // Fetch AI cache statistics
@@ -647,7 +647,7 @@ export default function Admin() {
     byType: Record<string, number>;
   }>({
     queryKey: ['/api/admin/ai/cache-stats'],
-    enabled: currentUser?.role === 'admin',
+    enabled: isAdminUser(currentUser),
   });
 
   // Update user mutation
@@ -2747,7 +2747,7 @@ export default function Admin() {
                                   onClick={() => {
                                     setEditingUser(user);
                                     setUserForm({ 
-                                      role: (user.role as 'user' | 'admin' | 'modeler') || 'user',
+                                      role: normalizeRole(user.role),
                                       username: user.username,
                                       newPassword: '',
                                       tenantId: user.tenantId || null,

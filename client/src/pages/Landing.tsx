@@ -95,9 +95,12 @@ export default function Landing() {
           </div>
           
           <div className="container relative z-10 mx-auto px-4 py-20 text-center">
-            <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold mb-6 leading-[1.15] text-white md:bg-gradient-to-r md:from-blue-400 md:via-purple-400 md:to-pink-400 md:bg-clip-text md:text-transparent">
-              Digital Transformation Maturity Models
+            <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold mb-4 leading-[1.15] text-white md:bg-gradient-to-r md:from-blue-400 md:via-purple-400 md:to-pink-400 md:bg-clip-text md:text-transparent">
+              Orion
             </h1>
+            <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-6 text-white/90">
+              Digital Transformation Maturity Models
+            </h2>
             <p className="text-xl md:text-2xl text-white/90 max-w-4xl mx-auto mb-8">
               Take Synozur's comprehensive assessments to identify where your organization stands on your transformation journey. 
               Receive a precise Maturity Score and personalized recommendations to advance your capabilities.
