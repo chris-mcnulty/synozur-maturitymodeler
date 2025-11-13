@@ -50,7 +50,7 @@ function normalizeRole(role: string | null | undefined): UserRole {
   
   // Map legacy roles to new roles
   if (role === 'admin') return USER_ROLES.GLOBAL_ADMIN;
-  if (role === 'modeler') return USER_ROLES.USER; // Modelers migrated to user
+  if (role === 'modeler') return USER_ROLES.TENANT_MODELER;
   
   // Return as-is if already a valid new role
   if (role === USER_ROLES.GLOBAL_ADMIN || 

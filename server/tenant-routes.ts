@@ -12,21 +12,14 @@ import {
   insertModelTenantSchema,
 } from "@shared/schema";
 import { eq, and } from "drizzle-orm";
+import { ensureGlobalAdmin } from "./auth";
 
 const router = Router();
-
-// Middleware to require admin role
-const requireAdmin = (req: Request, res: Response, next: Function) => {
-  if (!req.isAuthenticated() || req.user?.role !== 'admin') {
-    return res.status(403).json({ error: "Unauthorized. Admin access required." });
-  }
-  next();
-};
 
 // ========== TENANT MANAGEMENT ROUTES (Admin Only) ==========
 
 // Get all tenants
-router.get("/api/tenants", requireAdmin, async (req, res) => {
+router.get("/api/tenants", ensureGlobalAdmin, async (req, res) => {
   try {
     const allTenants = await db.select().from(tenants);
     
@@ -59,7 +52,7 @@ router.get("/api/tenants", requireAdmin, async (req, res) => {
 });
 
 // Get single tenant by ID
-router.get("/api/tenants/:id", requireAdmin, async (req, res) => {
+router.get("/api/tenants/:id", ensureGlobalAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     
@@ -91,7 +84,7 @@ router.get("/api/tenants/:id", requireAdmin, async (req, res) => {
 });
 
 // Create new tenant
-router.post("/api/tenants", requireAdmin, async (req, res) => {
+router.post("/api/tenants", ensureGlobalAdmin, async (req, res) => {
   try {
     const validatedData = insertTenantSchema.parse(req.body);
     
@@ -121,7 +114,7 @@ router.post("/api/tenants", requireAdmin, async (req, res) => {
 });
 
 // Update tenant
-router.put("/api/tenants/:id", requireAdmin, async (req, res) => {
+router.put("/api/tenants/:id", ensureGlobalAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     const validatedData = insertTenantSchema.partial().parse(req.body);
@@ -157,7 +150,7 @@ router.put("/api/tenants/:id", requireAdmin, async (req, res) => {
 });
 
 // Delete tenant (with cascade deletion of related records)
-router.delete("/api/tenants/:id", requireAdmin, async (req, res) => {
+router.delete("/api/tenants/:id", ensureGlobalAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     
@@ -203,7 +196,7 @@ router.delete("/api/tenants/:id", requireAdmin, async (req, res) => {
 // ========== TENANT DOMAINS ROUTES ==========
 
 // Add domain to tenant
-router.post("/api/tenants/:id/domains", requireAdmin, async (req, res) => {
+router.post("/api/tenants/:id/domains", ensureGlobalAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     const validatedData = insertTenantDomainSchema.parse({
@@ -240,7 +233,7 @@ router.post("/api/tenants/:id/domains", requireAdmin, async (req, res) => {
 });
 
 // Update domain verification status
-router.patch("/api/tenants/:tenantId/domains/:domainId", requireAdmin, async (req, res) => {
+router.patch("/api/tenants/:tenantId/domains/:domainId", ensureGlobalAdmin, async (req, res) => {
   try {
     const { tenantId, domainId } = req.params;
     const { verified } = req.body;
@@ -280,7 +273,7 @@ router.patch("/api/tenants/:tenantId/domains/:domainId", requireAdmin, async (re
 });
 
 // Remove domain from tenant
-router.delete("/api/tenants/:tenantId/domains/:domainId", requireAdmin, async (req, res) => {
+router.delete("/api/tenants/:tenantId/domains/:domainId", ensureGlobalAdmin, async (req, res) => {
   try {
     const { tenantId, domainId } = req.params;
     
@@ -316,7 +309,7 @@ router.delete("/api/tenants/:tenantId/domains/:domainId", requireAdmin, async (r
 // ========== TENANT ENTITLEMENTS ROUTES ==========
 
 // Set entitlements for tenant
-router.put("/api/tenants/:id/entitlements", requireAdmin, async (req, res) => {
+router.put("/api/tenants/:id/entitlements", ensureGlobalAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     const { application, enabled, features } = req.body;
@@ -384,7 +377,7 @@ router.put("/api/tenants/:id/entitlements", requireAdmin, async (req, res) => {
 // ========== MODEL TENANT VISIBILITY ROUTES ==========
 
 // Get tenants for a model
-router.get("/api/models/:modelId/tenants", requireAdmin, async (req, res) => {
+router.get("/api/models/:modelId/tenants", ensureGlobalAdmin, async (req, res) => {
   try {
     const { modelId } = req.params;
     
@@ -407,7 +400,7 @@ router.get("/api/models/:modelId/tenants", requireAdmin, async (req, res) => {
 });
 
 // Publish model to tenant (add visibility)
-router.post("/api/models/:modelId/tenants", requireAdmin, async (req, res) => {
+router.post("/api/models/:modelId/tenants", ensureGlobalAdmin, async (req, res) => {
   try {
     const { modelId } = req.params;
     const { tenantId } = req.body;
@@ -442,7 +435,7 @@ router.post("/api/models/:modelId/tenants", requireAdmin, async (req, res) => {
 });
 
 // Unpublish model from tenant (remove visibility)
-router.delete("/api/models/:modelId/tenants/:tenantId", requireAdmin, async (req, res) => {
+router.delete("/api/models/:modelId/tenants/:tenantId", ensureGlobalAdmin, async (req, res) => {
   try {
     const { modelId, tenantId } = req.params;
     
@@ -478,7 +471,7 @@ router.delete("/api/models/:modelId/tenants/:tenantId", requireAdmin, async (req
 // ========== TENANT AUDIT LOG ROUTES ==========
 
 // Get audit log for a tenant
-router.get("/api/tenants/:id/audit-log", requireAdmin, async (req, res) => {
+router.get("/api/tenants/:id/audit-log", ensureGlobalAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     const limit = parseInt(req.query.limit as string) || 100;
