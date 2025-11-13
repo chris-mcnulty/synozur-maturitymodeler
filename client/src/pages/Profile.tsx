@@ -14,6 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect } from "react";
 import { CheckCircle2, AlertCircle, Mail, Lock } from "lucide-react";
 import type { Result, Assessment, Model } from "@shared/schema";
+import { Badge } from "@/components/ui/badge";
 
 // Standard dropdown options
 const JOB_ROLES = [
@@ -140,6 +141,17 @@ export default function Profile() {
       return assessmentsWithModels;
     },
     enabled: !authLoading,
+  });
+
+  // Fetch tenant details if user has tenantId
+  const { data: tenant } = useQuery({
+    queryKey: ['/api/tenants', user?.tenantId],
+    queryFn: async () => {
+      if (!user?.tenantId) return null;
+      const allTenants = await fetch('/api/tenants').then(r => r.json());
+      return allTenants.find((t: any) => t.id === user.tenantId) || null;
+    },
+    enabled: !!user?.tenantId,
   });
 
   // Fetch results for all assessments
@@ -361,6 +373,19 @@ export default function Profile() {
                       <Label>Username</Label>
                       <Input value={user.username} data-testid="input-profile-username" disabled />
                     </div>
+                    {user.tenantId && (
+                      <div>
+                        <Label>Organization</Label>
+                        <div className="flex items-center gap-2 mt-2">
+                          <Badge variant="secondary" data-testid="badge-tenant">
+                            {tenant?.name || 'Loading...'}
+                          </Badge>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Your account is associated with this tenant organization
+                        </p>
+                      </div>
+                    )}
                     <div>
                       <Label>Email <span className="text-destructive">*</span></Label>
                       <Input 
