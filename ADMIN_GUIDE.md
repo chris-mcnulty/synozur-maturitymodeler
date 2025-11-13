@@ -19,6 +19,7 @@ This guide provides comprehensive instructions for administrators managing the O
 9. [Data Import](#data-import)
 10. [Analytics & Reporting](#analytics--reporting)
 11. [System Settings](#system-settings)
+12. [Tenant Management](#tenant-management)
 
 ---
 
@@ -781,6 +782,342 @@ Export a formatted interview guide for conducting assessments in person:
 - **Create Model**: `Alt + M` (when in admin console)
 - **Create User**: `Alt + U` (when in user management)
 - **View Analytics**: `Alt + D` (dashboard)
+
+---
+
+## Tenant Management
+
+Multi-tenancy transforms Orion into an enterprise platform serving multiple organizations with isolated branding, private models, and centralized user identity management across the Synozur ecosystem.
+
+### Overview
+
+**What is Multi-Tenancy?**
+
+Multi-tenancy allows Orion to serve multiple organizations (tenants) from a single platform instance while maintaining:
+- **Isolated Branding**: Custom logos and color schemes per tenant
+- **Private Models**: Tenant-exclusive assessment models
+- **Domain Mapping**: Custom domains pointing to tenant experiences
+- **Application Entitlements**: Control which Synozur apps each tenant can access
+- **Centralized Identity**: Orion acts as the OAuth 2.0 provider for all Synozur applications
+
+**Key Concepts**:
+- **Tenant**: An organization using the platform (e.g., "Contoso Corporation")
+- **Domain**: A custom domain mapped to a tenant (e.g., "assessments.contoso.com")
+- **Entitlement**: Permission for a tenant to access specific applications
+- **Private Model**: Assessment model visible only to a specific tenant's users
+
+### Accessing Tenant Management
+
+**Requirements**:
+- Admin role only (modelers and users cannot access)
+
+**Navigation**:
+1. Log in with admin credentials
+2. Navigate to **Admin Console**
+3. Click **"Tenants"** in the "System" section of the sidebar
+
+### Viewing Tenants
+
+The tenant list table displays:
+- **Name**: Organization name (with logo thumbnail if configured)
+- **Domains**: List of mapped domains with verification status
+- **Entitlements**: Applications the tenant can access (Orion, Nebula, Vega)
+- **Auto-Create Users**: Whether users are automatically created on first login
+- **Created**: Tenant creation date
+- **Actions**: Quick access buttons for domains, entitlements, edit, and delete
+
+### Creating a New Tenant
+
+1. Click **"Create Tenant"** button in the top-right
+2. Fill in the tenant form:
+   - **Tenant Name** (required): Organization name (e.g., "Acme Corporation")
+   - **Logo URL** (optional): Full HTTPS URL to tenant's logo image
+   - **Primary Color** (optional): Hex color code for main brand color (e.g., "#810FFB")
+   - **Secondary Color** (optional): Hex color code for secondary/accent color (e.g., "#E60CB3")
+   - **Auto-Create Users** (toggle): Enable to automatically create user accounts on first login
+3. Click **"Create Tenant"**
+4. Tenant appears in the list
+
+**Field Guidelines**:
+- **Tenant Name**: User-facing name, can include spaces and capitals
+- **Logo URL**: Must be a valid HTTPS URL; recommended size 200x50px to 400x100px
+- **Colors**: Must be in exact hex format `#RRGGBB` (e.g., `#810FFB`, not "purple")
+- **Auto-Create Users**: Recommended for SSO/OAuth scenarios; disable for manual provisioning
+
+**Color Best Practices**:
+- **Primary color**: Used for headers, navigation, primary buttons
+- **Secondary color**: Used for accents, links, call-to-action elements
+- Ensure sufficient contrast with white/black text (WCAG AA standards)
+- Test colors in both light and dark mode before finalizing
+
+### Editing Tenant Information
+
+1. Click on a tenant in the list
+2. Update any fields:
+   - Display name
+   - Logo URL
+   - Primary/accent colors
+3. Click **"Save Changes"**
+
+**Common Updates**:
+- Refreshing logo after rebranding
+- Adjusting colors for better accessibility
+- Updating display name for clarity
+
+### Configuring Tenant Branding
+
+**Logo Requirements**:
+- Format: PNG, JPG, or SVG
+- Size: Recommended 200x50px to 400x100px
+- Background: Transparent or white
+- Hosting: Must be publicly accessible via HTTPS
+
+**Color Configuration**:
+- Colors must be in hex format: `#RRGGBB`
+- Invalid formats will be rejected (e.g., "red", "rgb(255,0,0)")
+- System validates all color codes for security
+
+**Branding Preview**:
+- Logo appears in header and login screens
+- Primary color applies to navigation, buttons, headers
+- Accent color used for links, highlights, CTAs
+
+### Managing Tenant Domains
+
+Domains allow tenants to access Orion via their own custom URLs (e.g., `assessments.contoso.com`).
+
+**Adding a Domain**:
+1. Edit the tenant
+2. Navigate to **"Domains"** section
+3. Click **"Add Domain"**
+4. Enter domain name (e.g., "assessments.contoso.com")
+5. Click **"Add"**
+
+**Domain Requirements**:
+- Must be a valid domain format (subdomain.domain.tld)
+- Must not contain protocol (no "https://")
+- Must be unique across all tenants
+- DNS must be configured to point to Orion
+
+**DNS Configuration** (performed by tenant):
+1. Create CNAME record in DNS
+2. Point to Orion platform URL
+3. Wait for DNS propagation (up to 48 hours)
+4. Verify domain resolves correctly
+
+**Removing a Domain**:
+1. Edit the tenant
+2. Find the domain in the list
+3. Click **"Remove"**
+4. Confirm deletion
+
+**Multiple Domains**:
+- Tenants can have multiple domains
+- Useful for different regions or brands
+- All domains provide the same tenant experience
+
+### Configuring Application Entitlements
+
+Entitlements control which Synozur applications a tenant can access.
+
+**Available Applications**:
+- **Orion**: Maturity assessment platform (always enabled)
+- **Nebula**: (Future) Project management and transformation tracking
+- **Vega**: (Future) Skills assessment and development platform
+
+**Adding an Entitlement**:
+1. Edit the tenant
+2. Navigate to **"Entitlements"** section
+3. Click **"Add Entitlement"**
+4. Select application from dropdown
+5. Click **"Add"**
+
+**Removing an Entitlement**:
+1. Edit the tenant
+2. Find the entitlement in the list
+3. Click **"Remove"**
+4. Confirm deletion
+
+**Entitlement Effects**:
+- Users associated with the tenant can only access entitled applications
+- Prevents unauthorized access to premium features
+- Enables tiered subscription models
+
+### Associating Users with Tenants
+
+**Current Behavior** (Phase 1):
+- Users have an optional `tenant_id` field
+- Users can exist without tenant association (independent users)
+- Tenant association is set manually via database or future admin UI
+
+**Future Capability** (Phase 2):
+- Automatic tenant detection based on email domain
+- Tenant selection during signup
+- Admin UI for assigning users to tenants
+- Bulk user import with tenant association
+
+### Associating Models with Tenants
+
+**Current Behavior** (Phase 1):
+- Models can be marked as tenant-private via database
+- Private models are only visible to associated tenant's users
+
+**Future Capability** (Phase 3):
+- Admin UI for publishing models to specific tenants
+- Tenant-private model library
+- Multi-tenant model access controls
+
+### Deleting a Tenant
+
+1. Navigate to the tenant
+2. Click **"Delete Tenant"** button
+3. Confirm deletion (requires typing tenant name)
+
+**Cascade Deletion**:
+When you delete a tenant, the following are automatically removed:
+- All associated domains
+- All application entitlements
+- All model associations (private models become public)
+- OAuth clients and tokens
+
+**Audit Trail**:
+- Deletion is logged in `tenant_audit_log`
+- Includes timestamp, admin user, and tenant details
+- Audit log is preserved even after tenant deletion
+
+**Warning**: Deleting a tenant does NOT delete:
+- User accounts (users remain but lose tenant association)
+- Assessment data
+- Models (they become public/unassociated)
+
+### Security & Validation
+
+**Input Validation**:
+- **Colors**: Must match exact hex format `#RRGGBB` (case-insensitive)
+- **URLs**: Must be valid HTTPS URLs for logos
+- **Domains**: Must follow standard domain format (no protocol, no paths)
+
+**Why Strict Validation?**:
+- Prevents XSS attacks via malicious color/URL inputs
+- Ensures consistent branding experience
+- Protects against domain hijacking
+
+**Access Control**:
+- Only admins can manage tenants
+- All tenant operations are logged
+- Audit trail maintains compliance
+
+### Audit Logging
+
+All tenant operations are logged in the audit trail:
+
+**Logged Events**:
+- Tenant creation
+- Tenant updates (name, branding changes)
+- Domain additions/removals
+- Entitlement changes
+- Tenant deletion
+
+**Audit Log Fields**:
+- **Event Type**: CREATE, UPDATE, DELETE, etc.
+- **Timestamp**: When the event occurred
+- **Admin User**: Who performed the action
+- **Tenant ID/Name**: Which tenant was affected
+- **Details**: JSON payload with specific changes
+
+**Accessing Audit Logs**:
+- Currently via database: `SELECT * FROM tenant_audit_log ORDER BY created_at DESC;`
+- Future: Admin UI for viewing audit trail
+
+### Best Practices
+
+**Tenant Setup**:
+- Create tenants before onboarding their users
+- Test branding in both light and dark mode
+- Verify logo URLs are permanently accessible
+- Use descriptive tenant names for internal tracking
+
+**Branding**:
+- Keep logos professional and high-quality
+- Ensure colors meet accessibility standards (WCAG AA contrast ratios)
+- Test color combinations across all UI elements
+- Avoid overly bright or neon colors
+
+**Domain Management**:
+- Document DNS configuration requirements for tenants
+- Verify domains resolve before going live
+- Use subdomains (assessments.company.com) rather than root domains
+- Monitor domain SSL certificate status
+
+**Security**:
+- Regularly review tenant access logs
+- Audit entitlements quarterly
+- Remove inactive tenant domains
+- Keep tenant branding assets on secure, reliable hosting
+
+**User Association** (coming soon):
+- Plan tenant user migration strategy
+- Communicate tenant association to users
+- Provide self-service tenant selection when possible
+
+### Multi-Tenant Architecture (Future Phases)
+
+The current implementation (Phase 1) provides the foundation. Future phases will add:
+
+**Phase 2: Tenant-Aware User Management**
+- Automatic tenant detection via email domain
+- Tenant selection during signup
+- Admin UI for bulk user assignment
+- Tenant-filtered user lists
+
+**Phase 3: Private Model Publishing**
+- Publish models exclusively to specific tenants
+- Tenant-specific assessment libraries
+- Model visibility controls in admin UI
+
+**Phase 4: OAuth 2.0 Provider**
+- Orion becomes identity provider for Synozur ecosystem
+- Single sign-on (SSO) across Orion, Nebula, Vega
+- OAuth token management
+- Application authorization flows
+
+**Phase 5: Full Tenant Branding**
+- Tenant-specific UI themes applied automatically
+- Domain-based tenant detection
+- White-label experiences per tenant
+- Custom email templates per tenant
+
+**Phase 6: Individual Assessments**
+- Shift from organizational to individual focus
+- Skills assessments and personal development
+- Career progression tracking
+- Individual identity management
+
+### Troubleshooting
+
+**Tenant Creation Fails**:
+- Verify color format is exactly `#RRGGBB`
+- Ensure logo URL is valid HTTPS
+- Check that tenant name is unique
+- Review browser console for validation errors
+
+**Domain Not Working**:
+- Verify DNS CNAME record points to correct URL
+- Wait for DNS propagation (up to 48 hours)
+- Check domain format (no protocol, no trailing slash)
+- Ensure domain is unique (not used by another tenant)
+
+**Branding Not Appearing**:
+- Clear browser cache
+- Verify logo URL is publicly accessible
+- Check that colors are valid hex codes
+- Ensure tenant association is correct
+
+**User Can't Access Tenant**:
+- Verify user's `tenant_id` matches tenant
+- Check tenant entitlements include required app
+- Ensure user has appropriate role
+- Review tenant domains are properly configured
 
 ---
 
