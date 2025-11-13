@@ -181,7 +181,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (!username || username.trim().length === 0) {
           return res.status(400).json({ error: "Username cannot be empty" });
         }
-        updateData.username = username.trim();
+        
+        // Check if username is taken by a different user
+        const trimmedUsername = username.trim();
+        const existingUsers = await storage.getAllUsers();
+        const usernameConflict = existingUsers.find(
+          u => u.username.toLowerCase() === trimmedUsername.toLowerCase() && u.id !== id
+        );
+        
+        if (usernameConflict) {
+          return res.status(400).json({ error: "Username already exists" });
+        }
+        
+        updateData.username = trimmedUsername;
       }
       
       // Hash new password if provided
@@ -201,7 +213,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { password: _, ...safeUser } = user;
       res.json(safeUser);
     } catch (error: any) {
-      // Handle duplicate username error
+      // Handle duplicate username error (fallback)
       if (error.code === '23505' && error.constraint?.includes('username')) {
         return res.status(400).json({ error: "Username already exists" });
       }
