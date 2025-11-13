@@ -13,11 +13,19 @@ The application uses a modern fullstack architecture:
 - **Frontend**: React, Vite, TypeScript, Wouter for routing, and Shadcn UI for component styling.
 - **Backend**: Express.js for the API, PostgreSQL for the database, and Drizzle ORM for database interactions.
 - **Storage**: PostgreSQL for relational data and object storage (Google Cloud Storage) for assets like model images and knowledge documents.
-- **Authentication**: Passport-based session management with role-based access control (admin, modeler, user).
+- **Authentication**: Passport-based session management with tenant-scoped role-based access control using a four-tier hierarchy (global_admin, tenant_admin, tenant_modeler, user). See Role System section below for details.
 - **UI/UX**: Features a dark-mode-first UI with a primary purple (#810FFB) and accent pink (#E60CB3) color scheme, utilizing the Inter font family. Responsive gradient styling is applied to hero titles. Admin sidebar is collapsible with icon-only mode via toggle button in header, with hover tooltips for all menu items. Dashboard home button provides quick access to model management screen.
 - **Core Features**: Dynamic model routing (/:modelSlug), assessment wizard with autosave, 100-500 point scoring engine, profile gating for results, email-delivered PDF reports, benchmarking, and a comprehensive admin console.
 - **Model Management**: CSV-driven import/export of models, dimensions, answer options, and resource editing. Models can be featured on the homepage. Custom model images (via imageUrl field) display as hero backgrounds on model launch pages (opacity-20) and results pages (opacity-10), with fallback to default graphic.
-- **User Management**: Admin panel for user CRUD, role assignment (user/admin/modeler), email verification management, username changes, and password resets. Self-registration defaults to 'user' role. Admins can change usernames and reset passwords directly from the user management interface. Both admin and modeler roles can access and manage draft models; regular users see published models only.
+- **Role System**: Four-tier tenant-scoped hierarchy:
+  - `global_admin`: Platform-wide control (tenant CRUD, all users, all models)
+  - `tenant_admin`: Tenant user management, model management within tenant scope
+  - `tenant_modeler`: Model creation/editing within tenant scope
+  - `user`: Standard assessment access
+  - Legacy roles (`admin`, `modeler`) automatically normalize to new equivalents
+  - Permission system enforces tenant boundaries via middleware (ensureGlobalAdmin, ensureAnyAdmin, ensureCanManageModels)
+  - Frontend uses helper functions (isAdminUser, canManageModels, normalizeRole) for role checks
+- **User Management**: Admin panel for user CRUD, role assignment, email verification management, username changes, and password resets. Self-registration defaults to 'user' role. Global admins see all users; tenant admins see only users within their tenant. Admins can change usernames and reset passwords directly from the user management interface. Admin and modeler roles can access and manage draft models; regular users see published models only.
 - **Email System**: Integrated email verification, password reset, and PDF report delivery via SendGrid. Email templates support dynamic content and consistent branding.
 - **AI Integration**: Leverages Azure OpenAI GPT-5 for generating personalized recommendations, interpretations, and roadmaps, with a 90-day caching mechanism for cost efficiency. Cache keys use stringified userContextKey for stable profile separation. AI prompts enforce strict personalization rules to prevent cross-model content bleeding (e.g., GTM language in non-GTM models). Detailed logging tracks userContext and cache hits/misses for debugging. Includes an AI content review workflow for admin approval.
 - **Knowledge Base**: User-uploadable documents (PDF, DOCX, DOC, TXT, MD) for AI grounding. Supports company-wide and model-specific scopes. Documents stored in object storage with metadata in `knowledge_documents` table (field: `name` for filename, not `fileName`).

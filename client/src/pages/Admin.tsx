@@ -1979,7 +1979,7 @@ export default function Admin() {
               </SidebarGroupContent>
             </SidebarGroup>
 
-            {currentUser?.role === 'admin' && (
+            {isAdminUser(currentUser) && (
               <SidebarGroup>
                 <SidebarGroupLabel>Users</SidebarGroupLabel>
                 <SidebarGroupContent>
@@ -2000,7 +2000,7 @@ export default function Admin() {
               </SidebarGroup>
             )}
 
-            {currentUser?.role === 'admin' && (
+            {isAdminUser(currentUser) && (
               <SidebarGroup>
                 <SidebarGroupLabel>System</SidebarGroupLabel>
                 <SidebarGroupContent>
