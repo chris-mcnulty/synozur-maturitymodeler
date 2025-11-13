@@ -8,7 +8,8 @@ import { insertAssessmentSchema, insertAssessmentResponseSchema, insertResultSch
 import { readFileSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
-import { setupAuth, ensureAuthenticated, ensureAdmin, ensureAdminOrModeler } from "./auth";
+import { setupAuth, ensureAuthenticated, ensureAdmin, ensureAdminOrModeler, ensureAnyAdmin, ensureGlobalAdmin, ensureCanManageModels } from "./auth";
+import { canManageUsers, canAssignRole, checkIsGlobalAdmin, getAccessibleTenantIds } from "./permissions";
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
 import { aiService } from "./services/ai-service";
 import { validateImportData, executeImport, type ImportExportData } from "./services/import-service";
@@ -160,9 +161,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // User management routes (admin only)
-  app.get('/api/users', ensureAdmin, async (req, res) => {
+  app.get('/api/users', ensureAnyAdmin, async (req, res) => {
     try {
-      const users = await storage.getAllUsers();
+      const currentUser = req.user!;
+      let users = await storage.getAllUsers();
+      
+      // Filter by tenant for tenant_admin
+      if (!checkIsGlobalAdmin(currentUser)) {
+        const accessibleTenants = getAccessibleTenantIds(currentUser);
+        if (accessibleTenants && accessibleTenants.length > 0) {
+          users = users.filter(u => 
+            u.tenantId && accessibleTenants.includes(u.tenantId)
+          );
+        } else {
+          users = []; // No accessible tenants
+        }
+      }
+      
       // Remove password from response
       const safeUsers = users.map(({ password, ...user }) => user);
       res.json(safeUsers);
@@ -171,10 +186,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put('/api/users/:id', ensureAdmin, async (req, res) => {
+  app.put('/api/users/:id', ensureAnyAdmin, async (req, res) => {
     try {
+      const currentUser = req.user!;
       const { id } = req.params;
-      const { newPassword, username, ...updateData } = req.body;
+      const { newPassword, username, role, ...updateData } = req.body;
+      
+      // Get target user to check permissions
+      const allUsers = await storage.getAllUsers();
+      const targetUser = allUsers.find(u => u.id === id);
+      if (!targetUser) {
+        return res.status(404).json({ error: "User not found" });
+      }
+      
+      // Check if current user can manage this user
+      if (!canManageUsers(currentUser, targetUser.tenantId)) {
+        return res.status(403).json({ error: "Insufficient permissions for requested tenant" });
+      }
+      
+      // Validate role assignment if provided
+      if (role !== undefined && role !== targetUser.role) {
+        if (!canAssignRole(currentUser, role)) {
+          return res.status(403).json({ error: "Insufficient permissions to assign this role" });
+        }
+        updateData.role = role;
+      }
       
       // Validate username if provided
       if (username !== undefined) {
@@ -221,13 +257,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete('/api/users/:id', ensureAdmin, async (req, res) => {
+  app.delete('/api/users/:id', ensureAnyAdmin, async (req, res) => {
     try {
+      const currentUser = req.user!;
       const { id } = req.params;
+      
       // Prevent deleting yourself
-      if (req.user?.id === id) {
+      if (currentUser.id === id) {
         return res.status(400).json({ error: "Cannot delete your own account" });
       }
+      
+      // Get target user to check permissions
+      const allUsers = await storage.getAllUsers();
+      const targetUser = allUsers.find(u => u.id === id);
+      if (!targetUser) {
+        return res.status(404).json({ error: "User not found" });
+      }
+      
+      // Check if current user can manage this user
+      if (!canManageUsers(currentUser, targetUser.tenantId)) {
+        return res.status(403).json({ error: "Insufficient permissions for requested tenant" });
+      }
+      
       await storage.deleteUser(id);
       res.json({ success: true });
     } catch (error) {
@@ -236,18 +287,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Assign or unassign user to/from tenant
-  app.patch('/api/users/:id/tenant', ensureAdmin, async (req, res) => {
+  app.patch('/api/users/:id/tenant', ensureAnyAdmin, async (req, res) => {
     try {
+      const currentUser = req.user!;
       const { id } = req.params;
       const { tenantId } = req.body; // null to unassign, tenant ID to assign
       
-      const user = await storage.updateUser(id, { tenantId: tenantId || null });
-      if (!user) {
+      // Get target user
+      const allUsers = await storage.getAllUsers();
+      const targetUser = allUsers.find(u => u.id === id);
+      if (!targetUser) {
         return res.status(404).json({ error: "User not found" });
       }
       
-      const { password, ...safeUser } = user;
-      res.json(safeUser);
+      // Global admins can assign to any tenant or unassign
+      if (checkIsGlobalAdmin(currentUser)) {
+        const user = await storage.updateUser(id, { tenantId: tenantId || null });
+        const { password, ...safeUser } = user!;
+        return res.json(safeUser);
+      }
+      
+      // Tenant admins can only assign users TO their own tenant
+      if (currentUser.role === 'tenant_admin') {
+        // Cannot unassign (remove from tenant)
+        if (!tenantId) {
+          return res.status(403).json({ error: "Tenant admins cannot unassign users from tenants" });
+        }
+        
+        // Can only assign to their own tenant
+        if (tenantId !== currentUser.tenantId) {
+          return res.status(403).json({ error: "Insufficient permissions to assign users to this tenant" });
+        }
+        
+        const user = await storage.updateUser(id, { tenantId });
+        const { password, ...safeUser } = user!;
+        return res.json(safeUser);
+      }
+      
+      // Should not reach here (ensureAnyAdmin should have blocked non-admins)
+      return res.status(403).json({ error: "Insufficient permissions" });
     } catch (error) {
       console.error('Error updating user tenant:', error);
       res.status(500).json({ error: "Failed to update user tenant assignment" });

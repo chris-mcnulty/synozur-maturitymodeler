@@ -14,6 +14,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Download, Plus, Edit, Trash, FileSpreadsheet, Eye, BarChart3, Settings, FileDown, FileUp, ListOrdered, Users, Star, Upload, X, Sparkles, CheckCircle2, XCircle, Database, FileText, Brain, BookOpen, ClipboardList, Home, Building2 } from "lucide-react";
 import type { Model, Result, Assessment, Dimension, Question, Answer, User } from "@shared/schema";
+import { USER_ROLES, type UserRole } from "@shared/constants";
 import { useAuth } from "@/hooks/use-auth";
 import { ObjectUploader } from "@/components/ObjectUploader";
 import { AiAssistant } from "@/components/admin/AiAssistant";
@@ -42,6 +43,43 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+
+// Helper function to normalize legacy role values to new role system
+function normalizeRole(role: string | null | undefined): UserRole {
+  if (!role) return USER_ROLES.USER;
+  
+  // Map legacy roles to new roles
+  if (role === 'admin') return USER_ROLES.GLOBAL_ADMIN;
+  if (role === 'modeler') return USER_ROLES.USER; // Modelers migrated to user
+  
+  // Return as-is if already a valid new role
+  if (role === USER_ROLES.GLOBAL_ADMIN || 
+      role === USER_ROLES.TENANT_ADMIN || 
+      role === USER_ROLES.TENANT_MODELER || 
+      role === USER_ROLES.USER) {
+    return role as UserRole;
+  }
+  
+  // Default to user for unknown roles
+  return USER_ROLES.USER;
+}
+
+// Helper function to check if user has admin permissions
+function isAdminUser(user: User | null | undefined): boolean {
+  if (!user) return false;
+  const normalizedRole = normalizeRole(user.role);
+  return normalizedRole === USER_ROLES.GLOBAL_ADMIN || 
+         normalizedRole === USER_ROLES.TENANT_ADMIN;
+}
+
+// Helper function to check if user can manage models
+function canManageModels(user: User | null | undefined): boolean {
+  if (!user) return false;
+  const normalizedRole = normalizeRole(user.role);
+  return normalizedRole === USER_ROLES.GLOBAL_ADMIN || 
+         normalizedRole === USER_ROLES.TENANT_ADMIN || 
+         normalizedRole === USER_ROLES.TENANT_MODELER;
+}
 
 interface AdminResult extends Result {
   assessmentId: string;
@@ -414,7 +452,7 @@ export default function Admin() {
   const [editingUser, setEditingUser] = useState<Omit<User, 'password'> | null>(null);
   const [isUserDialogOpen, setIsUserDialogOpen] = useState(false);
   const [userForm, setUserForm] = useState({
-    role: 'user' as 'user' | 'admin' | 'modeler',
+    role: 'user' as 'user' | 'tenant_modeler' | 'tenant_admin' | 'global_admin',
     username: '',
     newPassword: '',
     tenantId: '' as string | null,
@@ -4495,19 +4533,20 @@ export default function Admin() {
               <Label>User Role</Label>
               <Select
                 value={userForm.role}
-                onValueChange={(value) => setUserForm({ ...userForm, role: value as 'user' | 'admin' | 'modeler' })}
+                onValueChange={(value) => setUserForm({ ...userForm, role: value as 'user' | 'tenant_modeler' | 'tenant_admin' | 'global_admin' })}
               >
                 <SelectTrigger data-testid="select-user-role">
                   <SelectValue placeholder="Select role" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="user">User</SelectItem>
-                  <SelectItem value="modeler">Modeler</SelectItem>
-                  <SelectItem value="admin">Admin</SelectItem>
+                  <SelectItem value="tenant_modeler">Tenant Modeler</SelectItem>
+                  <SelectItem value="tenant_admin">Tenant Admin</SelectItem>
+                  <SelectItem value="global_admin">Global Admin</SelectItem>
                 </SelectContent>
               </Select>
               <p className="text-sm text-muted-foreground">
-                Admins have full access. Modelers can manage models and content. Users can take assessments.
+                Global Admin: full platform access. Tenant Admin: manage users/models in their tenant. Tenant Modeler: build models for their tenant. User: take assessments.
               </p>
             </div>
 
