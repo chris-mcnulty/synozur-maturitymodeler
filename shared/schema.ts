@@ -15,13 +15,12 @@ export const users = pgTable("users", {
   jobTitle: text("job_title"),
   industry: text("industry"),
   country: text("country"),
-  role: text("role").notNull().default("user"), // 'user', 'modeler', or 'admin'
+  role: text("role").notNull().default("user"), // 'user', 'tenant_modeler', 'tenant_admin', 'global_admin'
   emailVerified: boolean("email_verified").notNull().default(false),
   verificationToken: varchar("verification_token"),
   verificationTokenExpiry: timestamp("verification_token_expiry"),
   // Multi-tenant fields (nullable for backward compatibility)
   tenantId: varchar("tenant_id"),
-  tenantRole: text("tenant_role"), // 'admin', 'user' - role within the tenant
   createdAt: timestamp("created_at").defaultNow().notNull(),
 }, (table) => ({
   tenantIdx: index("idx_users_tenant").on(table.tenantId),
