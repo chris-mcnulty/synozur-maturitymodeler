@@ -1,0 +1,344 @@
+Chris McNulty (00:02)
+From Synozur this is Polaris. I'm Chris McNulty. Every day, organizations are drowning in data. We're generating about 2.5 million terabytes of data a day. 90 % of the world's data was created in just the last two years. Will AI help us turn that flood of data into knowledge, or will it overwhelm us with low quality content? Will our corporate knowledge bases evolve into AI-driven brain trusts?
+
+Will the intranet of the future look more like a conversation and less like a group of folders? This is Polaris.
+
+Welcome to Polaris Pathways. I'm your host, Chris McNulty, Chief Technology Officer at Synozur. Synozur, the transformation company, reimagines business for our clients, navigating strategies and leadership culture with ease. Today, I'm happy to introduce Adam Harmetz. He's the Corporate Vice President for SharePoint at Microsoft. He's a longtime veteran of the SharePoint product team, now leading the charge on modern content experiences for all of Microsoft 365.
+
+I've known Adam for years and he'll join us in a few minutes. But first, let's define our terms and our data points. As always, our reading list and references will be included in our show notes.
+
+AI adoption is exploding.
+
+ChatGPT became the fastest growing app in history, hitting 100 million users in two months. In business, 77 % of companies are using or exploring AI to boost productivity. Even in content management specifically,
+
+Over 65 % of organizations have prioritized AI enhancements to improve how they organize and secure information. And where is that information coming from?
+
+Increasingly in the enterprise, that's SharePoint.
+
+SharePoint reached over a billion users worldwide this year, as Jeff Teper announced at the M365 conference in May. The platform captures over two billion net new documents daily. Microsoft is also weaving AI directly into the platform. Earlier this month, Microsoft unveiled the new Knowledge Agent for SharePoint, an intelligent assistant that automatically tags and organizes your content, fixes broken links, and flags outdated information.
+
+The goal is to keep your company's knowledge base Copilot ready so that tools like Copilot can surface accurate, relevant answers from your content.
+
+This blurs the line between traditional document management and AI, making SharePoint not just a place you store files, but a smart curator that works alongside you.
+
+Companies are implementing smarter intranets, improved content governance, and AI-driven search so employees can find answers faster. One recent survey showed knowledge workers spend 19 % of their time just searching for information. Reducing that is a huge business opportunity.
+
+We have Adam waiting in our virtual green room. Let's go.
+
+Chris McNulty (03:12)
+Welcome back. So today I'm happy to introduce our guest, Adam Harmetz Adam, welcome to Polaris. Thanks for joining us.
+
+Adam Harmetz (03:19)
+Great to be here, Chris.
+
+Chris McNulty (03:21)
+So where are you calling from today?
+
+Adam Harmetz (03:23)
+I am in our Redmond campus of Microsoft, Redmond, Washington,
+
+Chris McNulty (03:27)
+Before we jump into the technology, would love if you could give the audience a quick overview of your career journey leading to your role as CVP for SharePoint. How did it get started? Where'd you go to school?
+
+Adam Harmetz (03:40)
+You know, I ⁓ went to UCLA in sunny Southern California. ⁓ Undeclared at first and then made my way to computer science as business economics. Sort wanted to have both sides of my brain fulfilled. some coding internships but sort of never thought that I could be satisfied being a coder full-time. ⁓ Although I debated it, you know. ⁓ But then found my way to product management or program management at the time at Microsoft.
+
+That was just a great balance of what I had done in college, what I had majored in, and what filled my cup. Still pretty technical, very customer focused, got to talk to folks. So I came to Microsoft right out of college and sort of always worked in this area of ⁓ helping teams collaborate and helping large orgs synthesize knowledge. ⁓ Sometimes that's been deep in the bowels of a cloud service as we were ramping up the cloud. Sometimes that's been the security and compliance angle of it.
+
+⁓ Most recently and for sort of the longest time it's been the user experience and sort of zero to one app making or line extensions and Microsoft ⁓ in that area and today of course it's sort of agents and ⁓ agents and AI born, AI first apps. ⁓ And so, you know, it's been a fun run. I feel like I've gotten an incredible diversity of product making but also been able to create a pretty big home and there's been some sort of themes in what I've worked on now for 20 years in terms of how to help.
+
+help teams be more productive, collaborate and help orgs or synthesize all this data out there.
+
+Chris McNulty (05:11)
+So we've had a couple of product managers on the program over the past year and thinking about some of what they've reflected on the importance of not just paying attention to the customers that you're obsessed with, but being able to look at things that are happening outside of your purview and outside of Microsoft. What's a new story that's happened outside of the Microsoft realm that's captured your attention lately?
+
+Adam Harmetz (05:37)
+I think like everybody else, the trendy AI apps are always something to watch, right? You we're at a time in the cycle where everybody's trying to figure out what's a platform, what's an app, what's durable, what's a flash in the pan. And, you know, new models are doing, or existing models are getting better and doing remarkable things and things that, you are tapping into the social consciousness.
+
+Chris McNulty (05:42)
+Mm-hmm.
+
+Adam Harmetz (06:01)
+Sora was a couple weekends ago where that went viral in terms of social video generation. Nano Banana from Google was just sort of an awesome leap forward that clearly put its finger on something people had wanted to do with a multimodal model and hadn't been able to. And so I, like many others, sort of watch those, see what we can learn in terms of what's going to be an app, what's going to be a feature of the model, how
+
+how the product making goes there, then of course how it applies to my space of enterprise knowledge and ⁓ enterprise agents.
+
+Chris McNulty (06:35)
+One thing that we were talking about in the upfronts earlier, a statistic that seems to be persistent is how much time knowledge workers spend searching for information. 10 years ago, there was some Microsoft research that had it in the realm.
+
+3 % or 4 % and then early in the pandemic cycle it felt like it was 8 % and
+
+there was a McKinsey study recently that showed that knowledge workers are spending close to 19 % of their time just searching for information. Reducing that's obviously a big business opportunity. How do you think about the persistence of stats like that and the opportunity to address it?
+
+Adam Harmetz (07:13)
+Well, I think one of the contexts for stats like that is the amount of information in the world is doubling every 18 months, give or take. I'm sure you can find a study that says it's a little bit longer, a little bit shorter. And so to a certain degree, it's amazing that you can spend the same amount of time looking through information when there is so much more information out there to look through. Of course, I think the overarching
+
+goal and especially with AI, which can provide a step function is to reduce that and maybe, maybe not even make people feel like they're searching for information anymore, as opposed to, you know, have a Copilot to help them get access to that information and or an extra teammate that can ⁓ accomplish the task or certainly find the information. And so there's, ⁓ you know, I, the staff that I like the most is just to look at the amount of information.
+
+in the world. And I think it's one of those underappreciated things. If you work almost in any profession, but certainly if you work in tech, one of the things you get better at is processing more and more information. It's one of those 1 % improvements every day, partly through technology and partly through training your own brain. But I find like I look back on sort of the amount of information I could process just six months ago, 12 months ago, five years ago, and sort of amazed at just how much more the technology helps as well as how much, you know,
+
+the standard expectation is. And I think that's, I think, I think that's productivity enhancement in a nutshell, which is, one of the things economists disagree on a lot of things, but universally agree that that's a little bit of an elixir for, for society and an economy. And I, you know, I think that that's awesome. And so, um, you know, I, I, I do think, uh, I didn't think some of those studies are, um, are telling. And I think it's sort of on the AI. If the search era sort of,
+
+had increased information but left the total amount of time pretty steady. I do think the AI era has a chance to both see that information increase but then also significantly make progress on ⁓ the amount of drudgery people have to do.
+
+Chris McNulty (09:20)
+the statistic that we've talked about here, about the 175 zettabytes of information, which if you had it on paper, is a stack of paper that reaches more than halfway to the closest star, so two and a half light years long. There is so much just pure data, but turning that from ones and zeros into something that resembles information to turn it into knowledge is really important.
+
+Microsoft has described SharePoint as being the knowledge engine for Copilot or the content management system for enterprise AI. what does that really mean for SharePoint to be that engine that powers Copilot?
+
+Adam Harmetz (10:01)
+Yeah, awesome question. And ⁓ I mean, there's going to be a heterogeneous amount of data that AI has to reason over, no doubt. ⁓ I do think the sort of semi-structured data, at least starts out semi-structured, that's stored in SharePoint is just a real sweet spot. Because you've got sort of high-end databases on one side, sort of very schematized. And then you've got maybe email, Teams chats on the other, sort of super collaborative, but not a lot of structure to it.
+
+And think one of the reasons people gravitate to SharePoint is it can be this sort of middle ground. is pretty collaborative, pretty high volume, pretty ⁓ timely and up to date, give or take. There's a spectrum there for sure. But it's sort of structured enough that if you can apply more structure using AI, in other words, it sort of can be this sweet spot. And the data is starting to bear that out. If you look at CoPilot, you look like of all the...
+
+responses from Copilot where sources are cited. ⁓ SharePoint is the number one citation source, ⁓ almost double the next source. ⁓ And so, you know, I think that's a sign of what I just sort of described sort of in reality. does appear that when AI is looking for answers, it is this vat of semi-structured knowledge that is ⁓ where a lot of the answers can be found. And I think I look at that as opportunity.
+
+And sort of what you were saying before, Chris, in terms of business opportunity or what we can help customers with. Don't want to take that ⁓ as a birthright. Don't want to take that as complete. Quite the opposite. And so what we're doing is what we think about SharePoint ⁓ as a knowledge repository, most of all, even though it wears many hats, is how can AI help ⁓ make this data that Copilot needs to reason over or any AI agent more relevant, more accurate? ⁓
+
+and more cooked and prepped for the AI era. So agents can get more insights out of this data. And that is why recently we introduced something we call the Knowledge Agent, intentionally named to tie exactly to the problem that you're talking about, Chris. its job is to work with content owners to make content more ready for humans and AI to consume. ⁓
+
+It's been so fun working with community and customers to figure out what do they need? What does that mean? ⁓ know, applying metadata to documents is sort of ⁓ a layup. ⁓ Looking at sites and figuring out whether it's broken links or out of date content or, you know, today's searches that are failing on a site. But tomorrow, of course, agents that can't find information on the site and letting the content owner know about that. Dynamically updating pages with AI.
+
+⁓ creating pages using ⁓ AI that might be referencing other content so we can pull it together and organize and analyze the content. Those are just a couple examples, most of which would have been the private preview, but we're going to add more to that as time goes by. I see it as a big umbrella with which we're going to pour a bunch of value into it as time goes by.
+
+Chris McNulty (13:03)
+going back to my tenure at Microsoft, things like autofill and the different pieces of what at the time was Syntex they were powerful, but they were somewhat disconnected. And I do think one plus one equals three here, that bringing more of those things together into a package where you're looking at how do we enrich the content that you have? How do we help you find the content that needs an update? People want to do the right things, but there's just so much information to sort through.
+
+Adam Harmetz (13:29)
+I think there is a lot of, there's that classic vitamins and painkiller analogy. You can either do it for product making or marketing, right? Like a product is either putting out a pain or it's sort of a vitamin play where you're like, well, I'm telling you the lifestyle you aspire to lifestyle you should lead. And you need both. I think AI has been perhaps a little bit more of a vitamin play sometime of a new behavior, a new habit.
+
+and ⁓ a thing that could transform your organization. And that is super important, but I do think one of the reasons knowledge agent has resonated, you know, ⁓ as well as we were hoping in the first 30 days was it's clearly a pain killer. People have a problem with outdated content. People have a problem with too much content. are ⁓ seeing that, you know, some MVP said it best. It's not garbage in, garbage out with AI. It's garbage in, garbage amplified. ⁓
+
+with AI and I like that. remembered, I wish I remembered who said that because I'd love to give credit. And so it is a real problem ⁓ and ⁓ whether our public preview or whether we need to do a couple iterations of the knowledge agent, it's clearly a ⁓ potential real painkiller for customers. And I think that that's a lesson for us in product making and it's... ⁓
+
+hopefully helps people see we're focused on real, real problems. ⁓ And yeah, that spectrum of ⁓ vitamins and painkillers basically, know, KnowledgeAge and I think is super transformative organization, but at the end of the day, it's sort of really attached for a problem that everybody can identify with.
+
+Chris McNulty (15:10)
+you've been in a unique position to watch that going back to SharePoint's days as an on premises portal with a box of parts for customization and then it moves to the cloud. And then we have the future of SharePoint and focus on more end user experience. And then with Teams and then with Viva, SharePoint sort of moves to the background as a support system for those things.
+
+Adam Harmetz (15:30)
+you
+
+Chris McNulty (15:32)
+If you watch the recent trend, mean, SharePoint's that citation system for Copilot, but you've also put a lot of time and attention into making it easier to create pages, to create content, to use AI to drive things like automatically designing your pages for you. When you think about that future of SharePoint,
+
+Is it a content management for Copilot? Does it become its own application service? Which trend do you see dominating there?
+
+Adam Harmetz (16:00)
+Yeah, it's a fantastic question and sort of how the various pieces of someone's productivity apps comes together is super fascinating. I mean, we're going take a step back and make sure, you know, everybody listening to this understands Microsoft's point of view on the world, which is obviously AI is completely transforming the way work gets done. And there's going to be a lot of AI and there's going a lot of agents and then there's going to be
+
+Copilot and our point of view is that a new AI-born app called Copilot is going to be the awesome and best way of experiencing that. ⁓ it is intentional. Customers are looking to bet their AI strategy ⁓ on solution providers like Microsoft who they can trust to help manage all of these myriad of AI experiments and new apps and all that sort of stuff.
+
+rather than ⁓ only sort of modifying our existing apps, having a new AI born app that can be very clearly, here's the latest, here's how you can do sort of AI workflows, here's our point of view on how AI is transforming without having to be beholden to sort of any existing construct is awesome, it is a whole company bet. And obviously all of us here on the SharePoint team help make that successful every day. ⁓ But yeah.
+
+Chris McNulty (17:26)
+Yeah,
+
+in terms of brand strategy, not that you can't express brand and experience through some of the other tools. You can brand teams, you can brand things in Outlook, but SharePoint just gives you such a big canvas for that nonverbal expression of intent. And you can make things that are beautiful in a way that...
+
+Probably in the conventional tool set, only PowerPoint probably could give SharePoint a run for its money for that visual richness.
+
+Adam Harmetz (17:57)
+Yeah, that's
+
+right. And you sort of get into, okay, so what about the existing apps? And yeah, I mean, think people are looking to trust Microsoft for their AI strategy. And I think if we only had the Copilot app, or if you were looking at, you know, some other AI vendor that only offered one AI-born app, I don't think that that would be what people want. Because people have made huge and distinct investments in Microsoft 365. And so our strategy is absolutely twofold. We have an AI-born app called Copilot.
+
+And you'll see all the existing Microsoft 365 apps be transformed with AI. SharePoint included. And ⁓ for SharePoint, now after doing a couple different things, I think it's the knowledge agent inside SharePoint that really is sort of how AI is transforming SharePoint. ⁓ But yeah, make no mistake, people will still visit intranets. We still invest most of our resources in improving the user experience for humans.
+
+visiting and SharePoint and that is intentional and we're a big company that that well resourced and so you should expect from your AI provider that your existing apps get better with AI and we have a new AI cloud-borne app and those two things work hand-in-hand. Every time the knowledge agent makes a piece of content better, it helps ⁓ whether you're searching or asking a question within the knowledge agent and of course it helps Copilot. And ⁓ the last thing I want to just say Chris too is like yeah, you use
+
+Chris McNulty (19:10)
+Right, right.
+
+Adam Harmetz (19:19)
+I think there's more of a need to put the SharePoint ⁓ product front and center in the area of AI. Because I think people are wanting to know what is a good knowledge repository and want to have a single vocabulary and language for that, something that is a little bit, you know, a little bit of a little bit of Viva, a little bit of SharePoint, a little bit of other things, you know. And so I think a lot about how to make sure more so than I might've had, you story arc did well, more so how to make SharePoint.
+
+you know, making sure all the components of SharePoint are coherent ⁓ and are ready to be a content management system powering AI or whatever customers need it for.
+
+Chris McNulty (19:57)
+So let me stress test something with you here. A few months back, I was at the annual conference for AIM, the Association for Intelligent Information Management. I'm on the board, I'm on the treasury. It's been an organization that Microsoft supported a lot over the years. So there were a group of analysts
+
+who were opining a future where the idea of not just portals, but even traditional information architecture goes away. AI is going to reason over all of it. You're not going to need to worry about libraries and folders and metadata and the rest. And you don't need to worry about the end user experience. It's just the content is out there. AI figures it out. And you interface only a chat bot to get to it. That was their vision of it. Now, I certainly have my own opinion about that.
+
+curious what yours might be.
+
+Adam Harmetz (20:44)
+I think anybody that knows for sure how this is all going to work out is sort of overselling the conviction that they might have. And I hear a lot from customers, how can you help me prepare for multiple versions of the multiverse? Multiple versions of the future. Maybe a version where exactly like you said, it is an only chat-centric world.
+
+you know, probably evolving well beyond typing text chat and the multimodal experiences, but nonetheless, you know, a very new interaction paradigm. Maybe it works out a little bit like mobile where a lot more people are visiting, including on mobile now, but nobody would say that desktop experiences for most apps could go away. There's some new mobile first apps, you maybe it works out like that. Maybe it works out where, you know, it takes off in a different direction than we think. And so I think a lot in these paradigm shift moments,
+
+how to respect the trust customers are placing in Microsoft. ⁓ And part of that is the option value we provide customers. No matter how it works out, you can trust the apps to co-evolve in the right direction. And so I think a lot about the speed with which we deliver things, the amount that we're learning, the amount where we're sharing the learning with customers, such that... ⁓
+
+you know, whether we were, you know, for this particular question or any other dimension of AI, whether it turns out that sort of the notion of traditional portals goes away and it is a chat first world, Microsoft apps will evolve towards that. And it's a safe bet that you're placing on Microsoft as you evolve towards that. Or if it works out to be more of a hybrid split world, you know, like it already exists today, then, you know, Microsoft's a great bet for that. You know, it really comes down to the trust that we earn from customers that is
+
+partly because we have conviction and partly because we will co-evolve depending on how it works out. Now to answer your question, in my opinion, I do think it'll be pretty split. I do think the fly, you know, if you take it to the extreme, I don't know how Copilot has any data to reason over if there's no data repository that's visited anymore. And so at least for the foreseeable future, I see, I think about how to make humans and agents in AI both be able to reason over data.
+
+⁓ stored in a repository like SharePoint. It's successful. ⁓
+
+Chris McNulty (23:02)
+I mean,
+
+I mean version structures you need. It's virtually impossible for AI to reason over, you know, contract draft, contract final, final contract, Bob version. How do know that Bob version is the right one?
+
+Adam Harmetz (23:12)
+I it could. I
+
+think we don't know how well, you know, I think I'm an optimist at heart. I do see the models getting a lot better. You know, there's a chance that, you know, a chat bot will just, the future of SharePoint site, some sort of markdown file that gets updated with data that nobody ever visits other than through a chat interface. And then sort of this, the system that we call the intranet today is just sort of nodes of data that.
+
+a reasoned over on an agent or a Copilot's brain, it could work out like that. And if so, I think ⁓ it would never happen overnight. And I think you're looking for a provider, hopefully like Microsoft, that you can partner with as you sort of evolve to that state, as opposed to this like, it's gonna be some sort of clean break or something like that. ⁓ But you know, yeah. ⁓
+
+Chris McNulty (24:01)
+seven, maybe eight years ago. There was an article I read, Where someone was describing the pattern they were seeing about letting their children do research on products and on school projects using Alexa.
+
+And what they raised is they're just asking questions and getting an answer and putting it into their paper or whatever, but they're not getting sources or citations. And they extended it to the, hey, I'm out of laundry detergent. And Alexa says, great, the best laundry detergent is X.
+
+When all you have is that disembodied voice, you certainly don't have brand, you also don't have the contextualization, the citation. That's an interface that doesn't lend itself well to let you go off and explore and get the validation that you need. a future where it's all AI and the only thing people ever do is talk to it, I don't see that coming, certainly within my lifetime.
+
+Adam Harmetz (24:53)
+I think in these paradigm changing moments, it's better to ask why than why not. There's a lot of reasons things shouldn't be true and you can focus on those, but you also don't want to miss an opportunity. And I think we would both say ⁓ there's a lot of drudgery in information management.
+
+There's a lot of failed promises in knowledge management today. And so I also think a lot about how to push my team not to be too incremental in the thinking and you know, what is the bull? Like there's a lot of reasons something might not exist, but why would it, why should it exist? What pain would it solve? And so, ⁓ you know, I, I hope that we end somewhere, maybe less than a thing that would be super disruptive for a bunch of folks and doesn't provide value, but, well beyond something that feels just sort of like a patch on the existing way that.
+
+that information is managed. Because I do think that there are huge opportunities for hopefully Microsoft startups, our partner community to really rethink knowledge capture ⁓ in the area of AI. I wouldn't say it's been completely nailed yet. I think that there's very much new things and models we'll do ⁓ and new product making to be made on top of what's possible.
+
+Chris McNulty (26:09)
+SharePoint has always had this passionate community of users, of MVPs. I'd love to hear your perspective on once you have that, and it takes care to have that, how does that influence and help shape the direction of the product? What do you listen to there?
+
+Adam Harmetz (26:27)
+Yeah, it's, it, it, I mean, I try to teach it. It's a sign of respect if someone's willing to bet their company or their career on top of a particular technology or platform. And I try to take that trust that's been placed and first off, educate the rest of the team about that trust. ⁓ that means, you know, sort of nurturing, informing, and listening.
+
+⁓ And I think those are the three things we try to do. We do nurture the community. We spend quite a bit of time facilitating the community and the events ⁓ and making sure that the ecosystem is healthy and thinking about how to grow it with new voices and new thinking. ⁓ We do still have an informed component. I'm sure there's an overwhelming amount of change going on in the industry and more so than ever.
+
+certainly hear a lot of feedback on the change management practices that we go through and always try to get better, but at the same time, sort of trying to be as best as we were informing. ⁓ And then truly listening. Yeah, you know, we have famous programs like MVP program. We also have other ways we sort of listen, especially on LinkedIn nowadays, you know, a little bit of a coalescence of our social signals into that platform over others. ⁓ And, you know, have, ⁓
+
+know, feedback channels where we're processing this data, ⁓ not a week or almost not a day goes by where we're not sort of saying, some MVP, some community members, some head of a business, you know, has a partner, that's a partner on top of SharePoint who's doing X, Y, and Z. And, you know, we try to really take that into the product making practices that we have. It is special and it is unique. ⁓ And there's a certain lens to the feedback the community is pretty large and everybody has a different role. ⁓ But it tends to be...
+
+people who have to represent our product to other people. And ⁓ it's an interesting type of feedback you get. ⁓ know, one of the great things about the cloud is that there was a lot less indirection between us and the way customers experienced our product. We no longer have required an IT person to sort of deploy Rack and Stack servers, but it's sort of a change and evolved the way we listen to feedback. you know, anyways, back to the point, the community members...
+
+I often hear a lot of pride and I often hear a lot of fear in their feedback too because they know that whatever we do, they're going to have to go represent that to their end user base or to their customers if they're a partner. I think that makes the feedback extra important to listen to and extra important to grok and ⁓ internalize.
+
+Chris McNulty (29:10)
+So I'm going to take the opening you just gave me because you mentioned customers. In addition to those millions of passionate community members, there's hundreds of thousands, probably millions of customers. So in your role, as you've been interacting with those customers over the years, what are some of the most common challenges that you see customers are struggling with?
+
+Adam Harmetz (29:31)
+when you work on a global product like the ones Microsoft provides, ⁓ you know, you need multiple different funnels for your customer feedback. Starting at the broadest, we have in-product feedback ⁓ that is that we need to use AI and other forms to sort of filter, synthesize and make rigorous.
+
+whether that's telemetry signals, usage signals, or directly in-product feedback signals. And that's a very fun part of the job. It's obviously a part of the job that got a lot more serious as we went to the cloud compared to on-prem. ⁓ And we could talk for hours, if you want to, Chris, about how AI is both transforming that area as well as just how important it is to the team. Love the community feedback, but often, like I said, it's also often one in
+
+direct from actual the people touching the keyboard using the product. And so we make sure we balance and we have both there. And then, you know, in addition to the sort of, you know, quant, have qual, right? So we have a world-class user research team. We're out in the communities. We're sort of out monitoring Reddit and LinkedIn and others, you know, not only for our community, but for, you know, average day-to-day users of the product and pulling that and synthesizing that in.
+
+You know, we have rhythms and rituals on the team for examining and looking at feedback. And ⁓ one of the unique things about SharePoint is the surface area, especially 25 years in, is so large. ⁓ Figuring out where to place our chips ⁓ is super difficult and I get super frustrating at times too, especially for people who leave feedback where, you know, I want to improve DocSets too, I really, really do. ⁓ But, you know, the surface area is so large that we deal with that we...
+
+Try to be intentional about not spreading ourselves too thin either, right? And making a tiny improvement across everything versus, no, this is an area we can focus and do our best product making work on.
+
+Chris McNulty (31:30)
+I don't think it makes much sense for Microsoft to send people 10 novels at a time by giving them each one character a day and letting them assemble it.
+
+Adam Harmetz (31:40)
+Yeah, I mean, you know, every every vendor figures out how to chapterize their work. It's a fascinating part of the job. I'd like to think that we do it both with customer obsession, empathy and rigor. ⁓ You know, I, I respect that there's going to be folks that sort of ⁓ see some things in which that they're the other piece of feedback got fixed. And there's going to hopefully a bunch of people we make very happy. And, yeah, we think a lot about, know,
+
+We want to focus as a gift focus is a key to great product making we also have a lot of people depending on us in a lot of ways and we you know try to Try to ⁓ we look at that balance all the time. That's probably one of the biggest trade-offs Discussions that we constantly have
+
+Chris McNulty (32:25)
+I'd love to get your perspective on something else. AI changes what people expect about their interactions with content. it also has an impact on the processes that you use to help design and shape product. How is AI changing the way your team is approaching these areas?
+
+Adam Harmetz (32:43)
+Yeah, like everybody else, we're trying to figure out what hunts. There's a lot of hype out there. There's a lot of reality of things that are really working. There's a lot that the AI born teams could do that only sort of applies to when you're augmenting an existing product or an existing team. so anyways, sort of like if you feel overwhelmed by that.
+
+⁓ I don't think you're alone and even at a company like Microsoft, we're figuring it out. ⁓ do think the prototyping through vibe coding has been very successful for us. ⁓ That is also as you look at product management across the world and other companies, something that people have really attached to.
+
+Builders love to not write docs, they love to build prototypes and show their ideas through ⁓ actual working code. And that's been ⁓ really fun to see the team embrace and to learn from and to see us move faster because of it and get more aligned quicker. And then also I think like I mentioned before, Microsoft has the benefit of lots of customer signal coming in. ⁓
+
+using we did, you we're looking at all the NPS of the Net Promoter Score sort of signal survey from when people are authoring a SharePoint page and being able to use AI. We had a hypothesis of how to bucket it and we were able to use some sort of machine learning and other sort of AI tactics to sort of do a better way of bucketing that was going to lead to more action ability. And, you know, this is one example of many. ⁓ And then, you know, so there's that aspect to it. I do think for AI,
+
+you know, model first product making, there's just a whole set of new tactics and product making strategies to deploy, you know, starting with shifting left on the evaluation. ⁓ You know, so having great, you know, more and more of the PM's job is to write great evals, sort of, which is, you know, sort of the AI version of what it means to sort of define what success looks like, but in a way that can be consumed by the science product rather easily if I had to sort of up level. ⁓
+
+those new skills that I think we're pretty far down the learning path on. And so I would say we have a bunch of bright spots, we're trying a bunch of things, some work, some don't. ⁓ But it's very clear that it has ⁓ fundamentally changed the way we think about product making, certainly for the model first product making and then in general, even sort of web app product making that's been our bread and butter has gotten more efficient, more interesting ⁓ because of AI.
+
+Chris McNulty (35:30)
+A couple of years ago, I was speaking to someone who specialized in the architecture of public spaces. And what he observed is when he's working on an airport terminal or a train station, he's going for lots of things that are going to be beautiful and have function. And he said, and because of the choices that I make, that people don't even know who I am, there are people who are going to meet, fall in love, and get married.
+
+are going to be started just because of how people work in the spaces that I've designed. So when you think about something like that and your tenure with a product that has, as Jeff Teper noted earlier in the year, a billion users, what's something you're especially proud of?
+
+Adam Harmetz (36:16)
+one of the things that has made me stay on SharePoint for as long as I have, you know, is sort of weird because I think we already sort of banked it and talked about it in detail, but I just want to really stress that is sort of the ecosystem and community built on top of it. ⁓ Whether that's the partner ecosystem or just like, you know,
+
+time and again meet someone who sort of got their start because they helped deploy SharePoint or then Microsoft 365. And that sort of, I guess it's the broadest definition of the community and the ecosystem, sort of not only the partner network, but just, know, all these folks that are change management champions or IT specialists in the product, just because, you know, I talked to a lot of my friends who, know, who billion users, we do have a billion users, right? And so, and it's a tiny bit of influence on each one of them, but.
+
+The folks that really have fed their families based upon the system that has been created here is something that always has given me the most joy and the most satisfaction. ⁓ And it motivated me to get up in the morning and try to make it as best as I can.
+
+Chris McNulty (37:23)
+So SharePoint's coming up on its 25th anniversary. 25 years ago, I don't think I had any inkling that there would be something like a SharePoint declarative agent,
+
+Are we still going to be uploading files to SharePoint in 25 years?
+
+Adam Harmetz (37:38)
+it's gonna be a mix of both. There's gonna be things that surprise you that are sticky and stay. There's still the, you know, floppy disk icon to save a file. And then the way that things change, or sometimes I think are surprising. I, I,
+
+What I hope is that more and more the drudgery is taken out of some of these tasks. ⁓ If there's anything in sort of this defining epics, that people have got a lot done, people are more productive, teams have been more collaborative, knowledge has been more refined, but I still think that the drudgery that is involved in doing that is still too high. so whether there's one specific thing or one not, I think the notion of a file cabinet and a file system has proven time and time again to be a very, very durable concept. ⁓ So I would...
+
+I think the odds are good on that one. at the same time, hope Microsoft, I hope the community, I hope the industry really thinks of new paradigms in the knowledge and collaborative space. think there's a lot. We're just getting started in our ability to make that seamless.
+
+Chris McNulty (38:45)
+one of the questions I love to ask guests on Polaris is to reflect on something from the world outside of technology and business, something from pop culture, a movie or a TV show or something that's had an impact on you. Is there one that comes to mind?
+
+Adam Harmetz (38:59)
+don't know if it an impact, but you know read the series and you're like book eight and book nine hasn't come out yet and you're like you feel like you've lost a friend because you're done reading with the series. And for me there was I just finished Dungeon Carl Carl by Matt Dimonin. And I love it. I love it. It's not highbrow Chris. It is it's technically lit RPG. So it is ⁓ literature that sort of models itself as after an RPG video game.
+
+I walked into it eyes wide open. I had found it because one of my friends dressed up as a character at Comic Con as one of the characters from the book. And so I was not expecting that much, but it is actually, ⁓ it was heartwarming. It was addicting. It was funny. It actually had some deeper points to it. All of which was sort of a narrative violation to me as I, it is also a great popcorn type of quick read with good plot twists and all that sort of stuff. And so I had recommended.
+
+you know, pretty much anyone, certainly anybody that's sort of a bit of a gamer, a bit of a geek. ⁓ It's a lot of, it's a lot of fun.
+
+Chris McNulty (39:58)
+we were both in New York for Experts Live, which was co-existing with Comic-Con. It's kind of hard for me to imagine you ever getting into cosplay, but you know, next year we'll see where it goes. ⁓
+
+Adam Harmetz (40:08)
+Well, I am not dressed up yet, but you know, I am super
+
+man for Halloween.
+
+Chris McNulty (40:15)
+so what's the best way for the audience to stay in touch with you and what's next?
+
+Adam Harmetz (40:19)
+Yeah, LinkedIn is awesome. I'm pretty present on LinkedIn. ⁓ Try to reply to folks that sort of reach out and comment on a bunch of folks' My wife and I run a Substack We call it Mind the Beet. We talk about product, parenting. You can find that off of my LinkedIn.
+
+Chris McNulty (40:34)
+Well, we'll link to all of that in the show notes. So folks, Adam Harmetz leads the SharePoint team at Microsoft. He and his wife Helen share their thoughts on technology, leadership, life, and more on the Mind The Beet blog. It's been a pleasure, Adam. Thanks for being here. We'll be right back.
+
+Adam Harmetz (40:48)
+Thanks, Chris.
+
+Chris McNulty (40:57)
+Up next on Polaris, events. Autumn is a busy time of year and there are more events than ever coming up. Here's what we're watching.
+
+Microsoft Ignite 2025, the big show comes to San Francisco for the first time starting November 17th. ESPC 25, the European SharePoint Conference. This will be December 1st through 4th at Convention Center Dublin in Dublin, Ireland.
+
+Chris McNulty (41:23)
+Kicking off Synozur will be hosting a special webinar in January focused on Copilot and the company operating system. We'll show you how AI transforms management frameworks and share a sneak preview of a new online platform designed to help you manage leadership and strategy across your organization.
+
+Chris McNulty (41:42)
+we're looking ahead to the M365 Community Conference in Orlando, TechCon 365, the AIIM Summit, the FinTech Meetup and many others.
+
+We'll have details on all of that and more as we get into next year.
+
+You can learn more at synozur.com slash events. And if you have an upcoming event you'd like us to promote on Polaris, please get in touch and we'd be happy to include it.
+
+As we wrap up this episode, I've been reflecting on my own journey with SharePoint. Many years ago, I was advised by our Microsoft rep about a new project codenamed Tahoe that would automatically transform our content and communications into enterprise knowledge. That led to my own journey, starting with SharePoint Portal Server in 2001, a journey that's taken me through companies large and small to many different countries on earth.
+
+to write, speak, and meet so many fans and enthusiasts everywhere. It brought me to Quest and Dell and Microsoft and the MVP program twice, and now here at Synozur It's taken me to keynote stages and karaoke bars. Managing knowledge has always been a human challenge. Over 2,000 years ago, the Library of Alexandria amassed hundreds of thousands of scrolls in an attempt to collect all the world's knowledge.
+
+Fast forward to today. Our libraries are digital, spread across cloud servers and intranets. But the mission isn't that different. What changes the tools changes us. Now we have AI librarians like the Knowledge Agent helping us to curate our modern libraries, ensuring that the right knowledge reaches the right people at the right time. It's just the latest chapter in a very old story, empowering people through information.
+
+Chris McNulty (43:32)
+It's November already and I'm amazed at how quickly time has flown. It's been a busy season and it's about to get even busier on Polaris in the weeks ahead. Coming up next, Microsoft Ignite. It's happening next week and we'll be on the air with a special Pulse edition to recap all the day one news. After that, I'll sit down with Ed DeAngelis of EDA Associates to discuss what human-centric leadership meant for him as he transformed his construction business
+
+into a 21st century organization.
+
+Chris McNulty (44:05)
+Well, that's a wrap for another episode. I'd like to thank Adam Harmetz for joining us and sharing his thoughts on the future of SharePoint and AI. We encourage you to check out our show page for links to everything we talked about today and more. Visit us at polaris.synozur.com Send us your questions and feedback for the Synozur team. You can reach us via email at polaris@synozur.com If you enjoyed today's episode,
+
+Don't forget to subscribe and leave a review on your favorite podcast platform. It really helps others discover the show. Please share Polaris with colleagues who are navigating their own transformations and follow us wherever you get your favorite podcasts. Polaris is produced with help from Riverside FM. Our theme song, Alternative Dream, is provided courtesy of Adobe. Additional music and sound provided by Indie Guy Records. Graphic design by Josh Brantley.
+
+Thanks for listening. I'm Chris McNulty, and this has been Polaris, a show that charts the course for business and technology transformation from Synozur. Learn more at synozur.com See you next time. Keep following your North Star.
+
