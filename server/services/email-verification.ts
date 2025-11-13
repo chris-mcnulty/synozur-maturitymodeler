@@ -93,6 +93,7 @@ If you didn't create an account, you can safely ignore this email.
 
 /**
  * Verify email token and mark user as verified
+ * After verification, checks for tenant auto-assignment
  */
 export async function verifyEmailToken(token: string): Promise<{ success: boolean; error?: string }> {
   const userRecords = await db.select()
@@ -123,6 +124,20 @@ export async function verifyEmailToken(token: string): Promise<{ success: boolea
       verificationTokenExpiry: null,
     })
     .where(eq(users.id, user.id));
+
+  // Auto-assign user to tenant if email domain matches a verified tenant domain
+  if (user.email) {
+    try {
+      const { autoAssignUserToTenant } = await import('./tenant-detection.js');
+      const wasAssigned = await autoAssignUserToTenant(user.id, user.email);
+      if (wasAssigned) {
+        console.log(`User ${user.email} was auto-assigned to tenant based on verified domain`);
+      }
+    } catch (error) {
+      console.error('Error during tenant auto-assignment:', error);
+      // Don't fail verification if tenant assignment fails
+    }
+  }
 
   return { success: true };
 }

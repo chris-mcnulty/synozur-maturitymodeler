@@ -197,6 +197,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Assign or unassign user to/from tenant
+  app.patch('/api/users/:id/tenant', ensureAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { tenantId } = req.body; // null to unassign, tenant ID to assign
+      
+      const user = await storage.updateUser(id, { tenantId: tenantId || null });
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+      
+      const { password, ...safeUser } = user;
+      res.json(safeUser);
+    } catch (error) {
+      console.error('Error updating user tenant:', error);
+      res.status(500).json({ error: "Failed to update user tenant assignment" });
+    }
+  });
+
   // Clear AI cache for a specific model or all models
   app.delete('/api/admin/ai/cache', ensureAdmin, async (req, res) => {
     try {

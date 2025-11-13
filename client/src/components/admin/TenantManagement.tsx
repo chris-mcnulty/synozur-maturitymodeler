@@ -170,6 +170,23 @@ export function TenantManagement() {
     },
   });
 
+  // Toggle domain verification mutation
+  const toggleDomainVerification = useMutation({
+    mutationFn: ({ tenantId, domainId, verified }: { tenantId: string; domainId: string; verified: boolean }) =>
+      apiRequest(`/api/tenants/${tenantId}/domains/${domainId}`, 'PATCH', { verified }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/tenants'] });
+      toast({ title: 'Domain verification updated' });
+    },
+    onError: (error: any) => {
+      toast({ 
+        title: 'Failed to update domain verification', 
+        description: error.message,
+        variant: 'destructive' 
+      });
+    },
+  });
+
   const resetTenantForm = () => {
     setTenantForm({
       name: '',
@@ -294,11 +311,26 @@ export function TenantManagement() {
                             <Badge variant="outline" className="text-xs">
                               {domain.domain}
                             </Badge>
-                            {domain.verified ? (
-                              <CheckCircle className="h-3 w-3 text-green-500" />
-                            ) : (
-                              <XCircle className="h-3 w-3 text-muted-foreground" />
-                            )}
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-6 w-6"
+                              onClick={() => {
+                                toggleDomainVerification.mutate({
+                                  tenantId: tenant.id,
+                                  domainId: domain.id,
+                                  verified: !domain.verified
+                                });
+                              }}
+                              data-testid={`button-toggle-verification-${domain.id}`}
+                              title={domain.verified ? "Click to unverify domain" : "Click to verify domain"}
+                            >
+                              {domain.verified ? (
+                                <CheckCircle className="h-4 w-4 text-green-500" />
+                              ) : (
+                                <XCircle className="h-4 w-4 text-muted-foreground" />
+                              )}
+                            </Button>
                           </div>
                         ))
                       ) : (

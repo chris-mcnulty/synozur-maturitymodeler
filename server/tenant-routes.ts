@@ -239,6 +239,46 @@ router.post("/api/tenants/:id/domains", requireAdmin, async (req, res) => {
   }
 });
 
+// Update domain verification status
+router.patch("/api/tenants/:tenantId/domains/:domainId", requireAdmin, async (req, res) => {
+  try {
+    const { tenantId, domainId } = req.params;
+    const { verified } = req.body;
+    
+    if (typeof verified !== "boolean") {
+      return res.status(400).json({ error: "Verified must be a boolean" });
+    }
+    
+    const [updatedDomain] = await db
+      .update(tenantDomains)
+      .set({ verified })
+      .where(and(
+        eq(tenantDomains.id, domainId),
+        eq(tenantDomains.tenantId, tenantId)
+      ))
+      .returning();
+    
+    if (!updatedDomain) {
+      return res.status(404).json({ error: "Domain not found" });
+    }
+    
+    // Log the verification status change
+    await db.insert(tenantAuditLog).values({
+      tenantId,
+      actorUserId: req.user!.id,
+      action: verified ? "verify_domain" : "unverify_domain",
+      targetType: "tenant_domain",
+      targetId: domainId,
+      metadata: { domain: updatedDomain.domain, verified },
+    });
+    
+    res.json(updatedDomain);
+  } catch (error) {
+    console.error("Error updating domain verification:", error);
+    res.status(500).json({ error: "Failed to update domain verification" });
+  }
+});
+
 // Remove domain from tenant
 router.delete("/api/tenants/:tenantId/domains/:domainId", requireAdmin, async (req, res) => {
   try {
