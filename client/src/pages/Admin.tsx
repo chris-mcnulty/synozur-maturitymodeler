@@ -417,7 +417,9 @@ export default function Admin() {
     role: 'user' as 'user' | 'admin' | 'modeler',
     username: '',
     newPassword: '',
+    tenantId: '' as string | null,
   });
+  const [selectedTenantFilter, setSelectedTenantFilter] = useState<string>('all');
   const [csvImportMode, setCSVImportMode] = useState<'add' | 'replace'>('add');
   const [isCSVImportDialogOpen, setIsCSVImportDialogOpen] = useState(false);
   const [pendingCSVFile, setPendingCSVFile] = useState<{file: File; modelId: string} | null>(null);
@@ -580,6 +582,19 @@ export default function Admin() {
     enabled: currentUser?.role === 'admin',
   });
 
+  // Fetch all tenants (admin only)
+  const { data: tenants = [] } = useQuery<any[]>({
+    queryKey: ['/api/tenants'],
+    enabled: currentUser?.role === 'admin',
+  });
+
+  // Filter users by tenant
+  const filteredUsers = selectedTenantFilter === 'all' 
+    ? users 
+    : selectedTenantFilter === 'none'
+    ? users.filter(u => !u.tenantId)
+    : users.filter(u => u.tenantId === selectedTenantFilter);
+
   // Fetch pending AI reviews count
   const { data: pendingReviews = [] } = useQuery<any[]>({
     queryKey: ['/api/admin/ai/pending-reviews'],
@@ -684,6 +699,27 @@ export default function Admin() {
       toast({
         title: "Error",
         description: error.message || "Failed to verify email",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Assign user to tenant mutation
+  const assignUserToTenant = useMutation({
+    mutationFn: async (data: { userId: string; tenantId: string | null }) => {
+      return apiRequest(`/api/users/${data.userId}/tenant`, 'PATCH', { tenantId: data.tenantId });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/users'] });
+      toast({
+        title: "Tenant updated",
+        description: "User tenant assignment has been updated successfully.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update tenant assignment",
         variant: "destructive",
       });
     },
@@ -2571,15 +2607,31 @@ export default function Admin() {
                     <h3 className="text-xl font-semibold">User Management</h3>
                     <p className="text-sm text-muted-foreground">Manage user accounts and permissions</p>
                   </div>
-                  <Button variant="outline" onClick={exportUsersToCSV} data-testid="button-export-users">
-                    <FileSpreadsheet className="mr-2 h-4 w-4" />
-                    Export CSV
-                  </Button>
+                  <div className="flex items-center gap-3">
+                    <Select value={selectedTenantFilter} onValueChange={setSelectedTenantFilter}>
+                      <SelectTrigger className="w-[200px]" data-testid="select-tenant-filter">
+                        <SelectValue placeholder="Filter by tenant" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Users</SelectItem>
+                        <SelectItem value="none">No Tenant</SelectItem>
+                        {tenants.map((tenant: any) => (
+                          <SelectItem key={tenant.id} value={tenant.id}>
+                            {tenant.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Button variant="outline" onClick={exportUsersToCSV} data-testid="button-export-users">
+                      <FileSpreadsheet className="mr-2 h-4 w-4" />
+                      Export CSV
+                    </Button>
+                  </div>
                 </div>
 
                 {usersLoading ? (
                   <div className="py-8 text-center text-muted-foreground">Loading users...</div>
-                ) : users.length === 0 ? (
+                ) : filteredUsers.length === 0 ? (
                   <div className="py-8 text-center text-muted-foreground">No users found</div>
                 ) : (
                   <div className="rounded-md border">
@@ -2591,13 +2643,14 @@ export default function Admin() {
                           <TableHead>Verified</TableHead>
                           <TableHead>Name</TableHead>
                           <TableHead>Company</TableHead>
+                          <TableHead>Tenant</TableHead>
                           <TableHead>Role</TableHead>
                           <TableHead>Created</TableHead>
                           <TableHead className="text-right">Actions</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {users.map((user) => (
+                        {filteredUsers.map((user) => (
                           <TableRow key={user.id}>
                             <TableCell className="font-medium">{user.username}</TableCell>
                             <TableCell>{user.email || '-'}</TableCell>
@@ -2616,6 +2669,15 @@ export default function Admin() {
                             </TableCell>
                             <TableCell>{user.name || '-'}</TableCell>
                             <TableCell>{user.company || '-'}</TableCell>
+                            <TableCell>
+                              {user.tenantId ? (
+                                <Badge variant="secondary">
+                                  {tenants.find((t: any) => t.id === user.tenantId)?.name || 'Unknown'}
+                                </Badge>
+                              ) : (
+                                <span className="text-muted-foreground text-sm">-</span>
+                              )}
+                            </TableCell>
                             <TableCell>
                               <Badge variant={user.role === 'admin' ? 'default' : 'secondary'}>
                                 {user.role || 'user'}
@@ -2650,6 +2712,7 @@ export default function Admin() {
                                       role: (user.role as 'user' | 'admin' | 'modeler') || 'user',
                                       username: user.username,
                                       newPassword: '',
+                                      tenantId: user.tenantId || null,
                                     });
                                     setIsUserDialogOpen(true);
                                   }}
@@ -4449,6 +4512,29 @@ export default function Admin() {
             </div>
 
             <div className="space-y-2">
+              <Label>Tenant Assignment</Label>
+              <Select
+                value={userForm.tenantId || 'none'}
+                onValueChange={(value) => setUserForm({ ...userForm, tenantId: value === 'none' ? null : value })}
+              >
+                <SelectTrigger data-testid="select-user-tenant">
+                  <SelectValue placeholder="Select tenant" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">No Tenant</SelectItem>
+                  {tenants.map((tenant: any) => (
+                    <SelectItem key={tenant.id} value={tenant.id}>
+                      {tenant.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-sm text-muted-foreground">
+                Assign this user to a specific tenant organization.
+              </p>
+            </div>
+
+            <div className="space-y-2">
               <Label>New Password (optional)</Label>
               <Input
                 type="password"
@@ -4490,12 +4576,23 @@ export default function Admin() {
                     return;
                   }
                   
+                  // Update user details
                   updateUser.mutate({ 
                     id: editingUser.id, 
                     role: userForm.role,
                     username: userForm.username.trim(),
                     newPassword: userForm.newPassword || undefined,
                   });
+                  
+                  // Update tenant assignment if changed
+                  if (userForm.tenantId !== editingUser.tenantId) {
+                    assignUserToTenant.mutate({
+                      userId: editingUser.id,
+                      tenantId: userForm.tenantId,
+                    });
+                  }
+                  
+                  setIsUserDialogOpen(false);
                 }
               }}
               data-testid="button-save-user"
