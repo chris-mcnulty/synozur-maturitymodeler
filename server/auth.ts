@@ -227,17 +227,53 @@ export function ensureAuthenticated(req: any, res: any, next: any) {
   res.status(401).json({ error: "Authentication required" });
 }
 
-// Middleware to ensure user is admin
-export function ensureAdmin(req: any, res: any, next: any) {
-  if (req.isAuthenticated() && req.user.role === 'admin') {
+// Middleware to ensure user is a global admin
+export function ensureGlobalAdmin(req: any, res: any, next: any) {
+  if (req.isAuthenticated() && req.user.role === 'global_admin') {
+    return next();
+  }
+  res.status(401).json({ error: "Global admin access required" });
+}
+
+// Middleware to ensure user has any admin role (global_admin or tenant_admin)
+export function ensureAnyAdmin(req: any, res: any, next: any) {
+  if (req.isAuthenticated() && (req.user.role === 'global_admin' || req.user.role === 'tenant_admin')) {
     return next();
   }
   res.status(401).json({ error: "Admin access required" });
 }
 
+// Middleware to ensure user is admin (backward compatibility - maps to global_admin)
+// DEPRECATED: Use ensureGlobalAdmin or ensureAnyAdmin instead
+export function ensureAdmin(req: any, res: any, next: any) {
+  // Support both legacy 'admin' and new 'global_admin' during migration
+  if (req.isAuthenticated() && (req.user.role === 'admin' || req.user.role === 'global_admin')) {
+    return next();
+  }
+  res.status(401).json({ error: "Unauthorized. Admin access required." });
+}
+
+// Middleware to ensure user can manage models (global_admin, tenant_admin, or tenant_modeler)
+export function ensureCanManageModels(req: any, res: any, next: any) {
+  if (req.isAuthenticated() && 
+      (req.user.role === 'global_admin' || 
+       req.user.role === 'tenant_admin' || 
+       req.user.role === 'tenant_modeler')) {
+    return next();
+  }
+  res.status(401).json({ error: "Model management access required" });
+}
+
 // Middleware to ensure user is admin or modeler (can manage models but not users)
+// DEPRECATED: Use ensureCanManageModels instead
 export function ensureAdminOrModeler(req: any, res: any, next: any) {
-  if (req.isAuthenticated() && (req.user.role === 'admin' || req.user.role === 'modeler')) {
+  // Support legacy roles during migration
+  if (req.isAuthenticated() && 
+      (req.user.role === 'admin' || 
+       req.user.role === 'global_admin' ||
+       req.user.role === 'tenant_admin' ||
+       req.user.role === 'tenant_modeler' ||
+       req.user.role === 'modeler')) {
     return next();
   }
   res.status(401).json({ error: "Admin or modeler access required" });
