@@ -133,6 +133,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get current user's tenant information (authenticated users only)
+  app.get('/api/user/tenant', ensureAuthenticated, async (req, res) => {
+    try {
+      const user = req.user!;
+      
+      if (!user.tenantId) {
+        return res.json(null); // User not assigned to any tenant
+      }
+      
+      // Fetch tenant details
+      const tenant = await db.select()
+        .from(schema.tenants)
+        .where(eq(schema.tenants.id, user.tenantId))
+        .limit(1);
+      
+      if (tenant.length === 0) {
+        return res.status(404).json({ error: "Tenant not found" });
+      }
+      
+      res.json(tenant[0]);
+    } catch (error) {
+      console.error('Error fetching user tenant:', error);
+      res.status(500).json({ error: "Failed to fetch tenant information" });
+    }
+  });
+
   // User management routes (admin only)
   app.get('/api/users', ensureAdmin, async (req, res) => {
     try {

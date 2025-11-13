@@ -145,11 +145,12 @@ export default function Profile() {
 
   // Fetch tenant details if user has tenantId
   const { data: tenant } = useQuery({
-    queryKey: ['/api/tenants', user?.tenantId],
+    queryKey: ['/api/user/tenant'],
     queryFn: async () => {
       if (!user?.tenantId) return null;
-      const allTenants = await fetch('/api/tenants').then(r => r.json());
-      return allTenants.find((t: any) => t.id === user.tenantId) || null;
+      const response = await fetch('/api/user/tenant');
+      if (!response.ok) return null;
+      return response.json();
     },
     enabled: !!user?.tenantId,
   });
