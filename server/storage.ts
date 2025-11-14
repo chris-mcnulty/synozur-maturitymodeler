@@ -173,13 +173,16 @@ export class DatabaseStorage implements IStorage {
         m.image_url,
         m.maturity_scale,
         m.general_resources,
+        m.visibility,
+        m.owner_tenant_id,
+        m.model_class,
         m.created_at,
         m.updated_at,
         COALESCE(COUNT(q.id), 0)::integer as question_count
       FROM models m
       LEFT JOIN questions q ON m.id = q.model_id
       ${statusFilter}
-      GROUP BY m.id, m.slug, m.name, m.description, m.version, m.estimated_time, m.status, m.featured, m.image_url, m.maturity_scale::text, m.general_resources::text, m.created_at, m.updated_at
+      GROUP BY m.id, m.slug, m.name, m.description, m.version, m.estimated_time, m.status, m.featured, m.image_url, m.maturity_scale::text, m.general_resources::text, m.visibility, m.owner_tenant_id, m.model_class, m.created_at, m.updated_at
       ORDER BY m.created_at DESC
     `);
 
@@ -195,6 +198,9 @@ export class DatabaseStorage implements IStorage {
       imageUrl: row.image_url,
       maturityScale: row.maturity_scale,
       generalResources: row.general_resources,
+      visibility: row.visibility,
+      ownerTenantId: row.owner_tenant_id,
+      modelClass: row.model_class,
       createdAt: new Date(row.created_at.replace(' ', 'T') + 'Z'),
       updatedAt: new Date(row.updated_at.replace(' ', 'T') + 'Z'),
       questionCount: row.question_count,
