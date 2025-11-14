@@ -9,7 +9,7 @@ import { readFileSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 import { setupAuth, ensureAuthenticated, ensureAdmin, ensureAdminOrModeler, ensureAnyAdmin, ensureGlobalAdmin, ensureCanManageModels } from "./auth";
-import { canManageUsers, canAssignRole, checkIsGlobalAdmin, getAccessibleTenantIds } from "./permissions";
+import { canManageUsers, canAssignRole, checkIsGlobalAdmin, getAccessibleTenantIds, canAccessModel, hasAdminAccess } from "./permissions";
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
 import { aiService } from "./services/ai-service";
 import { validateImportData, executeImport, type ImportExportData } from "./services/import-service";
@@ -79,11 +79,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const requestingUser = req.user!;
       const targetUserId = req.params.id;
 
-      // Check authorization: must be admin/modeler OR requesting own profile
+      // Check authorization: must be admin OR requesting own profile
       const isAuthorized = 
         requestingUser.id === targetUserId || 
-        requestingUser.role === 'admin' || 
-        requestingUser.role === 'modeler';
+        hasAdminAccess(requestingUser);
 
       if (!isAuthorized) {
         return res.status(403).json({ error: "Access denied" });
@@ -488,12 +487,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Model ID is required" });
       }
       
-      // Non-admin users can only access questions for published models
       const model = await storage.getModel(modelId);
       if (!model) {
         return res.status(404).json({ error: "Model not found" });
       }
-      if ((!req.isAuthenticated() || req.user?.role !== 'admin') && model.status !== 'published') {
+
+      // Check visibility/tenant access
+      if (!canAccessModel(req.user, model)) {
+        return res.status(404).json({ error: "Model not found" }); // 404 to hide existence
+      }
+
+      // Only admins and modelers can access questions for draft models
+      const canSeeDrafts = req.isAuthenticated() && (
+        req.user?.role === 'global_admin' || 
+        req.user?.role === 'tenant_admin' || 
+        req.user?.role === 'tenant_modeler'
+      );
+
+      if (!canSeeDrafts && model.status !== 'published') {
         return res.status(404).json({ error: "Model not found" });
       }
       
@@ -583,15 +594,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Model routes
   app.get("/api/models", async (req, res) => {
     try {
+      const user = req.user;
+      const userRole = user?.role;
       let status = req.query.status as string | undefined;
       
       // Only admins and modelers can see draft models
-      if (!req.isAuthenticated() || (req.user?.role !== 'admin' && req.user?.role !== 'modeler')) {
+      const canSeeDrafts = req.isAuthenticated() && (
+        userRole === 'global_admin' || 
+        userRole === 'tenant_admin' || 
+        userRole === 'tenant_modeler'
+      );
+      
+      if (!canSeeDrafts) {
         status = 'published';
       }
       
-      const models = await storage.getAllModels(status);
-      res.json(models);
+      const allModels = await storage.getAllModels(status);
+      
+      // Filter by visibility and tenant access using centralized helper
+      const filteredModels = allModels.filter(model => canAccessModel(user, model));
+      
+      res.json(filteredModels);
     } catch (error) {
       console.error("Error fetching models:", error);
       res.status(500).json({ error: "Failed to fetch models" });
@@ -601,6 +624,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/models", ensureAdminOrModeler, async (req, res) => {
     try {
       const validatedData = insertModelSchema.parse(req.body);
+      
+      // Validate visibility and tenant ownership
+      if (validatedData.visibility === 'private' && !validatedData.ownerTenantId) {
+        return res.status(400).json({ error: "Private models must have an assigned tenant" });
+      }
+      
+      if (validatedData.visibility === 'public' && validatedData.ownerTenantId) {
+        // Auto-correct: public models should not have a tenant
+        validatedData.ownerTenantId = null;
+      }
+      
       const model = await storage.createModel(validatedData);
       
       // Create dimensions if provided
@@ -626,7 +660,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.put("/api/models/:id", ensureAdminOrModeler, async (req, res) => {
     try {
-      const model = await storage.updateModel(req.params.id, req.body);
+      const updateData = req.body;
+      
+      // Validate visibility and tenant ownership if being updated
+      if (updateData.visibility === 'private' && !updateData.ownerTenantId) {
+        return res.status(400).json({ error: "Private models must have an assigned tenant" });
+      }
+      
+      if (updateData.visibility === 'public' && updateData.ownerTenantId) {
+        // Auto-correct: public models should not have a tenant
+        updateData.ownerTenantId = null;
+      }
+      
+      const model = await storage.updateModel(req.params.id, updateData);
       if (!model) {
         return res.status(404).json({ error: "Model not found" });
       }
@@ -802,8 +848,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Model not found" });
       }
 
+      // Check visibility/tenant access
+      if (!canAccessModel(req.user, model)) {
+        return res.status(404).json({ error: "Model not found" }); // 404 to hide existence
+      }
+
       // Only admins and modelers can access draft models
-      if ((!req.isAuthenticated() || (req.user?.role !== 'admin' && req.user?.role !== 'modeler')) && model.status !== 'published') {
+      const canSeeDrafts = req.isAuthenticated() && (
+        req.user?.role === 'global_admin' || 
+        req.user?.role === 'tenant_admin' || 
+        req.user?.role === 'tenant_modeler'
+      );
+
+      if (!canSeeDrafts && model.status !== 'published') {
         return res.status(404).json({ error: "Model not found" });
       }
 
@@ -821,8 +878,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Model not found" });
       }
 
+      // Check visibility/tenant access
+      if (!canAccessModel(req.user, model)) {
+        return res.status(404).json({ error: "Model not found" }); // 404 to hide existence
+      }
+
       // Only admins and modelers can access draft models
-      if ((!req.isAuthenticated() || (req.user?.role !== 'admin' && req.user?.role !== 'modeler')) && model.status !== 'published') {
+      const canSeeDrafts = req.isAuthenticated() && (
+        req.user?.role === 'global_admin' || 
+        req.user?.role === 'tenant_admin' || 
+        req.user?.role === 'tenant_modeler'
+      );
+
+      if (!canSeeDrafts && model.status !== 'published') {
         return res.status(404).json({ error: "Model not found" });
       }
 
@@ -836,12 +904,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Dimension routes
   app.get("/api/dimensions/:modelId", async (req, res) => {
     try {
-      // Only admins and modelers can access dimensions for draft models
       const model = await storage.getModel(req.params.modelId);
       if (!model) {
         return res.status(404).json({ error: "Model not found" });
       }
-      if ((!req.isAuthenticated() || (req.user?.role !== 'admin' && req.user?.role !== 'modeler')) && model.status !== 'published') {
+
+      // Check visibility/tenant access
+      if (!canAccessModel(req.user, model)) {
+        return res.status(404).json({ error: "Model not found" }); // 404 to hide existence
+      }
+
+      // Only admins and modelers can access dimensions for draft models
+      const canSeeDrafts = req.isAuthenticated() && (
+        req.user?.role === 'global_admin' || 
+        req.user?.role === 'tenant_admin' || 
+        req.user?.role === 'tenant_modeler'
+      );
+
+      if (!canSeeDrafts && model.status !== 'published') {
         return res.status(404).json({ error: "Model not found" });
       }
       
@@ -892,8 +972,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Model not found" });
       }
 
+      // Check visibility/tenant access
+      if (!canAccessModel(req.user, model)) {
+        return res.status(404).json({ error: "Model not found" }); // 404 to hide existence
+      }
+
       // Only admins and modelers can access questions for draft models
-      if ((!req.isAuthenticated() || (req.user?.role !== 'admin' && req.user?.role !== 'modeler')) && model.status !== 'published') {
+      const canSeeDrafts = req.isAuthenticated() && (
+        req.user?.role === 'global_admin' || 
+        req.user?.role === 'tenant_admin' || 
+        req.user?.role === 'tenant_modeler'
+      );
+
+      if (!canSeeDrafts && model.status !== 'published') {
         return res.status(404).json({ error: "Model not found" });
       }
 
@@ -915,6 +1006,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/assessments", async (req, res) => {
     try {
       const validatedData = insertAssessmentSchema.parse(req.body);
+      
+      // Check if user has access to the model before creating assessment
+      const model = await storage.getModel(validatedData.modelId);
+      if (!model) {
+        return res.status(404).json({ error: "Model not found" });
+      }
+
+      if (!canAccessModel(req.user, model)) {
+        return res.status(404).json({ error: "Model not found" }); // 404 to hide existence
+      }
+
       // Add userId from authenticated user if available
       const assessmentData = {
         ...validatedData,

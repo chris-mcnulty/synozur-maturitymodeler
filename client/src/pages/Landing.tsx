@@ -4,7 +4,7 @@ import { ModelCard } from "@/components/ModelCard";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowRight, Clock, FileText, BarChart3, CheckCircle } from "lucide-react";
+import { ArrowRight, Clock, FileText, BarChart3, CheckCircle, Building2 } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { Model, Assessment, Dimension } from "@shared/schema";
@@ -265,11 +265,19 @@ export default function Landing() {
                             <BarChart3 className="h-6 w-6 text-primary" />
                           </div>
                         )}
-                        {model.id === aiModel?.id && (
-                          <Badge className="bg-primary/10 text-primary border-primary/20">
-                            Featured
-                          </Badge>
-                        )}
+                        <div className="flex flex-col gap-2">
+                          {model.id === aiModel?.id && (
+                            <Badge className="bg-primary/10 text-primary border-primary/20">
+                              Featured
+                            </Badge>
+                          )}
+                          {model.visibility === 'private' && (
+                            <Badge variant="secondary" className="text-xs" data-testid={`badge-private-${model.slug}`}>
+                              <Building2 className="h-3 w-3 mr-1" />
+                              Tenant Private
+                            </Badge>
+                          )}
+                        </div>
                       </div>
                       
                       <h3 className="text-lg font-bold mb-2 group-hover:text-primary transition-colors">

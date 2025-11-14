@@ -160,3 +160,41 @@ export function validateTenantAssignment(user: User): { valid: boolean; error?: 
 export function hasAdminAccess(user: User): boolean {
   return isAnyAdmin(user.role);
 }
+
+/**
+ * Check if user can access a specific model based on visibility and tenant assignment
+ * Returns true if user has access, false otherwise
+ * 
+ * Access rules:
+ * - Public models: accessible to everyone (including anonymous users)
+ * - Private models: accessible only to users from the owning tenant
+ * - Global admins: can access all models regardless of visibility
+ */
+export function canAccessModel(
+  user: User | null | undefined,
+  model: { visibility?: string | null; ownerTenantId?: string | null }
+): boolean {
+  // Global admins can access everything
+  if (user && isGlobalAdmin(user.role)) {
+    return true;
+  }
+
+  // Public models (or models with no visibility set) are accessible to everyone
+  if (!model.visibility || model.visibility === 'public') {
+    return true;
+  }
+
+  // Private models require tenant membership
+  if (model.visibility === 'private') {
+    // User must be authenticated and have a tenant assigned
+    if (!user || !user.tenantId) {
+      return false;
+    }
+
+    // User can access private models from their own tenant
+    return model.ownerTenantId === user.tenantId;
+  }
+
+  // Unknown visibility value - deny by default
+  return false;
+}

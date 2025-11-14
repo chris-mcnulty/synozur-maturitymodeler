@@ -416,6 +416,8 @@ export default function Admin() {
     estimatedTime: '15-20 minutes',
     status: 'draft' as 'draft' | 'published',
     imageUrl: '',
+    visibility: 'public' as 'public' | 'private',
+    ownerTenantId: null as string | null,
   });
   const [dimensionForm, setDimensionForm] = useState({
     label: '',
@@ -507,6 +509,12 @@ export default function Admin() {
   // Fetch models
   const { data: models = [], isLoading: modelsLoading } = useQuery<Model[]>({
     queryKey: ['/api/models'],
+  });
+
+  // Fetch tenants for model visibility dropdown (role-aware)
+  const { data: availableTenants = [] } = useQuery<Array<{id: string, name: string}>>({
+    queryKey: ['/api/model-tenants'],
+    enabled: canManageModels(currentUser),
   });
 
   // Fetch questions for selected model
@@ -1360,6 +1368,8 @@ export default function Admin() {
       estimatedTime: '15-20 minutes',
       status: 'draft',
       imageUrl: '',
+      visibility: 'public',
+      ownerTenantId: null,
     });
 
     setEditingModel(null);
@@ -1394,6 +1404,8 @@ export default function Admin() {
       estimatedTime: model.estimatedTime || '15-20 minutes',
       status: (model.status || 'draft') as 'draft' | 'published',
       imageUrl: model.imageUrl || '',
+      visibility: (model.visibility || 'public') as 'public' | 'private',
+      ownerTenantId: model.ownerTenantId || null,
     });
     // Would need to fetch dimensions here
 
@@ -1411,15 +1423,29 @@ export default function Admin() {
       return;
     }
 
+    // Validate visibility and tenant assignment
+    if (modelForm.visibility === 'private' && !modelForm.ownerTenantId) {
+      toast({
+        title: "Validation Error",
+        description: "Private models must be assigned to a tenant.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Ensure public models have no tenant assignment
+    const submissionData = {
+      ...modelForm,
+      ownerTenantId: modelForm.visibility === 'public' ? null : modelForm.ownerTenantId,
+    };
+
     if (editingModel) {
       updateModel.mutate({
-        ...modelForm,
+        ...submissionData,
         id: editingModel.id,
       });
     } else {
-      createModel.mutate({
-        ...modelForm,
-      });
+      createModel.mutate(submissionData);
     }
   };
 
@@ -3650,6 +3676,62 @@ export default function Admin() {
                   <option value="draft">Draft</option>
                   <option value="published">Published</option>
                 </select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="visibility">Visibility</Label>
+                <Select 
+                  value={modelForm.visibility} 
+                  onValueChange={(value: 'public' | 'private') => {
+                    // When switching to public, clear the tenant assignment
+                    if (value === 'public') {
+                      setModelForm({ ...modelForm, visibility: value, ownerTenantId: null });
+                    } else {
+                      // When switching to private, auto-select tenant if only one available
+                      const newTenantId = availableTenants.length === 1 ? availableTenants[0].id : modelForm.ownerTenantId;
+                      setModelForm({ ...modelForm, visibility: value, ownerTenantId: newTenantId });
+                    }
+                  }}
+                >
+                  <SelectTrigger data-testid="select-model-visibility">
+                    <SelectValue placeholder="Select visibility" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="public">Public (visible to everyone)</SelectItem>
+                    <SelectItem value="private">Private (tenant-only)</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {modelForm.visibility === 'public' 
+                    ? 'Model will be visible to all users' 
+                    : 'Model will only be visible to users from the assigned tenant'}
+                </p>
+              </div>
+              <div>
+                <Label htmlFor="ownerTenant">Assigned Tenant</Label>
+                <Select 
+                  value={modelForm.ownerTenantId || ''} 
+                  onValueChange={(value) => setModelForm({ ...modelForm, ownerTenantId: value || null })}
+                  disabled={modelForm.visibility === 'public'}
+                >
+                  <SelectTrigger data-testid="select-model-tenant">
+                    <SelectValue placeholder={modelForm.visibility === 'public' ? 'N/A (public model)' : 'Select tenant'} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableTenants.map((tenant) => (
+                      <SelectItem key={tenant.id} value={tenant.id}>
+                        {tenant.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {modelForm.visibility === 'public' 
+                    ? 'Not applicable for public models' 
+                    : 'Required for private models'}
+                </p>
               </div>
             </div>
           </div>

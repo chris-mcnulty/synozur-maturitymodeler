@@ -374,6 +374,69 @@ router.put("/api/tenants/:id/entitlements", ensureGlobalAdmin, async (req, res) 
   }
 });
 
+// Get current user's tenant info (for profile display)
+router.get("/api/user/tenant", async (req, res) => {
+  try {
+    if (!req.user || !req.user.tenantId) {
+      return res.json(null);
+    }
+
+    const userTenant = await db
+      .select()
+      .from(tenants)
+      .where(eq(tenants.id, req.user.tenantId))
+      .limit(1);
+
+    if (!userTenant.length) {
+      return res.json(null);
+    }
+
+    res.json(userTenant[0]);
+  } catch (error) {
+    console.error("Error fetching user tenant:", error);
+    res.status(500).json({ error: "Failed to fetch tenant" });
+  }
+});
+
+// Get tenants for model assignment dropdown (role-aware)
+// Global admins see all tenants, tenant admins/modelers see only their tenant
+router.get("/api/model-tenants", async (req, res) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ error: "Not authenticated" });
+    }
+
+    const userRole = req.user.role;
+
+    // Global admins can see all tenants
+    if (userRole === 'global_admin') {
+      const allTenants = await db.select().from(tenants);
+      return res.json(allTenants);
+    }
+
+    // Tenant admins and modelers can only see their own tenant
+    if (userRole === 'tenant_admin' || userRole === 'tenant_modeler') {
+      if (!req.user.tenantId) {
+        return res.json([]); // User has no tenant assigned
+      }
+
+      const userTenant = await db
+        .select()
+        .from(tenants)
+        .where(eq(tenants.id, req.user.tenantId))
+        .limit(1);
+
+      return res.json(userTenant);
+    }
+
+    // Regular users shouldn't see this endpoint
+    return res.json([]);
+  } catch (error) {
+    console.error("Error fetching model tenants:", error);
+    res.status(500).json({ error: "Failed to fetch tenants" });
+  }
+});
+
 // ========== MODEL TENANT VISIBILITY ROUTES ==========
 
 // Get tenants for a model
