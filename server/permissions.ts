@@ -174,6 +174,22 @@ export function canAccessModel(
   user: User | null | undefined,
   model: { visibility?: string | null; ownerTenantId?: string | null }
 ): boolean {
+  // DEBUG: Log access check for private models
+  if (model.visibility === 'private') {
+    console.log('[canAccessModel] Private model access check:', {
+      hasUser: !!user,
+      username: user?.username,
+      userTenantId: user?.tenantId,
+      userTenantIdType: typeof user?.tenantId,
+      userTenantIdIsNull: user?.tenantId === null,
+      userTenantIdIsUndefined: user?.tenantId === undefined,
+      userTenantIdIsEmptyString: user?.tenantId === '',
+      modelName: (model as any).name,
+      modelOwnerTenantId: model.ownerTenantId,
+      willAllow: user && user.tenantId && model.ownerTenantId === user.tenantId
+    });
+  }
+
   // Global admins can access everything
   if (user && isGlobalAdmin(user.role)) {
     return true;
