@@ -2698,7 +2698,7 @@ export default function Admin() {
                 ) : filteredUsers.length === 0 ? (
                   <div className="py-8 text-center text-muted-foreground">No users found</div>
                 ) : (
-                  <div className="rounded-md border">
+                  <div className="rounded-md border overflow-x-auto">
                     <Table>
                       <TableHeader>
                         <TableRow>
@@ -2734,13 +2734,29 @@ export default function Admin() {
                             <TableCell>{user.name || '-'}</TableCell>
                             <TableCell>{user.company || '-'}</TableCell>
                             <TableCell>
-                              {user.tenantId ? (
-                                <Badge variant="secondary">
-                                  {tenants.find((t: any) => t.id === user.tenantId)?.name || 'Unknown'}
-                                </Badge>
-                              ) : (
-                                <span className="text-muted-foreground text-sm">-</span>
-                              )}
+                              <button
+                                onClick={() => {
+                                  setEditingUser(user);
+                                  setUserForm({ 
+                                    role: normalizeRole(user.role),
+                                    username: user.username,
+                                    newPassword: '',
+                                    tenantId: user.tenantId || null,
+                                  });
+                                  setIsUserDialogOpen(true);
+                                }}
+                                className="hover-elevate active-elevate-2 rounded-md px-2 py-1"
+                                title="Click to assign tenant"
+                                data-testid={`assign-tenant-${user.id}`}
+                              >
+                                {user.tenantId ? (
+                                  <Badge variant="secondary">
+                                    {tenants.find((t: any) => t.id === user.tenantId)?.name || 'Unknown'}
+                                  </Badge>
+                                ) : (
+                                  <span className="text-muted-foreground text-sm">Assign Tenant</span>
+                                )}
+                              </button>
                             </TableCell>
                             <TableCell>
                               <Badge variant={user.role === 'admin' ? 'default' : 'secondary'}>
