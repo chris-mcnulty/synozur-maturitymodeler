@@ -459,23 +459,43 @@ export function TenantManagement() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="primaryColor">Primary Color</Label>
-                  <Input
-                    id="primaryColor"
-                    value={tenantForm.primaryColor}
-                    onChange={(e) => setTenantForm({ ...tenantForm, primaryColor: e.target.value })}
-                    placeholder="#810FFB"
-                    data-testid="input-primary-color"
-                  />
+                  <div className="flex gap-2">
+                    <Input
+                      id="primaryColor"
+                      type="color"
+                      value={tenantForm.primaryColor || '#810FFB'}
+                      onChange={(e) => setTenantForm({ ...tenantForm, primaryColor: e.target.value })}
+                      className="w-20 h-10 p-1 cursor-pointer"
+                      data-testid="input-primary-color-picker"
+                    />
+                    <Input
+                      value={tenantForm.primaryColor}
+                      onChange={(e) => setTenantForm({ ...tenantForm, primaryColor: e.target.value })}
+                      placeholder="#810FFB"
+                      className="flex-1"
+                      data-testid="input-primary-color"
+                    />
+                  </div>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="secondaryColor">Secondary Color</Label>
-                  <Input
-                    id="secondaryColor"
-                    value={tenantForm.secondaryColor}
-                    onChange={(e) => setTenantForm({ ...tenantForm, secondaryColor: e.target.value })}
-                    placeholder="#E60CB3"
-                    data-testid="input-secondary-color"
-                  />
+                  <div className="flex gap-2">
+                    <Input
+                      id="secondaryColor"
+                      type="color"
+                      value={tenantForm.secondaryColor || '#E60CB3'}
+                      onChange={(e) => setTenantForm({ ...tenantForm, secondaryColor: e.target.value })}
+                      className="w-20 h-10 p-1 cursor-pointer"
+                      data-testid="input-secondary-color-picker"
+                    />
+                    <Input
+                      value={tenantForm.secondaryColor}
+                      onChange={(e) => setTenantForm({ ...tenantForm, secondaryColor: e.target.value })}
+                      placeholder="#E60CB3"
+                      className="flex-1"
+                      data-testid="input-secondary-color"
+                    />
+                  </div>
                 </div>
               </div>
               <div className="flex items-center space-x-2">
