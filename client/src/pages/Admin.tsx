@@ -2703,7 +2703,6 @@ export default function Admin() {
                       <TableHeader>
                         <TableRow>
                           <TableHead>Username</TableHead>
-                          <TableHead>Email</TableHead>
                           <TableHead>Verified</TableHead>
                           <TableHead>Name</TableHead>
                           <TableHead>Company</TableHead>
@@ -2717,7 +2716,6 @@ export default function Admin() {
                         {filteredUsers.map((user) => (
                           <TableRow key={user.id}>
                             <TableCell className="font-medium">{user.username}</TableCell>
-                            <TableCell>{user.email || '-'}</TableCell>
                             <TableCell>
                               {user.emailVerified ? (
                                 <Badge variant="secondary" className="bg-green-500/10 text-green-600 dark:text-green-400">
