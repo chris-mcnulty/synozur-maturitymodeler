@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Moon, Sun, User, LogOut } from "lucide-react";
 import { useTheme } from "./ThemeProvider";
 import { useAuth } from "@/hooks/use-auth";
+import { USER_ROLES } from "@shared/constants";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -11,6 +12,25 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import synozurLogo from '@assets/SA-Logo-Horizontal-color_1759930898755.png';
+
+// Helper function to check if user has admin permissions
+function isAdminUser(user: any): boolean {
+  if (!user || !user.role) return false;
+  // Support both new and legacy role names
+  return user.role === USER_ROLES.GLOBAL_ADMIN || 
+         user.role === USER_ROLES.TENANT_ADMIN ||
+         user.role === 'admin'; // Legacy support
+}
+
+// Helper function to check if user can manage models
+function canManageModels(user: any): boolean {
+  if (!user || !user.role) return false;
+  return user.role === USER_ROLES.GLOBAL_ADMIN || 
+         user.role === USER_ROLES.TENANT_ADMIN || 
+         user.role === USER_ROLES.TENANT_MODELER ||
+         user.role === 'admin' || // Legacy support
+         user.role === 'modeler'; // Legacy support
+}
 
 export function Header() {
   const { theme, setTheme } = useTheme();
@@ -52,9 +72,11 @@ export function Header() {
           </Link>
           {user && (
             <>
-              <Link href="/admin" className="text-sm font-medium hover:text-primary transition-colors" data-testid="link-admin">
-                Admin
-              </Link>
+              {canManageModels(user) && (
+                <Link href="/admin" className="text-sm font-medium hover:text-primary transition-colors" data-testid="link-admin">
+                  Admin
+                </Link>
+              )}
               <Link href="/me" className="text-sm font-medium hover:text-primary transition-colors" data-testid="link-profile">
                 Profile
               </Link>
@@ -88,9 +110,9 @@ export function Header() {
                     Profile
                   </Link>
                 </DropdownMenuItem>
-                {(user.role === 'admin' || user.role === 'modeler') && (
+                {canManageModels(user) && (
                   <DropdownMenuItem asChild>
-                    <Link href="/admin">
+                    <Link href="/admin" data-testid="link-admin-mobile">
                       Admin Panel
                     </Link>
                   </DropdownMenuItem>
