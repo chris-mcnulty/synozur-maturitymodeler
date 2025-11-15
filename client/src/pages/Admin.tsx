@@ -13,7 +13,7 @@ import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Download, Plus, Edit, Trash, FileSpreadsheet, Eye, BarChart3, Settings, FileDown, FileUp, ListOrdered, Users, Star, Upload, X, Sparkles, CheckCircle2, XCircle, Database, FileText, Brain, BookOpen, ClipboardList, Home, Building2, ChevronDown } from "lucide-react";
+import { Download, Plus, Edit, Trash, FileSpreadsheet, Eye, BarChart3, Settings, FileDown, FileUp, ListOrdered, Users, Star, Upload, X, Sparkles, CheckCircle2, XCircle, Database, FileText, Brain, BookOpen, ClipboardList, Home, Building2, ChevronDown, Shield } from "lucide-react";
 import type { Model, Result, Assessment, Dimension, Question, Answer, User } from "@shared/schema";
 import { USER_ROLES, type UserRole } from "@shared/constants";
 import { useAuth } from "@/hooks/use-auth";
@@ -26,6 +26,7 @@ import { ImportManager } from "@/components/admin/ImportManager";
 import { ImportBatches } from "@/components/admin/ImportBatches";
 import { ProxyAssessmentDialog } from "@/components/admin/ProxyAssessmentDialog";
 import { TenantManagement } from "@/components/admin/TenantManagement";
+import { OAuthApplications } from "@/components/admin/OAuthApplications";
 import {
   Sidebar,
   SidebarContent,
@@ -2088,7 +2089,7 @@ export default function Admin() {
               </SidebarGroup>
             )}
 
-            {isAdminUser(currentUser) && (
+            {isAdminUser(currentUser) && currentUser && normalizeRole(currentUser.role) === USER_ROLES.GLOBAL_ADMIN && (
               <SidebarGroup>
                 <SidebarGroupLabel>System</SidebarGroupLabel>
                 <SidebarGroupContent>
@@ -2102,6 +2103,17 @@ export default function Admin() {
                       >
                         <Building2 className="h-4 w-4" />
                         <span className="group-data-[collapsible=icon]:hidden">Tenants</span>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                    <SidebarMenuItem>
+                      <SidebarMenuButton 
+                        onClick={() => setActiveSection('oauth-applications')}
+                        isActive={activeSection === 'oauth-applications'}
+                        data-testid="tab-oauth-applications"
+                        tooltip="OAuth Applications"
+                      >
+                        <Shield className="h-4 w-4" />
+                        <span className="group-data-[collapsible=icon]:hidden">OAuth Apps</span>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
                   </SidebarMenu>
@@ -3500,6 +3512,8 @@ export default function Admin() {
               )}
 
               {activeSection === 'tenants' && <TenantManagement />}
+
+              {activeSection === 'oauth-applications' && <OAuthApplications />}
             </div>
 
             {/* Footer Stats */}
