@@ -74,7 +74,33 @@ Per-tenant usage controls:
 - Usage monitoring
 - Overage handling
 
-### 8. Dedicated Tenant Visibility Manager [🔵 Planned]
+### 8. Microsoft 365 SSO & Identity Enrichment [🔵 Planned]
+**Specification**: [M365_SSO_INTEGRATION_PLAN.md](./M365_SSO_INTEGRATION_PLAN.md)
+**Priority**: Medium (no active customer requests)
+**Estimated Duration**: 12 weeks
+
+Enable enterprise users to authenticate via Microsoft 365 and inherit tenant/RBAC:
+- M365 as external identity provider for Orion
+- Automatic tenant alignment from M365 domains/groups
+- Role transformation (M365 groups → Orion/Nebula/Vega roles)
+- Token pass-through for Vega's M365 service access
+- Federated identity chain: M365 → Orion → All Synozur Apps
+
+**Key Deliverables**:
+- [ ] External identity provider schema and services
+- [ ] M365 OAuth client implementation ("Sign in with Microsoft")
+- [ ] Identity enrichment engine (tenant/role mapping)
+- [ ] Admin UI for tenant mapping rules
+- [ ] Token pass-through for downstream apps
+- [ ] Automated user provisioning from M365
+
+**Benefits**:
+- Enterprise SSO compliance
+- Single identity across Synozur ecosystem
+- IT-friendly deployment (managed through M365)
+- Enables Vega's native M365 integrations
+
+### 9. Dedicated Tenant Visibility Manager [🔵 Planned]
 Advanced UI for managing model-to-tenant assignments:
 - Dedicated "Manage Model Visibility" button in admin console
 - Dialog/modal showing all tenants with visual indicators
@@ -87,19 +113,19 @@ Advanced UI for managing model-to-tenant assignments:
 
 ## Low Priority Features
 
-### 8. White-Label Options [🔵 Planned]
+### 10. White-Label Options [🔵 Planned]
 Complete branding customization:
 - Custom domains
 - Email sender configuration
 - Remove Synozur branding (premium)
 
-### 9. Data Export Compliance [🔵 Planned]
+### 11. Data Export Compliance [🔵 Planned]
 GDPR and data portability:
 - Bulk data export for tenants
 - User data deletion workflows
 - Audit trail exports
 
-### 10. Mobile Applications [🔵 Planned]
+### 12. Mobile Applications [🔵 Planned]
 Native mobile experience:
 - iOS application
 - Android application
