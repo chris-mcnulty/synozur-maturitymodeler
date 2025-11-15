@@ -142,7 +142,8 @@ class JWTSigningService {
   
   // Check if key should be rotated
   private shouldRotateKey(keyPair: KeyPair): boolean {
-    const age = Date.now() - keyPair.createdAt.getTime();
+    const createdAt = keyPair.createdAt instanceof Date ? keyPair.createdAt : new Date(keyPair.createdAt);
+    const age = Date.now() - createdAt.getTime();
     return age > this.keyRotationInterval;
   }
   

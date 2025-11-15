@@ -12,44 +12,41 @@ async function seedOAuthData() {
     // Check if Orion application already exists
     const existingOrion = await db.select()
       .from(schema.applications)
-      .where(eq(schema.applications.id, 'orion'))
+      .where(eq(schema.applications.clientKey, 'orion'))
       .limit(1);
     
     if (existingOrion.length === 0) {
       // Create Orion application (the identity provider itself)
-      await db.insert(schema.applications).values({
-        id: 'orion',
-        name: 'Orion Platform',
+      const [orionApp] = await db.insert(schema.applications).values({
+        clientKey: 'orion',
+        displayName: 'Orion Platform',
         description: 'Synozur Multi-Model Maturity Assessment Platform',
         logoUrl: null,
         homepageUrl: process.env.REPLIT_URL || 'http://localhost:5000',
-        privacyPolicyUrl: null,
-        termsOfServiceUrl: null,
-      });
+        environment: 'development',
+        active: true,
+      }).returning();
       console.log('Created Orion application');
       
       // Create Orion application roles
       await db.insert(schema.applicationRoles).values([
         {
-          id: 'orion_admin',
-          applicationId: 'orion',
-          name: 'Administrator',
+          applicationId: orionApp.id,
+          roleKey: 'admin',
+          displayName: 'Administrator',
           description: 'Full administrative access to Orion',
-          permissions: ['manage_users', 'manage_models', 'manage_assessments', 'view_analytics'],
         },
         {
-          id: 'orion_modeler',
-          applicationId: 'orion',
-          name: 'Modeler',
+          applicationId: orionApp.id,
+          roleKey: 'modeler',
+          displayName: 'Modeler',
           description: 'Can create and manage maturity models',
-          permissions: ['manage_models', 'view_assessments'],
         },
         {
-          id: 'orion_user',
-          applicationId: 'orion',
-          name: 'User',
+          applicationId: orionApp.id,
+          roleKey: 'user',
+          displayName: 'User',
           description: 'Standard user access',
-          permissions: ['take_assessments', 'view_own_results'],
         },
       ]);
       console.log('Created Orion application roles');
@@ -58,44 +55,41 @@ async function seedOAuthData() {
     // Check if Nebula application already exists
     const existingNebula = await db.select()
       .from(schema.applications)
-      .where(eq(schema.applications.id, 'nebula'))
+      .where(eq(schema.applications.clientKey, 'nebula'))
       .limit(1);
     
     if (existingNebula.length === 0) {
       // Create Nebula application
-      await db.insert(schema.applications).values({
-        id: 'nebula',
-        name: 'Nebula Platform',
+      const [nebulaApp] = await db.insert(schema.applications).values({
+        clientKey: 'nebula',
+        displayName: 'Nebula Platform',
         description: 'AI-Powered Skills Assessment Platform',
         logoUrl: null,
         homepageUrl: 'https://nebula.synozur.com',
-        privacyPolicyUrl: null,
-        termsOfServiceUrl: null,
-      });
+        environment: 'development',
+        active: true,
+      }).returning();
       console.log('Created Nebula application');
       
       // Create Nebula application roles
       await db.insert(schema.applicationRoles).values([
         {
-          id: 'nebula_admin',
-          applicationId: 'nebula',
-          name: 'Administrator',
+          applicationId: nebulaApp.id,
+          roleKey: 'admin',
+          displayName: 'Administrator',
           description: 'Full administrative access to Nebula',
-          permissions: ['manage_skills', 'manage_users', 'view_analytics'],
         },
         {
-          id: 'nebula_instructor',
-          applicationId: 'nebula',
-          name: 'Instructor',
+          applicationId: nebulaApp.id,
+          roleKey: 'instructor',
+          displayName: 'Instructor',
           description: 'Can create and manage skill assessments',
-          permissions: ['create_assessments', 'view_results'],
         },
         {
-          id: 'nebula_learner',
-          applicationId: 'nebula',
-          name: 'Learner',
+          applicationId: nebulaApp.id,
+          roleKey: 'learner',
+          displayName: 'Learner',
           description: 'Can take skill assessments',
-          permissions: ['take_assessments', 'view_own_results'],
         },
       ]);
       console.log('Created Nebula application roles');
@@ -103,6 +97,22 @@ async function seedOAuthData() {
     
     // Only create OAuth clients in development environment
     if (process.env.NODE_ENV === 'development' || process.env.OAUTH_ENVIRONMENT === 'development') {
+      // Get application IDs for client creation
+      const orionApp = await db.select()
+        .from(schema.applications)
+        .where(eq(schema.applications.clientKey, 'orion'))
+        .limit(1);
+      
+      const nebulaApp = await db.select()
+        .from(schema.applications)
+        .where(eq(schema.applications.clientKey, 'nebula'))
+        .limit(1);
+      
+      if (nebulaApp.length === 0) {
+        console.log('Nebula application not found, skipping OAuth client creation');
+        return;
+      }
+      
       // Check if Nebula development OAuth client exists
       const existingNebulaClient = await db.select()
         .from(schema.oauthClients)
@@ -119,7 +129,7 @@ async function seedOAuthData() {
         
         // Create Nebula OAuth client for development
         await db.insert(schema.oauthClients).values({
-          applicationId: 'nebula',
+          applicationId: nebulaApp[0].id,
           clientId: 'nebula_dev',
           clientSecretHash,
           name: 'Nebula Development Client',
@@ -156,25 +166,26 @@ async function seedOAuthData() {
       }
       
       // Create a test Orion self-client for testing OAuth flow
-      const existingOrionClient = await db.select()
-        .from(schema.oauthClients)
-        .where(and(
-          eq(schema.oauthClients.clientId, 'orion_dev'),
-          eq(schema.oauthClients.environment, 'development')
-        ))
-        .limit(1);
-      
-      if (existingOrionClient.length === 0) {
-        const orionSecret = randomBytes(32).toString('base64url');
-        const orionSecretHash = await bcrypt.hash(orionSecret, 10);
+      if (orionApp.length > 0) {
+        const existingOrionClient = await db.select()
+          .from(schema.oauthClients)
+          .where(and(
+            eq(schema.oauthClients.clientId, 'orion_dev'),
+            eq(schema.oauthClients.environment, 'development')
+          ))
+          .limit(1);
         
-        await db.insert(schema.oauthClients).values({
-          applicationId: 'orion',
-          clientId: 'orion_dev',
-          clientSecretHash: orionSecretHash,
-          name: 'Orion Development Client',
-          environment: 'development',
-          redirectUris: [
+        if (existingOrionClient.length === 0) {
+          const orionSecret = randomBytes(32).toString('base64url');
+          const orionSecretHash = await bcrypt.hash(orionSecret, 10);
+          
+          await db.insert(schema.oauthClients).values({
+            applicationId: orionApp[0].id,
+            clientId: 'orion_dev',
+            clientSecretHash: orionSecretHash,
+            name: 'Orion Development Client',
+            environment: 'development',
+            redirectUris: [
             'http://localhost:5000/auth/callback',
             'http://localhost:5001/auth/callback',
             `${process.env.REPLIT_URL}/auth/callback`,
@@ -184,9 +195,9 @@ async function seedOAuthData() {
             'http://localhost:5001',
             process.env.REPLIT_URL || 'http://localhost:5000',
           ],
-          grantTypes: ['authorization_code', 'refresh_token'],
-          pkceRequired: false, // Orion can use client secret authentication
-        });
+            grantTypes: ['authorization_code', 'refresh_token'],
+            pkceRequired: false, // Orion can use client secret authentication
+          });
         
         console.log('Created Orion OAuth client for development');
         console.log('==============================================');
@@ -194,8 +205,9 @@ async function seedOAuthData() {
         console.log('Client ID: orion_dev');
         console.log(`Client Secret: ${orionSecret}`);
         console.log('==============================================');
-      } else {
-        console.log('Orion development OAuth client already exists');
+        } else {
+          console.log('Orion development OAuth client already exists');
+        }
       }
     } else {
       console.log('Skipping OAuth client creation (not in development environment)');
