@@ -382,6 +382,22 @@ export const oauthTokens = pgTable("oauth_tokens", {
   expiresIdx: index("idx_oauth_tokens_expires").on(table.expiresAt),
 }));
 
+// OAuth User Consents table - stores user consent decisions for OAuth clients
+export const oauthUserConsents = pgTable("oauth_user_consents", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  clientId: varchar("client_id").notNull().references(() => oauthClients.id, { onDelete: "cascade" }),
+  scopes: text("scopes").array().notNull(), // Normalized, sorted array of approved scopes
+  scopesHash: text("scopes_hash").notNull(), // Hash of normalized scopes for quick lookup
+  consentedAt: timestamp("consented_at").defaultNow().notNull(),
+  lastUsedAt: timestamp("last_used_at").defaultNow().notNull(),
+  revokedAt: timestamp("revoked_at"),
+}, (table) => ({
+  userClientIdx: index("idx_user_consent_user_client").on(table.userId, table.clientId),
+  scopesHashIdx: index("idx_user_consent_scopes_hash").on(table.scopesHash),
+  userClientScopesUnique: unique("unique_user_client_scopes").on(table.userId, table.clientId, table.scopesHash),
+}));
+
 // Tenant audit log for compliance
 export const tenantAuditLog = pgTable("tenant_audit_log", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -764,6 +780,12 @@ export const insertOauthTokenSchema = createInsertSchema(oauthTokens).omit({
   createdAt: true,
 });
 
+export const insertOauthUserConsentSchema = createInsertSchema(oauthUserConsents).omit({
+  id: true,
+  consentedAt: true,
+  lastUsedAt: true,
+});
+
 export const insertTenantAuditLogSchema = createInsertSchema(tenantAuditLog).omit({
   id: true,
   createdAt: true,
@@ -784,6 +806,9 @@ export type InsertUserApplicationRole = z.infer<typeof insertUserApplicationRole
 
 export type OauthAuthorizationCode = typeof oauthAuthorizationCodes.$inferSelect;
 export type InsertOauthAuthorizationCode = z.infer<typeof insertOauthAuthorizationCodeSchema>;
+
+export type OauthUserConsent = typeof oauthUserConsents.$inferSelect;
+export type InsertOauthUserConsent = z.infer<typeof insertOauthUserConsentSchema>;
 
 // TypeScript types for multi-tenant tables
 export type Tenant = typeof tenants.$inferSelect;
