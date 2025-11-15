@@ -18,11 +18,12 @@ import Auth from "@/pages/Auth";
 import ForgotPassword from "@/pages/ForgotPassword";
 import ResetPassword from "@/pages/ResetPassword";
 import VerifyEmail from "@/pages/VerifyEmail";
+import OAuthConsent from "@/pages/oauth-consent";
 import NotFound from "@/pages/not-found";
 
 function Router() {
   const [location] = useLocation();
-  const showHeader = location !== "/auth" && location !== "/forgot-password" && !location.startsWith("/reset-password") && location !== "/verify-email";
+  const showHeader = location !== "/auth" && location !== "/forgot-password" && !location.startsWith("/reset-password") && location !== "/verify-email" && location !== "/oauth/consent";
 
   return (
     <>
@@ -33,6 +34,7 @@ function Router() {
         <Route path="/forgot-password" component={ForgotPassword} />
         <Route path="/reset-password" component={ResetPassword} />
         <Route path="/verify-email" component={VerifyEmail} />
+        <Route path="/oauth/consent" component={OAuthConsent} />
         <Route path="/assessment/:assessmentId" component={Assessment} />
         <Route path="/results/:assessmentId" component={Results} />
         <ProtectedRoute path="/me" component={Profile} />
