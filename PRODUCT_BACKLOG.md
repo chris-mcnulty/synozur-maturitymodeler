@@ -74,6 +74,17 @@ Per-tenant usage controls:
 - Usage monitoring
 - Overage handling
 
+### 8. Dedicated Tenant Visibility Manager [🔵 Planned]
+Advanced UI for managing model-to-tenant assignments:
+- Dedicated "Manage Model Visibility" button in admin console
+- Dialog/modal showing all tenants with visual indicators
+- Bulk tenant assignment operations
+- Visual representation of tenant access
+- Quick search/filter for tenants
+- Assignment history/audit log
+
+**Note**: Currently implemented with multi-select dropdown (Option B). This would provide a more comprehensive management interface.
+
 ## Low Priority Features
 
 ### 8. White-Label Options [🔵 Planned]
