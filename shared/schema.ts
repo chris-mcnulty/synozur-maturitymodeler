@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, integer, timestamp, json, boolean, unique, index } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, integer, timestamp, json, boolean, unique, index, date } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -233,7 +233,75 @@ export const tenantDomains = pgTable("tenant_domains", {
   domainIdx: index("idx_tenant_domains_domain").on(table.domain),
 }));
 
-// Application entitlements per tenant
+// Applications registry (Orion, Nebula, Vega, etc.)
+export const applications = pgTable("applications", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  clientKey: text("client_key").notNull().unique(), // e.g., 'nebula', 'orion', 'vega'
+  displayName: text("display_name").notNull(),
+  description: text("description"),
+  logoUrl: text("logo_url"),
+  homepageUrl: text("homepage_url"),
+  environment: text("environment").notNull().$type<'development' | 'staging' | 'production'>().default('development'),
+  active: boolean("active").notNull().default(true),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => ({
+  clientKeyIdx: index("idx_applications_client_key").on(table.clientKey),
+  environmentIdx: index("idx_applications_environment").on(table.environment),
+}));
+
+// Application-specific roles (e.g., facilitator for Nebula, modeler for Orion)
+export const applicationRoles = pgTable("application_roles", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  applicationId: varchar("application_id").notNull().references(() => applications.id, { onDelete: "cascade" }),
+  roleKey: text("role_key").notNull(), // e.g., 'facilitator', 'company_admin'
+  scope: text("scope").notNull().$type<'global' | 'tenant'>().default('tenant'),
+  displayName: text("display_name").notNull(),
+  description: text("description"),
+  precedence: integer("precedence").notNull().default(0), // Higher number = higher privilege
+  permissions: json("permissions").$type<string[]>(), // Array of permission strings
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  appRoleUnique: unique().on(table.applicationId, table.roleKey),
+  applicationIdx: index("idx_application_roles_app").on(table.applicationId),
+}));
+
+// Tenant application enablement (replaces/extends tenantEntitlements)
+export const tenantApplications = pgTable("tenant_applications", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").notNull().references(() => tenants.id, { onDelete: "cascade" }),
+  applicationId: varchar("application_id").notNull().references(() => applications.id, { onDelete: "cascade" }),
+  status: text("status").notNull().$type<'active' | 'suspended' | 'trial'>().default('active'),
+  planTier: text("plan_tier").default('basic'), // 'basic', 'pro', 'enterprise'
+  seatsLimit: integer("seats_limit"),
+  billingAnchorDate: date("billing_anchor_date"),
+  expiresAt: timestamp("expires_at"),
+  config: json("config").$type<Record<string, any>>(), // App-specific configuration
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => ({
+  tenantAppUnique: unique().on(table.tenantId, table.applicationId),
+  tenantIdx: index("idx_tenant_applications_tenant").on(table.tenantId),
+  applicationIdx: index("idx_tenant_applications_app").on(table.applicationId),
+}));
+
+// User role assignments per application
+export const userApplicationRoles = pgTable("user_application_roles", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  tenantId: varchar("tenant_id").references(() => tenants.id, { onDelete: "cascade" }), // Nullable for global roles
+  applicationRoleId: varchar("application_role_id").notNull().references(() => applicationRoles.id, { onDelete: "cascade" }),
+  assignedBy: varchar("assigned_by").references(() => users.id, { onDelete: "set null" }),
+  assignedAt: timestamp("assigned_at").defaultNow().notNull(),
+  expiresAt: timestamp("expires_at"),
+}, (table) => ({
+  userRoleUnique: unique().on(table.userId, table.applicationRoleId, table.tenantId),
+  userIdx: index("idx_user_application_roles_user").on(table.userId),
+  tenantIdx: index("idx_user_application_roles_tenant").on(table.tenantId),
+  roleIdx: index("idx_user_application_roles_role").on(table.applicationRoleId),
+}));
+
+// Keep the original tenantEntitlements for backward compatibility (will migrate data later)
 export const tenantEntitlements = pgTable("tenant_entitlements", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   tenantId: varchar("tenant_id").notNull().references(() => tenants.id, { onDelete: "cascade" }),
@@ -259,17 +327,40 @@ export const modelTenants = pgTable("model_tenants", {
   tenantIdx: index("idx_model_tenants_tenant").on(table.tenantId),
 }));
 
-// OAuth clients for external applications
+// OAuth clients for external applications (environment-specific)
 export const oauthClients = pgTable("oauth_clients", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  applicationId: varchar("application_id").references(() => applications.id, { onDelete: "cascade" }),
   clientId: varchar("client_id", { length: 255 }).notNull().unique(),
   clientSecretHash: text("client_secret_hash").notNull(), // Hashed with bcrypt
   name: text("name").notNull(),
+  environment: text("environment").notNull().$type<'development' | 'staging' | 'production'>().default('development'),
   redirectUris: text("redirect_uris").array().notNull(),
+  postLogoutRedirectUris: text("post_logout_redirect_uris").array(),
+  grantTypes: text("grant_types").array().notNull().default(sql`ARRAY['authorization_code']`),
+  pkceRequired: boolean("pkce_required").notNull().default(true),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 }, (table) => ({
   clientIdIdx: index("idx_oauth_clients_client_id").on(table.clientId),
+  environmentIdx: index("idx_oauth_clients_environment").on(table.environment),
+  applicationIdx: index("idx_oauth_clients_application").on(table.applicationId),
+}));
+
+// OAuth authorization codes (temporary codes exchanged for tokens)
+export const oauthAuthorizationCodes = pgTable("oauth_authorization_codes", {
+  code: text("code").primaryKey(),
+  clientId: text("client_id").notNull(),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  redirectUri: text("redirect_uri").notNull(),
+  scope: text("scope"),
+  codeChallenge: text("code_challenge"), // For PKCE
+  codeChallengeMethod: text("code_challenge_method").default('S256'),
+  expiresAt: timestamp("expires_at").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  userIdx: index("idx_oauth_codes_user").on(table.userId),
+  expiresIdx: index("idx_oauth_codes_expires").on(table.expiresAt),
 }));
 
 // OAuth tokens for authentication
@@ -600,6 +691,34 @@ export const modelExportFormatSchema = z.object({
 
 export type ModelExportFormat = z.infer<typeof modelExportFormatSchema>;
 
+// ========== OAUTH IDENTITY PROVIDER INSERT SCHEMAS ==========
+
+export const insertApplicationSchema = createInsertSchema(applications).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertApplicationRoleSchema = createInsertSchema(applicationRoles).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertTenantApplicationSchema = createInsertSchema(tenantApplications).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertUserApplicationRoleSchema = createInsertSchema(userApplicationRoles).omit({
+  id: true,
+  assignedAt: true,
+});
+
+export const insertOauthAuthorizationCodeSchema = createInsertSchema(oauthAuthorizationCodes).omit({
+  createdAt: true,
+});
+
 // ========== MULTI-TENANT INSERT SCHEMAS ==========
 
 // Hex color regex: #RRGGBB or #RGB
@@ -649,6 +768,22 @@ export const insertTenantAuditLogSchema = createInsertSchema(tenantAuditLog).omi
   id: true,
   createdAt: true,
 });
+
+// TypeScript types for OAuth Identity Provider
+export type Application = typeof applications.$inferSelect;
+export type InsertApplication = z.infer<typeof insertApplicationSchema>;
+
+export type ApplicationRole = typeof applicationRoles.$inferSelect;
+export type InsertApplicationRole = z.infer<typeof insertApplicationRoleSchema>;
+
+export type TenantApplication = typeof tenantApplications.$inferSelect;
+export type InsertTenantApplication = z.infer<typeof insertTenantApplicationSchema>;
+
+export type UserApplicationRole = typeof userApplicationRoles.$inferSelect;
+export type InsertUserApplicationRole = z.infer<typeof insertUserApplicationRoleSchema>;
+
+export type OauthAuthorizationCode = typeof oauthAuthorizationCodes.$inferSelect;
+export type InsertOauthAuthorizationCode = z.infer<typeof insertOauthAuthorizationCodeSchema>;
 
 // TypeScript types for multi-tenant tables
 export type Tenant = typeof tenants.$inferSelect;
