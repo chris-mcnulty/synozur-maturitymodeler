@@ -1,7 +1,7 @@
 // JWT signing service for OAuth 2.0 with RS256 algorithm
 // Supports key rotation and JWKS endpoint
 
-import * as jose from 'node-jose';
+import jose from 'node-jose';
 import jwt from 'jsonwebtoken';
 import { db } from '../db';
 import { settings } from '../../shared/schema';
@@ -155,19 +155,24 @@ class JWTSigningService {
   
   // Save keys to database
   private async saveKeys(keys: KeyPair[]) {
-    await db.insert(settings)
-      .values({
-        key: 'oauth_signing_keys',
-        value: JSON.stringify(keys),
-        description: 'RSA key pairs for OAuth JWT signing',
-      })
-      .onConflictDoUpdate({
-        target: settings.key,
-        set: {
+    const existingSetting = await db.query.settings.findFirst({
+      where: eq(settings.key, 'oauth_signing_keys')
+    });
+    
+    if (existingSetting) {
+      await db.update(settings)
+        .set({
           value: JSON.stringify(keys),
           updatedAt: new Date(),
-        },
-      });
+        })
+        .where(eq(settings.key, 'oauth_signing_keys'));
+    } else {
+      await db.insert(settings)
+        .values({
+          key: 'oauth_signing_keys',
+          value: JSON.stringify(keys),
+        });
+    }
   }
   
   // Generate a unique key ID
@@ -186,7 +191,7 @@ class JWTSigningService {
     
     const signOptions: jwt.SignOptions = {
       algorithm: 'RS256',
-      expiresIn,
+      expiresIn: expiresIn as any, // Type assertion for compatibility
       issuer: process.env.REPLIT_URL || 'https://orion.synozur.com',
       keyid: this.activeKeyPair.kid,
     };

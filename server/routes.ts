@@ -17,6 +17,7 @@ import { z } from "zod";
 import { scrypt, randomBytes, createHash, timingSafeEqual } from "crypto";
 import { promisify } from "util";
 import tenantRoutes from "./tenant-routes";
+import oauthRoutes from "./oauth-routes";
 
 const scryptAsync = promisify(scrypt);
 
@@ -45,6 +46,9 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Register OAuth routes first (must be before auth setup for public endpoints)
+  app.use(oauthRoutes);
+
   // Set up authentication routes
   setupAuth(app);
 
