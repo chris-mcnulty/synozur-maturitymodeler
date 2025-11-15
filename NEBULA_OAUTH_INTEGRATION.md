@@ -23,25 +23,52 @@ Integrate Nebula with Orion's OAuth 2.1 identity provider to enable Single Sign-
 
 ## OAuth Client Credentials
 
-### Development
+### Development (Replit)
+**Status**: ✅ Registered in Orion (November 15, 2025)
+
 ```javascript
 const DEV_CONFIG = {
-  client_id: 'nebula_dev',
-  client_secret: '[Run seed-oauth.ts in Orion to get this]',
-  redirect_uri: 'http://localhost:5001/auth/callback',
+  client_id: 'nebula_dev_eed8c7f6ed8ffbdd',
+  client_secret: 'nNIoaNk2SZtQwI6Q_CjF814l0dOqm8vVu-lIwjUvzXA',
+  redirect_uri: 'https://e790b9bb-142e-4283-ad40-0d97909b078e-00-2m5ydpw5a67dn.spock.replit.dev/auth/callback',
+  post_logout_redirect_uri: 'https://e790b9bb-142e-4283-ad40-0d97909b078e-00-2m5ydpw5a67dn.spock.replit.dev/',
+  authorization_endpoint: 'https://de9b7c40-dcaa-46b2-b0c0-d28fd76a0dab-00-2enzqmoszfuzm.janeway.replit.dev/oauth/authorize',
+  token_endpoint: 'https://de9b7c40-dcaa-46b2-b0c0-d28fd76a0dab-00-2enzqmoszfuzm.janeway.replit.dev/oauth/token',
+  userinfo_endpoint: 'https://de9b7c40-dcaa-46b2-b0c0-d28fd76a0dab-00-2enzqmoszfuzm.janeway.replit.dev/oauth/userinfo',
+  jwks_uri: 'https://de9b7c40-dcaa-46b2-b0c0-d28fd76a0dab-00-2enzqmoszfuzm.janeway.replit.dev/.well-known/jwks.json',
   scopes: 'openid profile email'
 };
 ```
 
+**Note**: Development client uses PKCE (required) and is registered with the development Orion instance. Replit URLs may change when workspaces restart - update redirect URIs in Orion admin if needed.
+
 ### Production
+**Status**: ⏳ Not yet registered (to be created when deploying to production)
+
 ```javascript
 const PROD_CONFIG = {
-  client_id: 'nebula_prod',
-  client_secret: '[Will be provided securely]',
+  client_id: '[To be generated via Orion OAuth Apps admin UI]',
+  client_secret: '[To be generated via Orion OAuth Apps admin UI]',
   redirect_uri: 'https://nebula.synozur.com/auth/callback',
+  post_logout_redirect_uri: 'https://nebula.synozur.com/',
+  authorization_endpoint: 'https://orion.synozur.com/oauth/authorize',
+  token_endpoint: 'https://orion.synozur.com/oauth/token',
+  userinfo_endpoint: 'https://orion.synozur.com/oauth/userinfo',
+  jwks_uri: 'https://orion.synozur.com/.well-known/jwks.json',
   scopes: 'openid profile email'
 };
 ```
+
+**Production Setup Steps**:
+1. Access Orion admin console at `https://orion.synozur.com/admin`
+2. Navigate to System → OAuth Apps
+3. Click "Create OAuth Client"
+4. Enter name: "Nebula Production"
+5. Select environment: "production"
+6. Add redirect URI: `https://nebula.synozur.com/auth/callback`
+7. Add post-logout redirect URI: `https://nebula.synozur.com/`
+8. Save and copy the generated client ID and secret (shown only once!)
+9. Update Nebula production environment variables with credentials
 
 ## Implementation Steps
 
