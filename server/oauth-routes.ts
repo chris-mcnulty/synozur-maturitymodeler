@@ -236,27 +236,53 @@ router.get('/oauth/authorize', async (req, res) => {
 // Simplified token endpoint
 router.post('/oauth/token', express.json(), express.urlencoded({ extended: true }), async (req, res) => {
   try {
-    const {
+    let {
       grant_type,
       code,
       redirect_uri,
       client_id,
       client_secret,
       code_verifier,
+      refresh_token,
     } = req.body;
     
-    // Only support authorization_code grant for now
-    if (grant_type !== 'authorization_code') {
+    // Parse HTTP Basic authentication if present
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith('Basic ')) {
+      const base64Credentials = authHeader.slice(6);
+      const credentials = Buffer.from(base64Credentials, 'base64').toString('utf-8');
+      // Split on first colon only to handle secrets containing colons
+      const colonIndex = credentials.indexOf(':');
+      if (colonIndex !== -1) {
+        const basicClientId = credentials.substring(0, colonIndex);
+        const basicClientSecret = credentials.substring(colonIndex + 1);
+        
+        // Use Basic auth credentials if not provided in body
+        if (!client_id) client_id = basicClientId;
+        if (!client_secret) client_secret = basicClientSecret;
+      }
+    }
+    
+    // Validate grant type
+    if (!grant_type) {
       return res.status(400).json({
-        error: 'unsupported_grant_type',
-        error_description: 'Only authorization_code grant is supported',
+        error: 'invalid_request',
+        error_description: 'Missing grant_type parameter',
       });
     }
     
-    if (!code || !redirect_uri || !client_id) {
+    if (grant_type !== 'authorization_code' && grant_type !== 'refresh_token') {
+      return res.status(400).json({
+        error: 'unsupported_grant_type',
+        error_description: 'Only authorization_code and refresh_token grants are supported',
+      });
+    }
+    
+    // Validate client_id is present
+    if (!client_id) {
       return res.status(400).json({
         error: 'invalid_request',
-        error_description: 'Missing required parameters',
+        error_description: 'Missing client_id parameter',
       });
     }
     
@@ -279,8 +305,20 @@ router.post('/oauth/token', express.json(), express.urlencoded({ extended: true 
       });
     }
     
-    // Verify client secret if provided
-    if (client_secret) {
+    // Authenticate confidential clients (those with secrets)
+    // Public clients (without secrets) can proceed without authentication
+    const isConfidentialClient = !!client.clientSecretHash;
+    
+    if (isConfidentialClient) {
+      // Require client authentication for confidential clients (OAuth 2.1)
+      if (!client_secret) {
+        return res.status(401).json({
+          error: 'invalid_client',
+          error_description: 'Client authentication required',
+        });
+      }
+      
+      // Verify client secret
       const validSecret = await bcrypt.compare(client_secret, client.clientSecretHash);
       if (!validSecret) {
         return res.status(401).json({
@@ -290,57 +328,110 @@ router.post('/oauth/token', express.json(), express.urlencoded({ extended: true 
       }
     }
     
-    // Find authorization code (already hashed in database)
-    const authCodeRecord = await db.query.oauthAuthorizationCodes.findFirst({
-      where: and(
-        eq(oauthAuthorizationCodes.code, hashToken(code)),
-        eq(oauthAuthorizationCodes.clientId, client.id),
-        eq(oauthAuthorizationCodes.redirectUri, redirect_uri),
-        gte(oauthAuthorizationCodes.expiresAt, new Date())
-      ),
-    });
+    let userId: string;
+    let scopes: string[];
     
-    if (!authCodeRecord) {
-      return res.status(400).json({
-        error: 'invalid_grant',
-        error_description: 'Invalid or expired authorization code',
-      });
-    }
-    
-    // Verify PKCE if present
-    if (authCodeRecord.codeChallenge) {
-      if (!code_verifier) {
+    // Handle authorization_code grant
+    if (grant_type === 'authorization_code') {
+      if (!code || !redirect_uri) {
         return res.status(400).json({
           error: 'invalid_request',
-          error_description: 'PKCE code verifier required',
+          error_description: 'Missing required parameters for authorization_code grant',
         });
       }
       
-      if (!verifyPKCEChallenge(code_verifier, authCodeRecord.codeChallenge, authCodeRecord.codeChallengeMethod || 'S256')) {
+      // Find authorization code (already hashed in database)
+      const authCodeRecord = await db.query.oauthAuthorizationCodes.findFirst({
+        where: and(
+          eq(oauthAuthorizationCodes.code, hashToken(code)),
+          eq(oauthAuthorizationCodes.clientId, client.id),
+          eq(oauthAuthorizationCodes.redirectUri, redirect_uri),
+          gte(oauthAuthorizationCodes.expiresAt, new Date())
+        ),
+      });
+      
+      if (!authCodeRecord) {
         return res.status(400).json({
           error: 'invalid_grant',
-          error_description: 'Invalid PKCE code verifier',
+          error_description: 'Invalid or expired authorization code',
         });
       }
+      
+      // Verify PKCE if present
+      if (authCodeRecord.codeChallenge) {
+        if (!code_verifier) {
+          return res.status(400).json({
+            error: 'invalid_request',
+            error_description: 'PKCE code verifier required',
+          });
+        }
+        
+        if (!verifyPKCEChallenge(code_verifier, authCodeRecord.codeChallenge, authCodeRecord.codeChallengeMethod || 'S256')) {
+          return res.status(400).json({
+            error: 'invalid_grant',
+            error_description: 'Invalid PKCE code verifier',
+          });
+        }
+      }
+      
+      // Delete used authorization code
+      await db.delete(oauthAuthorizationCodes)
+        .where(eq(oauthAuthorizationCodes.code, hashToken(code)));
+      
+      userId = authCodeRecord.userId;
+      scopes = authCodeRecord.scope ? authCodeRecord.scope.split(' ') : [];
+    }
+    // Handle refresh_token grant
+    else if (grant_type === 'refresh_token') {
+      if (!refresh_token) {
+        return res.status(400).json({
+          error: 'invalid_request',
+          error_description: 'Missing refresh_token parameter',
+        });
+      }
+      
+      // Find existing token by refresh token hash
+      const existingToken = await db.query.oauthTokens.findFirst({
+        where: and(
+          eq(oauthTokens.refreshTokenHash, hashToken(refresh_token)),
+          eq(oauthTokens.clientId, client.id),
+          isNull(oauthTokens.revokedAt)
+        ),
+      });
+      
+      if (!existingToken) {
+        return res.status(400).json({
+          error: 'invalid_grant',
+          error_description: 'Invalid or revoked refresh token',
+        });
+      }
+      
+      // Revoke old token
+      await db.update(oauthTokens)
+        .set({ revokedAt: new Date() })
+        .where(eq(oauthTokens.id, existingToken.id));
+      
+      userId = existingToken.userId;
+      scopes = existingToken.scopes || [];
+    } else {
+      return res.status(400).json({
+        error: 'unsupported_grant_type',
+        error_description: 'Unsupported grant type',
+      });
     }
     
-    // Delete used authorization code
-    await db.delete(oauthAuthorizationCodes)
-      .where(eq(oauthAuthorizationCodes.code, hashToken(code)));
-    
-    // Generate tokens
+    // Generate new tokens
     const config = getOAuthConfig();
     const accessToken = generateToken(32);
-    const refreshToken = generateToken(32);
+    const newRefreshToken = generateToken(32);
     const expiresIn = config.tokenLifetimes.accessToken;
     
-    // Store tokens
-    const scopes = authCodeRecord.scope ? authCodeRecord.scope.split(' ') : [];
+    // Store new tokens
     await db.insert(oauthTokens).values({
-      userId: authCodeRecord.userId,
+      userId,
       clientId: client.id,
       accessTokenHash: hashToken(accessToken),
-      refreshTokenHash: hashToken(refreshToken),
+      refreshTokenHash: hashToken(newRefreshToken),
       tokenType: 'Bearer',
       scopes,
       expiresAt: new Date(Date.now() + expiresIn * 1000),
@@ -351,14 +442,14 @@ router.post('/oauth/token', express.json(), express.urlencoded({ extended: true 
       access_token: accessToken,
       token_type: 'Bearer',
       expires_in: expiresIn,
-      refresh_token: refreshToken,
+      refresh_token: newRefreshToken,
       scope: scopes.join(' '),
     };
     
     // Add ID token if OpenID Connect scope is present
     if (scopes.includes('openid')) {
       const user = await db.query.users.findFirst({
-        where: eq(users.id, authCodeRecord.userId),
+        where: eq(users.id, userId),
       });
       
       if (user) {

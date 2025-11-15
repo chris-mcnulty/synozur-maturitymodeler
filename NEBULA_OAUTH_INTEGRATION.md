@@ -70,6 +70,48 @@ const PROD_CONFIG = {
 8. Save and copy the generated client ID and secret (shown only once!)
 9. Update Nebula production environment variables with credentials
 
+## Client Types
+
+Orion supports both **confidential** and **public** OAuth 2.1 clients:
+
+### Confidential Clients (Server-Side Applications)
+- **Nebula** is a confidential client (requires client secret)
+- Used for server-side applications that can securely store secrets
+- Must authenticate with `client_secret` when exchanging authorization codes
+- Supports both `client_secret_post` (in request body) and `client_secret_basic` (HTTP Basic auth) authentication methods
+- PKCE is recommended but optional for confidential clients
+
+### Public Clients (Browser/Mobile Applications)
+- Used for browser-based SPAs or mobile applications that cannot securely store secrets
+- **No client secret required** - authentication relies on PKCE and registered redirect URIs
+- PKCE (Proof Key for Code Exchange) is **mandatory** for public clients
+- More secure than implicit flow (deprecated in OAuth 2.1)
+- Tokens can be refreshed without providing a client secret
+
+**Example Public Client**:
+```javascript
+// Public client configuration (no secret)
+const PUBLIC_CLIENT = {
+  client_id: 'my_spa_client',
+  // No client_secret field!
+  redirect_uri: 'https://myapp.com/callback',
+  authorization_endpoint: 'https://orion.synozur.com/oauth/authorize',
+  token_endpoint: 'https://orion.synozur.com/oauth/token',
+  pkce_required: true,  // Always true for public clients
+  scopes: 'openid profile email'
+};
+
+// Token exchange without client_secret
+const tokenParams = new URLSearchParams({
+  grant_type: 'authorization_code',
+  code: authorizationCode,
+  redirect_uri: PUBLIC_CLIENT.redirect_uri,
+  code_verifier: pkce.codeVerifier,
+  client_id: PUBLIC_CLIENT.client_id
+  // No client_secret parameter!
+});
+```
+
 ## Implementation Steps
 
 ### 1. Install Required Dependencies

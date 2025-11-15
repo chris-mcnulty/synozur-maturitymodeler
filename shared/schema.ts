@@ -332,7 +332,7 @@ export const oauthClients = pgTable("oauth_clients", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   applicationId: varchar("application_id").references(() => applications.id, { onDelete: "cascade" }),
   clientId: varchar("client_id", { length: 255 }).notNull().unique(),
-  clientSecretHash: text("client_secret_hash").notNull(), // Hashed with bcrypt
+  clientSecretHash: text("client_secret_hash"), // Hashed with bcrypt - null for public clients
   name: text("name").notNull(),
   environment: text("environment").notNull().$type<'development' | 'staging' | 'production'>().default('development'),
   redirectUris: text("redirect_uris").array().notNull(),
