@@ -43,7 +43,7 @@ function verifyPKCEChallenge(codeVerifier: string, codeChallenge: string, method
 // Helper to normalize and hash scopes for consistent storage/lookup
 function normalizeScopes(scopes: string | string[]): { normalized: string[], hash: string } {
   const scopeArray = Array.isArray(scopes) ? scopes : scopes.split(' ').filter(s => s);
-  const normalized = [...new Set(scopeArray)].sort(); // Dedupe and sort
+  const normalized = Array.from(new Set(scopeArray)).sort(); // Dedupe and sort
   const hash = createHash('sha256').update(normalized.join(' ')).digest('base64url');
   return { normalized, hash };
 }
