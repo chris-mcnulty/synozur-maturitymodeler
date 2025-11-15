@@ -118,9 +118,19 @@ export default function ModelHome() {
           
           <div className="container relative z-10 mx-auto px-4 py-16">
             <div className="max-w-4xl">
-              <Badge variant="secondary" className="mb-4">
-                Version {model.version || '1.0.0'}
-              </Badge>
+              <div className="flex flex-wrap gap-2 mb-4">
+                <Badge variant="secondary">
+                  Version {model.version || '1.0.0'}
+                </Badge>
+                {model.modelClass === 'individual' && (
+                  <Badge 
+                    className="bg-white/90 text-primary border-white/20"
+                    data-testid="badge-individual-launch"
+                  >
+                    Individual
+                  </Badge>
+                )}
+              </div>
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-4" data-testid="text-model-title">
                 {model.name}
               </h1>

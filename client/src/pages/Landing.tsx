@@ -271,6 +271,14 @@ export default function Landing() {
                               Featured
                             </Badge>
                           )}
+                          {model.modelClass === 'individual' && (
+                            <Badge 
+                              className="bg-primary/90 text-primary-foreground border-primary-foreground/20"
+                              data-testid={`badge-individual-${model.slug}`}
+                            >
+                              Individual
+                            </Badge>
+                          )}
                           {model.visibility === 'private' && (
                             <Badge variant="secondary" className="text-xs" data-testid={`badge-private-${model.slug}`}>
                               <Building2 className="h-3 w-3 mr-1" />

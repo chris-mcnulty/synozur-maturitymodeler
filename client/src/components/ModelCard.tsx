@@ -1,5 +1,6 @@
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { ArrowRight } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
@@ -11,9 +12,10 @@ interface ModelCardProps {
   name: string;
   description: string;
   imageUrl?: string;
+  modelClass?: 'organizational' | 'individual';
 }
 
-export function ModelCard({ id, slug, name, description, imageUrl }: ModelCardProps) {
+export function ModelCard({ id, slug, name, description, imageUrl, modelClass = 'organizational' }: ModelCardProps) {
   const [, setLocation] = useLocation();
   
   const createAssessment = useMutation({
@@ -29,7 +31,15 @@ export function ModelCard({ id, slug, name, description, imageUrl }: ModelCardPr
   });
 
   return (
-    <Card className="overflow-hidden hover-elevate transition-all duration-200 p-0" data-testid={`card-model-${slug}`}>
+    <Card className="overflow-hidden hover-elevate transition-all duration-200 p-0 relative" data-testid={`card-model-${slug}`}>
+      {modelClass === 'individual' && (
+        <Badge 
+          className="absolute top-3 right-3 z-10 bg-primary/90 text-primary-foreground border-primary-foreground/20"
+          data-testid={`badge-individual-${slug}`}
+        >
+          Individual
+        </Badge>
+      )}
       {imageUrl && (
         <div className="aspect-video w-full overflow-hidden">
           <img 

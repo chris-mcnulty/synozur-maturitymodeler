@@ -418,6 +418,7 @@ export default function Admin() {
     imageUrl: '',
     visibility: 'public' as 'public' | 'private',
     ownerTenantId: null as string | null,
+    modelClass: 'organizational' as 'organizational' | 'individual',
   });
   const [dimensionForm, setDimensionForm] = useState({
     label: '',
@@ -1370,6 +1371,7 @@ export default function Admin() {
       imageUrl: '',
       visibility: 'public',
       ownerTenantId: null,
+      modelClass: 'organizational',
     });
 
     setEditingModel(null);
@@ -1406,6 +1408,7 @@ export default function Admin() {
       imageUrl: model.imageUrl || '',
       visibility: (model.visibility || 'public') as 'public' | 'private',
       ownerTenantId: model.ownerTenantId || null,
+      modelClass: (model.modelClass || 'organizational') as 'organizational' | 'individual',
     });
     // Would need to fetch dimensions here
 
@@ -3747,6 +3750,29 @@ export default function Admin() {
                     : 'Required for private models'}
                 </p>
               </div>
+            </div>
+
+            <div>
+              <Label htmlFor="modelClass">Model Class</Label>
+              <Select 
+                value={modelForm.modelClass} 
+                onValueChange={(value: 'organizational' | 'individual') => {
+                  setModelForm({ ...modelForm, modelClass: value });
+                }}
+              >
+                <SelectTrigger data-testid="select-model-class">
+                  <SelectValue placeholder="Select model class" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="organizational">Organizational (default)</SelectItem>
+                  <SelectItem value="individual">Individual (shows badge)</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground mt-1">
+                {modelForm.modelClass === 'organizational' 
+                  ? 'Standard organizational maturity assessment' 
+                  : 'Personal/skills assessment - displays "Individual" badge on model cards and launch page'}
+              </p>
             </div>
           </div>
 
