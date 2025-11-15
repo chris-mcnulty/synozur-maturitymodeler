@@ -8,11 +8,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuCheckboxItem } from "@/components/ui/dropdown-menu";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Download, Plus, Edit, Trash, FileSpreadsheet, Eye, BarChart3, Settings, FileDown, FileUp, ListOrdered, Users, Star, Upload, X, Sparkles, CheckCircle2, XCircle, Database, FileText, Brain, BookOpen, ClipboardList, Home, Building2 } from "lucide-react";
+import { Download, Plus, Edit, Trash, FileSpreadsheet, Eye, BarChart3, Settings, FileDown, FileUp, ListOrdered, Users, Star, Upload, X, Sparkles, CheckCircle2, XCircle, Database, FileText, Brain, BookOpen, ClipboardList, Home, Building2, ChevronDown } from "lucide-react";
 import type { Model, Result, Assessment, Dimension, Question, Answer, User } from "@shared/schema";
 import { USER_ROLES, type UserRole } from "@shared/constants";
 import { useAuth } from "@/hooks/use-auth";
@@ -417,7 +418,8 @@ export default function Admin() {
     status: 'draft' as 'draft' | 'published',
     imageUrl: '',
     visibility: 'public' as 'public' | 'private',
-    ownerTenantId: null as string | null,
+    ownerTenantId: null as string | null, // Kept for backward compatibility
+    tenantIds: [] as string[], // Multi-tenant support
     modelClass: 'organizational' as 'organizational' | 'individual',
   });
   const [dimensionForm, setDimensionForm] = useState({
@@ -1371,6 +1373,7 @@ export default function Admin() {
       imageUrl: '',
       visibility: 'public',
       ownerTenantId: null,
+      tenantIds: [],
       modelClass: 'organizational',
     });
 
@@ -1396,8 +1399,23 @@ export default function Admin() {
     setEditingQuestion(null);
   };
 
-  const handleEditModel = (model: Model) => {
+  const handleEditModel = async (model: Model) => {
     setEditingModel(model);
+    
+    // Fetch existing tenant assignments
+    let existingTenantIds: string[] = [];
+    if (model.visibility === 'private') {
+      try {
+        const response = await fetch(`/api/models/${model.id}/tenants`);
+        if (response.ok) {
+          const tenants = await response.json();
+          existingTenantIds = tenants.map((t: any) => t.tenantId);
+        }
+      } catch (error) {
+        console.error('Failed to fetch tenant assignments:', error);
+      }
+    }
+    
     setModelForm({
       name: model.name,
       slug: model.slug,
@@ -1408,14 +1426,14 @@ export default function Admin() {
       imageUrl: model.imageUrl || '',
       visibility: (model.visibility || 'public') as 'public' | 'private',
       ownerTenantId: model.ownerTenantId || null,
+      tenantIds: existingTenantIds,
       modelClass: (model.modelClass || 'organizational') as 'organizational' | 'individual',
     });
-    // Would need to fetch dimensions here
 
     setIsModelDialogOpen(true);
   };
 
-  const handleSaveModel = () => {
+  const handleSaveModel = async () => {
     // Validate form
     if (!modelForm.name || !modelForm.slug) {
       toast({
@@ -1427,28 +1445,69 @@ export default function Admin() {
     }
 
     // Validate visibility and tenant assignment
-    if (modelForm.visibility === 'private' && !modelForm.ownerTenantId) {
+    if (modelForm.visibility === 'private' && modelForm.tenantIds.length === 0) {
       toast({
         title: "Validation Error",
-        description: "Private models must be assigned to a tenant.",
+        description: "Private models must be assigned to at least one tenant.",
         variant: "destructive",
       });
       return;
     }
 
-    // Ensure public models have no tenant assignment
+    // Prepare submission data
     const submissionData = {
       ...modelForm,
-      ownerTenantId: modelForm.visibility === 'public' ? null : modelForm.ownerTenantId,
+      // Set ownerTenantId to first selected tenant for backward compatibility
+      ownerTenantId: modelForm.visibility === 'public' ? null : (modelForm.tenantIds[0] || null),
     };
 
-    if (editingModel) {
-      updateModel.mutate({
-        ...submissionData,
-        id: editingModel.id,
+    try {
+      // Create or update the model
+      const savedModel = editingModel
+        ? await apiRequest(`/api/models/${editingModel.id}`, 'PUT', submissionData)
+        : await apiRequest('/api/models', 'POST', submissionData);
+      
+      // Sync tenant assignments via junction table (for private models only)
+      if (modelForm.visibility === 'private' && modelForm.tenantIds.length > 0) {
+        const modelId = savedModel.id;
+        
+        // Fetch current tenant assignments
+        const currentResponse = await fetch(`/api/models/${modelId}/tenants`);
+        const currentTenants = currentResponse.ok ? await currentResponse.json() : [];
+        const currentTenantIds = currentTenants.map((t: any) => t.tenantId);
+        
+        // Determine which tenants to add and remove
+        const tenantsToAdd = modelForm.tenantIds.filter(id => !currentTenantIds.includes(id));
+        const tenantsToRemove = currentTenantIds.filter((id: string) => !modelForm.tenantIds.includes(id));
+        
+        // Add new tenant assignments
+        for (const tenantId of tenantsToAdd) {
+          await apiRequest(`/api/models/${modelId}/tenants`, 'POST', { tenantId });
+        }
+        
+        // Remove old tenant assignments
+        for (const tenantId of tenantsToRemove) {
+          await apiRequest(`/api/models/${modelId}/tenants/${tenantId}`, 'DELETE');
+        }
+      }
+      
+      // Refresh models list and close dialog
+      queryClient.invalidateQueries({ queryKey: ['/api/models'] });
+      setIsModelDialogOpen(false);
+      resetModelForm();
+      
+      toast({
+        title: editingModel ? "Model updated" : "Model created",
+        description: editingModel 
+          ? `${savedModel.name} has been updated successfully.`
+          : `${savedModel.name} has been created successfully.`,
       });
-    } else {
-      createModel.mutate(submissionData);
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to save model",
+        variant: "destructive",
+      });
     }
   };
 
@@ -3702,13 +3761,14 @@ export default function Admin() {
                 <Select 
                   value={modelForm.visibility} 
                   onValueChange={(value: 'public' | 'private') => {
-                    // When switching to public, clear the tenant assignment
+                    // When switching to public, clear all tenant assignments
                     if (value === 'public') {
-                      setModelForm({ ...modelForm, visibility: value, ownerTenantId: null });
+                      setModelForm({ ...modelForm, visibility: value, ownerTenantId: null, tenantIds: [] });
                     } else {
                       // When switching to private, auto-select tenant if only one available
-                      const newTenantId = availableTenants.length === 1 ? availableTenants[0].id : modelForm.ownerTenantId;
-                      setModelForm({ ...modelForm, visibility: value, ownerTenantId: newTenantId });
+                      const newTenantIds = availableTenants.length === 1 ? [availableTenants[0].id] : modelForm.tenantIds;
+                      const newOwnerId = newTenantIds[0] || null;
+                      setModelForm({ ...modelForm, visibility: value, ownerTenantId: newOwnerId, tenantIds: newTenantIds });
                     }
                   }}
                 >
@@ -3727,27 +3787,48 @@ export default function Admin() {
                 </p>
               </div>
               <div>
-                <Label htmlFor="ownerTenant">Assigned Tenant</Label>
-                <Select 
-                  value={modelForm.ownerTenantId || ''} 
-                  onValueChange={(value) => setModelForm({ ...modelForm, ownerTenantId: value || null })}
-                  disabled={modelForm.visibility === 'public'}
-                >
-                  <SelectTrigger data-testid="select-model-tenant">
-                    <SelectValue placeholder={modelForm.visibility === 'public' ? 'N/A (public model)' : 'Select tenant'} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {availableTenants.map((tenant) => (
-                      <SelectItem key={tenant.id} value={tenant.id}>
+                <Label htmlFor="ownerTenant">Assigned Tenants</Label>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild disabled={modelForm.visibility === 'public'}>
+                    <Button 
+                      variant="outline" 
+                      className="w-full justify-between"
+                      data-testid="select-model-tenants"
+                    >
+                      {modelForm.visibility === 'public' 
+                        ? 'N/A (public model)' 
+                        : modelForm.tenantIds.length === 0
+                        ? 'Select tenants'
+                        : `${modelForm.tenantIds.length} tenant${modelForm.tenantIds.length > 1 ? 's' : ''} selected`}
+                      <ChevronDown className="ml-2 h-4 w-4 opacity-50" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="w-[400px]">
+                    {[...availableTenants].sort((a, b) => a.name.localeCompare(b.name)).map((tenant) => (
+                      <DropdownMenuCheckboxItem
+                        key={tenant.id}
+                        checked={modelForm.tenantIds.includes(tenant.id)}
+                        onCheckedChange={(checked) => {
+                          setModelForm({
+                            ...modelForm,
+                            tenantIds: checked
+                              ? [...modelForm.tenantIds, tenant.id]
+                              : modelForm.tenantIds.filter((id) => id !== tenant.id),
+                            ownerTenantId: checked 
+                              ? (modelForm.tenantIds.length === 0 ? tenant.id : modelForm.ownerTenantId)
+                              : (modelForm.tenantIds.filter((id) => id !== tenant.id)[0] || null),
+                          });
+                        }}
+                      >
                         {tenant.name}
-                      </SelectItem>
+                      </DropdownMenuCheckboxItem>
                     ))}
-                  </SelectContent>
-                </Select>
+                  </DropdownMenuContent>
+                </DropdownMenu>
                 <p className="text-xs text-muted-foreground mt-1">
                   {modelForm.visibility === 'public' 
                     ? 'Not applicable for public models' 
-                    : 'Required for private models'}
+                    : 'Select one or more tenants that can access this private model'}
                 </p>
               </div>
             </div>
