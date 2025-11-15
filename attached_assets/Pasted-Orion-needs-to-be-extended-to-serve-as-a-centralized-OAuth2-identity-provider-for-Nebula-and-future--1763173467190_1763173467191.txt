@@ -1,0 +1,241 @@
+Orion needs to be extended to serve as a centralized OAuth2 identity provider for Nebula and future Synozur applications. This will enable single sign-on (SSO) across all Synozur platforms while maintaining tenant isolation and application-specific role-based access control.
+
+CRITICAL: Environment Separation
+Development: Nebula dev instance authenticates against Orion dev instance
+Production: Nebula production authenticates against Orion production
+No cross-environment authentication allowed (dev cannot auth to prod, prod cannot auth to dev)
+Each environment maintains separate OAuth clients, tokens, and user sessions
+Core Requirements:
+1. Database Schema Extensions
+Add the following tables to Orion's schema:
+
+// Applications registry
+applications {
+  id: varchar (UUID)
+  client_key: text (unique, e.g., 'nebula', 'orion')
+  display_name: text
+  description: text
+  logo_url: text
+  homepage_url: text
+  environment: enum ('development', 'staging', 'production')
+  active: boolean
+  created_at: timestamp
+}
+// Application-specific roles
+application_roles {
+  id: varchar (UUID)
+  application_id: varchar (FK)
+  role_key: text (e.g., 'facilitator', 'company_admin')
+  scope: enum ('global', 'tenant')
+  display_name: text
+  description: text
+  precedence: integer (for hierarchy)
+  permissions: jsonb
+}
+// Tenant application enablement
+tenant_applications {
+  tenant_id: varchar (FK)
+  application_id: varchar (FK)
+  status: enum ('active', 'suspended', 'trial')
+  plan_tier: text
+  seats_limit: integer
+  billing_anchor_date: date
+  expires_at: timestamp
+  config: jsonb
+}
+// User role assignments per application
+user_application_roles {
+  user_id: varchar (FK)
+  tenant_id: varchar (nullable for global roles)
+  application_role_id: varchar (FK)
+  assigned_by: varchar (FK to users)
+  assigned_at: timestamp
+  expires_at: timestamp (nullable)
+}
+// OAuth client configurations (environment-specific)
+oauth_clients {
+  id: varchar (UUID)
+  application_id: varchar (FK)
+  client_id: text (unique)
+  client_secret_hash: text
+  environment: enum ('development', 'staging', 'production')
+  redirect_uris: text[]
+  post_logout_redirect_uris: text[]
+  grant_types: text[]
+  pkce_required: boolean
+  created_at: timestamp
+}
+// OAuth tokens and codes
+oauth_authorization_codes {
+  code: text (primary key)
+  client_id: text
+  user_id: varchar
+  redirect_uri: text
+  scope: text
+  code_challenge: text
+  expires_at: timestamp
+}
+oauth_tokens {
+  id: varchar (UUID)
+  user_id: varchar (FK)
+  client_id: text
+  access_token_hash: text
+  refresh_token_hash: text
+  scope: text
+  expires_at: timestamp
+  revoked_at: timestamp
+}
+
+2. OAuth2 Implementation (Authorization Code + PKCE)
+Implement OAuth 2.1 compliant endpoints:
+
+GET /.well-known/openid-configuration - Discovery document
+GET /oauth/authorize - Authorization endpoint with consent screen
+POST /oauth/token - Token exchange (code for tokens, refresh tokens)
+GET /oauth/userinfo - User profile and roles
+POST /oauth/revoke - Token revocation
+GET /oauth/logout - Front-channel logout
+POST /oauth/introspect - Token introspection for server validation
+JWT Token Structure with Environment:
+
+{
+  "sub": "user_uuid",
+  "tenant_id": "tenant_uuid",
+  "email": "user@example.com",
+  "name": "User Name",
+  "environment": "development|production",
+  "app_roles": {
+    "orion": ["tenant_modeler"],
+    "nebula": ["facilitator", "company_admin"]
+  },
+  "scope": "nebula.facilitate orion.model offline_access",
+  "azp": "nebula_client_id",
+  "iss": "https://orion-dev.synozur.com or https://orion.synozur.com",
+  "iat": 1234567890,
+  "exp": 1234567890
+}
+
+3. Environment-Specific Configuration
+Development Environment:
+
+// Orion Dev OAuth Clients
+{
+  client_id: "nebula_dev",
+  environment: "development",
+  redirect_uris: [
+    "http://localhost:5000/auth/callback",
+    "https://nebula-dev.replit.app/auth/callback"
+  ]
+}
+
+Production Environment:
+
+// Orion Prod OAuth Clients
+{
+  client_id: "nebula_prod",
+  environment: "production",
+  redirect_uris: [
+    "https://nebula.synozur.com/auth/callback",
+    "https://nebula.replit.app/auth/callback"
+  ]
+}
+
+4. Admin APIs for Tenant Management
+POST   /api/tenants/:id/applications                 # Enable app for tenant
+PATCH  /api/tenants/:id/applications/:appId          # Update plan/seats
+DELETE /api/tenants/:id/applications/:appId          # Disable app
+GET    /api/tenants/:id/users                        # List tenant users
+POST   /api/tenants/:id/users/:userId/roles          # Assign app roles
+DELETE /api/tenants/:id/users/:userId/roles/:roleId  # Revoke role
+GET    /api/applications                             # List all apps (filtered by environment)
+POST   /api/applications/:id/roles                   # Define app roles
+
+5. Nebula-Specific Role Mappings
+Seed these Nebula roles in application_roles:
+
+global_admin (global scope) - System administrator
+company_admin (tenant scope) - Organization administrator
+facilitator (tenant scope) - Workspace facilitator
+user (tenant scope) - Basic participant
+Map existing Orion roles:
+
+global_admin → Orion global admin
+global_modeler → Orion global modeler
+tenant_modeler → Orion tenant modeler
+tenant_user → Orion tenant user
+6. Security Requirements
+Use rotating JWK signing keys (RS256) per environment
+Enforce PKCE for all OAuth flows
+Validate redirect URIs strictly against environment-specific allowlists
+Implement rate limiting on auth endpoints
+Audit log all permission changes with environment context
+Support token rotation and refresh
+Enforce tenant isolation in all queries
+Implement consent screen showing requested scopes and environment
+Reject tokens with mismatched environment claims
+7. Integration Points for Nebula
+Nebula will need environment-specific configuration:
+
+Development Environment Variables:
+
+ORION_ISSUER_URL=https://orion-dev.synozur.com
+ORION_CLIENT_ID=nebula_dev_client_id
+ORION_CLIENT_SECRET=nebula_dev_secret
+ORION_REDIRECT_URI=https://nebula-dev.replit.app/auth/callback
+ORION_ENVIRONMENT=development
+
+Production Environment Variables:
+
+ORION_ISSUER_URL=https://orion.synozur.com
+ORION_CLIENT_ID=nebula_prod_client_id
+ORION_CLIENT_SECRET=nebula_prod_secret
+ORION_REDIRECT_URI=https://nebula.synozur.com/auth/callback
+ORION_ENVIRONMENT=production
+
+Integration Flow:
+
+Login flow: Redirect to environment-specific Orion /oauth/authorize
+Callback handler: Exchange code for tokens at /oauth/token
+Session management: Store refresh token, validate access token
+Environment validation: Verify token's environment claim matches Nebula's environment
+Role enforcement: Check app_roles.nebula array in JWT
+Logout: Call environment-specific Orion /oauth/logout endpoint
+8. Migration Considerations
+Provide separate migration paths for dev and prod environments
+Dev environment can use test data and simplified migration
+Production requires careful user mapping and zero-downtime migration
+Support email-based user matching/linking per environment
+Generate tenant mappings from Nebula organizations
+Create environment-specific migration scripts
+Support parallel auth during transition period (per environment)
+9. Future Billing Integration Hooks
+Structure tenant_applications to support:
+
+Monthly seat-based licensing (production only)
+Trial periods with expiration
+Plan tiers (basic, pro, enterprise)
+Usage tracking per application and environment
+Webhook for license status changes (production only)
+Initial Implementation Priority:
+Environment setup: Create separate dev/prod OAuth configurations
+Schema migrations: OAuth tables with environment support
+Basic OAuth flow: Environment-aware authorize, token, userinfo
+JWT signing: Separate signing keys per environment
+Admin API: Tenant/app management with environment filtering
+Nebula integration: Test dev-to-dev authentication first
+User migration: Separate tools for dev (test data) and prod (real users)
+Production hardening: Additional security, monitoring, audit logging
+Testing Strategy:
+Development Environment First:
+
+Set up Orion dev with test tenants and users
+Configure Nebula dev to authenticate against Orion dev
+Test full OAuth flow with test data
+Iterate on features without affecting production
+Production Deployment:
+
+Deploy Orion production OAuth endpoints
+Migrate production users with careful planning
+Configure Nebula production to authenticate against Orion production
+Monitor and audit all authentication events
+Please implement this incrementally, starting with the development environment setup, then rolling out to production only after thorough testing."
