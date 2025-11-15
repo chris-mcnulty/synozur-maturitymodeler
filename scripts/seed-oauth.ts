@@ -137,8 +137,10 @@ async function seedOAuthData() {
           redirectUris: [
             'http://localhost:3000/auth/callback',
             'http://localhost:3001/auth/callback',
+            'http://localhost:5001/auth/callback',  // For testing
             'http://127.0.0.1:3000/auth/callback',
             'http://127.0.0.1:3001/auth/callback',
+            'http://127.0.0.1:5001/auth/callback',  // For testing
           ],
           postLogoutRedirectUris: [
             'http://localhost:3000',

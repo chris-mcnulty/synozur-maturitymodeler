@@ -102,10 +102,7 @@ export default function OAuthConsent() {
         code_challenge_method,
         approved: true,
       };
-      return apiRequest('/api/oauth/consent', {
-        method: 'POST',
-        body,
-      });
+      return apiRequest('/api/oauth/consent', 'POST', body);
     },
     onSuccess: (data) => {
       // Redirect to the authorization URL returned by the server
@@ -131,10 +128,7 @@ export default function OAuthConsent() {
         code_challenge_method,
         approved: false,
       };
-      return apiRequest('/api/oauth/consent', {
-        method: 'POST',
-        body,
-      });
+      return apiRequest('/api/oauth/consent', 'POST', body);
     },
     onSuccess: (data) => {
       // Redirect with error

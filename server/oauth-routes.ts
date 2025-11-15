@@ -151,7 +151,7 @@ router.get('/oauth/authorize', async (req, res) => {
     const [orionApp] = await db
       .select()
       .from(applications)
-      .where(eq(applications.slug, 'orion'))
+      .where(eq(applications.clientKey, 'orion'))
       .limit(1);
     
     const isOrionSelfAuth = client.applicationId === orionApp?.id;
@@ -459,7 +459,7 @@ router.get('/oauth/userinfo', async (req, res) => {
 });
 
 // Consent GET endpoint - fetch application details for consent screen
-router.get('/oauth/consent', async (req, res) => {
+router.get('/api/oauth/consent', async (req, res) => {
   try {
     const { client_id, redirect_uri, response_type, scope } = req.query;
     
@@ -472,15 +472,16 @@ router.get('/oauth/consent', async (req, res) => {
     }
     
     // Find OAuth client
-    const client = await db.query.oauthClients.findFirst({
-      where: and(
-        eq(oauthClients.clientId, client_id as string),
-        eq(oauthClients.environment, detectEnvironment())
-      ),
-      with: {
-        application: true,
-      },
-    });
+    const [client] = await db
+      .select()
+      .from(oauthClients)
+      .where(
+        and(
+          eq(oauthClients.clientId, client_id as string),
+          eq(oauthClients.environment, detectEnvironment())
+        )
+      )
+      .limit(1);
     
     if (!client) {
       return res.status(404).json({
@@ -498,9 +499,11 @@ router.get('/oauth/consent', async (req, res) => {
     }
     
     // Get application details
-    const application = await db.query.applications.findFirst({
-      where: eq(applications.id, client.applicationId!),
-    });
+    const [application] = await db
+      .select()
+      .from(applications)
+      .where(eq(applications.id, client.applicationId!))
+      .limit(1);
     
     if (!application) {
       return res.status(404).json({
@@ -513,7 +516,7 @@ router.get('/oauth/consent', async (req, res) => {
     res.json({
       application: {
         id: application.id,
-        name: application.name,
+        name: application.displayName,
         description: application.description,
         logoUrl: application.logoUrl,
       },
@@ -532,7 +535,7 @@ router.get('/oauth/consent', async (req, res) => {
 });
 
 // Consent POST endpoint - handle user approval/denial
-router.post('/oauth/consent', express.json(), async (req, res) => {
+router.post('/api/oauth/consent', express.json(), async (req, res) => {
   try {
     const { 
       client_id,
@@ -554,12 +557,16 @@ router.post('/oauth/consent', express.json(), async (req, res) => {
     }
     
     // Find OAuth client
-    const client = await db.query.oauthClients.findFirst({
-      where: and(
-        eq(oauthClients.clientId, client_id),
-        eq(oauthClients.environment, detectEnvironment())
-      ),
-    });
+    const [client] = await db
+      .select()
+      .from(oauthClients)
+      .where(
+        and(
+          eq(oauthClients.clientId, client_id),
+          eq(oauthClients.environment, detectEnvironment())
+        )
+      )
+      .limit(1);
     
     if (!client) {
       return res.status(404).json({
