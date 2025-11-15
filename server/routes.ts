@@ -46,11 +46,11 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Register OAuth routes first (must be before auth setup for public endpoints)
-  app.use(oauthRoutes);
-
-  // Set up authentication routes
+  // Set up authentication routes (includes session setup)
   setupAuth(app);
+  
+  // Register OAuth routes after session setup
+  app.use(oauthRoutes);
 
   // Register multi-tenant routes (Phase 1 - behind testing/staging wall)
   app.use(tenantRoutes);

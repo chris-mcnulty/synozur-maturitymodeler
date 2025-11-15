@@ -95,12 +95,16 @@ router.get('/oauth/authorize', async (req, res) => {
     }
     
     // Validate client
-    const client = await db.query.oauthClients.findFirst({
-      where: and(
-        eq(oauthClients.clientId, client_id),
-        eq(oauthClients.environment, detectEnvironment())
-      ),
-    });
+    const [client] = await db
+      .select()
+      .from(oauthClients)
+      .where(
+        and(
+          eq(oauthClients.clientId, client_id),
+          eq(oauthClients.environment, detectEnvironment())
+        )
+      )
+      .limit(1);
     
     if (!client) {
       return res.status(400).json({
@@ -118,23 +122,25 @@ router.get('/oauth/authorize', async (req, res) => {
     }
     
     // Check if user is authenticated
-    if (!req.isAuthenticated()) {
-      // Save OAuth parameters in session
-      req.session.oauthRequest = {
-        response_type,
-        client_id,
-        redirect_uri,
-        scope,
-        state,
-        code_challenge,
-        code_challenge_method,
-      };
+    if (!req.user) {
+      // Save OAuth parameters in session if available
+      if (req.session) {
+        req.session.oauthRequest = {
+          response_type,
+          client_id,
+          redirect_uri,
+          scope,
+          state,
+          code_challenge,
+          code_challenge_method,
+        };
+      }
       
       // Return login required response
       return res.status(401).json({
         error: 'login_required',
         error_description: 'User authentication required',
-        login_url: `/login?returnUrl=${encodeURIComponent(req.originalUrl)}`,
+        login_url: `/auth?returnUrl=${encodeURIComponent(req.originalUrl)}`,
       });
     }
     
@@ -142,21 +148,27 @@ router.get('/oauth/authorize', async (req, res) => {
     const { normalized, hash } = normalizeScopes(scope || '');
     
     // Check if this is Orion self-authentication (auto-approve)
-    const orionApp = await db.query.applications.findFirst({
-      where: eq(applications.slug, 'orion'),
-    });
+    const [orionApp] = await db
+      .select()
+      .from(applications)
+      .where(eq(applications.slug, 'orion'))
+      .limit(1);
     
     const isOrionSelfAuth = client.applicationId === orionApp?.id;
     
     // Check for existing consent
-    const existingConsent = await db.query.oauthUserConsents.findFirst({
-      where: and(
-        eq(oauthUserConsents.userId, req.user!.id),
-        eq(oauthUserConsents.clientId, client.id),
-        eq(oauthUserConsents.scopesHash, hash),
-        isNull(oauthUserConsents.revokedAt)
-      ),
-    });
+    const [existingConsent] = await db
+      .select()
+      .from(oauthUserConsents)
+      .where(
+        and(
+          eq(oauthUserConsents.userId, req.user!.id),
+          eq(oauthUserConsents.clientId, client.id),
+          eq(oauthUserConsents.scopesHash, hash),
+          isNull(oauthUserConsents.revokedAt)
+        )
+      )
+      .limit(1);
     
     if (!isOrionSelfAuth && !existingConsent) {
       // Need to get user consent - redirect to consent screen
@@ -249,12 +261,16 @@ router.post('/oauth/token', express.json(), express.urlencoded({ extended: true 
     }
     
     // Validate client
-    const client = await db.query.oauthClients.findFirst({
-      where: and(
-        eq(oauthClients.clientId, client_id),
-        eq(oauthClients.environment, detectEnvironment())
-      ),
-    });
+    const [client] = await db
+      .select()
+      .from(oauthClients)
+      .where(
+        and(
+          eq(oauthClients.clientId, client_id),
+          eq(oauthClients.environment, detectEnvironment())
+        )
+      )
+      .limit(1);
     
     if (!client) {
       return res.status(401).json({
@@ -530,7 +546,7 @@ router.post('/oauth/consent', express.json(), async (req, res) => {
     } = req.body;
     
     // Ensure user is authenticated
-    if (!req.isAuthenticated()) {
+    if (!req.user) {
       return res.status(401).json({
         error: 'login_required',
         error_description: 'User authentication required',
