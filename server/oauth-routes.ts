@@ -217,7 +217,7 @@ router.post('/oauth/token', express.json(), express.urlencoded({ extended: true 
       }
     }
     
-    // Find authorization code
+    // Find authorization code (already hashed in database)
     const authCodeRecord = await db.query.oauthAuthorizationCodes.findFirst({
       where: and(
         eq(oauthAuthorizationCodes.code, hashToken(code)),
