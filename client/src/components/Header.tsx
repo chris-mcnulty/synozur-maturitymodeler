@@ -47,6 +47,7 @@ export function Header() {
     <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
         <div className="flex items-center gap-3">
+          {/* Logo with responsive sizing to prevent distortion in portrait mode */}
           <a 
             href="https://www.synozur.com" 
             target="_blank" 
@@ -57,7 +58,7 @@ export function Header() {
             <img 
               src={synozurLogo} 
               alt="Synozur" 
-              className="h-10 w-auto"
+              className="h-10 w-auto max-w-[120px] sm:max-w-none object-contain"
             />
           </a>
           <div className="h-6 w-px bg-border"></div>
