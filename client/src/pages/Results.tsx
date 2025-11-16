@@ -19,6 +19,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ProfileGate } from "@/components/ProfileGate";
 import { generateAssessmentPDF } from "@/services/pdfGenerator";
 import { useToast } from "@/hooks/use-toast";
+import { MarkdownContent } from "@/components/MarkdownContent";
 
 // Color palette for maturity levels (no emojis per design guidelines)
 const levelColors = [
@@ -842,9 +843,7 @@ export default function Results() {
                   </div>
                 </div>
               ) : (
-                <div className="prose prose-lg max-w-none">
-                  <p className="text-muted-foreground whitespace-pre-wrap">{maturitySummary}</p>
-                </div>
+                <MarkdownContent content={maturitySummary} className="text-muted-foreground prose prose-lg max-w-none" />
               )}
             </Card>
           )}
@@ -923,7 +922,7 @@ export default function Results() {
                   </div>
                 </div>
               ) : (
-                <p className="text-base text-muted-foreground whitespace-pre-wrap">{recommendationsSummary}</p>
+                <MarkdownContent content={recommendationsSummary} className="text-muted-foreground" />
               )}
             </Card>
           )}
