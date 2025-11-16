@@ -11,6 +11,7 @@
     "db:push": "drizzle-kit push"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.69.0",
     "@google-cloud/storage": "^7.17.2",
     "@hookform/resolvers": "^3.10.0",
     "@jridgewell/trace-mapping": "^0.3.25",
@@ -74,6 +75,7 @@
     "next-themes": "^0.4.6",
     "node-jose": "^2.2.0",
     "openai": "^6.3.0",
+    "p-limit": "^7.2.0",
     "passport": "^0.7.0",
     "passport-local": "^1.0.0",
     "pdf-parse": "^2.4.3",
