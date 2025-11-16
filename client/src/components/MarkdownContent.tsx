@@ -62,7 +62,7 @@ export function MarkdownContent({ content, className = "" }: MarkdownContentProp
         flushList();
         const headerText = trimmed.substring(2).trim();
         elements.push(
-          <h3 key={`h1-${keyCounter++}`} className="text-2xl font-bold mb-4 mt-6 first:mt-0 text-primary">
+          <h3 key={`h1-${keyCounter++}`} className="text-2xl font-bold mb-6 mt-6 first:mt-0 text-primary">
             {parseBoldText(headerText)}
           </h3>
         );
@@ -75,7 +75,7 @@ export function MarkdownContent({ content, className = "" }: MarkdownContentProp
         flushList();
         const headerText = trimmed.substring(3).trim();
         elements.push(
-          <h4 key={`h2-${keyCounter++}`} className="text-xl font-semibold mb-3 mt-5 text-secondary">
+          <h4 key={`h2-${keyCounter++}`} className="text-xl font-semibold mb-5 mt-5 text-secondary">
             {parseBoldText(headerText)}
           </h4>
         );
@@ -96,7 +96,7 @@ export function MarkdownContent({ content, className = "" }: MarkdownContentProp
         flushList();
         const boldText = trimmed.replace(/\*\*/g, '').trim();
         elements.push(
-          <h4 key={`bold-heading-${keyCounter++}`} className="text-lg font-semibold mb-3 mt-5 text-secondary">
+          <h4 key={`bold-heading-${keyCounter++}`} className="text-lg font-semibold mb-5 mt-5 text-secondary">
             {boldText}
           </h4>
         );

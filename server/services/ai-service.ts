@@ -547,12 +547,15 @@ The Synozur Alliance LLC is here to help you find your North Star and make the d
       // Build dynamic bullet list
       const bulletList = topRecs.map(r => `• ${r.title}`).join('\n');
       
-      // Build dynamic section instructions
+      // Build dynamic section instructions with explicit title requirements
       const sectionInstructions = topRecs.map((rec, idx) => {
         const ordinal = idx === 0 ? 'First' : idx === 1 ? 'Second' : 'Third';
-        return `Paragraph ${idx + 2} - ${ordinal} Priority Action (3-4 sentences):
-Start with ONLY the title "${rec.title}" - DO NOT add "Priority Action ${idx + 1}" or any numbering. Explain what this action means in practical terms, what specific steps it involves, ${idx === 0 ? 'and why it\'s critical for their transformation' : idx === topRecs.length - 1 ? 'and how it completes the transformation framework' : 'and how it builds on the previous action'}. Draw from the knowledge base for specific, actionable guidance.`;
-      }).join('\n\n[BLANK LINE]\n\n');
+        return `## ${rec.title}
+
+Write a ${3-4} sentence paragraph explaining this action. ${idx === 0 ? 'Explain why it\'s critical for their transformation and what it means in practical terms.' : idx === topRecs.length - 1 ? 'Explain how it completes the transformation framework and what specific steps it involves.' : 'Explain how it builds on the previous action and what specific steps it involves.'} Draw from the knowledge base for specific, actionable guidance.
+
+CRITICAL: The section heading MUST be exactly "## ${rec.title}" - NOT "## ${ordinal} priority action" or "## ${ordinal} Priority Action" or any other variation. Use the EXACT title provided.`;
+      }).join('\n\n');
 
       const prompt = `You are a transformation expert from The Synozur Alliance LLC. Write a comprehensive transformation roadmap.
 
@@ -600,15 +603,18 @@ Paragraph ${topRecs.length + 3} - Closing (2-3 sentences):
 Describe how Synozur's expertise and partnership approach will accelerate their journey. MUST end with EXACTLY this phrase: "Let's find your North Star together."
 
 ABSOLUTELY CRITICAL FORMATTING RULES - FAILURE TO FOLLOW WILL RESULT IN REJECTION:
-1. NEVER use generic labels like "Priority Action 1", "Second priority action", "Third priority action", "Strategy Action 1", etc.
-2. ALWAYS use the EXACT titles provided above for each section heading
-3. Each paragraph MUST be separated by a blank line (double newline: \\n\\n)
-4. The opening bulleted list must have EXACTLY ${topRecs.length} items
-5. Write in a smooth, flowing narrative style
-6. End with the EXACT phrase: "Let's find your North Star together."
-${userContext ? `7. Personalize for ${userContext.jobTitle} in ${userContext.industry}` : '7. Keep strategic and professional'}
-8. Draw specific insights from the knowledge base to provide actionable guidance
-9. ONLY generate sections for the ${topRecs.length} priority actions provided - DO NOT invent additional actions
+1. NEVER EVER use generic placeholders like "Priority Action 1", "Second priority action", "Third priority action", "First Priority Action", etc.
+2. ALWAYS use MARKDOWN FORMAT with ## for each section heading followed by the EXACT title
+3. For example, if the title is "Industry Leader", write "## Industry Leader" NOT "## Third priority action"
+4. Section headings MUST use the EXACT titles provided above - NO EXCEPTIONS
+5. Each section MUST be separated by a blank line (double newline: \\n\\n)
+6. The opening bulleted list must have EXACTLY ${topRecs.length} items
+7. Write in a smooth, flowing narrative style
+8. End with the EXACT phrase: "Let's find your North Star together."
+${userContext ? `9. Personalize for ${userContext.jobTitle} in ${userContext.industry}` : '9. Keep strategic and professional'}
+10. Draw specific insights from the knowledge base to provide actionable guidance
+11. ONLY generate sections for the ${topRecs.length} priority actions provided - DO NOT invent additional actions
+12. REMINDER: Use "## [Exact Title]" format for each section heading - this is MANDATORY
 
 OUTPUT FORMAT EXAMPLE (structure only, not actual content):
 [Opening paragraph text here...]
@@ -616,11 +622,13 @@ OUTPUT FORMAT EXAMPLE (structure only, not actual content):
 Priority actions to focus on:
 ${bulletList}
 
-${topRecs.map(r => `${r.title}\n[explanation paragraph...]`).join('\n\n')}
+${topRecs.map(r => `## ${r.title}\n[explanation paragraph...]`).join('\n\n')}
 
 [Business outcomes paragraph...]
 
-[Closing paragraph...] Let's find your North Star together.`;
+[Closing paragraph...] Let's find your North Star together.
+
+FINAL REMINDER: Each section heading MUST start with "## " followed by the EXACT title (e.g., "## ${topRecs[0]?.title || 'Build Strategy'}"). NEVER use generic placeholders like "Third priority action".`;
 
       const completion = await this.callOpenAI(prompt, undefined, false); // Bypass word limit for comprehensive roadmap
       
