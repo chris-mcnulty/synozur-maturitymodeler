@@ -1,4 +1,4 @@
-import OpenAI from 'openai';
+import Anthropic from '@anthropic-ai/sdk';
 import { z } from 'zod';
 import crypto from 'crypto';
 import { eq, and, gt, or, isNull } from 'drizzle-orm';
@@ -8,10 +8,10 @@ import * as schema from '@shared/schema';
 import { aiGeneratedContent, knowledgeDocuments } from '@shared/schema';
 import { DocumentExtractionService } from './document-extraction';
 
-// Initialize OpenAI client with Replit AI Integrations
-const openai = new OpenAI({
-  apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY || '',
-  baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL || 'https://api.openai.com/v1',
+// Initialize Anthropic client with Replit AI Integrations
+const anthropic = new Anthropic({
+  apiKey: process.env.AI_INTEGRATIONS_ANTHROPIC_API_KEY || '',
+  baseURL: process.env.AI_INTEGRATIONS_ANTHROPIC_BASE_URL,
 });
 
 // AI Playbook grounding for AI Maturity Assessment model
@@ -203,7 +203,7 @@ const resourceSuggestionSchema = z.object({
 });
 
 class AIService {
-  private readonly model = 'gpt-5-mini'; // Using Replit AI Integrations GPT-5 mini model
+  private readonly model = 'claude-sonnet-4-5'; // Using Replit AI Integrations Claude Sonnet 4.5
   private readonly maxRetries = 3;
   private readonly timeout = 30000; // 30 seconds
   private readonly cacheExpirationDays = 90; // Cache AI summaries for 90 days
@@ -794,7 +794,7 @@ Return ONLY the rewritten answer text (20 words maximum, no preamble).`;
     }
   }
 
-  // Core OpenAI API call with retry logic
+  // Core Anthropic API call with retry logic
   private async callOpenAI(prompt: string, responseFormat?: z.ZodSchema, enforceShortResponse: boolean = true): Promise<string> {
     let lastError: Error | null = null;
     
@@ -804,39 +804,33 @@ Return ONLY the rewritten answer text (20 words maximum, no preamble).`;
         const systemMessage = enforceShortResponse
           ? 'You are an expert maturity assessment consultant. CRITICAL RULES: ALL responses must be MAXIMUM 30 words (2 lines). Be specific, actionable, and concise. NEVER generate URLs or links - these will be added manually. Focus on clear improvement actions only.'
           : 'You are an expert transformation consultant from The Synozur Alliance LLC. Provide comprehensive, insightful analysis that helps organizations find their North Star. Be detailed, strategic, and empathetic. NEVER generate URLs or links - these will be added manually.\n\nCRITICAL CONTENT RESTRICTIONS:\n- Write for business leaders, NOT technical implementers\n- Use strategic language, NOT technical jargon\n- ABSOLUTELY FORBIDDEN unless model explicitly mentions GTM/Go-to-Market: GTM terminology, ISV, SI, Microsoft partner programs, Power Platform, Power Automate, connectors, APIs, technical implementation details, partner ecosystems\n- If knowledge base contains technical/GTM content that is irrelevant to the current model, completely ignore it\n- Focus exclusively on strategic business transformation appropriate for the user\'s role and industry';
-        
-        const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
-          {
-            role: 'system',
-            content: systemMessage
-          },
-          {
-            role: 'user',
-            content: prompt
-          }
-        ];
 
-        const completion = await openai.chat.completions.create({
+        const completion = await anthropic.messages.create({
           model: this.model,
-          messages,
-          max_completion_tokens: 2000,
-          response_format: responseFormat ? { type: 'json_object' } : undefined,
+          max_tokens: 8192,
+          system: systemMessage,
+          messages: [
+            {
+              role: 'user',
+              content: prompt
+            }
+          ]
         });
 
-        const content = completion.choices[0]?.message?.content;
-        if (!content) {
-          throw new Error('Empty response from AI API');
+        const content = completion.content[0];
+        if (!content || content.type !== 'text') {
+          throw new Error('Empty or invalid response from AI API');
         }
         
-        return content;
+        return content.text;
       } catch (error: any) {
         lastError = error;
         
-        // Extract meaningful error message from OpenAI error
+        // Extract meaningful error message from Anthropic error
         const errorMessage = error?.message || error?.error?.message || 'Unknown error';
         const errorType = error?.type || error?.error?.type || 'api_error';
         
-        console.error(`OpenAI API attempt ${attempt} failed:`, {
+        console.error(`Anthropic API attempt ${attempt} failed:`, {
           type: errorType,
           message: errorMessage,
           status: error?.status,
