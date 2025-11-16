@@ -533,11 +533,26 @@ The Synozur Alliance LLC is here to help you find your North Star and make the d
     console.log('[AI Service] Generating new roadmap content (cache miss)');
     
     try {
-      // Take top 3 recommendations for the summary
-      const topRecs = recommendations.slice(0, 3);
+      // Take up to 3 recommendations that actually exist
+      const topRecs = recommendations.filter(r => r && r.title).slice(0, 3);
+      
+      // Don't generate roadmap if there are no recommendations
+      if (topRecs.length === 0) {
+        return `Your transformation journey is ready to begin. The Synozur Alliance LLC will help you navigate this path with expertise and partnership. Let's find your North Star together.`;
+      }
 
       // Fetch knowledge context from uploaded documents (modelId already retrieved above)
       const knowledgeContext = await this.getKnowledgeContext(modelId);
+
+      // Build dynamic bullet list
+      const bulletList = topRecs.map(r => `• ${r.title}`).join('\n');
+      
+      // Build dynamic section instructions
+      const sectionInstructions = topRecs.map((rec, idx) => {
+        const ordinal = idx === 0 ? 'First' : idx === 1 ? 'Second' : 'Third';
+        return `Paragraph ${idx + 2} - ${ordinal} Priority Action (3-4 sentences):
+Start with ONLY the title "${rec.title}" - DO NOT add "Priority Action ${idx + 1}" or any numbering. Explain what this action means in practical terms, what specific steps it involves, ${idx === 0 ? 'and why it\'s critical for their transformation' : idx === topRecs.length - 1 ? 'and how it completes the transformation framework' : 'and how it builds on the previous action'}. Draw from the knowledge base for specific, actionable guidance.`;
+      }).join('\n\n[BLANK LINE]\n\n');
 
       const prompt = `You are a transformation expert from The Synozur Alliance LLC. Write a comprehensive transformation roadmap.
 
@@ -561,67 +576,47 @@ ABSOLUTELY CRITICAL PERSONALIZATION RULES - VIOLATION WILL RESULT IN REJECTION:
 5. Keep language business-focused and role-appropriate, NOT technical or implementation-focused
 6. If knowledge base contains GTM/partner/technical content, COMPLETELY IGNORE IT - use only strategic guidance
 
-PRIORITY ACTION TITLES YOU MUST USE:
-1. "${topRecs[0]?.title || 'First priority action'}"
-2. "${topRecs[1]?.title || 'Second priority action'}"
-3. "${topRecs[2]?.title || 'Third priority action'}"
+PRIORITY ACTION TITLES YOU MUST USE EXACTLY (${topRecs.length} actions):
+${topRecs.map((r, i) => `${i + 1}. "${r.title}"`).join('\n')}
 
 STRUCTURE:
 
 Paragraph 1 - Opening (3-4 sentences):
-Frame their unique transformation journey and what it means for their organization. Explain the strategic context and why focusing on these priority actions matters. Use insights from the knowledge base to provide specific guidance. End with "Priority actions to focus on:" followed by EXACTLY these three bulleted items:
-• ${topRecs[0]?.title || 'First priority action'}
-• ${topRecs[1]?.title || 'Second priority action'}
-• ${topRecs[2]?.title || 'Third priority action'}
+Frame their unique transformation journey and what it means for their organization. Explain the strategic context and why focusing on these priority actions matters. Use insights from the knowledge base to provide specific guidance. End with "Priority actions to focus on:" followed by EXACTLY these ${topRecs.length} bulleted items:
+${bulletList}
 
 [BLANK LINE]
 
-Paragraph 2 - First Priority Action (3-4 sentences):
-Start with ONLY the title "${topRecs[0]?.title || 'First priority action'}" - DO NOT add "Priority Action 1" or any numbering. Explain what this action means in practical terms, what specific steps it involves, and why it's critical for their transformation. Draw from the knowledge base for specific, actionable guidance.
+${sectionInstructions}
 
 [BLANK LINE]
 
-Paragraph 3 - Second Priority Action (3-4 sentences):
-Start with ONLY the title "${topRecs[1]?.title || 'Second priority action'}" - DO NOT add "Priority Action 2" or any numbering. Explain what this action means in practical terms, what specific steps it involves, and how it builds on the first action. Draw from the knowledge base for specific, actionable guidance.
+Paragraph ${topRecs.length + 2} - Business Outcomes (3-4 sentences):
+Connect ${topRecs.length === 1 ? 'this priority action' : `all ${topRecs.length} priority actions`} to tangible business outcomes and expected transformation results. Explain the ROI, measurable improvements, and value they'll see. Reference strategic value patterns from the knowledge base.
 
 [BLANK LINE]
 
-Paragraph 4 - Third Priority Action (3-4 sentences):
-Start with ONLY the title "${topRecs[2]?.title || 'Third priority action'}" - DO NOT add "Priority Action 3" or any numbering. Explain what this action means in practical terms, what specific steps it involves, and how it completes the transformation framework. Draw from the knowledge base for specific, actionable guidance.
-
-[BLANK LINE]
-
-Paragraph 5 - Business Outcomes (3-4 sentences):
-Connect all three priority actions to tangible business outcomes and expected transformation results. Explain the ROI, measurable improvements, and value they'll see. Reference strategic value patterns from the knowledge base.
-
-[BLANK LINE]
-
-Paragraph 6 - Closing (2-3 sentences):
+Paragraph ${topRecs.length + 3} - Closing (2-3 sentences):
 Describe how Synozur's expertise and partnership approach will accelerate their journey. MUST end with EXACTLY this phrase: "Let's find your North Star together."
 
 ABSOLUTELY CRITICAL FORMATTING RULES - FAILURE TO FOLLOW WILL RESULT IN REJECTION:
-1. NEVER use generic labels like "Priority Action 1", "Priority Action 2", "Priority Action 3", "Strategy Action 1", etc.
-2. ALWAYS use the EXACT titles provided above: "${topRecs[0]?.title || 'First priority action'}", "${topRecs[1]?.title || 'Second priority action'}", "${topRecs[2]?.title || 'Third priority action'}"
+1. NEVER use generic labels like "Priority Action 1", "Second priority action", "Third priority action", "Strategy Action 1", etc.
+2. ALWAYS use the EXACT titles provided above for each section heading
 3. Each paragraph MUST be separated by a blank line (double newline: \\n\\n)
-4. The opening bulleted list must have EXACTLY 3 items
+4. The opening bulleted list must have EXACTLY ${topRecs.length} items
 5. Write in a smooth, flowing narrative style
 6. End with the EXACT phrase: "Let's find your North Star together."
 ${userContext ? `7. Personalize for ${userContext.jobTitle} in ${userContext.industry}` : '7. Keep strategic and professional'}
 8. Draw specific insights from the knowledge base to provide actionable guidance
+9. ONLY generate sections for the ${topRecs.length} priority actions provided - DO NOT invent additional actions
 
 OUTPUT FORMAT EXAMPLE (structure only, not actual content):
 [Opening paragraph text here...]
 
 Priority actions to focus on:
-• [Title 1]
-• [Title 2]  
-• [Title 3]
+${bulletList}
 
-[Title 1 here as the first words] [explanation paragraph...]
-
-[Title 2 here as the first words] [explanation paragraph...]
-
-[Title 3 here as the first words] [explanation paragraph...]
+${topRecs.map(r => `${r.title}\n[explanation paragraph...]`).join('\n\n')}
 
 [Business outcomes paragraph...]
 
