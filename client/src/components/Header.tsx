@@ -57,7 +57,7 @@ export function Header() {
             <img 
               src={synozurLogo} 
               alt="Synozur" 
-              className="h-10 w-auto"
+              className="h-10 w-auto max-w-[120px] sm:max-w-none object-contain"
             />
           </a>
           <div className="h-6 w-px bg-border"></div>
