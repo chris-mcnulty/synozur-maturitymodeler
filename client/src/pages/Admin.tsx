@@ -899,7 +899,7 @@ export default function Admin() {
     } else {
       console.log('Upload result missing successful files');
     }
-  }, [editingModel, uploadModelImage]);
+  }, [editingModel, uploadModelImage.mutate]);
 
   // Toggle featured status mutation
   const toggleFeatured = useMutation({
