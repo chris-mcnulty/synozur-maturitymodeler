@@ -272,6 +272,9 @@ function BenchmarksByModel() {
 
   const { data: models } = useQuery<Model[]>({
     queryKey: ['/api/models'],
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    refetchOnReconnect: false,
   });
 
   const { data: benchmarks, isLoading: benchmarksLoading } = useQuery<any[]>({
@@ -513,12 +516,18 @@ export default function Admin() {
   // Fetch models
   const { data: models = [], isLoading: modelsLoading } = useQuery<Model[]>({
     queryKey: ['/api/models'],
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    refetchOnReconnect: false,
   });
 
   // Fetch tenants for model visibility dropdown (role-aware)
   const { data: availableTenants = [] } = useQuery<Array<{id: string, name: string}>>({
     queryKey: ['/api/model-tenants'],
     enabled: canManageModels(currentUser),
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    refetchOnReconnect: false,
   });
 
   // Fetch questions for selected model
