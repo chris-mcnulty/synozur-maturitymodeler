@@ -72,6 +72,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(safeUser);
   });
 
+  // Debug endpoint to check user permissions (temporary for debugging)
+  app.get('/api/debug/permissions', (req, res) => {
+    if (!req.user) {
+      return res.status(401).json({ error: "Not authenticated" });
+    }
+    const user = req.user;
+    const { password, ...safeUser } = user;
+    
+    res.json({
+      user: safeUser,
+      permissions: {
+        isGlobalAdmin: checkIsGlobalAdmin(user),
+        isTenantAdmin: user.role === 'tenant_admin',
+        isAnyAdmin: user.role === 'global_admin' || user.role === 'tenant_admin',
+        canManageModels: hasAdminAccess(user) || user.role === 'tenant_modeler',
+        accessibleTenantIds: getAccessibleTenantIds(user),
+      },
+      rawRole: user.role,
+      roleType: typeof user.role,
+    });
+  });
+
   // Get user profile by ID (for viewing assessment owner's profile)
   // Only accessible by: admin/modeler OR the user themselves
   app.get('/api/users/:id', async (req, res) => {
