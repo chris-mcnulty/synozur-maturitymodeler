@@ -101,13 +101,13 @@ export function ModelBuilder({
     slugDebounceRef.current = setTimeout(() => onUpdateModel({ slug: value }), 500);
   };
 
-  const handleResourcesChange = (newResources: typeof model.generalResources) => {
+  const handleResourcesChange = (newResources: Array<{ id: string; title: string; description?: string; link?: string }>) => {
     setLocalResources(newResources);
     if (resourcesDebounceRef.current) clearTimeout(resourcesDebounceRef.current);
     resourcesDebounceRef.current = setTimeout(() => onUpdateModel({ generalResources: newResources }), 500);
   };
 
-  const handleMaturityScaleChange = (newScale: typeof model.maturityScale) => {
+  const handleMaturityScaleChange = (newScale: Array<{ id: string; name: string; description: string; minScore: number; maxScore: number }>) => {
     setLocalMaturityScale(newScale);
     if (maturityScaleDebounceRef.current) clearTimeout(maturityScaleDebounceRef.current);
     maturityScaleDebounceRef.current = setTimeout(() => onUpdateModel({ maturityScale: newScale }), 500);
@@ -132,6 +132,17 @@ export function ModelBuilder({
     return questions
       .filter((q) => !q.dimensionId)
       .sort((a, b) => a.order - b.order);
+  };
+
+  // Delete handlers
+  const handleDeleteResource = (resourceId: string) => {
+    const updated = localResources.filter((r) => r.id !== resourceId);
+    handleResourcesChange(updated);
+  };
+
+  const handleDeleteMaturityLevel = (levelId: string) => {
+    const updated = localMaturityScale.filter((l) => l.id !== levelId);
+    handleMaturityScaleChange(updated);
   };
 
   return (
@@ -648,12 +659,7 @@ export function ModelBuilder({
                       <Button
                         variant="ghost"
                         size="icon"
-                        onClick={() => {
-                          const updated = localResources.filter(
-                            (r) => r.id !== resource.id
-                          );
-                          handleResourcesChange(updated);
-                        }}
+                        onClick={() => handleDeleteResource(resource.id)}
                         data-testid={`button-delete-resource-${index}`}
                         aria-label="Delete resource"
                       >
@@ -784,12 +790,7 @@ export function ModelBuilder({
                       <Button
                         variant="ghost"
                         size="icon"
-                        onClick(() => {
-                          const updated = localMaturityScale.filter(
-                            (l) => l.id !== level.id
-                          );
-                          handleMaturityScaleChange(updated);
-                        }}
+                        onClick={() => handleDeleteMaturityLevel(level.id)}
                         data-testid={`button-delete-level-${index}`}
                         aria-label="Delete maturity level"
                       >
