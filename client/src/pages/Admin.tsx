@@ -2170,44 +2170,198 @@ export default function Admin() {
           <main className="flex-1 overflow-y-auto overflow-x-hidden p-6">
             <div className="w-full max-w-7xl mx-auto space-y-6">
               {activeSection === 'models' && (
-              <Card className="p-6">
-                <div className="flex justify-between items-center mb-6">
-                  <h2 className="text-xl font-bold">Model Management</h2>
-                  <div className="flex gap-2">
-                    <Button 
-                      variant="outline"
-                      onClick={() => {
-                        const link = document.createElement('a');
-                        link.href = '/csv-template.csv';
-                        link.download = 'maturity-model-questions-template.csv';
-                        link.click();
-                      }}
-                      data-testid="button-download-template"
-                    >
-                      <Download className="mr-2 h-4 w-4" />
-                      Download CSV Template
-                    </Button>
-                    <Button 
-                      variant="outline"
-                      onClick={handleModelImportClick}
-                      data-testid="button-import-model"
-                    >
-                      <Upload className="mr-2 h-4 w-4" />
-                      Import Model
-                    </Button>
-                    <Button 
-                      onClick={() => {
-                        resetModelForm();
-                        setIsModelDialogOpen(true);
-                      }}
-                      data-testid="button-create-model"
-                    >
-                      <Plus className="mr-2 h-4 w-4" />
-                      Create Model
-                    </Button>
+              <div className="space-y-6">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <h2 className="text-2xl font-bold">Models</h2>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Manage assessment models, dimensions, and questions
+                    </p>
                   </div>
+                  <Button 
+                    onClick={() => {
+                      resetModelForm();
+                      setIsModelDialogOpen(true);
+                    }}
+                    data-testid="button-create-model"
+                  >
+                    <Plus className="mr-2 h-4 w-4" />
+                    Create Model
+                  </Button>
                 </div>
-                
+
+                {modelsLoading ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {[1, 2, 3].map((i) => (
+                      <Card key={i} className="p-6">
+                        <div className="animate-pulse space-y-4">
+                          <div className="h-4 bg-muted rounded w-3/4"></div>
+                          <div className="h-3 bg-muted rounded w-1/2"></div>
+                          <div className="flex gap-2">
+                            <div className="h-8 bg-muted rounded w-16"></div>
+                            <div className="h-8 bg-muted rounded w-16"></div>
+                          </div>
+                        </div>
+                      </Card>
+                    ))}
+                  </div>
+                ) : models.length === 0 ? (
+                  <Card className="p-12">
+                    <div className="text-center space-y-3">
+                      <Database className="h-12 w-12 mx-auto text-muted-foreground" />
+                      <h3 className="text-lg font-semibold">No models found</h3>
+                      <p className="text-sm text-muted-foreground">
+                        Create your first assessment model to get started
+                      </p>
+                    </div>
+                  </Card>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {models.map((model) => {
+                      const dimensionCount = dimensions.filter(d => d.modelId === model.id).length;
+                      const questionCount = questions.filter(q => q.modelId === model.id).length;
+                      const assessmentCount = results.filter(r => r.modelId === model.id).length;
+
+                      return (
+                        <Card key={model.id} className="p-6 hover-elevate" data-testid={`model-card-${model.id}`}>
+                          <div className="space-y-4">
+                            <div className="space-y-2">
+                              <div className="flex items-start justify-between gap-2">
+                                <div className="flex-1 min-w-0">
+                                  <h3 className="font-semibold text-lg truncate" title={model.name}>
+                                    {model.name}
+                                  </h3>
+                                  <p className="text-sm text-muted-foreground truncate" title={model.slug}>
+                                    /{model.slug}
+                                  </p>
+                                </div>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => toggleFeatured.mutate({ modelId: model.id, featured: !model.featured })}
+                                  data-testid={`button-toggle-featured-${model.id}`}
+                                  title={model.featured ? "Remove from featured" : "Mark as featured"}
+                                  className="flex-shrink-0"
+                                >
+                                  <Star className={`h-4 w-4 ${model.featured ? 'fill-yellow-500 text-yellow-500' : 'text-muted-foreground'}`} />
+                                </Button>
+                              </div>
+
+                              <div className="flex gap-2 flex-wrap">
+                                <Badge variant={model.status === 'published' ? 'default' : 'secondary'}>
+                                  {model.status || 'draft'}
+                                </Badge>
+                                {model.featured && (
+                                  <Badge variant="outline" className="bg-yellow-500/10 text-yellow-700 dark:text-yellow-400 border-yellow-500/20">
+                                    <Star className="h-3 w-3 mr-1 fill-current" />
+                                    Featured
+                                  </Badge>
+                                )}
+                                {model.visibility === 'private' && (
+                                  <Badge variant="outline">
+                                    Private
+                                  </Badge>
+                                )}
+                              </div>
+                            </div>
+
+                            <div className="grid grid-cols-3 gap-3 py-3 border-y">
+                              <div className="text-center">
+                                <div className="text-2xl font-bold">{dimensionCount}</div>
+                                <div className="text-xs text-muted-foreground">Dimensions</div>
+                              </div>
+                              <div className="text-center">
+                                <div className="text-2xl font-bold">{questionCount}</div>
+                                <div className="text-xs text-muted-foreground">Questions</div>
+                              </div>
+                              <div className="text-center">
+                                <div className="text-2xl font-bold">{assessmentCount}</div>
+                                <div className="text-xs text-muted-foreground">Assessments</div>
+                              </div>
+                            </div>
+
+                            <div className="flex gap-2">
+                              <Button
+                                variant="default"
+                                size="sm"
+                                onClick={() => handleEditModel(model)}
+                                data-testid={`button-edit-${model.id}`}
+                                className="flex-1"
+                              >
+                                <Edit className="mr-2 h-3 w-3" />
+                                Edit
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  setImportExportModel(model);
+                                  setIsImportExportOpen(true);
+                                }}
+                                data-testid={`button-import-export-${model.id}`}
+                                className="flex-1"
+                              >
+                                <FileSpreadsheet className="mr-2 h-3 w-3" />
+                                Import/Export
+                              </Button>
+                            </div>
+
+                            <div className="flex gap-1">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => window.open(`/${model.slug}`, '_blank')}
+                                data-testid={`button-view-${model.id}`}
+                                title="View model"
+                              >
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => {
+                                  setEditingModelForConfig(model);
+                                  const defaultScale = [
+                                    { id: '1', name: 'Nascent', description: 'Beginning AI journey', minScore: 100, maxScore: 199 },
+                                    { id: '2', name: 'Experimental', description: 'Experimenting with AI', minScore: 200, maxScore: 299 },
+                                    { id: '3', name: 'Operational', description: 'Operational AI processes', minScore: 300, maxScore: 399 },
+                                    { id: '4', name: 'Strategic', description: 'Strategic AI foundations', minScore: 400, maxScore: 449 },
+                                    { id: '5', name: 'Transformational', description: 'Leading AI transformation', minScore: 450, maxScore: 500 },
+                                  ];
+                                  setMaturityScaleLevels(model.maturityScale || defaultScale);
+                                  setIsMaturityScaleDialogOpen(true);
+                                }}
+                                data-testid={`button-maturity-scale-${model.id}`}
+                                title="Edit maturity scale"
+                              >
+                                <BarChart3 className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => {
+                                  setDeleteDataModelId(model.id);
+                                  setDeleteDataModelName(model.name);
+                                  setIsDeleteDataDialogOpen(true);
+                                }}
+                                data-testid={`button-delete-${model.id}`}
+                                title="Delete model"
+                              >
+                                <Trash className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        </Card>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+              )}
+              
+              {/* Keep old table code temporarily for reference but hide it */}
+              {false && activeSection === 'models-old' && (
+              <Card className="p-6">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -5268,7 +5422,10 @@ export default function Admin() {
         dimensions={importExportModel ? dimensions : []}
         questions={importExportModel ? questions : []}
         answers={importExportModel ? answers : []}
-        scoringLevels={importExportModel?.maturityScale || []}
+        scoringLevels={importExportModel?.maturityScale?.map(level => ({
+          ...level,
+          label: level.name,
+        })) || []}
         onImportComplete={() => {
           queryClient.invalidateQueries({ queryKey: ['/api/models'] });
           queryClient.invalidateQueries({ queryKey: ['/api/dimensions', importExportModel?.id] });

@@ -1,7 +1,7 @@
 import type { Model, Dimension, Question, Answer } from '@shared/schema';
 
 // Define scoring level structure for CSV export/import
-interface ScoringLevel {
+export interface ScoringLevel {
   id: string;
   label: string;
   minScore: number;

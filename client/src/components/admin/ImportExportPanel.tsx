@@ -7,18 +7,9 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
-import { modelToCSV } from "@/utils/csvConverter";
+import { modelToCSV, type ScoringLevel } from "@/utils/csvConverter";
 import { questionsToSimpleCSV } from "@/utils/csvConverterSimple";
 import type { Model, Dimension, Question, Answer } from "@shared/schema";
-
-type ScoringLevel = {
-  id: string;
-  label: string;
-  minScore: number;
-  maxScore: number;
-  description?: string;
-  color?: string;
-};
 
 type ExportFormat = "model" | "csv-full" | "csv-simple";
 type ImportFormat = "auto" | "model" | "csv-full" | "csv-simple";
