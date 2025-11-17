@@ -28,6 +28,7 @@ import { ProxyAssessmentDialog } from "@/components/admin/ProxyAssessmentDialog"
 import { TenantManagement } from "@/components/admin/TenantManagement";
 import { OAuthApplications } from "@/components/admin/OAuthApplications";
 import { ImportExportPanel } from "@/components/admin/ImportExportPanel";
+import { ModelBuilder } from "@/components/admin/ModelBuilder";
 import {
   Sidebar,
   SidebarContent,
@@ -1416,36 +1417,8 @@ export default function Admin() {
 
   const handleEditModel = async (model: Model) => {
     setEditingModel(model);
-    
-    // Fetch existing tenant assignments
-    let existingTenantIds: string[] = [];
-    if (model.visibility === 'private') {
-      try {
-        const response = await fetch(`/api/models/${model.id}/tenants`);
-        if (response.ok) {
-          const tenants = await response.json();
-          existingTenantIds = tenants.map((t: any) => t.tenantId);
-        }
-      } catch (error) {
-        console.error('Failed to fetch tenant assignments:', error);
-      }
-    }
-    
-    setModelForm({
-      name: model.name,
-      slug: model.slug,
-      description: model.description || '',
-      version: model.version || '1.0.0',
-      estimatedTime: model.estimatedTime || '15-20 minutes',
-      status: (model.status || 'draft') as 'draft' | 'published',
-      imageUrl: model.imageUrl || '',
-      visibility: (model.visibility || 'public') as 'public' | 'private',
-      ownerTenantId: model.ownerTenantId || null,
-      tenantIds: existingTenantIds,
-      modelClass: (model.modelClass || 'organizational') as 'organizational' | 'individual',
-    });
-
-    setIsModelDialogOpen(true);
+    setSelectedModelId(model.id);
+    setActiveSection('model-builder');
   };
 
   const handleSaveModel = async () => {
@@ -2220,7 +2193,7 @@ export default function Admin() {
                     {models.map((model) => {
                       const dimensionCount = dimensions.filter(d => d.modelId === model.id).length;
                       const questionCount = questions.filter(q => q.modelId === model.id).length;
-                      const assessmentCount = results.filter(r => r.modelId === model.id).length;
+                      const assessmentCount = results.filter((r: AdminResult) => r.modelName === model.name).length;
 
                       return (
                         <Card key={model.id} className="p-6 hover-elevate" data-testid={`model-card-${model.id}`}>
@@ -2357,6 +2330,101 @@ export default function Admin() {
                   </div>
                 )}
               </div>
+              )}
+
+              {/* Model Builder */}
+              {activeSection === 'model-builder' && editingModel && (
+                <div className="space-y-4">
+                  <div className="flex items-center gap-4">
+                    <Button
+                      variant="ghost"
+                      onClick={() => {
+                        setActiveSection('models');
+                        setEditingModel(null);
+                      }}
+                      data-testid="button-back-to-models"
+                    >
+                      ← Back to Models
+                    </Button>
+                  </div>
+
+                  <ModelBuilder
+                    model={editingModel}
+                    dimensions={dimensions.filter(d => d.modelId === editingModel.id)}
+                    questions={questions.filter(q => q.modelId === editingModel.id)}
+                    answers={answers}
+                    onUpdateModel={(updates) => {
+                      const updatedModel = { ...editingModel, ...updates };
+                      setEditingModel(updatedModel);
+                      updateModel.mutate({
+                        id: editingModel.id,
+                        name: updatedModel.name,
+                        slug: updatedModel.slug,
+                        description: updatedModel.description,
+                        version: updatedModel.version || '1.0.0',
+                        estimatedTime: updatedModel.estimatedTime || '15-20 minutes',
+                        status: (updatedModel.status || 'draft') as 'draft' | 'published',
+                        imageUrl: updatedModel.imageUrl || '',
+                        visibility: (updatedModel.visibility || 'public') as 'public' | 'private',
+                        ownerTenantId: updatedModel.ownerTenantId || null,
+                        tenantIds: [],
+                        modelClass: (updatedModel.modelClass || 'organizational') as 'organizational' | 'individual',
+                      });
+                    }}
+                    onAddDimension={() => {
+                      setSelectedModelId(editingModel.id);
+                      setIsDimensionDialogOpen(true);
+                    }}
+                    onEditDimension={(dimension) => {
+                      setEditingDimension(dimension);
+                      setDimensionForm({
+                        label: dimension.label,
+                        key: dimension.key,
+                        description: dimension.description || '',
+                        order: dimension.order,
+                      });
+                      setIsDimensionDialogOpen(true);
+                    }}
+                    onDeleteDimension={(dimensionId) => {
+                      deleteDimension.mutate(dimensionId);
+                    }}
+                    onAddQuestion={(dimensionId) => {
+                      resetQuestionForm();
+                      setQuestionForm(prev => ({
+                        ...prev,
+                        modelId: editingModel.id,
+                        dimensionId: dimensionId || '',
+                      }));
+                      setIsQuestionDialogOpen(true);
+                    }}
+                    onEditQuestion={(question) => {
+                      setEditingQuestion(question);
+                      setQuestionForm({
+                        modelId: question.modelId,
+                        text: question.text,
+                        type: question.type as 'text' | 'multiple_choice' | 'multi_select' | 'numeric' | 'true_false',
+                        dimensionId: question.dimensionId || '',
+                        order: question.order,
+                        minValue: question.minValue || 0,
+                        maxValue: question.maxValue || 100,
+                        unit: question.unit || '',
+                        placeholder: question.placeholder || '',
+                        improvementStatement: question.improvementStatement || '',
+                        resourceLink: question.resourceLink || '',
+                        resourceTitle: question.resourceTitle || '',
+                        resourceDescription: question.resourceDescription || '',
+                      });
+                      setIsQuestionDialogOpen(true);
+                    }}
+                    onDeleteQuestion={(questionId) => {
+                      deleteQuestion.mutate(questionId);
+                    }}
+                    onManageAnswers={(question) => {
+                      setEditingQuestion(question);
+                      setIsAnswerDialogOpen(true);
+                    }}
+                  />
+                </div>
               )}
               
               {/* Keep old table code temporarily for reference but hide it */}

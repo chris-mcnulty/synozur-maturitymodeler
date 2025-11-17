@@ -270,9 +270,9 @@ export function ModelBuilder({
                                             </span>
                                             <span className="font-medium">{question.text}</span>
                                           </div>
-                                          {question.helpText && (
+                                          {question.placeholder && (
                                             <p className="text-sm text-muted-foreground mt-1">
-                                              {question.helpText}
+                                              Placeholder: {question.placeholder}
                                             </p>
                                           )}
                                         </div>
@@ -378,9 +378,9 @@ export function ModelBuilder({
                                       </span>
                                       <span className="font-medium">{question.text}</span>
                                     </div>
-                                    {question.helpText && (
+                                    {question.placeholder && (
                                       <p className="text-sm text-muted-foreground mt-1">
-                                        {question.helpText}
+                                        Placeholder: {question.placeholder}
                                       </p>
                                     )}
                                   </div>
