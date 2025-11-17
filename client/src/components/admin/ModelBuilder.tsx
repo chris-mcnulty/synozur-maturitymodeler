@@ -54,25 +54,33 @@ export function ModelBuilder({
   const [localName, setLocalName] = useState(model.name);
   const [localSlug, setLocalSlug] = useState(model.slug);
   const [localDescription, setLocalDescription] = useState(model.description || "");
+  const [localResources, setLocalResources] = useState(model.generalResources || []);
+  const [localMaturityScale, setLocalMaturityScale] = useState(model.maturityScale || []);
   
   // Debounce refs for text inputs
   const nameDebounceRef = useRef<NodeJS.Timeout>();
   const descriptionDebounceRef = useRef<NodeJS.Timeout>();
   const slugDebounceRef = useRef<NodeJS.Timeout>();
+  const resourcesDebounceRef = useRef<NodeJS.Timeout>();
+  const maturityScaleDebounceRef = useRef<NodeJS.Timeout>();
 
   // Sync local state when model prop changes
   useEffect(() => {
     setLocalName(model.name);
     setLocalSlug(model.slug);
     setLocalDescription(model.description || "");
+    setLocalResources(model.generalResources || []);
+    setLocalMaturityScale(model.maturityScale || []);
     
     // Cleanup: clear pending debounce timers when model changes
     return () => {
       if (nameDebounceRef.current) clearTimeout(nameDebounceRef.current);
       if (descriptionDebounceRef.current) clearTimeout(descriptionDebounceRef.current);
       if (slugDebounceRef.current) clearTimeout(slugDebounceRef.current);
+      if (resourcesDebounceRef.current) clearTimeout(resourcesDebounceRef.current);
+      if (maturityScaleDebounceRef.current) clearTimeout(maturityScaleDebounceRef.current);
     };
-  }, [model.id, model.name, model.slug, model.description]); // Re-run when model or its fields change
+  }, [model.id, model.name, model.slug, model.description, model.generalResources, model.maturityScale]); // Re-run when model or its fields change
 
   // Debounced update handlers
   const handleNameChange = (value: string) => {
@@ -91,6 +99,18 @@ export function ModelBuilder({
     setLocalSlug(value);
     if (slugDebounceRef.current) clearTimeout(slugDebounceRef.current);
     slugDebounceRef.current = setTimeout(() => onUpdateModel({ slug: value }), 500);
+  };
+
+  const handleResourcesChange = (newResources: typeof model.generalResources) => {
+    setLocalResources(newResources);
+    if (resourcesDebounceRef.current) clearTimeout(resourcesDebounceRef.current);
+    resourcesDebounceRef.current = setTimeout(() => onUpdateModel({ generalResources: newResources }), 500);
+  };
+
+  const handleMaturityScaleChange = (newScale: typeof model.maturityScale) => {
+    setLocalMaturityScale(newScale);
+    if (maturityScaleDebounceRef.current) clearTimeout(maturityScaleDebounceRef.current);
+    maturityScaleDebounceRef.current = setTimeout(() => onUpdateModel({ maturityScale: newScale }), 500);
   };
 
   // Get questions for a specific dimension
@@ -535,71 +555,252 @@ export function ModelBuilder({
         </TabsContent>
 
         <TabsContent value="resources" className="space-y-4">
-          <Card className="p-6">
-            <div className="space-y-4">
-              <div>
-                <Label>General Resources</Label>
-                <p className="text-sm text-muted-foreground mb-2">
-                  Add resources that apply to the entire assessment
-                </p>
-                <Textarea
-                  value={JSON.stringify(model.generalResources || [], null, 2)}
-                  onChange={(e) => {
-                    try {
-                      const parsed = JSON.parse(e.target.value);
-                      onUpdateModel({ generalResources: parsed });
-                    } catch {
-                      // Invalid JSON, don't update
-                    }
-                  }}
-                  rows={10}
-                  className="font-mono text-sm"
-                  placeholder="[]"
-                  data-testid="input-general-resources"
-                />
-              </div>
+          <div className="flex justify-between items-center">
+            <div>
+              <h3 className="text-lg font-semibold">General Resources</h3>
+              <p className="text-sm text-muted-foreground">
+                Add resources that apply to the entire assessment
+              </p>
             </div>
-          </Card>
+            <Button
+              onClick={() => {
+                const newResource = {
+                  id: crypto.randomUUID(),
+                  title: "New Resource",
+                  description: "",
+                  link: "",
+                };
+                const updated = [...localResources, newResource];
+                handleResourcesChange(updated);
+              }}
+              data-testid="button-add-resource"
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              Add Resource
+            </Button>
+          </div>
+
+          {localResources.length === 0 ? (
+            <Card className="p-12">
+              <div className="text-center space-y-3">
+                <h3 className="text-lg font-semibold">No resources yet</h3>
+                <p className="text-sm text-muted-foreground">
+                  Add resources to help users understand and implement the assessment insights
+                </p>
+              </div>
+            </Card>
+          ) : (
+            <div className="space-y-3">
+              {localResources.map((resource, index) => (
+                <Card key={resource.id} className="p-4">
+                  <div className="flex gap-3">
+                    <div className="flex-1 space-y-3">
+                      <div>
+                        <Label htmlFor={`resource-title-${resource.id}`}>Title</Label>
+                        <Input
+                          id={`resource-title-${resource.id}`}
+                          value={resource.title}
+                          onChange={(e) => {
+                            const updated = localResources.map((r) =>
+                              r.id === resource.id ? { ...r, title: e.target.value } : r
+                            );
+                            handleResourcesChange(updated);
+                          }}
+                          placeholder="Resource title..."
+                          data-testid={`input-resource-title-${index}`}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor={`resource-description-${resource.id}`}>
+                          Description (optional)
+                        </Label>
+                        <Textarea
+                          id={`resource-description-${resource.id}`}
+                          value={resource.description || ""}
+                          onChange={(e) => {
+                            const updated = localResources.map((r) =>
+                              r.id === resource.id ? { ...r, description: e.target.value } : r
+                            );
+                            handleResourcesChange(updated);
+                          }}
+                          placeholder="Describe this resource..."
+                          rows={2}
+                          data-testid={`input-resource-description-${index}`}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor={`resource-link-${resource.id}`}>Link (optional)</Label>
+                        <Input
+                          id={`resource-link-${resource.id}`}
+                          value={resource.link || ""}
+                          onChange={(e) => {
+                            const updated = localResources.map((r) =>
+                              r.id === resource.id ? { ...r, link: e.target.value } : r
+                            );
+                            handleResourcesChange(updated);
+                          }}
+                          placeholder="https://..."
+                          data-testid={`input-resource-link-${index}`}
+                        />
+                      </div>
+                    </div>
+                    <div className="flex flex-col justify-start pt-6">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => {
+                          const updated = localResources.filter(
+                            (r) => r.id !== resource.id
+                          );
+                          handleResourcesChange(updated);
+                        }}
+                        data-testid={`button-delete-resource-${index}`}
+                        aria-label="Delete resource"
+                      >
+                        <Trash className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          )}
         </TabsContent>
 
         <TabsContent value="maturity-scale" className="space-y-4">
-          <Card className="p-6">
-            <div className="space-y-4">
-              <div>
-                <h3 className="text-lg font-semibold">Maturity Scale Levels</h3>
+          <div className="flex justify-between items-center">
+            <div>
+              <h3 className="text-lg font-semibold">Maturity Scale Levels</h3>
+              <p className="text-sm text-muted-foreground">
+                Define the scoring levels for this assessment
+              </p>
+            </div>
+            <Button
+              onClick={() => {
+                const maxScore = localMaturityScale.length > 0 
+                  ? Math.max(...localMaturityScale.map(l => l.maxScore))
+                  : 0;
+                const newLevel = {
+                  id: crypto.randomUUID(),
+                  name: "New Level",
+                  description: "",
+                  minScore: maxScore + 1,
+                  maxScore: maxScore + 100,
+                };
+                const updated = [...localMaturityScale, newLevel];
+                handleMaturityScaleChange(updated);
+              }}
+              data-testid="button-add-maturity-level"
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              Add Level
+            </Button>
+          </div>
+
+          {localMaturityScale.length === 0 ? (
+            <Card className="p-12">
+              <div className="text-center space-y-3">
+                <h3 className="text-lg font-semibold">No maturity levels yet</h3>
                 <p className="text-sm text-muted-foreground">
-                  Define the scoring levels for this assessment
+                  Add maturity levels to define scoring ranges (e.g., Initial, Developing, Advanced, Optimized)
                 </p>
               </div>
-
-              <div className="space-y-2">
-                {(model.maturityScale || []).map((level, index) => (
-                  <Card key={level.id} className="p-4">
-                    <div className="flex items-center gap-4">
-                      <div className="flex-1 grid grid-cols-4 gap-3">
+            </Card>
+          ) : (
+            <div className="space-y-3">
+              {localMaturityScale.map((level, index) => (
+                <Card key={level.id} className="p-4">
+                  <div className="flex gap-3">
+                    <div className="flex-1 space-y-3">
+                      <div>
+                        <Label htmlFor={`level-name-${level.id}`}>Level Name</Label>
+                        <Input
+                          id={`level-name-${level.id}`}
+                          value={level.name}
+                          onChange={(e) => {
+                            const updated = localMaturityScale.map((l) =>
+                              l.id === level.id ? { ...l, name: e.target.value } : l
+                            );
+                            handleMaturityScaleChange(updated);
+                          }}
+                          placeholder="e.g., Initial, Developing, Advanced..."
+                          data-testid={`input-level-name-${index}`}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor={`level-description-${level.id}`}>Description</Label>
+                        <Textarea
+                          id={`level-description-${level.id}`}
+                          value={level.description}
+                          onChange={(e) => {
+                            const updated = localMaturityScale.map((l) =>
+                              l.id === level.id ? { ...l, description: e.target.value } : l
+                            );
+                            handleMaturityScaleChange(updated);
+                          }}
+                          placeholder="Describe this maturity level..."
+                          rows={2}
+                          data-testid={`input-level-description-${index}`}
+                        />
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
                         <div>
-                          <Label className="text-xs">Name</Label>
-                          <div className="font-medium">{level.name}</div>
+                          <Label htmlFor={`level-min-${level.id}`}>Min Score</Label>
+                          <Input
+                            id={`level-min-${level.id}`}
+                            type="number"
+                            value={level.minScore}
+                            onChange={(e) => {
+                              const updated = localMaturityScale.map((l) =>
+                                l.id === level.id
+                                  ? { ...l, minScore: parseInt(e.target.value) || 0 }
+                                  : l
+                              );
+                              handleMaturityScaleChange(updated);
+                            }}
+                            data-testid={`input-level-min-${index}`}
+                          />
                         </div>
                         <div>
-                          <Label className="text-xs">Min Score</Label>
-                          <div className="font-medium">{level.minScore}</div>
-                        </div>
-                        <div>
-                          <Label className="text-xs">Max Score</Label>
-                          <div className="font-medium">{level.maxScore}</div>
-                        </div>
-                        <div className="col-span-4">
-                          <Label className="text-xs">Description</Label>
-                          <div className="text-sm text-muted-foreground">{level.description}</div>
+                          <Label htmlFor={`level-max-${level.id}`}>Max Score</Label>
+                          <Input
+                            id={`level-max-${level.id}`}
+                            type="number"
+                            value={level.maxScore}
+                            onChange={(e) => {
+                              const updated = localMaturityScale.map((l) =>
+                                l.id === level.id
+                                  ? { ...l, maxScore: parseInt(e.target.value) || 0 }
+                                  : l
+                              );
+                              handleMaturityScaleChange(updated);
+                            }}
+                            data-testid={`input-level-max-${index}`}
+                          />
                         </div>
                       </div>
                     </div>
-                  </Card>
-                ))}
-              </div>
+                    <div className="flex flex-col justify-start pt-6">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick(() => {
+                          const updated = localMaturityScale.filter(
+                            (l) => l.id !== level.id
+                          );
+                          handleMaturityScaleChange(updated);
+                        }}
+                        data-testid={`button-delete-level-${index}`}
+                        aria-label="Delete maturity level"
+                      >
+                        <Trash className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </Card>
+              ))}
             </div>
-          </Card>
+          )}
         </TabsContent>
       </Tabs>
     </div>

@@ -2371,6 +2371,8 @@ export default function Admin() {
                         ownerTenantId: updatedModel.ownerTenantId || null,
                         tenantIds: [],
                         modelClass: (updatedModel.modelClass || 'organizational') as 'organizational' | 'individual',
+                        generalResources: updatedModel.generalResources || [],
+                        maturityScale: updatedModel.maturityScale || [],
                       });
                     }}
                     onAddDimension={() => {
@@ -2425,6 +2427,14 @@ export default function Admin() {
                       setEditingQuestion(question);
                       setIsAnswerDialogOpen(true);
                     }}
+                    onGetUploadParameters={handleGetUploadParameters}
+                    onUploadComplete={handleUploadComplete}
+                    onRemoveImage={() => {
+                      if (editingModel) {
+                        removeModelImage.mutate(editingModel.id);
+                      }
+                    }}
+                    isRemovingImage={removeModelImage.isPending}
                   />
                 </div>
               )}
