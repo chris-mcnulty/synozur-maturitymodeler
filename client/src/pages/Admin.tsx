@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -2354,8 +2354,10 @@ export default function Admin() {
                     questions={questions.filter(q => q.modelId === editingModel.id)}
                     answers={answers}
                     onUpdateModel={(updates) => {
+                      // Update local state immediately for responsive UI
+                      setEditingModel(prev => prev ? { ...prev, ...updates } : prev);
+                      // Note: Debouncing will be added at the ModelBuilder component level
                       const updatedModel = { ...editingModel, ...updates };
-                      setEditingModel(updatedModel);
                       updateModel.mutate({
                         id: editingModel.id,
                         name: updatedModel.name,

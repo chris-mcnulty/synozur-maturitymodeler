@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
@@ -40,6 +40,49 @@ export function ModelBuilder({
   onManageAnswers,
 }: ModelBuilderProps) {
   const [activeTab, setActiveTab] = useState("overview");
+  
+  // Local state for form fields (for responsive UI)
+  const [localName, setLocalName] = useState(model.name);
+  const [localSlug, setLocalSlug] = useState(model.slug);
+  const [localDescription, setLocalDescription] = useState(model.description || "");
+  
+  // Debounce refs for text inputs
+  const nameDebounceRef = useRef<NodeJS.Timeout>();
+  const descriptionDebounceRef = useRef<NodeJS.Timeout>();
+  const slugDebounceRef = useRef<NodeJS.Timeout>();
+
+  // Sync local state when model prop changes
+  useEffect(() => {
+    setLocalName(model.name);
+    setLocalSlug(model.slug);
+    setLocalDescription(model.description || "");
+    
+    // Cleanup: clear pending debounce timers when model changes
+    return () => {
+      if (nameDebounceRef.current) clearTimeout(nameDebounceRef.current);
+      if (descriptionDebounceRef.current) clearTimeout(descriptionDebounceRef.current);
+      if (slugDebounceRef.current) clearTimeout(slugDebounceRef.current);
+    };
+  }, [model.id, model.name, model.slug, model.description]); // Re-run when model or its fields change
+
+  // Debounced update handlers
+  const handleNameChange = (value: string) => {
+    setLocalName(value);
+    if (nameDebounceRef.current) clearTimeout(nameDebounceRef.current);
+    nameDebounceRef.current = setTimeout(() => onUpdateModel({ name: value }), 500);
+  };
+
+  const handleDescriptionChange = (value: string) => {
+    setLocalDescription(value);
+    if (descriptionDebounceRef.current) clearTimeout(descriptionDebounceRef.current);
+    descriptionDebounceRef.current = setTimeout(() => onUpdateModel({ description: value }), 500);
+  };
+
+  const handleSlugChange = (value: string) => {
+    setLocalSlug(value);
+    if (slugDebounceRef.current) clearTimeout(slugDebounceRef.current);
+    slugDebounceRef.current = setTimeout(() => onUpdateModel({ slug: value }), 500);
+  };
 
   // Get questions for a specific dimension
   const getQuestionsForDimension = (dimensionId: string) => {
@@ -98,8 +141,8 @@ export function ModelBuilder({
                   <Label htmlFor="model-name">Name</Label>
                   <Input
                     id="model-name"
-                    value={model.name}
-                    onChange={(e) => onUpdateModel({ name: e.target.value })}
+                    value={localName}
+                    onChange={(e) => handleNameChange(e.target.value)}
                     data-testid="input-model-name"
                   />
                 </div>
@@ -107,11 +150,9 @@ export function ModelBuilder({
                   <Label htmlFor="model-slug">Slug</Label>
                   <Input
                     id="model-slug"
-                    value={model.slug}
+                    value={localSlug}
                     onChange={(e) =>
-                      onUpdateModel({
-                        slug: e.target.value.toLowerCase().replace(/\s+/g, "-"),
-                      })
+                      handleSlugChange(e.target.value.toLowerCase().replace(/\s+/g, "-"))
                     }
                     data-testid="input-model-slug"
                   />
@@ -122,8 +163,8 @@ export function ModelBuilder({
                 <Label htmlFor="model-description">Description</Label>
                 <Textarea
                   id="model-description"
-                  value={model.description}
-                  onChange={(e) => onUpdateModel({ description: e.target.value })}
+                  value={localDescription}
+                  onChange={(e) => handleDescriptionChange(e.target.value)}
                   rows={4}
                   data-testid="input-model-description"
                 />
@@ -321,6 +362,7 @@ export function ModelBuilder({
                                           size="sm"
                                           onClick={() => onDeleteQuestion(question.id)}
                                           data-testid={`button-delete-question-${question.id}`}
+                                          aria-label="Delete question"
                                         >
                                           <Trash className="h-3 w-3" />
                                         </Button>
@@ -412,6 +454,7 @@ export function ModelBuilder({
                                     size="sm"
                                     onClick={() => onDeleteQuestion(question.id)}
                                     data-testid={`button-delete-question-${question.id}`}
+                                    aria-label="Delete question"
                                   >
                                     <Trash className="h-3 w-3" />
                                   </Button>
