@@ -27,6 +27,7 @@ import { ImportBatches } from "@/components/admin/ImportBatches";
 import { ProxyAssessmentDialog } from "@/components/admin/ProxyAssessmentDialog";
 import { TenantManagement } from "@/components/admin/TenantManagement";
 import { OAuthApplications } from "@/components/admin/OAuthApplications";
+import { ImportExportPanel } from "@/components/admin/ImportExportPanel";
 import {
   Sidebar,
   SidebarContent,
@@ -512,6 +513,10 @@ export default function Admin() {
   const [deleteDataModelId, setDeleteDataModelId] = useState<string | null>(null);
   const [deleteDataModelName, setDeleteDataModelName] = useState<string>('');
   const [deleteDataConfirmation, setDeleteDataConfirmation] = useState<string>('');
+  
+  // Import/Export panel state
+  const [isImportExportOpen, setIsImportExportOpen] = useState(false);
+  const [importExportModel, setImportExportModel] = useState<Model | null>(null);
 
   // Fetch models
   const { data: models = [], isLoading: modelsLoading } = useQuery<Model[]>({
@@ -2140,6 +2145,17 @@ export default function Admin() {
             </div>
             <div className="flex items-center gap-2">
               <ProxyAssessmentDialog models={models} />
+              <Button 
+                variant="outline" 
+                data-testid="button-import-export"
+                onClick={() => {
+                  setImportExportModel(selectedModelId ? models.find(m => m.id === selectedModelId) || null : null);
+                  setIsImportExportOpen(true);
+                }}
+              >
+                <FileSpreadsheet className="mr-2 h-4 w-4" />
+                Import/Export
+              </Button>
               <Button 
                 variant="outline" 
                 data-testid="button-settings"
@@ -5243,6 +5259,26 @@ export default function Admin() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Import/Export Panel */}
+      <ImportExportPanel
+        open={isImportExportOpen}
+        onOpenChange={setIsImportExportOpen}
+        selectedModel={importExportModel || undefined}
+        dimensions={importExportModel ? dimensions : []}
+        questions={importExportModel ? questions : []}
+        answers={importExportModel ? answers : []}
+        scoringLevels={importExportModel?.maturityScale || []}
+        onImportComplete={() => {
+          queryClient.invalidateQueries({ queryKey: ['/api/models'] });
+          queryClient.invalidateQueries({ queryKey: ['/api/dimensions', importExportModel?.id] });
+          queryClient.invalidateQueries({ queryKey: ['/api/questions', importExportModel?.id] });
+          toast({
+            title: "Import Complete",
+            description: "Model data has been imported successfully.",
+          });
+        }}
+      />
 
     </SidebarProvider>
     </TooltipProvider>
