@@ -7,7 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Edit, Trash, GripVertical, ChevronRight } from "lucide-react";
+import { Plus, Edit, Trash, GripVertical, ChevronRight, Upload, X } from "lucide-react";
+import { ObjectUploader } from "@/components/ObjectUploader";
 import type { Model, Dimension, Question, Answer } from "@shared/schema";
 
 interface ModelBuilderProps {
@@ -23,6 +24,10 @@ interface ModelBuilderProps {
   onEditQuestion: (question: Question) => void;
   onDeleteQuestion: (questionId: string) => void;
   onManageAnswers: (question: Question) => void;
+  onGetUploadParameters: () => Promise<{ method: 'PUT'; url: string }>;
+  onUploadComplete: (result: any) => void;
+  onRemoveImage: () => void;
+  isRemovingImage?: boolean;
 }
 
 export function ModelBuilder({
@@ -38,6 +43,10 @@ export function ModelBuilder({
   onEditQuestion,
   onDeleteQuestion,
   onManageAnswers,
+  onGetUploadParameters,
+  onUploadComplete,
+  onRemoveImage,
+  isRemovingImage,
 }: ModelBuilderProps) {
   const [activeTab, setActiveTab] = useState("overview");
   
@@ -168,6 +177,59 @@ export function ModelBuilder({
                   rows={4}
                   data-testid="input-model-description"
                 />
+              </div>
+
+              {/* Image Upload Section */}
+              <div>
+                <Label>Model Image</Label>
+                <p className="text-sm text-muted-foreground mb-3">
+                  Upload an image for this model (recommended: 1200px+ width, 16:9 or 21:9 aspect ratio, under 500KB)
+                </p>
+                
+                {model.imageUrl ? (
+                  <div className="space-y-3">
+                    <div className="relative rounded-lg overflow-hidden border border-border">
+                      <img 
+                        src={model.imageUrl} 
+                        alt="Model preview" 
+                        className="w-full h-48 object-cover"
+                      />
+                    </div>
+                    <div className="flex gap-2">
+                      <ObjectUploader
+                        maxNumberOfFiles={1}
+                        maxFileSize={524288}
+                        allowedFileTypes={['image/jpeg', 'image/png', 'image/webp']}
+                        onGetUploadParameters={onGetUploadParameters}
+                        onComplete={onUploadComplete}
+                        buttonVariant="outline"
+                      >
+                        <Upload className="h-4 w-4 mr-2" />
+                        Replace Image
+                      </ObjectUploader>
+                      <Button
+                        variant="outline"
+                        onClick={onRemoveImage}
+                        disabled={isRemovingImage}
+                        data-testid="button-remove-image"
+                      >
+                        <X className="h-4 w-4 mr-2" />
+                        {isRemovingImage ? 'Removing...' : 'Remove Image'}
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <ObjectUploader
+                    maxNumberOfFiles={1}
+                    maxFileSize={524288}
+                    allowedFileTypes={['image/jpeg', 'image/png', 'image/webp']}
+                    onGetUploadParameters={onGetUploadParameters}
+                    onComplete={onUploadComplete}
+                  >
+                    <Upload className="h-4 w-4 mr-2" />
+                    Upload Image
+                  </ObjectUploader>
+                )}
               </div>
 
               <div className="grid grid-cols-2 gap-4">
