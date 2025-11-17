@@ -3927,7 +3927,7 @@ export default function Admin() {
             <div>
               <Label>Model Image</Label>
               <p className="text-sm text-muted-foreground mb-3">
-                Upload an image for this model (recommended: 1200px+ width, 16:9 or 21:9 aspect ratio, under 500KB)
+                Upload an image for this model (recommended: 1200px+ width, 16:9 or 21:9 aspect ratio, under 10MB)
               </p>
               
               {modelForm.imageUrl ? (
@@ -3943,7 +3943,7 @@ export default function Admin() {
                     {editingModel && (
                       <ObjectUploader
                         maxNumberOfFiles={1}
-                        maxFileSize={524288} // 500KB
+                        maxFileSize={10485760} // 10MB
                         allowedFileTypes={['image/jpeg', 'image/png', 'image/webp']}
                         onGetUploadParameters={handleGetUploadParameters}
                         onComplete={handleUploadComplete}
@@ -3975,7 +3975,7 @@ export default function Admin() {
                   {editingModel ? (
                     <ObjectUploader
                       maxNumberOfFiles={1}
-                      maxFileSize={524288} // 500KB
+                      maxFileSize={10485760} // 10MB
                       allowedFileTypes={['image/jpeg', 'image/png', 'image/webp']}
                       onGetUploadParameters={handleGetUploadParameters}
                       onComplete={handleUploadComplete}

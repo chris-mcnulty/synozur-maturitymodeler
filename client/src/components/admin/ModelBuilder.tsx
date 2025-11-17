@@ -203,7 +203,7 @@ export function ModelBuilder({
               <div>
                 <Label>Model Image</Label>
                 <p className="text-sm text-muted-foreground mb-3">
-                  Upload an image for this model (recommended: 1200px+ width, 16:9 or 21:9 aspect ratio, under 500KB)
+                  Upload an image for this model (recommended: 1200px+ width, 16:9 or 21:9 aspect ratio, under 10MB)
                 </p>
                 
                 {model.imageUrl ? (
@@ -218,7 +218,7 @@ export function ModelBuilder({
                     <div className="flex gap-2">
                       <ObjectUploader
                         maxNumberOfFiles={1}
-                        maxFileSize={524288}
+                        maxFileSize={10485760}
                         allowedFileTypes={['image/jpeg', 'image/png', 'image/webp']}
                         onGetUploadParameters={onGetUploadParameters}
                         onComplete={onUploadComplete}
@@ -241,7 +241,7 @@ export function ModelBuilder({
                 ) : (
                   <ObjectUploader
                     maxNumberOfFiles={1}
-                    maxFileSize={524288}
+                    maxFileSize={10485760}
                     allowedFileTypes={['image/jpeg', 'image/png', 'image/webp']}
                     onGetUploadParameters={onGetUploadParameters}
                     onComplete={onUploadComplete}
