@@ -818,14 +818,22 @@ export default function Admin() {
     mutationFn: async (data: typeof modelForm & { id: string }) => {
       return apiRequest(`/api/models/${data.id}`, 'PUT', data);
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['/api/models'] });
-      setIsModelDialogOpen(false);
-      resetModelForm();
-      toast({
-        title: "Model updated",
-        description: "The model has been updated successfully.",
-      });
+      
+      // If we're in ModelBuilder mode (editingModel is set), don't close the dialog
+      // Just update the editingModel state to reflect the changes
+      if (editingModel) {
+        setEditingModel(prev => prev ? { ...prev, ...data } : prev);
+      } else {
+        // Only close and reset if we're in the model dialog (not ModelBuilder)
+        setIsModelDialogOpen(false);
+        resetModelForm();
+        toast({
+          title: "Model updated",
+          description: "The model has been updated successfully.",
+        });
+      }
     },
     onError: (error: Error) => {
       toast({
@@ -846,6 +854,10 @@ export default function Admin() {
       // Update the form with the normalized path from the response
       if (data && data.imageUrl) {
         setModelForm(prev => ({ ...prev, imageUrl: data.imageUrl }));
+        // Also update editingModel if we're in ModelBuilder mode
+        if (editingModel) {
+          setEditingModel(prev => prev ? { ...prev, imageUrl: data.imageUrl } : prev);
+        }
       }
       toast({
         title: "Image uploaded",
@@ -869,6 +881,10 @@ export default function Admin() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/models'] });
       setModelForm(prev => ({ ...prev, imageUrl: '' }));
+      // Also update editingModel if we're in ModelBuilder mode
+      if (editingModel) {
+        setEditingModel(prev => prev ? { ...prev, imageUrl: '' } : prev);
+      }
       toast({
         title: "Image removed",
         description: "The model image has been removed.",
@@ -2356,8 +2372,9 @@ export default function Admin() {
                     onUpdateModel={(updates) => {
                       // Update local state immediately for responsive UI
                       setEditingModel(prev => prev ? { ...prev, ...updates } : prev);
-                      // Note: Debouncing will be added at the ModelBuilder component level
+                      // Note: Debouncing is handled at the ModelBuilder component level
                       const updatedModel = { ...editingModel, ...updates };
+                      // Type assertion needed because ModelBuilder sends additional fields like generalResources and maturityScale
                       updateModel.mutate({
                         id: editingModel.id,
                         name: updatedModel.name,
@@ -2373,7 +2390,7 @@ export default function Admin() {
                         modelClass: (updatedModel.modelClass || 'organizational') as 'organizational' | 'individual',
                         generalResources: updatedModel.generalResources || [],
                         maturityScale: updatedModel.maturityScale || [],
-                      });
+                      } as any);
                     }}
                     onAddDimension={() => {
                       setSelectedModelId(editingModel.id);
