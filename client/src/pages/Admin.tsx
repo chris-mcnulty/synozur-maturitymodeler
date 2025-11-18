@@ -536,6 +536,17 @@ export default function Admin() {
     refetchOnReconnect: false,
   });
 
+  // Fetch tenant assignments for the currently editing model
+  const { data: modelTenantAssignments = [] } = useQuery<Array<{modelId: string, tenantId: string}>>({
+    queryKey: ['/api/models', editingModel?.id, 'tenants'],
+    queryFn: async () => {
+      if (!editingModel?.id) return [];
+      const response = await fetch(`/api/models/${editingModel.id}/tenants`);
+      return response.ok ? response.json() : [];
+    },
+    enabled: !!editingModel?.id,
+  });
+
   // Fetch questions for selected model
   const { data: questions = [], isLoading: questionsLoading } = useQuery<Question[]>({
     queryKey: ['/api/questions', selectedModelId],
@@ -2369,6 +2380,63 @@ export default function Admin() {
                     dimensions={dimensions.filter(d => d.modelId === editingModel.id)}
                     questions={questions.filter(q => q.modelId === editingModel.id)}
                     answers={answers}
+                    availableTenants={availableTenants}
+                    assignedTenantIds={modelTenantAssignments.map(mt => mt.tenantId)}
+                    onUpdateTenantAssignments={async (tenantIds) => {
+                      // Sync tenant assignments via API
+                      const modelId = editingModel.id;
+                      const currentTenantIds = modelTenantAssignments.map(mt => mt.tenantId);
+                      
+                      // Determine which tenants to add and remove
+                      const tenantsToAdd = tenantIds.filter(id => !currentTenantIds.includes(id));
+                      const tenantsToRemove = currentTenantIds.filter(id => !tenantIds.includes(id));
+                      
+                      try {
+                        // Add new tenant assignments
+                        for (const tenantId of tenantsToAdd) {
+                          await apiRequest(`/api/models/${modelId}/tenants`, 'POST', { tenantId });
+                        }
+                        
+                        // Remove old tenant assignments
+                        for (const tenantId of tenantsToRemove) {
+                          await apiRequest(`/api/models/${modelId}/tenants/${tenantId}`, 'DELETE');
+                        }
+                        
+                        // Update ownerTenantId to first selected tenant
+                        const newOwnerTenantId = tenantIds.length > 0 ? tenantIds[0] : null;
+                        updateModel.mutate({
+                          id: modelId,
+                          name: editingModel.name,
+                          slug: editingModel.slug,
+                          description: editingModel.description,
+                          version: editingModel.version || '1.0.0',
+                          estimatedTime: editingModel.estimatedTime || '15-20 minutes',
+                          status: (editingModel.status || 'draft') as 'draft' | 'published',
+                          imageUrl: editingModel.imageUrl || '',
+                          visibility: (editingModel.visibility || 'public') as 'public' | 'private',
+                          ownerTenantId: newOwnerTenantId,
+                          tenantIds: [],
+                          modelClass: (editingModel.modelClass || 'organizational') as 'organizational' | 'individual',
+                          generalResources: editingModel.generalResources || [],
+                          maturityScale: editingModel.maturityScale || [],
+                        } as any);
+                        
+                        // Refetch tenant assignments
+                        queryClient.invalidateQueries({ queryKey: ['/api/models', modelId, 'tenants'] });
+                        
+                        toast({
+                          title: "Tenant assignments updated",
+                          description: "Model access has been updated successfully",
+                        });
+                      } catch (error) {
+                        console.error('Error updating tenant assignments:', error);
+                        toast({
+                          title: "Error",
+                          description: "Failed to update tenant assignments",
+                          variant: "destructive",
+                        });
+                      }
+                    }}
                     onUpdateModel={(updates) => {
                       // Update local state immediately for responsive UI
                       setEditingModel(prev => prev ? { ...prev, ...updates } : prev);

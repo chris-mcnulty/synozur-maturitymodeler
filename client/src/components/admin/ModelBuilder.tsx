@@ -7,16 +7,26 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Edit, Trash, GripVertical, ChevronRight, Upload, X } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Plus, Edit, Trash, GripVertical, ChevronRight, Upload, X, ChevronDown } from "lucide-react";
 import { ObjectUploader } from "@/components/ObjectUploader";
 import type { Model, Dimension, Question, Answer } from "@shared/schema";
+
+interface Tenant {
+  id: string;
+  name: string;
+}
 
 interface ModelBuilderProps {
   model: Model;
   dimensions: Dimension[];
   questions: Question[];
   answers: Answer[];
+  availableTenants: Tenant[];
+  assignedTenantIds: string[];
   onUpdateModel: (updates: Partial<Model>) => void;
+  onUpdateTenantAssignments: (tenantIds: string[]) => void;
   onAddDimension: () => void;
   onEditDimension: (dimension: Dimension) => void;
   onDeleteDimension: (dimensionId: string) => void;
@@ -35,7 +45,10 @@ export function ModelBuilder({
   dimensions,
   questions,
   answers,
+  availableTenants,
+  assignedTenantIds,
   onUpdateModel,
+  onUpdateTenantAssignments,
   onAddDimension,
   onEditDimension,
   onDeleteDimension,
@@ -56,6 +69,7 @@ export function ModelBuilder({
   const [localDescription, setLocalDescription] = useState(model.description || "");
   const [localResources, setLocalResources] = useState(model.generalResources || []);
   const [localMaturityScale, setLocalMaturityScale] = useState(model.maturityScale || []);
+  const [localTenantIds, setLocalTenantIds] = useState<string[]>(assignedTenantIds);
   
   // Debounce refs for text inputs
   const nameDebounceRef = useRef<NodeJS.Timeout>();
@@ -71,6 +85,7 @@ export function ModelBuilder({
     setLocalDescription(model.description || "");
     setLocalResources(model.generalResources || []);
     setLocalMaturityScale(model.maturityScale || []);
+    setLocalTenantIds(assignedTenantIds);
     
     // Cleanup: clear pending debounce timers when model changes
     return () => {
@@ -80,7 +95,7 @@ export function ModelBuilder({
       if (resourcesDebounceRef.current) clearTimeout(resourcesDebounceRef.current);
       if (maturityScaleDebounceRef.current) clearTimeout(maturityScaleDebounceRef.current);
     };
-  }, [model.id, model.name, model.slug, model.description, model.generalResources, model.maturityScale]); // Re-run when model or its fields change
+  }, [model.id, model.name, model.slug, model.description, model.generalResources, model.maturityScale, assignedTenantIds]); // Re-run when model or its fields change
 
   // Debounced update handlers
   const handleNameChange = (value: string) => {
@@ -209,6 +224,96 @@ export function ModelBuilder({
                   data-testid="input-model-description"
                 />
               </div>
+
+              {/* Visibility and Model Class */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Visibility</Label>
+                  <Select
+                    value={model.visibility || 'public'}
+                    onValueChange={(value: 'public' | 'private') => {
+                      onUpdateModel({ visibility: value });
+                      // If switching to public, clear tenant assignments
+                      if (value === 'public') {
+                        setLocalTenantIds([]);
+                        onUpdateTenantAssignments([]);
+                      }
+                    }}
+                  >
+                    <SelectTrigger data-testid="select-visibility">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="public">Public (visible to everyone)</SelectItem>
+                      <SelectItem value="private">Tenant Private</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Model Class</Label>
+                  <Select
+                    value={model.modelClass || 'organizational'}
+                    onValueChange={(value: 'organizational' | 'individual') => {
+                      onUpdateModel({ modelClass: value });
+                    }}
+                  >
+                    <SelectTrigger data-testid="select-model-class">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="organizational">Organizational</SelectItem>
+                      <SelectItem value="individual">Individual</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {/* Tenant Assignment (only for private models) */}
+              {model.visibility === 'private' && (
+                <div>
+                  <Label>Assigned Tenants</Label>
+                  <p className="text-sm text-muted-foreground mb-2">
+                    Select which tenants can access this private model
+                  </p>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button 
+                        variant="outline" 
+                        className="w-full justify-between"
+                        data-testid="select-assigned-tenants"
+                      >
+                        {localTenantIds.length === 0
+                          ? 'Select tenants'
+                          : `${localTenantIds.length} tenant${localTenantIds.length > 1 ? 's' : ''} selected`}
+                        <ChevronDown className="ml-2 h-4 w-4 opacity-50" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="w-[400px]">
+                      {availableTenants.length === 0 ? (
+                        <div className="p-2 text-sm text-muted-foreground">No tenants available</div>
+                      ) : (
+                        availableTenants
+                          .sort((a, b) => a.name.localeCompare(b.name))
+                          .map((tenant) => (
+                            <DropdownMenuCheckboxItem
+                              key={tenant.id}
+                              checked={localTenantIds.includes(tenant.id)}
+                              onCheckedChange={(checked) => {
+                                const newTenantIds = checked
+                                  ? [...localTenantIds, tenant.id]
+                                  : localTenantIds.filter((id) => id !== tenant.id);
+                                setLocalTenantIds(newTenantIds);
+                                onUpdateTenantAssignments(newTenantIds);
+                              }}
+                            >
+                              {tenant.name}
+                            </DropdownMenuCheckboxItem>
+                          ))
+                      )}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              )}
 
               {/* Image Upload Section */}
               <div>
