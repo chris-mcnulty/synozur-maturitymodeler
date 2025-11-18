@@ -519,9 +519,9 @@ export default function Admin() {
   const [isImportExportOpen, setIsImportExportOpen] = useState(false);
   const [importExportModel, setImportExportModel] = useState<Model | null>(null);
 
-  // Fetch models
-  const { data: models = [], isLoading: modelsLoading } = useQuery<Model[]>({
-    queryKey: ['/api/models'],
+  // Fetch models with counts
+  const { data: models = [], isLoading: modelsLoading } = useQuery<Array<Model & { dimensionCount?: number; questionCount?: number }>>({
+    queryKey: ['/api/admin/models'],
     refetchOnWindowFocus: false,
     refetchOnMount: false,
     refetchOnReconnect: false,
@@ -2218,8 +2218,8 @@ export default function Admin() {
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {models.map((model) => {
-                      const dimensionCount = dimensions.filter(d => d.modelId === model.id).length;
-                      const questionCount = questions.filter(q => q.modelId === model.id).length;
+                      const dimensionCount = model.dimensionCount || 0;
+                      const questionCount = model.questionCount || 0;
                       const assessmentCount = results.filter((r: AdminResult) => r.modelName === model.name).length;
 
                       return (
