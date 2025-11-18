@@ -3,6 +3,10 @@
 ## Overview
 Orion is a comprehensive fullstack JavaScript application designed for multi-model maturity assessments. Its core purpose is to provide dynamic routing for assessments, manage models via CSV, generate gated PDF results, offer benchmarking capabilities, and provide extensive administrative controls. The platform aims to help users "Find Their North Star" through insightful maturity assessments, aligning with Synozur's vision as "the Transformation Company."
 
+**Scoring System**: Orion supports dual scoring scales that automatically adapt based on model configuration:
+- **100-point scale**: For models with maturity scale maxScore ≤ 100, scores are summed directly (e.g., 25 questions × 4 points max = 100 total)
+- **100-500 scale**: For legacy models with maturity scale maxScore > 100, scores are averaged across questions
+
 ## User Preferences
 - Uses SendGrid for email delivery (API key method, not Replit connector)
 - Prefers seeing metrics on home pages when data is available

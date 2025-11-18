@@ -1644,6 +1644,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const dimensions = await storage.getDimensionsByModelId(model.id);
       const questions = await storage.getQuestionsByModelId(model.id);
       
+      // Determine scoring system based on maturity scale
+      // If maturity scale max is <= 100, use 100-point scale (sum scores)
+      // Otherwise use 100-500 scale (average scores)
+      const modelMaturityScale = model.maturityScale || [];
+      const maxMaturityScore = modelMaturityScale.length > 0 
+        ? Math.max(...modelMaturityScale.map(level => level.maxScore))
+        : 500;
+      const use100PointScale = maxMaturityScore <= 100;
+
       // Calculate scores
       let totalScore = 0;
       const dimensionScores: Record<string, number[]> = {};
@@ -1656,35 +1665,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
         let score = 0;
         
         if (question.type === 'numeric' && response.numericValue !== undefined && response.numericValue !== null) {
-          // For numeric questions, scale the value to 100-500 range
           const minValue = question.minValue || 0;
           const maxValue = question.maxValue || 100;
           const numericValue = response.numericValue;
           
-          // Scale the numeric value to 100-500 range
-          // Formula: ((value - min) / (max - min)) * 400 + 100
-          const normalizedValue = (numericValue - minValue) / (maxValue - minValue);
-          score = Math.round(normalizedValue * 400 + 100);
-          
-          // Ensure score is within bounds
-          score = Math.max(100, Math.min(500, score));
+          if (use100PointScale) {
+            // For 100-point scale, scale numeric value to 0-4 range (or configured max)
+            const normalizedValue = (numericValue - minValue) / (maxValue - minValue);
+            score = Math.round(normalizedValue * 4);
+            score = Math.max(0, Math.min(4, score));
+          } else {
+            // For 100-500 scale, scale the value to that range
+            const normalizedValue = (numericValue - minValue) / (maxValue - minValue);
+            score = Math.round(normalizedValue * 400 + 100);
+            score = Math.max(100, Math.min(500, score));
+          }
         } else if (question.type === 'multi_select') {
-          // For multi-select questions, proportional scoring based on selections
           const answers = await storage.getAnswersByQuestionId(question.id);
           const totalOptions = answers.length;
           const selectedCount = response.answerIds ? response.answerIds.length : 0;
           
-          // Guard against division by zero
           if (totalOptions > 0) {
-            // Formula: (selectedCount / totalOptions) * 400 + 100
-            // 0 selections = 100, max selections = 500
-            score = Math.round((selectedCount / totalOptions) * 400 + 100);
-            score = Math.max(100, Math.min(500, score));
+            if (use100PointScale) {
+              // For 100-point scale, proportional to 0-4 range
+              score = Math.round((selectedCount / totalOptions) * 4);
+              score = Math.max(0, Math.min(4, score));
+            } else {
+              // For 100-500 scale
+              score = Math.round((selectedCount / totalOptions) * 400 + 100);
+              score = Math.max(100, Math.min(500, score));
+            }
           } else {
-            score = 100; // Default if no options exist
+            score = use100PointScale ? 0 : 100;
           }
         } else {
-          // For multiple choice questions, use the answer's score
+          // For multiple choice questions, use the answer's score directly
           const answers = await storage.getAnswersByQuestionId(question.id);
           const answer = answers.find(a => a.id === response.answerId);
           if (!answer) continue;
@@ -1705,14 +1720,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      // Calculate averages per dimension
+      // Calculate dimension scores
       const dimensionAverages: Record<string, number> = {};
       for (const [key, scores] of Object.entries(dimensionScores)) {
-        dimensionAverages[key] = Math.round(scores.reduce((a, b) => a + b, 0) / scores.length);
+        if (use100PointScale) {
+          // For 100-point scale, sum dimension scores
+          dimensionAverages[key] = Math.round(scores.reduce((a, b) => a + b, 0));
+        } else {
+          // For 100-500 scale, average dimension scores
+          dimensionAverages[key] = Math.round(scores.reduce((a, b) => a + b, 0) / scores.length);
+        }
       }
 
       // Calculate overall score
-      const overallScore = questionCount > 0 ? Math.round(totalScore / questionCount) : 0;
+      let overallScore;
+      if (use100PointScale) {
+        // For 100-point scale, sum all scores
+        overallScore = Math.round(totalScore);
+      } else {
+        // For 100-500 scale, average all scores
+        overallScore = questionCount > 0 ? Math.round(totalScore / questionCount) : 0;
+      }
 
       // Determine label based on score using model's maturity scale
       // Default scale if not configured
