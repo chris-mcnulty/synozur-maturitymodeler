@@ -114,25 +114,16 @@ export function ImportExportPanel({
     }
   }, []);
 
-  const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragActive(false);
-
-    const files = e.dataTransfer.files;
-    if (files && files.length > 0) {
-      handleFileImport(files[0]);
+  const handleFileImport = useCallback(async (file: File) => {
+    if (!selectedModel) {
+      toast({
+        variant: "destructive",
+        title: "No Model Selected",
+        description: "Please select a model to import data into.",
+      });
+      return;
     }
-  }, []);
-
-  const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (files && files.length > 0) {
-      handleFileImport(files[0]);
-    }
-  }, []);
-
-  const handleFileImport = async (file: File) => {
+    
     setImporting(true);
     setImportProgress(0);
     setImportStatus({ type: null, message: "" });
@@ -175,10 +166,40 @@ export function ImportExportPanel({
         });
       } else if (detectedFormat === "csv-simple") {
         console.log("CSV Simple format detected");
+        
+        // Actually import the CSV data
+        const response = await fetch(`/api/models/${selectedModel?.id}/import-questions`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ csvContent: text, mode: 'replace' }),
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to import CSV');
+        }
+        
+        const result = await response.json();
+        
         setImportStatus({
           type: "success",
-          message: "Detected CSV (Simple) format. Import functionality coming soon.",
+          message: `Successfully imported ${result.questionsImported || 0} questions and ${result.answersImported || 0} answers.`,
         });
+        
+        setImportProgress(100);
+        
+        toast({
+          title: "Import Complete",
+          description: `Imported ${result.questionsImported || 0} questions with ${result.answersImported || 0} answer options.`,
+        });
+
+        if (onImportComplete) {
+          setTimeout(() => {
+            onImportComplete();
+          }, 1500);
+        }
+        return;
       }
 
       setImportProgress(100);
@@ -206,7 +227,25 @@ export function ImportExportPanel({
     } finally {
       setImporting(false);
     }
-  };
+  }, [selectedModel, importFormat, toast, onImportComplete]);
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+
+    const files = e.dataTransfer.files;
+    if (files && files.length > 0) {
+      handleFileImport(files[0]);
+    }
+  }, [handleFileImport]);
+
+  const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files && files.length > 0) {
+      handleFileImport(files[0]);
+    }
+  }, [handleFileImport]);
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>

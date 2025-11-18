@@ -75,7 +75,12 @@ export function simpleCSVToQuestions(csvContent: string, modelId: string): { que
     
     if (values.length < 2) continue;
     
-    const questionNumber = parseInt(values[0]);
+    // Handle both "Q1" and "1" formats for question numbers
+    let questionNumberStr = values[0].trim();
+    if (questionNumberStr.toUpperCase().startsWith('Q')) {
+      questionNumberStr = questionNumberStr.substring(1);
+    }
+    const questionNumber = parseInt(questionNumberStr);
     const questionText = values[1];
     const answerText = values[2];
     const score = values[3] ? parseInt(values[3]) : 0;
