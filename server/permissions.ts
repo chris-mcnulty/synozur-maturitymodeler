@@ -4,6 +4,9 @@
 
 import { USER_ROLES, isGlobalAdmin, isTenantAdmin, isAnyAdmin } from '@shared/constants';
 import type { User } from '@shared/schema';
+import { db } from './db';
+import { modelTenants } from '@shared/schema';
+import { eq } from 'drizzle-orm';
 
 export interface PermissionContext {
   user: User;
@@ -167,29 +170,13 @@ export function hasAdminAccess(user: User): boolean {
  * 
  * Access rules:
  * - Public models: accessible to everyone (including anonymous users)
- * - Private models: accessible only to users from the owning tenant
+ * - Private models: accessible to users from any assigned tenant (via model_tenants junction table)
  * - Global admins: can access all models regardless of visibility
  */
-export function canAccessModel(
+export async function canAccessModel(
   user: User | null | undefined,
-  model: { visibility?: string | null; ownerTenantId?: string | null }
-): boolean {
-  // DEBUG: Log access check for private models
-  if (model.visibility === 'private') {
-    console.log('[canAccessModel] Private model access check:', {
-      hasUser: !!user,
-      username: user?.username,
-      userTenantId: user?.tenantId,
-      userTenantIdType: typeof user?.tenantId,
-      userTenantIdIsNull: user?.tenantId === null,
-      userTenantIdIsUndefined: user?.tenantId === undefined,
-      userTenantIdIsEmptyString: user?.tenantId === '',
-      modelName: (model as any).name,
-      modelOwnerTenantId: model.ownerTenantId,
-      willAllow: user && user.tenantId && model.ownerTenantId === user.tenantId
-    });
-  }
-
+  model: { id?: string; visibility?: string | null; ownerTenantId?: string | null }
+): Promise<boolean> {
   // Global admins can access everything
   if (user && isGlobalAdmin(user.role)) {
     return true;
@@ -207,7 +194,20 @@ export function canAccessModel(
       return false;
     }
 
-    // User can access private models from their own tenant
+    // Check if user's tenant has access via junction table
+    if (model.id) {
+      const tenantAssignments = await db
+        .select()
+        .from(modelTenants)
+        .where(eq(modelTenants.modelId, model.id));
+      
+      const assignedTenantIds = tenantAssignments.map((mt: { tenantId: string }) => mt.tenantId);
+      
+      // User can access if their tenant is in the assigned tenants list
+      return assignedTenantIds.includes(user.tenantId);
+    }
+
+    // Fallback to ownerTenantId check if no model ID provided
     return model.ownerTenantId === user.tenantId;
   }
 

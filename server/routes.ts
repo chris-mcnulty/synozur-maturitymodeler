@@ -686,7 +686,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Check visibility/tenant access
-      if (!canAccessModel(req.user, model)) {
+      if (!(await canAccessModel(req.user, model))) {
         return res.status(404).json({ error: "Model not found" }); // 404 to hide existence
       }
 
@@ -805,7 +805,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const allModels = await storage.getAllModels(status);
       
       // Filter by visibility and tenant access using centralized helper
-      const filteredModels = allModels.filter(model => canAccessModel(user, model));
+      const filteredModels = [];
+      for (const model of allModels) {
+        if (await canAccessModel(user, model)) {
+          filteredModels.push(model);
+        }
+      }
       
       res.json(filteredModels);
     } catch (error) {
@@ -1042,7 +1047,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Check visibility/tenant access
-      if (!canAccessModel(req.user, model)) {
+      if (!(await canAccessModel(req.user, model))) {
         return res.status(404).json({ error: "Model not found" }); // 404 to hide existence
       }
 
@@ -1072,7 +1077,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Check visibility/tenant access
-      if (!canAccessModel(req.user, model)) {
+      if (!(await canAccessModel(req.user, model))) {
         return res.status(404).json({ error: "Model not found" }); // 404 to hide existence
       }
 
@@ -1103,7 +1108,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Check visibility/tenant access
-      if (!canAccessModel(req.user, model)) {
+      if (!(await canAccessModel(req.user, model))) {
         return res.status(404).json({ error: "Model not found" }); // 404 to hide existence
       }
 
@@ -1166,7 +1171,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Check visibility/tenant access
-      if (!canAccessModel(req.user, model)) {
+      if (!(await canAccessModel(req.user, model))) {
         return res.status(404).json({ error: "Model not found" }); // 404 to hide existence
       }
 
@@ -1206,7 +1211,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Model not found" });
       }
 
-      if (!canAccessModel(req.user, model)) {
+      if (!(await canAccessModel(req.user, model))) {
         return res.status(404).json({ error: "Model not found" }); // 404 to hide existence
       }
 
