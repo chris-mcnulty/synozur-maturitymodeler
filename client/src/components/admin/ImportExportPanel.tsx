@@ -153,20 +153,16 @@ export function ImportExportPanel({
 
       if (detectedFormat === "model") {
         const data = JSON.parse(text);
-        console.log("Model import data:", data);
         setImportStatus({
           type: "success",
           message: `Detected .model format. Ready to import: ${data.model?.name || "Unknown model"}`,
         });
       } else if (detectedFormat === "csv-full") {
-        console.log("CSV Full format detected");
         setImportStatus({
           type: "success",
           message: "Detected CSV (Full) format. Import functionality coming soon.",
         });
       } else if (detectedFormat === "csv-simple") {
-        console.log("CSV Simple format detected");
-        
         // Actually import the CSV data
         const response = await fetch(`/api/models/${selectedModel?.id}/import-questions`, {
           method: 'POST',

@@ -2799,11 +2799,6 @@ Respond in JSON format:
       const modelId = req.params.id;
       const { csvContent, mode = 'add' } = req.body;
       
-      console.log('[CSV Import] Model ID:', modelId);
-      console.log('[CSV Import] Mode:', mode);
-      console.log('[CSV Import] CSV length:', csvContent?.length);
-      console.log('[CSV Import] CSV first 200 chars:', csvContent?.substring(0, 200));
-      
       // Check if model exists
       const model = await storage.getModel(modelId);
       if (!model) {
@@ -2813,15 +2808,6 @@ Respond in JSON format:
       // Import simplified CSV converter
       const { simpleCSVToQuestions } = await import('../client/src/utils/csvConverterSimple');
       const { questions, answers } = simpleCSVToQuestions(csvContent, modelId);
-      
-      console.log('[CSV Import] Parsed questions:', questions.length);
-      console.log('[CSV Import] Parsed answers:', answers.length);
-      if (questions.length > 0) {
-        console.log('[CSV Import] First question:', questions[0]);
-      }
-      if (answers.length > 0) {
-        console.log('[CSV Import] First answer:', answers[0]);
-      }
 
       // Delete existing questions and answers only if mode is 'replace'
       if (mode === 'replace') {
