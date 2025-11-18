@@ -64,25 +64,16 @@ export function simpleCSVToQuestions(csvContent: string, modelId: string): { que
   const answers: any[] = [];
   const questionMap = new Map<number, any>();
   
-  console.log('[CSV Parser] Total lines:', lines.length);
-  console.log('[CSV Parser] First line:', lines[0]?.substring(0, 100));
-  
   // Skip header if it exists
   let startIndex = 0;
   if (lines[0] && lines[0].toLowerCase().includes('question')) {
-    console.log('[CSV Parser] Skipping header line');
     startIndex = 1;
   }
   
   for (let i = startIndex; i < lines.length; i++) {
     const values = parseCSVLine(lines[i]);
     
-    console.log(`[CSV Parser] Line ${i}: ${values.length} columns, values:`, values.slice(0, 4));
-    
-    if (values.length < 2) {
-      console.log(`[CSV Parser] Skipping line ${i}: insufficient columns`);
-      continue;
-    }
+    if (values.length < 2) continue;
     
     const questionNumber = parseInt(values[0]);
     const questionText = values[1];
@@ -93,15 +84,7 @@ export function simpleCSVToQuestions(csvContent: string, modelId: string): { que
     const resourceLink = values[6] || '';
     const resourceDescription = values[7] || '';
     
-    if (!questionNumber || isNaN(questionNumber)) {
-      console.log(`[CSV Parser] Skipping line ${i}: invalid question number "${values[0]}"`);
-      continue;
-    }
-    
-    if (!questionText) {
-      console.log(`[CSV Parser] Skipping line ${i}: empty question text`);
-      continue;
-    }
+    if (!questionNumber || isNaN(questionNumber) || !questionText) continue;
     
     // Check if we've seen this question before
     if (!questionMap.has(questionNumber)) {
