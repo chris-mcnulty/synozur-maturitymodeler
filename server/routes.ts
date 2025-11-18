@@ -212,6 +212,73 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post('/api/users', ensureAnyAdmin, async (req, res) => {
+    try {
+      const currentUser = req.user!;
+      const { username, email, password, role, tenantId } = req.body;
+      
+      // Validate required fields
+      if (!username || !email || !password) {
+        return res.status(400).json({ error: "Username, email, and password are required" });
+      }
+      
+      // Validate password length
+      if (password.length < 8) {
+        return res.status(400).json({ error: "Password must be at least 8 characters" });
+      }
+      
+      // Check if username already exists
+      const existingUsername = await storage.getUserByUsername(username);
+      if (existingUsername) {
+        return res.status(400).json({ error: "Username already exists" });
+      }
+      
+      // Check if email already exists
+      const existingEmail = await storage.getUserByEmail(email);
+      if (existingEmail) {
+        return res.status(400).json({ error: "Email already exists" });
+      }
+      
+      // Validate role assignment if provided
+      const userRole = role || 'user';
+      if (!canAssignRole(currentUser, userRole)) {
+        return res.status(403).json({ error: "Insufficient permissions to assign this role" });
+      }
+      
+      // Validate tenant assignment if provided
+      if (tenantId && !canManageUsers(currentUser, tenantId)) {
+        return res.status(403).json({ error: "Insufficient permissions for requested tenant" });
+      }
+      
+      // Hash password
+      const hashedPassword = await hashPassword(password);
+      
+      // Create user
+      const newUser = await storage.createUser({
+        username,
+        email,
+        password: hashedPassword,
+        role: userRole,
+        tenantId: tenantId || null,
+      });
+      
+      // Remove password from response
+      const { password: _, ...safeUser } = newUser;
+      res.json(safeUser);
+    } catch (error: any) {
+      console.error('Error creating user:', error);
+      if (error.code === '23505') {
+        if (error.constraint?.includes('username')) {
+          return res.status(400).json({ error: "Username already exists" });
+        }
+        if (error.constraint?.includes('email')) {
+          return res.status(400).json({ error: "Email already exists" });
+        }
+      }
+      res.status(500).json({ error: "Failed to create user" });
+    }
+  });
+
   app.put('/api/users/:id', ensureAnyAdmin, async (req, res) => {
     try {
       const currentUser = req.user!;
