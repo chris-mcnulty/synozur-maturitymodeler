@@ -2342,7 +2342,21 @@ export default function Admin() {
                                 onClick={() => {
                                   setDeleteDataModelId(model.id);
                                   setDeleteDataModelName(model.name);
+                                  setDeleteDataConfirmation('');
                                   setIsDeleteDataDialogOpen(true);
+                                }}
+                                data-testid={`button-delete-data-${model.id}`}
+                                title="Delete all assessment data (for testing)"
+                              >
+                                <Database className="h-4 w-4 text-destructive" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => {
+                                  if (confirm(`Are you sure you want to delete the model "${model.name}"? This will remove all questions, dimensions, and assessment data permanently.`)) {
+                                    deleteModel.mutate(model.id);
+                                  }
                                 }}
                                 data-testid={`button-delete-${model.id}`}
                                 title="Delete model"
