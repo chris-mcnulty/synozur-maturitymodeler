@@ -32,7 +32,7 @@ export async function sendVerificationEmail(
   const { client: sgMail, fromEmail } = await getUncachableSendGridClient();
 
   const verificationUrl = `${baseUrl}/verify-email?token=${token}`;
-  const emailHeaderUrl = `${baseUrl}/email-header.jpg`;
+  const emailHeaderUrl = `${baseUrl}/og-image.jpg`;
 
   const msg = {
     to: email,
