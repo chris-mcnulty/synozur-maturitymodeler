@@ -708,6 +708,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get all answers for a model (for export)
+  app.get('/api/models/:id/answers', async (req, res) => {
+    try {
+      const modelId = req.params.id;
+      
+      // Get all questions for this model
+      const questions = await storage.getQuestionsByModelId(modelId);
+      const questionIds = questions.map(q => q.id);
+      
+      // Get all answers for these questions
+      if (questionIds.length === 0) {
+        return res.json([]);
+      }
+      
+      const answers = await db.select()
+        .from(schema.answers)
+        .where(inArray(schema.answers.questionId, questionIds))
+        .orderBy(schema.answers.order);
+      
+      res.json(answers);
+    } catch (error) {
+      console.error('Failed to fetch answers for model:', error);
+      res.status(500).json({ error: "Failed to fetch answers" });
+    }
+  });
+
   app.post('/api/answers', ensureAdminOrModeler, async (req, res) => {
     try {
       const insertAnswerSchema = schema.insertAnswerSchema;

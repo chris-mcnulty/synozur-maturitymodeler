@@ -518,6 +518,37 @@ export default function Admin() {
   // Import/Export panel state
   const [isImportExportOpen, setIsImportExportOpen] = useState(false);
   const [importExportModel, setImportExportModel] = useState<Model | null>(null);
+  
+  // Fetch all data for the import/export model
+  const { data: importExportQuestions = [] } = useQuery({
+    queryKey: ['/api/questions', importExportModel?.id],
+    queryFn: async () => {
+      if (!importExportModel?.id) return [];
+      const response = await fetch(`/api/models/${importExportModel.id}/questions`);
+      return response.json();
+    },
+    enabled: !!importExportModel?.id,
+  });
+  
+  const { data: importExportAnswers = [] } = useQuery({
+    queryKey: ['/api/models', importExportModel?.id, 'answers'],
+    queryFn: async () => {
+      if (!importExportModel?.id) return [];
+      const response = await fetch(`/api/models/${importExportModel.id}/answers`);
+      return response.json();
+    },
+    enabled: !!importExportModel?.id,
+  });
+  
+  const { data: importExportDimensions = [] } = useQuery({
+    queryKey: ['/api/dimensions', importExportModel?.id],
+    queryFn: async () => {
+      if (!importExportModel?.id) return [];
+      const response = await fetch(`/api/dimensions/${importExportModel.id}`);
+      return response.json();
+    },
+    enabled: !!importExportModel?.id,
+  });
 
   // Fetch models with counts
   const { data: models = [], isLoading: modelsLoading } = useQuery<Array<Model & { dimensionCount?: number; questionCount?: number }>>({
@@ -5617,9 +5648,9 @@ export default function Admin() {
         open={isImportExportOpen}
         onOpenChange={setIsImportExportOpen}
         selectedModel={importExportModel || undefined}
-        dimensions={importExportModel ? dimensions : []}
-        questions={importExportModel ? questions : []}
-        answers={importExportModel ? answers : []}
+        dimensions={importExportDimensions}
+        questions={importExportQuestions}
+        answers={importExportAnswers}
         scoringLevels={importExportModel?.maturityScale?.map(level => ({
           ...level,
           label: level.name,
