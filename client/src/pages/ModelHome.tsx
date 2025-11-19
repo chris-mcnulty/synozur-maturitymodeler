@@ -28,6 +28,11 @@ export default function ModelHome() {
     queryKey: ['/api/user'],
   });
 
+  // Scroll to top when component mounts or model changes
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [modelSlug]);
+
   // Update page title when model loads
   useEffect(() => {
     if (model) {
