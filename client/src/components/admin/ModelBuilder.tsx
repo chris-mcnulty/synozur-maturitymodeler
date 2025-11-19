@@ -225,8 +225,30 @@ export function ModelBuilder({
                 />
               </div>
 
-              {/* Visibility and Model Class */}
-              <div className="grid grid-cols-2 gap-4">
+              {/* Status, Visibility, and Model Class */}
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <Label>Status</Label>
+                  <Select
+                    value={model.status || 'draft'}
+                    onValueChange={(value: 'draft' | 'published') => {
+                      onUpdateModel({ status: value });
+                    }}
+                  >
+                    <SelectTrigger data-testid="select-model-status">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="draft">Draft</SelectItem>
+                      <SelectItem value="published">Published</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {model.status === 'published' 
+                      ? 'Visible to users' 
+                      : 'Only visible to admins'}
+                  </p>
+                </div>
                 <div>
                   <Label>Visibility</Label>
                   <Select
@@ -244,7 +266,7 @@ export function ModelBuilder({
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="public">Public (visible to everyone)</SelectItem>
+                      <SelectItem value="public">Public</SelectItem>
                       <SelectItem value="private">Tenant Private</SelectItem>
                     </SelectContent>
                   </Select>
