@@ -2178,16 +2178,26 @@ export default function Admin() {
                       Manage assessment models, dimensions, and questions
                     </p>
                   </div>
-                  <Button 
-                    onClick={() => {
-                      resetModelForm();
-                      setIsModelDialogOpen(true);
-                    }}
-                    data-testid="button-create-model"
-                  >
-                    <Plus className="mr-2 h-4 w-4" />
-                    Create Model
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button 
+                      variant="outline"
+                      onClick={handleModelImportClick}
+                      data-testid="button-import-model"
+                    >
+                      <Upload className="mr-2 h-4 w-4" />
+                      Import Model
+                    </Button>
+                    <Button 
+                      onClick={() => {
+                        resetModelForm();
+                        setIsModelDialogOpen(true);
+                      }}
+                      data-testid="button-create-model"
+                    >
+                      <Plus className="mr-2 h-4 w-4" />
+                      Create Model
+                    </Button>
+                  </div>
                 </div>
 
                 {modelsLoading ? (
