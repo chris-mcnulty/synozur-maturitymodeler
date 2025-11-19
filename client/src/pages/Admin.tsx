@@ -2339,6 +2339,15 @@ export default function Admin() {
                               <Button
                                 variant="ghost"
                                 size="icon"
+                                onClick={() => exportInterviewGuide(model.id)}
+                                data-testid={`button-export-interview-${model.id}`}
+                                title="Export Interview Guide (Markdown)"
+                              >
+                                <FileText className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
                                 onClick={() => {
                                   setDeleteDataModelId(model.id);
                                   setDeleteDataModelName(model.name);
