@@ -1,0 +1,1309 @@
+{
+  "id": "06805e5d-e3c6-4aae-8343-3e06055e0b03",
+  "slug": "content-management-maturity",
+  "name": "Content Management Maturity Assessment",
+  "description": "Evaluate your organization's content and document management maturity across leadership, people, technology, processes, GRC, and AI capabilities. Platform-agnostic framework with Microsoft 365 examples.",
+  "version": "1.0.0",
+  "estimatedTime": "12-15 minutes",
+  "status": "published",
+  "featured": true,
+  "imageUrl": null,
+  "modelClass": "organizational",
+  "createdAt": "2025-11-19T22:29:00.000Z",
+  "updatedAt": "2025-11-19T22:29:00.000Z",
+  "ownerTenantId": null,
+  "questionCount": 25,
+  "dimensionCount": 6,
+  "generalResources": [
+    {
+      "id": "resource-1700430540000",
+      "title": "Content Management Maturity Model - Full Framework",
+      "description": "Complete strategic framework for digital transformation with GRC and AI integration. Platform-agnostic guidance with Microsoft 365 examples.",
+      "link": "https://www.synozur.com/content-management-maturity",
+      "visibility": "public"
+    }
+  ],
+  "maturityScale": [
+    {
+      "id": 1,
+      "name": "Initial / Ad Hoc",
+      "description": "Content and documents managed reactively with little standardization. Storage fragmented, minimal metadata, no formal taxonomy, governance virtually absent.",
+      "minScore": 100,
+      "maxScore": 199
+    },
+    {
+      "id": 2,
+      "name": "Emerging / Structured",
+      "description": "Organization recognizes need for structured content management. Centralized repository strategy defined, basic policies documented, initial tools deployed, but adoption uneven.",
+      "minScore": 200,
+      "maxScore": 299
+    },
+    {
+      "id": 3,
+      "name": "Operational / Integrated",
+      "description": "Content and document management embedded into core business processes. Governance mature with clear ownership, automated workflows, consistent enforcement. Integration with enterprise applications enables seamless information flow.",
+      "minScore": 300,
+      "maxScore": 399
+    },
+    {
+      "id": 4,
+      "name": "Strategic / Transformational",
+      "description": "Content and documents recognized as strategic business assets. Advanced analytics and AI drive insights and automate decision-making. Governance is predictive, identifying risks before they materialize.",
+      "minScore": 400,
+      "maxScore": 449
+    },
+    {
+      "id": 5,
+      "name": "Frontier / Intelligent",
+      "description": "Organization operates as intelligent enterprise where content management is fully autonomous, self-optimizing, and seamlessly integrated. AI agents proactively manage information lifecycles, predict business needs, enable real-time decision-making.",
+      "minScore": 450,
+      "maxScore": 500
+    }
+  ],
+  "dimensions": [
+  {
+    "id": "d1a1e8f2-7c3e-4f2e-9a1e-1a2b3c4d5e6f",
+    "name": "Leadership & Governance",
+    "description": "Executive sponsorship, strategic alignment, governance frameworks, and accountability structures for content management.",
+    "order": 1
+  },
+  {
+    "id": "e2b2f9a3-8d4f-5e3f-0b2f-2b3c4d5e6f7g",
+    "name": "People & Skills",
+    "description": "Training, competencies, change management, and organizational culture supporting effective content management practices.",
+    "order": 2
+  },
+  {
+    "id": "f3c3g0b4-9e5g-6f4g-1c3g-3c4d5e6f7g8h",
+    "name": "Technology & Data",
+    "description": "Repository architecture, integration capabilities, search and discovery, metadata management, and cloud infrastructure.",
+    "order": 3
+  },
+  {
+    "id": "g4d4h1c5-0f6h-7g5h-2d4h-4d5e6f7g8h9i",
+    "name": "Process & Adoption",
+    "description": "Workflow automation, content findability, retention policies, user adoption, and performance measurement.",
+    "order": 4
+  },
+  {
+    "id": "h5e5i2d6-1g7i-8h6i-3e5i-5e6f7g8h9i0j",
+    "name": "Governance, Risk & Compliance (GRC)",
+    "description": "Information classification, records management, e-discovery, audit controls, and regulatory compliance capabilities.",
+    "order": 5
+  },
+  {
+    "id": "i6f6j3e7-2h8j-9i7j-4f6j-6f7g8h9i0j1k",
+    "name": "AI & Intelligent Document Processing (IDP)",
+    "description": "AI-powered classification, automation rates, accuracy monitoring, and ethical governance of intelligent systems.",
+    "order": 6
+  }
+],
+  "questions": [
+  {
+    "id": "q1-leadership-strategy",
+    "dimensionId": "d1a1e8f2-7c3e-4f2e-9a1e-1a2b3c4d5e6f",
+    "text": "How would you characterize your organization's content management strategy and executive sponsorship?",
+    "order": 1
+  },
+  {
+    "id": "q2-leadership-governance",
+    "dimensionId": "d1a1e8f2-7c3e-4f2e-9a1e-1a2b3c4d5e6f",
+    "text": "What level of governance framework and policy structure is in place for content and document management?",
+    "order": 2
+  },
+  {
+    "id": "q3-leadership-roles",
+    "dimensionId": "d1a1e8f2-7c3e-4f2e-9a1e-1a2b3c4d5e6f",
+    "text": "How clearly are roles and responsibilities defined for content ownership, stewardship, and accountability?",
+    "order": 3
+  },
+  {
+    "id": "q4-leadership-alignment",
+    "dimensionId": "d1a1e8f2-7c3e-4f2e-9a1e-1a2b3c4d5e6f",
+    "text": "How is content management aligned with broader digital transformation and business strategy?",
+    "order": 4
+  },
+  {
+    "id": "q5-people-training",
+    "dimensionId": "e2b2f9a3-8d4f-5e3f-0b2f-2b3c4d5e6f7g",
+    "text": "How comprehensive and effective are your content management training and enablement programs?",
+    "order": 5
+  },
+  {
+    "id": "q6-people-ai-literacy",
+    "dimensionId": "e2b2f9a3-8d4f-5e3f-0b2f-2b3c4d5e6f7g",
+    "text": "What is the level of AI literacy and data fluency among your content management users and stakeholders?",
+    "order": 6
+  },
+  {
+    "id": "q7-people-champions",
+    "dimensionId": "e2b2f9a3-8d4f-5e3f-0b2f-2b3c4d5e6f7g",
+    "text": "How well are content management champions and change agents identified, supported, and leveraged across the organization?",
+    "order": 7
+  },
+  {
+    "id": "q8-people-performance",
+    "dimensionId": "e2b2f9a3-8d4f-5e3f-0b2f-2b3c4d5e6f7g",
+    "text": "To what extent is content management performance integrated into individual and team performance management and incentives?",
+    "order": 8
+  },
+  {
+    "id": "q9-tech-repository",
+    "dimensionId": "f3c3g0b4-9e5g-6f4g-1c3g-3c4d5e6f7g8h",
+    "text": "What is the current state of content repository consolidation and rationalization across your organization?",
+    "order": 9
+  },
+  {
+    "id": "q10-tech-integration",
+    "dimensionId": "f3c3g0b4-9e5g-6f4g-1c3g-3c4d5e6f7g8h",
+    "text": "How well are your content repositories integrated with other enterprise applications and business processes?",
+    "order": 10
+  },
+  {
+    "id": "q11-tech-search",
+    "dimensionId": "f3c3g0b4-9e5g-6f4g-1c3g-3c4d5e6f7g8h",
+    "text": "How effective are your search, discovery, and findability capabilities for content and documents?",
+    "order": 11
+  },
+  {
+    "id": "q12-tech-metadata",
+    "dimensionId": "f3c3g0b4-9e5g-6f4g-1c3g-3c4d5e6f7g8h",
+    "text": "What is the maturity of your metadata strategy, taxonomy, and content tagging practices?",
+    "order": 12
+  },
+  {
+    "id": "q13-tech-cloud",
+    "dimensionId": "f3c3g0b4-9e5g-6f4g-1c3g-3c4d5e6f7g8h",
+    "text": "To what extent are your content repositories cloud-based, scalable, and resilient?",
+    "order": 13
+  },
+  {
+    "id": "q14-process-workflows",
+    "dimensionId": "g4d4h1c5-0f6h-7g5h-2d4h-4d5e6f7g8h9i",
+    "text": "How automated and optimized are your content-centric workflows and business processes?",
+    "order": 14
+  },
+  {
+    "id": "q15-process-access",
+    "dimensionId": "g4d4h1c5-0f6h-7g5h-2d4h-4d5e6f7g8h9i",
+    "text": "How effectively do users find, access, and utilize the content they need to perform their work?",
+    "order": 15
+  },
+  {
+    "id": "q16-process-lifecycle",
+    "dimensionId": "g4d4h1c5-0f6h-7g5h-2d4h-4d5e6f7g8h9i",
+    "text": "How mature are your content retention, disposition, and lifecycle management practices?",
+    "order": 16
+  },
+  {
+    "id": "q17-process-metrics",
+    "dimensionId": "g4d4h1c5-0f6h-7g5h-2d4h-4d5e6f7g8h9i",
+    "text": "How comprehensively are content management performance and adoption metrics measured, analyzed, and acted upon?",
+    "order": 17
+  },
+  {
+    "id": "q18-grc-classification",
+    "dimensionId": "h5e5i2d6-1g7i-8h6i-3e5i-5e6f7g8h9i0j",
+    "text": "How mature is your information classification and sensitivity labeling program?",
+    "order": 18
+  },
+  {
+    "id": "q19-grc-records",
+    "dimensionId": "h5e5i2d6-1g7i-8h6i-3e5i-5e6f7g8h9i0j",
+    "text": "How effective are your records management and legal hold capabilities?",
+    "order": 19
+  },
+  {
+    "id": "q20-grc-ediscovery",
+    "dimensionId": "h5e5i2d6-1g7i-8h6i-3e5i-5e6f7g8h9i0j",
+    "text": "What is the maturity of your e-discovery and litigation readiness capabilities?",
+    "order": 20
+  },
+  {
+    "id": "q21-grc-audit",
+    "dimensionId": "h5e5i2d6-1g7i-8h6i-3e5i-5e6f7g8h9i0j",
+    "text": "How comprehensively are audit, monitoring, and compliance reporting capabilities implemented?",
+    "order": 21
+  },
+  {
+    "id": "q22-ai-classification",
+    "dimensionId": "i6f6j3e7-2h8j-9i7j-4f6j-6f7g8h9i0j1k",
+    "text": "What percentage of your organization's documents are automatically classified and tagged using AI?",
+    "order": 22
+  },
+  {
+    "id": "q23-ai-idp",
+    "dimensionId": "i6f6j3e7-2h8j-9i7j-4f6j-6f7g8h9i0j1k",
+    "text": "What percentage of your document-centric business processes are automated using intelligent document processing (IDP)?",
+    "order": 23
+  },
+  {
+    "id": "q24-ai-monitoring",
+    "dimensionId": "i6f6j3e7-2h8j-9i7j-4f6j-6f7g8h9i0j1k",
+    "text": "How effectively are you monitoring, measuring, and improving the accuracy and performance of your AI and IDP models?",
+    "order": 24
+  },
+  {
+    "id": "q25-ai-ethics",
+    "dimensionId": "i6f6j3e7-2h8j-9i7j-4f6j-6f7g8h9i0j1k",
+    "text": "How mature is your ethical AI governance and responsible AI framework for content management use cases?",
+    "order": 25
+  }
+],
+  "answers": [
+  {
+    "id": "a1-q1",
+    "questionId": "q1-leadership-strategy",
+    "text": "No formal strategy exists; content management handled reactively by individual departments with no executive awareness.",
+    "score": 100,
+    "order": 1,
+    "improvementStatement": "Establish executive awareness by presenting a business case highlighting content risks, compliance gaps, and productivity losses. Appoint an executive sponsor to champion a content management vision."
+  },
+  {
+    "id": "a2-q1",
+    "questionId": "q1-leadership-strategy",
+    "text": "Leadership acknowledges content challenges; informal discussions occur but no formal strategy or dedicated ownership.",
+    "score": 200,
+    "order": 2,
+    "improvementStatement": "Formalize a content management steering committee with executive representation. Document a strategic vision, charter, and initial roadmap with clear business outcomes."
+  },
+  {
+    "id": "a3-q1",
+    "questionId": "q1-leadership-strategy",
+    "text": "Documented content strategy exists with executive sponsor; governance model defined and communicated across organization.",
+    "score": 300,
+    "order": 3,
+    "improvementStatement": "Expand governance to include cross-functional representation from legal, IT, compliance, and business units. Establish quarterly strategy reviews with measurable KPIs tied to business objectives."
+  },
+  {
+    "id": "a4-q1",
+    "questionId": "q1-leadership-strategy",
+    "text": "Executive leadership actively champions content management; strategic initiatives integrated into corporate transformation and innovation programs.",
+    "score": 400,
+    "order": 4,
+    "improvementStatement": "Leverage executive sponsorship to drive advanced use cases such as AI-powered content services and predictive analytics. Benchmark against industry leaders and pursue thought leadership opportunities."
+  },
+  {
+    "id": "a5-q1",
+    "questionId": "q1-leadership-strategy",
+    "text": "Content management recognized as strategic differentiator by C-suite; board-level visibility with dedicated budget and innovation investment tied to business performance metrics.",
+    "score": 500,
+    "order": 5,
+    "improvementStatement": "Sustain leadership by continuously innovating and sharing best practices externally. Position content management as a competitive advantage in customer and partner engagements."
+  },
+
+  {
+    "id": "a1-q2",
+    "questionId": "q2-leadership-governance",
+    "text": "No formal policies exist; users create and store content without guidance or standards.",
+    "score": 100,
+    "order": 1,
+    "improvementStatement": "Develop foundational policies covering content creation, storage, naming conventions, and retention. Publish initial guidance documents and communicate to all users."
+  },
+  {
+    "id": "a2-q2",
+    "questionId": "q2-leadership-governance",
+    "text": "Basic policies documented but inconsistently enforced; limited awareness among users.",
+    "score": 200,
+    "order": 2,
+    "improvementStatement": "Formalize policy governance with clear ownership, approval processes, and regular reviews. Launch awareness campaigns and integrate policies into onboarding training."
+  },
+  {
+    "id": "a3-q2",
+    "questionId": "q2-leadership-governance",
+    "text": "Comprehensive policies in place, regularly reviewed, and enforced through automated controls and user training.",
+    "score": 300,
+    "order": 3,
+    "improvementStatement": "Implement policy automation using tools like Microsoft Purview sensitivity labels and retention policies. Establish policy exception workflows and audit trails."
+  },
+  {
+    "id": "a4-q2",
+    "questionId": "q2-leadership-governance",
+    "text": "Advanced governance framework with automated policy enforcement, real-time monitoring, and predictive compliance analytics.",
+    "score": 400,
+    "order": 4,
+    "improvementStatement": "Integrate governance metrics into executive dashboards. Use AI-driven insights to proactively identify policy gaps and recommend improvements based on usage patterns."
+  },
+  {
+    "id": "a5-q2",
+    "questionId": "q2-leadership-governance",
+    "text": "Fully autonomous governance with AI agents continuously optimizing policies, self-healing compliance violations, and adapting to regulatory changes in real time.",
+    "score": 500,
+    "order": 5,
+    "improvementStatement": "Share your governance maturity model and AI-driven insights as thought leadership. Explore emerging technologies such as blockchain for immutable audit trails and decentralized governance."
+  },
+
+  {
+    "id": "a1-q3",
+    "questionId": "q3-leadership-roles",
+    "text": "No defined roles; content ownership unclear and accountability absent.",
+    "score": 100,
+    "order": 1,
+    "improvementStatement": "Define basic content ownership roles (e.g., content owners, stewards, administrators). Create RACI matrices and communicate responsibilities to key stakeholders."
+  },
+  {
+    "id": "a2-q3",
+    "questionId": "q3-leadership-roles",
+    "text": "Informal roles assigned but not documented; accountability inconsistent across departments.",
+    "score": 200,
+    "order": 2,
+    "improvementStatement": "Formalize roles in governance documentation with clear job descriptions and decision rights. Establish accountability mechanisms such as quarterly reviews and performance metrics."
+  },
+  {
+    "id": "a3-q3",
+    "questionId": "q3-leadership-roles",
+    "text": "Roles formally defined and documented; accountability integrated into performance management and job descriptions.",
+    "score": 300,
+    "order": 3,
+    "improvementStatement": "Enhance accountability by implementing content health scorecards and tying outcomes to individual and team objectives. Recognize high-performing content stewards to reinforce culture."
+  },
+  {
+    "id": "a4-q3",
+    "questionId": "q3-leadership-roles",
+    "text": "Mature accountability structure with cross-functional content councils, executive oversight, and transparent reporting on content health and compliance.",
+    "score": 400,
+    "order": 4,
+    "improvementStatement": "Expand accountability to include AI ethics and data privacy roles. Implement real-time dashboards showing content ownership, risk exposure, and compliance status across the enterprise."
+  },
+  {
+    "id": "a5-q3",
+    "questionId": "q3-leadership-roles",
+    "text": "Fully embedded accountability culture where AI agents monitor content ownership, proactively escalate issues, and automatically assign remediation tasks to responsible parties.",
+    "score": 500,
+    "order": 5,
+    "improvementStatement": "Leverage AI-driven insights to continuously optimize role definitions and accountability structures. Share best practices on autonomous content governance at industry forums."
+  }
+  {
+    "id": "a1-q4",
+    "questionId": "q4-leadership-alignment",
+    "text": "Content management operates in isolation with no connection to strategic initiatives.",
+    "score": 100,
+    "order": 1,
+    "improvementStatement": "Map content management challenges to strategic business objectives (e.g., customer experience, operational efficiency, risk reduction). Present findings to leadership to establish alignment."
+  },
+  {
+    "id": "a2-q4",
+    "questionId": "q4-leadership-alignment",
+    "text": "Some awareness of strategic importance but content management not integrated into transformation planning.",
+    "score": 200,
+    "order": 2,
+    "improvementStatement": "Include content management as a workstream in digital transformation programs. Align content initiatives with strategic priorities such as cloud migration, AI adoption, or customer experience improvement."
+  },
+  {
+    "id": "a3-q4",
+    "questionId": "q4-leadership-alignment",
+    "text": "Content management integrated into digital strategy; transformation roadmaps include content-related projects with clear business cases.",
+    "score": 300,
+    "order": 3,
+    "improvementStatement": "Establish content management KPIs that directly map to business outcomes (e.g., time saved, compliance risk reduction, revenue impact). Report progress to transformation steering committees."
+  },
+  {
+    "id": "a4-q4",
+    "questionId": "q4-leadership-alignment",
+    "text": "Content management recognized as strategic enabler; executives view it as critical to innovation, agility, and competitive advantage.",
+    "score": 400,
+    "order": 4,
+    "improvementStatement": "Leverage content management to unlock new business models (e.g., AI-powered customer insights, real-time decision-making). Invest in advanced capabilities such as intelligent document processing and predictive analytics."
+  },
+  {
+    "id": "a5-q4",
+    "questionId": "q4-leadership-alignment",
+    "text": "Content management fully embedded in strategic DNA; AI-driven insights from content enable autonomous decision-making and real-time business optimization.",
+    "score": 500,
+    "order": 5,
+    "improvementStatement": "Position content management as a competitive differentiator in market positioning. Continuously innovate and share thought leadership on how intelligent content drives business transformation."
+  },
+
+  {
+    "id": "a1-q5",
+    "questionId": "q5-people-training",
+    "text": "No formal training exists; users learn through trial and error or informal peer support.",
+    "score": 100,
+    "order": 1,
+    "improvementStatement": "Develop foundational training materials covering basic content management concepts, tool usage, and policies. Deliver initial training sessions to key user groups."
+  },
+  {
+    "id": "a2-q5",
+    "questionId": "q5-people-training",
+    "text": "Basic training materials available but not consistently delivered; uptake is voluntary and inconsistent.",
+    "score": 200,
+    "order": 2,
+    "improvementStatement": "Establish mandatory training for new hires and annual refreshers for existing users. Track completion rates and gather feedback to improve content quality."
+  },
+  {
+    "id": "a3-q5",
+    "questionId": "q5-people-training",
+    "text": "Comprehensive training program with role-based curricula, regular delivery, and measurable outcomes integrated into onboarding and performance management.",
+    "score": 300,
+    "order": 3,
+    "improvementStatement": "Expand training to include advanced topics such as metadata management, retention policies, and AI-powered search. Implement micro-learning modules and gamification to increase engagement."
+  },
+  {
+    "id": "a4-q5",
+    "questionId": "q5-people-training",
+    "text": "Mature enablement program with personalized learning paths, certifications, and continuous upskilling tied to career development and innovation initiatives.",
+    "score": 400,
+    "order": 4,
+    "improvementStatement": "Leverage AI-powered learning platforms to deliver adaptive training based on user behavior and skill gaps. Recognize content management champions and create communities of practice."
+  },
+  {
+    "id": "a5-q5",
+    "questionId": "q5-people-training",
+    "text": "Fully autonomous learning ecosystem where AI agents deliver just-in-time guidance, predict skill gaps, and proactively recommend training based on evolving business needs.",
+    "score": 500,
+    "order": 5,
+    "improvementStatement": "Share your enablement model as thought leadership. Explore immersive learning technologies such as VR/AR for complex content management scenarios."
+  }
+  {
+    "id": "a1-q6",
+    "questionId": "q6-people-ai-literacy",
+    "text": "Minimal awareness of AI capabilities; users unfamiliar with how AI can enhance content management.",
+    "score": 100,
+    "order": 1,
+    "improvementStatement": "Launch AI awareness campaigns explaining practical use cases such as automated classification, intelligent search, and predictive insights. Provide introductory workshops and demos."
+  },
+  {
+    "id": "a2-q6",
+    "questionId": "q6-people-ai-literacy",
+    "text": "Some awareness exists but limited understanding of AI applications in content management; no formal upskilling efforts.",
+    "score": 200,
+    "order": 2,
+    "improvementStatement": "Develop AI literacy training modules tailored to content management roles. Cover topics such as machine learning basics, AI ethics, and practical tool usage (e.g., Microsoft Syntex, Azure AI)."
+  },
+  {
+    "id": "a3-q6",
+    "questionId": "q6-people-ai-literacy",
+    "text": "Structured AI literacy programs in place; users understand AI capabilities and are trained on AI-powered content tools and responsible AI principles.",
+    "score": 300,
+    "order": 3,
+    "improvementStatement": "Expand AI literacy to include hands-on labs, certifications, and real-world pilot projects. Foster a culture of experimentation and continuous learning."
+  },
+  {
+    "id": "a4-q6",
+    "questionId": "q6-people-ai-literacy",
+    "text": "High AI fluency across organization; users actively leverage AI tools, contribute to model training, and participate in AI governance discussions.",
+    "score": 400,
+    "order": 4,
+    "improvementStatement": "Establish AI centers of excellence and innovation labs focused on content management. Encourage users to develop and share custom AI models and automation workflows."
+  },
+  {
+    "id": "a5-q6",
+    "questionId": "q6-people-ai-literacy",
+    "text": "Organization operates as intelligent enterprise where all users are empowered to leverage AI autonomously; AI literacy embedded in DNA and culture.",
+    "score": 500,
+    "order": 5,
+    "improvementStatement": "Position your organization as thought leader in AI-driven content management. Share best practices, case studies, and ethical AI frameworks at industry events and publications."
+  },
+
+  {
+    "id": "a1-q7",
+    "questionId": "q7-people-champions",
+    "text": "No formal champion network; change management ad hoc and reactive.",
+    "score": 100,
+    "order": 1,
+    "improvementStatement": "Identify early adopters and influencers in key departments. Engage them informally to gather feedback and build advocacy for content management initiatives."
+  },
+  {
+    "id": "a2-q7",
+    "questionId": "q7-people-champions",
+    "text": "Some champions identified but not formally recognized or supported; limited coordination across departments.",
+    "score": 200,
+    "order": 2,
+    "improvementStatement": "Formalize a champion program with clear roles, responsibilities, and recognition mechanisms. Provide champions with training, resources, and regular engagement opportunities."
+  },
+  {
+    "id": "a3-q7",
+    "questionId": "q7-people-champions",
+    "text": "Structured champion network with executive sponsorship, regular meetings, and resources to drive adoption and gather feedback.",
+    "score": 300,
+    "order": 3,
+    "improvementStatement": "Expand champion network to include representatives from all business units. Provide champions with advanced training, toolkits, and dedicated collaboration platforms to share best practices."
+  },
+  {
+    "id": "a4-q7",
+    "questionId": "q7-people-champions",
+    "text": "Mature champion program with tiered levels, certifications, career development opportunities, and measurable impact on adoption and satisfaction metrics.",
+    "score": 400,
+    "order": 4,
+    "improvementStatement": "Leverage champions as co-creators of new capabilities and innovation pilots. Recognize top performers publicly and integrate champion contributions into innovation metrics and rewards."
+  },
+  {
+    "id": "a5-q7",
+    "questionId": "q7-people-champions",
+    "text": "Fully embedded champion culture where every team has empowered change agents; AI tools identify emerging champions and proactively provide enablement resources.",
+    "score": 500,
+    "order": 5,
+    "improvementStatement": "Scale champion insights globally and across partner ecosystems. Use AI-driven sentiment analysis to continuously identify and support new champions."
+  },
+
+  {
+    "id": "a1-q8",
+    "questionId": "q8-people-performance",
+    "text": "Content management responsibilities not reflected in job descriptions, goals, or performance reviews.",
+    "score": 100,
+    "order": 1,
+    "improvementStatement": "Work with HR to incorporate content management responsibilities into relevant job descriptions and performance criteria. Start with roles directly involved in content creation and governance."
+  },
+  {
+    "id": "a2-q8",
+    "questionId": "q8-people-performance",
+    "text": "Some roles have informal content management responsibilities but not consistently measured or rewarded.",
+    "score": 200,
+    "order": 2,
+    "improvementStatement": "Formalize content management objectives and key results (OKRs) for key roles such as content stewards, administrators, and compliance officers. Track and review performance quarterly."
+  },
+  {
+    "id": "a3-q8",
+    "questionId": "q8-people-performance",
+    "text": "Content management integrated into performance management for relevant roles; clear KPIs and accountability mechanisms in place.",
+    "score": 300,
+    "order": 3,
+    "improvementStatement": "Expand performance integration to include metrics such as content quality, compliance adherence, and adoption rates. Recognize high performers through awards and incentive programs."
+  },
+  {
+    "id": "a4-q8",
+    "questionId": "q8-people-performance",
+    "text": "Comprehensive performance framework with content management metrics embedded across organization; incentives tied to business outcomes and innovation contributions.",
+    "score": 400,
+    "order": 4,
+    "improvementStatement": "Use AI-powered analytics to provide real-time performance insights and coaching recommendations. Integrate content management excellence into leadership competency models and succession planning."
+  },
+  {
+    "id": "a5-q8",
+    "questionId": "q8-people-performance",
+    "text": "Fully autonomous performance optimization where AI agents monitor contributions, provide real-time feedback, and automatically adjust incentives based on business impact and innovation.",
+    "score": 500,
+    "order": 5,
+    "improvementStatement": "Share your performance integration model as thought leadership. Explore innovative incentive structures such as gamification, social recognition, and career pathing tied to content management mastery."
+  }
+{
+    "id": "a1-q9",
+    "questionId": "q9-tech-repository",
+    "text": "Highly fragmented environment with dozens of repositories, file shares, and personal drives; no visibility or governance.",
+    "score": 100,
+    "order": 1,
+    "improvementStatement": "Conduct a repository inventory and content audit to understand scope and complexity. Develop a consolidation strategy with phased approach and clear business case."
+  },
+  {
+    "id": "a2-q9",
+    "questionId": "q9-tech-repository",
+    "text": "Multiple repositories exist with some consolidation efforts underway; limited progress due to technical or organizational barriers.",
+    "score": 200,
+    "order": 2,
+    "improvementStatement": "Prioritize consolidation of high-value or high-risk content repositories. Use migration tools and services to streamline consolidation and establish governance for remaining repositories."
+  },
+  {
+    "id": "a3-q9",
+    "questionId": "q9-tech-repository",
+    "text": "Majority of content consolidated into centralized platforms (e.g., SharePoint, OneDrive); legacy repositories identified and migration roadmap in place.",
+    "score": 300,
+    "order": 3,
+    "improvementStatement": "Complete migration of legacy repositories and decommission outdated systems. Implement policies to prevent repository sprawl and ensure all new content created in governed platforms."
+  },
+  {
+    "id": "a4-q9",
+    "questionId": "q9-tech-repository",
+    "text": "Fully consolidated and rationalized repository architecture with integrated content services; advanced capabilities such as federated search and cross-repository analytics.",
+    "score": 400,
+    "order": 4,
+    "improvementStatement": "Leverage consolidated architecture to enable advanced use cases such as AI-powered insights, real-time collaboration, and seamless integration with business applications."
+  },
+  {
+    "id": "a5-q9",
+    "questionId": "q9-tech-repository",
+    "text": "Intelligent content fabric where AI agents automatically classify, route, and optimize content across repositories; self-healing architecture ensures continuous optimization.",
+    "score": 500,
+    "order": 5,
+    "improvementStatement": "Share your repository consolidation journey and intelligent architecture as thought leadership. Explore emerging technologies such as content graphs and semantic search."
+  },
+
+  {
+    "id": "a1-q10",
+    "questionId": "q10-tech-integration",
+    "text": "Content repositories operate as isolated silos with no integration to business systems; manual processes for content sharing.",
+    "score": 100,
+    "order": 1,
+    "improvementStatement": "Identify high-value integration opportunities (e.g., CRM, ERP, case management). Develop initial integrations using APIs, connectors, or middleware platforms."
+  },
+  {
+    "id": "a2-q10",
+    "questionId": "q10-tech-integration",
+    "text": "Basic integrations exist for select applications but limited to simple document linking; no seamless workflow integration.",
+    "score": 200,
+    "order": 2,
+    "improvementStatement": "Expand integrations to support embedded content experiences within business applications (e.g., Salesforce, Dynamics). Implement single sign-on and unified search."
+  },
+  {
+    "id": "a3-q10",
+    "questionId": "q10-tech-integration",
+    "text": "Comprehensive integration architecture with content embedded in key business processes; APIs and connectors enable seamless information flow.",
+    "score": 300,
+    "order": 3,
+    "improvementStatement": "Implement event-driven integrations and real-time content synchronization. Use integration platforms (e.g., Microsoft Power Platform, Azure Logic Apps) to scale connectivity."
+  },
+  {
+    "id": "a4-q10",
+    "questionId": "q10-tech-integration",
+    "text": "Advanced integration ecosystem with intelligent routing, automated workflows, and real-time data exchange across enterprise applications.",
+    "score": 400,
+    "order": 4,
+    "improvementStatement": "Leverage AI-powered integration tools to automatically discover and recommend new integration opportunities. Implement content services architecture for reusable, composable integrations."
+  },
+  {
+    "id": "a5-q10",
+    "questionId": "q10-tech-integration",
+    "text": "Fully autonomous integration fabric where AI agents continuously optimize content flows, predict integration needs, and self-configure connections based on business context.",
+    "score": 500,
+    "order": 5,
+    "improvementStatement": "Share your integration architecture and AI-driven orchestration as thought leadership. Explore next-generation technologies such as intelligent agents and autonomous systems."
+  }{
+    "id": "a1-q11",
+    "questionId": "q11-tech-search",
+    "text": "Users struggle to find content; search functionality basic or nonexistent; reliance on manual navigation and personal knowledge.",
+    "score": 100,
+    "order": 1,
+    "improvementStatement": "Implement basic search capabilities with keyword search and filtering. Improve content organization with folder structures and basic metadata tagging."
+  },
+  {
+    "id": "a2-q11",
+    "questionId": "q11-tech-search",
+    "text": "Basic search available but results often irrelevant or incomplete; limited metadata and no advanced filtering.",
+    "score": 200,
+    "order": 2,
+    "improvementStatement": "Enhance search with relevance tuning, metadata-based filtering, and faceted navigation. Launch metadata enrichment initiatives to improve content discoverability."
+  },
+  {
+    "id": "a3-q11",
+    "questionId": "q11-tech-search",
+    "text": "Comprehensive search with relevance tuning, advanced filters, and metadata-driven discovery; user satisfaction improving but not optimal.",
+    "score": 300,
+    "order": 3,
+    "improvementStatement": "Implement AI-powered search (e.g., Microsoft Search, Azure Cognitive Search) with semantic understanding, natural language queries, and personalized results. Add visual search and content recommendations."
+  },
+  {
+    "id": "a4-q11",
+    "questionId": "q11-tech-search",
+    "text": "Advanced search and discovery with AI-driven insights, predictive recommendations, and proactive content delivery based on user context and behavior.",
+    "score": 400,
+    "order": 4,
+    "improvementStatement": "Leverage AI to deliver just-in-time content suggestions within workflow context. Implement voice-activated search and conversational AI interfaces for hands-free discovery."
+  },
+  {
+    "id": "a5-q11",
+    "questionId": "q11-tech-search",
+    "text": "Fully intelligent discovery where AI agents anticipate information needs, proactively surface relevant content, and eliminate search friction through autonomous content delivery.",
+    "score": 500,
+    "order": 5,
+    "improvementStatement": "Share your intelligent discovery architecture as thought leadership. Explore emerging technologies such as augmented reality overlays and brain-computer interfaces for content access."
+  },
+
+  {
+    "id": "a1-q12",
+    "questionId": "q12-tech-metadata",
+    "text": "No metadata standards or taxonomy; content stored with minimal or inconsistent tagging.",
+    "score": 100,
+    "order": 1,
+    "improvementStatement": "Define initial metadata schema covering essential attributes (e.g., document type, owner, date, department). Implement basic taxonomy and controlled vocabularies for key content types."
+  },
+  {
+    "id": "a2-q12",
+    "questionId": "q12-tech-metadata",
+    "text": "Basic metadata standards documented but inconsistently applied; taxonomy exists but limited adoption and enforcement.",
+    "score": 200,
+    "order": 2,
+    "improvementStatement": "Formalize metadata governance with clear standards, training, and validation rules. Use metadata templates and default values to improve consistency."
+  },
+  {
+    "id": "a3-q12",
+    "questionId": "q12-tech-metadata",
+    "text": "Comprehensive metadata strategy with enforced standards, taxonomy management, and automated tagging; regular reviews and governance in place.",
+    "score": 300,
+    "order": 3,
+    "improvementStatement": "Implement AI-powered auto-tagging (e.g., Microsoft Syntex) to scale metadata enrichment. Establish taxonomy stewardship roles and continuous improvement processes."
+  },
+  {
+    "id": "a4-q12",
+    "questionId": "q12-tech-metadata",
+    "text": "Advanced metadata architecture with semantic relationships, knowledge graphs, and AI-driven enrichment; metadata enables advanced analytics and insights.",
+    "score": 400,
+    "order": 4,
+    "improvementStatement": "Leverage metadata and knowledge graphs to power intelligent recommendations, predictive analytics, and business intelligence. Integrate metadata with enterprise data platforms for unified insights."
+  },
+  {
+    "id": "a5-q12",
+    "questionId": "q12-tech-metadata",
+    "text": "Fully autonomous metadata management where AI agents continuously enrich, optimize, and maintain metadata and taxonomy based on usage patterns and emerging business needs.",
+    "score": 500,
+    "order": 5,
+    "improvementStatement": "Share your metadata and taxonomy maturity model as thought leadership. Explore emerging technologies such as semantic AI and ontology-driven content management."
+  },
+
+  {
+    "id": "a1-q13",
+    "questionId": "q13-tech-cloud",
+    "text": "Primarily on-premises infrastructure with limited scalability and high maintenance overhead; disaster recovery uncertain.",
+    "score": 100,
+    "order": 1,
+    "improvementStatement": "Develop cloud migration strategy with phased approach starting with non-critical or new content. Evaluate cloud platforms (e.g., Microsoft 365, Azure) and build business case."
+  },
+  {
+    "id": "a2-q13",
+    "questionId": "q13-tech-cloud",
+    "text": "Partial cloud adoption with hybrid architecture; some cloud services in use but significant on-premises footprint remains.",
+    "score": 200,
+    "order": 2,
+    "improvementStatement": "Accelerate cloud migration for key repositories. Implement hybrid identity and access management. Establish cloud governance and cost optimization practices."
+  },
+  {
+    "id": "a3-q13",
+    "questionId": "q13-tech-cloud",
+    "text": "Majority of content in cloud with scalable, managed services; robust backup and disaster recovery; hybrid architecture optimized for performance and compliance.",
+    "score": 300,
+    "order": 3,
+    "improvementStatement": "Complete cloud migration for remaining on-premises repositories. Optimize cloud architecture for performance, cost, and security. Implement advanced features such as geo-replication and content delivery networks."
+  },
+  {
+    "id": "a4-q13",
+    "questionId": "q13-tech-cloud",
+    "text": "Fully cloud-native architecture with global scalability, multi-region redundancy, and advanced resilience; infrastructure-as-code and automated operations.",
+    "score": 400,
+    "order": 4,
+    "improvementStatement": "Leverage cloud-native capabilities such as serverless computing, AI services, and advanced analytics. Implement continuous optimization and FinOps practices for cost management."
+  },
+  {
+    "id": "a5-q13",
+    "questionId": "q13-tech-cloud",
+    "text": "Intelligent cloud infrastructure where AI agents continuously optimize resource allocation, predict capacity needs, and autonomously scale to meet demand while minimizing costs.",
+    "score": 500,
+    "order": 5,
+    "improvementStatement": "Share your cloud-native content management architecture as thought leadership. Explore emerging technologies such as edge computing and distributed content networks."
+  },
+
+  {
+    "id": "a1-q14",
+    "questionId": "q14-process-workflows",
+    "text": "Workflows are entirely manual with paper-based or email-driven processes; no workflow automation tools in use.",
+    "score": 100,
+    "order": 1,
+    "improvementStatement": "Identify high-volume, repetitive workflows suitable for automation (e.g., document approvals, invoice processing). Implement basic workflow automation using tools like Power Automate or SharePoint workflows."
+  },
+  {
+    "id": "a2-q14",
+    "questionId": "q14-process-workflows",
+    "text": "Basic workflow automation for select processes but limited adoption; many processes still manual or semi-automated.",
+    "score": 200,
+    "order": 2,
+    "improvementStatement": "Expand automation to additional high-value workflows. Provide training and templates to empower business users to create workflows. Establish workflow governance and best practices."
+  },
+  {
+    "id": "a3-q14",
+    "questionId": "q14-process-workflows",
+    "text": "Comprehensive workflow automation platform deployed across organization; key business processes automated with measurable efficiency gains.",
+    "score": 300,
+    "order": 3,
+    "improvementStatement": "Optimize existing workflows using process mining and analytics. Implement advanced features such as parallel approvals, escalations, and mobile support. Integrate workflows with AI services for intelligent routing."
+  },
+  {
+    "id": "a4-q14",
+    "questionId": "q14-process-workflows",
+    "text": "Advanced process automation with AI-driven orchestration, intelligent routing, and predictive analytics; workflows adapt based on context and business rules.",
+    "score": 400,
+    "order": 4,
+    "improvementStatement": "Leverage robotic process automation (RPA) and AI to eliminate manual tasks. Implement end-to-end process monitoring and continuous improvement loops. Use process intelligence to identify new automation opportunities."
+  },
+  {
+    "id": "a5-q14",
+    "questionId": "q14-process-workflows",
+    "text": "Fully autonomous workflows where AI agents orchestrate end-to-end processes, self-optimize based on outcomes, and adapt in real time to changing business conditions.",
+    "score": 500,
+    "order": 5,
+    "improvementStatement": "Share your autonomous workflow architecture as thought leadership. Explore emerging technologies such as intelligent agents and process orchestration platforms."
+  },
+
+  {
+    "id": "a1-q15",
+    "questionId": "q15-process-access",
+    "text": "Users frequently unable to find content; significant time wasted searching or recreating documents; frustration levels high.",
+    "score": 100,
+    "order": 1,
+    "improvementStatement": "Conduct user research to understand findability pain points. Improve content organization, implement basic search, and provide training on search techniques."
+  },
+  {
+    "id": "a2-q15",
+    "questionId": "q15-process-access",
+    "text": "Users can find content with effort but process time-consuming and inconsistent; reliance on personal networks and knowledge.",
+    "score": 200,
+    "order": 2,
+    "improvementStatement": "Enhance search capabilities and metadata tagging. Implement content recommendations and recently accessed lists. Provide training on advanced search features."
+  },
+  {
+    "id": "a3-q15",
+    "questionId": "q15-process-access",
+    "text": "Users generally satisfied with content findability; search effective and content organization logical; some opportunities for improvement remain.",
+    "score": 300,
+    "order": 3,
+    "improvementStatement": "Implement AI-powered search and personalized recommendations. Add contextual content surfacing within business applications. Monitor search analytics to continuously improve relevance."
+  },
+  {
+    "id": "a4-q15",
+    "questionId": "q15-process-access",
+    "text": "Highly effective findability with AI-driven discovery, proactive content delivery, and seamless integration into user workflows; minimal search friction.",
+    "score": 400,
+    "order": 4,
+    "improvementStatement": "Leverage AI to deliver just-in-time content based on user tasks and context. Implement conversational search interfaces and voice-activated discovery. Use analytics to predict and preemptively address findability gaps."
+  },
+  {
+    "id": "a5-q15",
+    "questionId": "q15-process-access",
+    "text": "Zero-friction content access where AI agents anticipate needs, proactively surface relevant information, and eliminate search entirely through autonomous content delivery.",
+    "score": 500,
+    "order": 5,
+    "improvementStatement": "Share your intelligent findability architecture as thought leadership. Explore emerging technologies such as augmented reality and predictive content delivery."
+  }
+{
+    "id": "a1-q16",
+    "questionId": "q16-process-lifecycle",
+    "text": "No formal retention policies; content retained indefinitely or deleted arbitrarily; significant compliance and storage cost risks.",
+    "score": 100,
+    "order": 1,
+    "improvementStatement": "Conduct content audit to understand volumes and types. Develop initial retention schedule based on legal, regulatory, and business requirements. Implement manual disposition processes."
+  },
+  {
+    "id": "a2-q16",
+    "questionId": "q16-process-lifecycle",
+    "text": "Basic retention policies documented but not consistently enforced; manual disposition processes in place but inconsistent.",
+    "score": 200,
+    "order": 2,
+    "improvementStatement": "Formalize retention policy governance with clear ownership and approval processes. Implement automated retention labels and policies using tools like Microsoft Purview."
+  },
+  {
+    "id": "a3-q16",
+    "questionId": "q16-process-lifecycle",
+    "text": "Comprehensive retention policies automated and enforced; disposition workflows integrated into content lifecycle; regular audits ensure compliance.",
+    "score": 300,
+    "order": 3,
+    "improvementStatement": "Optimize retention policies using analytics to identify opportunities for cost savings and risk reduction. Implement event-based retention triggers and advanced disposition workflows."
+  },
+  {
+    "id": "a4-q16",
+    "questionId": "q16-process-lifecycle",
+    "text": "Advanced lifecycle management with AI-driven retention optimization, predictive disposition, and real-time compliance monitoring; proactive risk identification.",
+    "score": 400,
+    "order": 4,
+    "improvementStatement": "Leverage AI to continuously optimize retention policies based on business value, legal risk, and storage costs. Implement automated policy recommendations and self-service disposition approval workflows."
+  },
+  {
+    "id": "a5-q16",
+    "questionId": "q16-process-lifecycle",
+    "text": "Fully autonomous lifecycle management where AI agents continuously assess content value, predict disposition needs, and automatically apply optimal retention policies in real time.",
+    "score": 500,
+    "order": 5,
+    "improvementStatement": "Share your autonomous lifecycle management architecture as thought leadership. Explore emerging technologies such as blockchain for immutable disposition records."
+  },
+
+  {
+    "id": "a1-q17",
+    "questionId": "q17-process-metrics",
+    "text": "No metrics or analytics in place; no visibility into usage, adoption, or performance.",
+    "score": 100,
+    "order": 1,
+    "improvementStatement": "Implement basic analytics to track content repository usage, user activity, and adoption trends. Define initial KPIs aligned with business objectives."
+  },
+  {
+    "id": "a2-q17",
+    "questionId": "q17-process-metrics",
+    "text": "Basic metrics tracked but not regularly reviewed or acted upon; limited insights into user behavior or content health.",
+    "score": 200,
+    "order": 2,
+    "improvementStatement": "Establish regular reporting cadence with dashboard views for key stakeholders. Define actionable KPIs and target thresholds. Begin using insights to inform improvement initiatives."
+  },
+  {
+    "id": "a3-q17",
+    "questionId": "q17-process-metrics",
+    "text": "Comprehensive analytics and reporting framework in place; metrics reviewed regularly and drive continuous improvement initiatives.",
+    "score": 300,
+    "order": 3,
+    "improvementStatement": "Implement advanced analytics such as user journey mapping, content quality scoring, and predictive adoption modeling. Integrate metrics into executive dashboards and strategic planning."
+  },
+  {
+    "id": "a4-q17",
+    "questionId": "q17-process-metrics",
+    "text": "Advanced performance measurement with real-time dashboards, predictive analytics, and AI-driven insights; metrics directly inform business decisions and innovation investments.",
+    "score": 400,
+    "order": 4,
+    "improvementStatement": "Leverage AI-powered analytics to identify emerging trends, predict issues before they occur, and automatically recommend optimization actions. Establish closed-loop measurement where insights drive automated improvements."
+  },
+  {
+    "id": "a5-q17",
+    "questionId": "q17-process-metrics",
+    "text": "Fully autonomous measurement and optimization where AI agents continuously monitor performance, predict outcomes, and automatically adjust systems and processes to maximize business value.",
+    "score": 500,
+    "order": 5,
+    "improvementStatement": "Share your autonomous measurement and optimization framework as thought leadership. Explore emerging technologies such as real-time predictive analytics and self-optimizing systems."
+  },
+
+  {
+    "id": "a1-q18",
+    "questionId": "q18-grc-classification",
+    "text": "No classification schema or sensitivity labeling in use; users unaware of information sensitivity requirements.",
+    "score": 100,
+    "order": 1,
+    "improvementStatement": "Define initial information classification schema (e.g., public, internal, confidential, restricted). Launch awareness campaign and provide training on classification principles."
+  },
+  {
+    "id": "a2-q18",
+    "questionId": "q18-grc-classification",
+    "text": "Basic classification schema defined but not consistently applied; manual labeling with low adoption.",
+    "score": 200,
+    "order": 2,
+    "improvementStatement": "Implement automated classification tools (e.g., Microsoft Purview sensitivity labels). Provide training and enforce labeling policies for key content types."
+  },
+  {
+    "id": "a3-q18",
+    "questionId": "q18-grc-classification",
+    "text": "Comprehensive classification program with automated labeling, policy enforcement, and regular audits; high user awareness and compliance.",
+    "score": 300,
+    "order": 3,
+    "improvementStatement": "Expand classification to cover all content types and repositories. Implement AI-powered auto-classification (e.g., trainable classifiers) to scale labeling and improve accuracy."
+  },
+  {
+    "id": "a4-q18",
+    "questionId": "q18-grc-classification",
+    "text": "Advanced classification with AI-driven auto-labeling, real-time policy enforcement, and predictive risk analytics; classification integrated into all business processes.",
+    "score": 400,
+    "order": 4,
+    "improvementStatement": "Leverage classification metadata to power advanced use cases such as dynamic access control, data loss prevention, and compliance reporting. Use AI to continuously refine classification models based on user feedback."
+  },
+  {
+    "id": "a5-q18",
+    "questionId": "q18-grc-classification",
+    "text": "Fully autonomous classification where AI agents continuously assess content sensitivity, automatically apply optimal labels, and adapt policies in real time based on regulatory changes and risk exposure.",
+    "score": 500,
+    "order": 5,
+    "improvementStatement": "Share your autonomous classification architecture as thought leadership. Explore emerging technologies such as privacy-enhancing technologies (PETs) and zero-trust content security."
+  },
+
+  {
+    "id": "a1-q19",
+    "questionId": "q19-grc-records",
+    "text": "No formal records management program; records not distinguished from general content; legal holds managed manually via email.",
+    "score": 100,
+    "order": 1,
+    "improvementStatement": "Define initial records classification and retention schedule. Implement basic records management repository or functionality. Develop legal hold procedures and communication protocols."
+  },
+  {
+    "id": "a2-q19",
+    "questionId": "q19-grc-records",
+    "text": "Basic records management program in place but limited automation; legal holds managed through manual processes with spreadsheet tracking.",
+    "score": 200,
+    "order": 2,
+    "improvementStatement": "Implement records management automation using tools like Microsoft Purview Records Management. Establish legal hold workflows with audit trails and notifications."
+  },
+  {
+    "id": "a3-q19",
+    "questionId": "q19-grc-records",
+    "text": "Comprehensive records management with automated filing, retention enforcement, and disposition workflows; legal holds managed through integrated platform with full audit trails.",
+    "score": 300,
+    "order": 3,
+    "improvementStatement": "Optimize records management using analytics to identify compliance gaps and opportunities for automation. Integrate records management with e-discovery and litigation support tools."
+  },
+  {
+    "id": "a4-q19",
+    "questionId": "q19-grc-records",
+    "text": "Advanced records management with AI-driven classification, predictive retention, and proactive legal hold management; real-time compliance monitoring and risk analytics.",
+    "score": 400,
+    "order": 4,
+    "improvementStatement": "Leverage AI to continuously optimize records classification and retention policies. Implement predictive analytics to identify potential litigation risks and proactively preserve relevant content."
+  },
+  {
+    "id": "a5-q19",
+    "questionId": "q19-grc-records",
+    "text": "Fully autonomous records management where AI agents automatically identify records, apply optimal retention, manage legal holds, and ensure compliance without human intervention.",
+    "score": 500,
+    "order": 5,
+    "improvementStatement": "Share your autonomous records management architecture as thought leadership. Explore emerging technologies such as blockchain for immutable records and smart contracts for automated disposition."
+  },
+
+  {
+    "id": "a1-q20",
+    "questionId": "q20-grc-ediscovery",
+    "text": "No e-discovery processes or tools; litigation response entirely manual and reactive; significant legal and cost risks.",
+    "score": 100,
+    "order": 1,
+    "improvementStatement": "Develop initial e-discovery response procedures. Implement basic legal hold and preservation capabilities. Establish relationships with e-discovery vendors or service providers."
+  },
+  {
+    "id": "a2-q20",
+    "questionId": "q20-grc-ediscovery",
+    "text": "Basic e-discovery processes documented but largely manual; limited technology support for collection, review, and production.",
+    "score": 200,
+    "order": 2,
+    "improvementStatement": "Implement e-discovery platform (e.g., Microsoft Purview eDiscovery) for integrated hold, collection, and review workflows. Provide training to legal and IT teams on e-discovery best practices."
+  },
+  {
+    "id": "a3-q20",
+    "questionId": "q20-grc-ediscovery",
+    "text": "Comprehensive e-discovery platform with automated workflows for identification, preservation, collection, and review; regular testing and process optimization.",
+    "score": 300,
+    "order": 3,
+    "improvementStatement": "Implement advanced e-discovery capabilities such as early case assessment, predictive coding, and analytics-driven review. Integrate with external legal platforms and service providers."
+  },
+  {
+    "id": "a4-q20",
+    "questionId": "q20-grc-ediscovery",
+    "text": "Advanced e-discovery ecosystem with AI-powered analytics, predictive coding, and proactive litigation readiness; real-time monitoring and cost optimization.",
+    "score": 400,
+    "order": 4,
+    "improvementStatement": "Leverage AI to continuously improve e-discovery efficiency and accuracy. Implement proactive content monitoring to identify and remediate potential litigation risks before they materialize."
+  },
+  {
+    "id": "a5-q20",
+    "questionId": "q20-grc-ediscovery",
+    "text": "Fully autonomous e-discovery where AI agents automatically identify responsive content, apply optimal holds, and conduct intelligent review with minimal human intervention.",
+    "score": 500,
+    "order": 5,
+    "improvementStatement": "Share your autonomous e-discovery architecture as thought leadership. Explore emerging technologies such as continuous active learning and blockchain-based evidence management."
+  },
+  {
+    "id": "a1-q21",
+    "questionId": "q21-grc-audit",
+    "text": "No audit logging or compliance monitoring; unable to demonstrate compliance or respond to audit requests.",
+    "score": 100,
+    "order": 1,
+    "improvementStatement": "Enable basic audit logging for content repositories. Define initial compliance monitoring requirements and reporting needs. Establish procedures for audit response."
+  },
+  {
+    "id": "a2-q21",
+    "questionId": "q21-grc-audit",
+    "text": "Basic audit logging in place but limited retention and analysis; compliance reporting manual and reactive.",
+    "score": 200,
+    "order": 2,
+    "improvementStatement": "Implement centralized audit log aggregation and retention. Develop automated compliance reports for key regulations (e.g., GDPR, HIPAA). Provide training on audit log analysis."
+  },
+  {
+    "id": "a3-q21",
+    "questionId": "q21-grc-audit",
+    "text": "Comprehensive audit and monitoring platform with automated logging, analysis, and reporting; proactive compliance monitoring and regular audits.",
+    "score": 300,
+    "order": 3,
+    "improvementStatement": "Implement advanced monitoring with real-time alerting and anomaly detection. Integrate compliance reporting with executive dashboards. Use analytics to identify trends and proactively address compliance gaps."
+  },
+  {
+    "id": "a4-q21",
+    "questionId": "q21-grc-audit",
+    "text": "Advanced audit and compliance ecosystem with AI-driven analytics, predictive risk scoring, and automated remediation; continuous compliance assurance.",
+    "score": 400,
+    "order": 4,
+    "improvementStatement": "Leverage AI to predict compliance risks and automatically recommend or execute remediation actions. Implement continuous control monitoring and self-service compliance reporting for business units."
+  },
+  {
+    "id": "a5-q21",
+    "questionId": "q21-grc-audit",
+    "text": "Fully autonomous compliance where AI agents continuously monitor activities, predict violations before they occur, and automatically adjust policies and controls to maintain compliance.",
+    "score": 500,
+    "order": 5,
+    "improvementStatement": "Share your autonomous compliance architecture as thought leadership. Explore emerging technologies such as blockchain for immutable audit trails and privacy-preserving analytics."
+  },
+
+  {
+    "id": "a1-q22",
+    "questionId": "q22-ai-classification",
+    "text": "0–10% - Manual classification only; no AI classification in use.",
+    "score": 100,
+    "order": 1,
+    "improvementStatement": "Launch pilot AI classification project for high-value content types (e.g., contracts, invoices). Use tools like Microsoft Syntex or Azure AI Document Intelligence to demonstrate value and build business case."
+  },
+  {
+    "id": "a2-q22",
+    "questionId": "q22-ai-classification",
+    "text": "11–30% - Initial AI classification pilots in progress for select content types; limited production deployment.",
+    "score": 200,
+    "order": 2,
+    "improvementStatement": "Expand AI classification to additional content types and business units. Develop model training and refinement processes. Establish governance and quality assurance for AI models."
+  },
+  {
+    "id": "a3-q22",
+    "questionId": "q22-ai-classification",
+    "text": "31–60% - AI classification deployed for major content types; automated tagging integrated into core workflows and business processes.",
+    "score": 300,
+    "order": 3,
+    "improvementStatement": "Scale AI classification to cover all structured and semi-structured content types. Implement continuous model training and feedback loops to improve accuracy. Measure and report business impact."
+  },
+  {
+    "id": "a4-q22",
+    "questionId": "q22-ai-classification",
+    "text": "61–90% - Advanced AI classification covering majority of content with high accuracy; continuous model optimization and expanding to new use cases.",
+    "score": 400,
+    "order": 4,
+    "improvementStatement": "Implement AI classification for unstructured content (e.g., images, audio, video). Leverage advanced techniques such as multimodal AI and few-shot learning. Share AI classification best practices across organization."
+  },
+  {
+    "id": "a5-q22",
+    "questionId": "q22-ai-classification",
+    "text": "91–100% - Fully autonomous AI classification where intelligent agents automatically classify all content in real time with self-optimizing models and zero human intervention.",
+    "score": 500,
+    "order": 5,
+    "improvementStatement": "Share your autonomous classification architecture as thought leadership. Explore emerging technologies such as foundation models and self-supervised learning for content understanding."
+  },
+  {
+    "id": "a1-q23",
+    "questionId": "q23-ai-idp",
+    "text": "0–10% - Manual document processing with no intelligent automation; high labor costs and error rates.",
+    "score": 100,
+    "order": 1,
+    "improvementStatement": "Identify high-volume, repetitive document processes suitable for automation (e.g., invoice processing, contract review). Launch IDP pilot using tools like Microsoft Syntex, Azure Form Recognizer, or Power Automate."
+  },
+  {
+    "id": "a2-q23",
+    "questionId": "q23-ai-idp",
+    "text": "11–30% - IDP pilots underway for select processes; limited production deployment and adoption.",
+    "score": 200,
+    "order": 2,
+    "improvementStatement": "Expand IDP to additional high-value processes. Develop model training and data labeling workflows. Measure ROI and build business case for scaled deployment."
+  },
+  {
+    "id": "a3-q23",
+    "questionId": "q23-ai-idp",
+    "text": "31–60% - IDP deployed for major document processes; measurable efficiency gains and cost savings; continuous improvement in place.",
+    "score": 300,
+    "order": 3,
+    "improvementStatement": "Scale IDP across enterprise to cover all document-intensive processes. Implement advanced capabilities such as intelligent extraction, validation, and routing. Integrate IDP with RPA and business applications."
+  },
+  {
+    "id": "a4-q23",
+    "questionId": "q23-ai-idp",
+    "text": "61–90% - Advanced IDP with AI-driven automation, complex document understanding, and end-to-end process orchestration; continuous model optimization.",
+    "score": 400,
+    "order": 4,
+    "improvementStatement": "Implement IDP for complex, unstructured documents using advanced AI models. Leverage multimodal AI to process documents, images, and handwritten content. Share IDP best practices and innovation use cases."
+  },
+  {
+    "id": "a5-q23",
+    "questionId": "q23-ai-idp",
+    "text": "91–100% - Fully autonomous document processing where AI agents handle end-to-end workflows with self-optimizing models, exception handling, and zero human intervention.",
+    "score": 500,
+    "order": 5,
+    "improvementStatement": "Share your autonomous IDP architecture as thought leadership. Explore emerging technologies such as foundation models, multimodal AI, and cognitive automation."
+  },
+
+  {
+    "id": "a1-q24",
+    "questionId": "q24-ai-monitoring",
+    "text": "No monitoring or accuracy measurement in place; AI models deployed without performance tracking.",
+    "score": 100,
+    "order": 1,
+    "improvementStatement": "Establish basic AI model monitoring with accuracy metrics, error logging, and manual review processes. Define acceptable accuracy thresholds and escalation procedures."
+  },
+  {
+    "id": "a2-q24",
+    "questionId": "q24-ai-monitoring",
+    "text": "Basic monitoring in place but limited analytics; accuracy tracked manually and improvements reactive.",
+    "score": 200,
+    "order": 2,
+    "improvementStatement": "Implement automated model monitoring dashboards with real-time accuracy metrics, confidence scores, and trend analysis. Establish regular model review and retraining cadence."
+  },
+  {
+    "id": "a3-q24",
+    "questionId": "q24-ai-monitoring",
+    "text": "Comprehensive AI operations (MLOps) platform with automated monitoring, performance analytics, and continuous model improvement; proactive issue identification.",
+    "score": 300,
+    "order": 3,
+    "improvementStatement": "Implement advanced MLOps capabilities such as A/B testing, champion/challenger models, and automated retraining pipelines. Integrate AI performance metrics into business KPIs and executive dashboards."
+  },
+  {
+    "id": "a4-q24",
+    "questionId": "q24-ai-monitoring",
+    "text": "Advanced MLOps with AI-driven model optimization, predictive performance monitoring, and automated remediation; continuous innovation and experimentation culture.",
+    "score": 400,
+    "order": 4,
+    "improvementStatement": "Leverage AI to optimize AI model performance using meta-learning and automated hyperparameter tuning. Implement continuous active learning with human-in-the-loop feedback. Share MLOps best practices as thought leadership."
+  },
+  {
+    "id": "a5-q24",
+    "questionId": "q24-ai-monitoring",
+    "text": "Fully autonomous AI operations where intelligent agents continuously monitor, optimize, and self-heal AI models; predictive maintenance ensures optimal performance without human intervention.",
+    "score": 500,
+    "order": 5,
+    "improvementStatement": "Share your autonomous MLOps architecture as thought leadership. Explore emerging technologies such as self-supervised learning, neural architecture search, and AI-driven AI optimization."
+  },
+
+  {
+    "id": "a1-q25",
+    "questionId": "q25-ai-ethics",
+    "text": "No ethical AI governance or responsible AI principles defined; AI deployed without consideration of bias, transparency, or accountability.",
+    "score": 100,
+    "order": 1,
+    "improvementStatement": "Define initial responsible AI principles and governance framework. Conduct ethics review of existing AI use cases. Provide training on AI ethics and bias awareness."
+  },
+  {
+    "id": "a2-q25",
+    "questionId": "q25-ai-ethics",
+    "text": "Basic responsible AI principles documented but not consistently applied; limited governance and oversight of AI deployments.",
+    "score": 200,
+    "order": 2,
+    "improvementStatement": "Establish AI ethics review board and approval process for new AI initiatives. Implement bias detection and mitigation tools. Develop AI transparency and explainability standards."
+  },
+  {
+    "id": "a3-q25",
+    "questionId": "q25-ai-ethics",
+    "text": "Comprehensive responsible AI framework with formal governance, ethics reviews, bias monitoring, and transparency requirements; integrated into AI development lifecycle.",
+    "score": 300,
+    "order": 3,
+    "improvementStatement": "Implement advanced responsible AI capabilities such as model interpretability, fairness metrics, and automated bias detection. Establish continuous monitoring and audit processes for AI systems."
+  },
+  {
+    "id": "a4-q25",
+    "questionId": "q25-ai-ethics",
+    "text": "Advanced ethical AI governance with proactive risk management, continuous fairness monitoring, and transparent AI decision-making; responsible AI embedded in organizational culture.",
+    "score": 400,
+    "order": 4,
+    "improvementStatement": "Leverage AI to monitor AI for ethical compliance using meta-AI systems. Implement advanced techniques such as differential privacy, federated learning, and explainable AI. Share responsible AI practices as thought leadership."
+  },
+  {
+    "id": "a5-q25",
+    "questionId": "q25-ai-ethics",
+    "text": "Fully autonomous ethical AI governance where intelligent agents continuously assess fairness, detect bias, ensure transparency, and automatically adjust models to maintain ethical standards.",
+    "score": 500,
+    "order": 5,
+    "improvementStatement": "Share your autonomous ethical AI governance architecture as thought leadership. Explore emerging technologies such as AI alignment, value learning, and privacy-preserving AI."
+  }
+
+],
+  "scoringLevels": [
+    {
+      "id": 1,
+      "name": "Initial / Ad Hoc",
+      "description": "Content and documents managed reactively with little standardization. Storage fragmented, minimal metadata, no formal taxonomy, governance virtually absent.",
+      "minScore": 100,
+      "maxScore": 199
+    },
+    {
+      "id": 2,
+      "name": "Emerging / Structured",
+      "description": "Organization recognizes need for structured content management. Centralized repository strategy defined, basic policies documented, initial tools deployed, but adoption uneven.",
+      "minScore": 200,
+      "maxScore": 299
+    },
+    {
+      "id": 3,
+      "name": "Operational / Integrated",
+      "description": "Content and document management embedded into core business processes. Governance mature with clear ownership, automated workflows, consistent enforcement. Integration with enterprise applications enables seamless information flow.",
+      "minScore": 300,
+      "maxScore": 399
+    },
+    {
+      "id": 4,
+      "name": "Strategic / Transformational",
+      "description": "Content and documents recognized as strategic business assets. Advanced analytics and AI drive insights and automate decision-making. Governance is predictive, identifying risks before they materialize.",
+      "minScore": 400,
+      "maxScore": 449
+    },
+    {
+      "id": 5,
+      "name": "Frontier / Intelligent",
+      "description": "Organization operates as intelligent enterprise where content management is fully autonomous, self-optimizing, and seamlessly integrated. AI agents proactively manage information lifecycles, predict business needs, enable real-time decision-making.",
+      "minScore": 450,
+      "maxScore": 500
+    }
+  ]
+}

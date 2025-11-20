@@ -14,6 +14,85 @@ import type { Model, Dimension, Question, Answer } from "@shared/schema";
 type ExportFormat = "model" | "csv-full" | "csv-simple";
 type ImportFormat = "auto" | "model" | "csv-full" | "csv-simple";
 
+// Transform legacy .model format (fields at root level) to new format (nested under 'model')
+function transformLegacyModelFormat(rawData: any) {
+  // Check if this is the legacy format (has dimensions, questions, answers at root)
+  if (rawData.dimensions && rawData.questions) {
+    // Create dimension key mapping (use dimension id as key for legacy format)
+    const dimensionIdToKey = new Map<string, string>();
+    const transformedDimensions = (rawData.dimensions || []).map((dim: any, index: number) => {
+      const key = dim.name?.toLowerCase().replace(/[^a-z0-9]+/g, '_') || `dimension_${index + 1}`;
+      dimensionIdToKey.set(dim.id, key);
+      return {
+        key,
+        label: dim.name,
+        description: dim.description || null,
+        order: dim.order || index + 1,
+      };
+    });
+
+    // Create question-to-answers mapping
+    const answersByQuestion = new Map<string, any[]>();
+    (rawData.answers || []).forEach((answer: any) => {
+      if (!answersByQuestion.has(answer.questionId)) {
+        answersByQuestion.set(answer.questionId, []);
+      }
+      answersByQuestion.get(answer.questionId)!.push(answer);
+    });
+
+    // Transform questions with embedded answers
+    const transformedQuestions = (rawData.questions || []).map((q: any) => {
+      const answers = (answersByQuestion.get(q.id) || []).map((a: any) => ({
+        text: a.text,
+        score: a.score,
+        order: a.order,
+        improvementStatement: a.improvementStatement || null,
+        resourceTitle: a.resourceTitle || null,
+        resourceLink: a.resourceLink || null,
+        resourceDescription: a.resourceDescription || null,
+      }));
+
+      return {
+        dimensionKey: dimensionIdToKey.get(q.dimensionId) || null,
+        text: q.text,
+        type: q.type || 'multiple_choice',
+        order: q.order,
+        minValue: q.minValue || null,
+        maxValue: q.maxValue || null,
+        unit: q.unit || null,
+        placeholder: q.placeholder || null,
+        improvementStatement: q.improvementStatement || null,
+        resourceTitle: q.resourceTitle || null,
+        resourceLink: q.resourceLink || null,
+        resourceDescription: q.resourceDescription || null,
+        answers,
+      };
+    });
+
+    return {
+      formatVersion: "2.0",
+      exportedAt: new Date().toISOString(),
+      model: {
+        name: rawData.name,
+        slug: rawData.slug,
+        description: rawData.description || '',
+        version: rawData.version || '1.0.0',
+        estimatedTime: rawData.estimatedTime || null,
+        status: rawData.status || 'published',
+        featured: rawData.featured || false,
+        imageUrl: rawData.imageUrl || null,
+        maturityScale: rawData.maturityScale || null,
+        generalResources: rawData.generalResources || null,
+      },
+      dimensions: transformedDimensions,
+      questions: transformedQuestions,
+    };
+  }
+
+  // Already in new format
+  return rawData;
+}
+
 interface ImportExportPanelProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -152,11 +231,46 @@ export function ImportExportPanel({
       setImportProgress(60);
 
       if (detectedFormat === "model") {
-        const data = JSON.parse(text);
+        const rawData = JSON.parse(text);
+        
+        // Transform the data to the expected format
+        // Handle both old format (all at root level) and new format (nested under 'model')
+        const modelData = rawData.model ? rawData : transformLegacyModelFormat(rawData);
+        
+        // Call the backend import endpoint
+        const response = await fetch('/api/models/import-model', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ modelData }),
+        });
+        
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.error || 'Failed to import model');
+        }
+        
+        const result = await response.json();
+        
         setImportStatus({
           type: "success",
-          message: `Detected .model format. Ready to import: ${data.model?.name || "Unknown model"}`,
+          message: `Successfully imported "${result.model.name}" with ${result.stats.dimensionsCreated} dimensions, ${result.stats.questionsCreated} questions, and ${result.stats.answersCreated} answers.`,
         });
+        
+        setImportProgress(100);
+        
+        toast({
+          title: "Model Import Complete",
+          description: `Successfully imported "${result.model.name}"`,
+        });
+
+        if (onImportComplete) {
+          setTimeout(() => {
+            onImportComplete();
+          }, 1500);
+        }
+        return;
       } else if (detectedFormat === "csv-full") {
         setImportStatus({
           type: "success",
