@@ -784,7 +784,7 @@ export default function Results() {
                   <Sparkles className="h-6 w-6 text-primary" />
                 </div>
                 <div className="flex-1">
-                  <h3 className="text-2xl font-bold mb-2 text-primary">Executive Summary</h3>
+                  <h3 className="text-2xl font-bold mb-2 text-primary">AI-Powered Insights</h3>
                   <p className="text-muted-foreground mb-4">
                     Create a free account to unlock your personalized AI-powered executive summary
                   </p>
@@ -853,7 +853,7 @@ export default function Results() {
       {/* Dimension Breakdown */}
       <section className="py-12">
         <div className="container mx-auto px-4 max-w-6xl">
-          <h2 className="text-3xl font-bold mb-8 text-center">Dimension Breakdown</h2>
+          <h2 className="text-3xl font-bold mb-8 text-center text-foreground">Dimension Breakdown</h2>
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
             {dimensionScores.map(dim => (
               <Card key={dim.key} className="p-6" data-testid={`card-dimension-${dim.key}`}>
@@ -872,7 +872,7 @@ export default function Results() {
       {/* Personalized Recommendations */}
       <section className="py-12 bg-muted/30">
         <div className="container mx-auto px-4 max-w-6xl">
-          <h2 className="text-3xl font-bold mb-8 text-center">Strategic Recommendations</h2>
+          <h2 className="text-3xl font-bold mb-8 text-center text-foreground">Strategic Recommendations</h2>
           
           {/* AI-Generated Recommendations Summary */}
           {!user ? (
@@ -949,7 +949,7 @@ export default function Results() {
       {improvementResources.length > 0 && (
         <section className="py-12">
           <div className="container mx-auto px-4 max-w-6xl">
-            <h2 className="text-3xl font-bold mb-8 text-center">Improvement Resources</h2>
+            <h2 className="text-3xl font-bold mb-8 text-center text-foreground">Improvement Resources</h2>
             <div className="space-y-4">
               {improvementResources.map((resource, idx) => (
                 <Card key={idx} className="p-6" data-testid={`card-resource-${idx}`}>
@@ -1003,7 +1003,7 @@ export default function Results() {
         <div className="container mx-auto px-4 max-w-6xl">
           <Card className="p-8 bg-primary/5">
             <div className="text-center mb-6">
-              <h2 className="text-2xl font-bold mb-2">Get Your Full Report</h2>
+              <h2 className="text-2xl font-bold mb-2 text-foreground">Get Your Full Report</h2>
               <p className="text-muted-foreground">
                 Download your comprehensive PDF report with detailed insights and action plans
               </p>
