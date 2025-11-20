@@ -194,15 +194,6 @@ export function ImportExportPanel({
   }, []);
 
   const handleFileImport = useCallback(async (file: File) => {
-    if (!selectedModel) {
-      toast({
-        variant: "destructive",
-        title: "No Model Selected",
-        description: "Please select a model to import data into.",
-      });
-      return;
-    }
-    
     setImporting(true);
     setImportProgress(0);
     setImportStatus({ type: null, message: "" });
@@ -226,6 +217,17 @@ export function ImportExportPanel({
         }
       } else {
         detectedFormat = importFormat as "model" | "csv-full" | "csv-simple";
+      }
+
+      // CSV imports require a selected model, but .model imports create a new model
+      if ((detectedFormat === "csv-simple" || detectedFormat === "csv-full") && !selectedModel) {
+        toast({
+          variant: "destructive",
+          title: "No Model Selected",
+          description: "Please select a model to import CSV data into.",
+        });
+        setImporting(false);
+        return;
       }
 
       setImportProgress(60);
