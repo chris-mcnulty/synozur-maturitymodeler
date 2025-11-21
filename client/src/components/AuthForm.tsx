@@ -39,7 +39,7 @@ export function AuthForm({ mode, onSubmit }: AuthFormProps) {
         <h2 className="text-2xl font-bold">{titles[mode]}</h2>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form name={`orion-auth-${mode}`} onSubmit={handleSubmit} className="space-y-4">
         {mode === "signup" && (
           <div>
             <Label htmlFor="username">Username</Label>

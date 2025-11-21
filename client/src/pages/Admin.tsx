@@ -3558,7 +3558,7 @@ export default function Admin() {
                   <Card className="p-6">
                     <h3 className="text-lg font-semibold mb-4">Upload Document</h3>
                     
-                    <form onSubmit={(e) => {
+                    <form name="orion-upload-knowledge-document" onSubmit={(e) => {
                       e.preventDefault();
                       const formData = new FormData(e.currentTarget);
                       const fileInput = formData.get('file') as File | null;

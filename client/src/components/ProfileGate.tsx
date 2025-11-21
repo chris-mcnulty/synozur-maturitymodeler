@@ -241,7 +241,7 @@ export function ProfileGate({ onComplete }: ProfileGateProps) {
             Login to access your assessment report and receive your PDF.
           </p>
 
-          <form onSubmit={handleLogin} className="space-y-4">
+          <form name="orion-profile-gate-login" onSubmit={handleLogin} className="space-y-4">
             <div>
               <Label htmlFor="login-username">Username</Label>
               <Input
@@ -292,7 +292,7 @@ export function ProfileGate({ onComplete }: ProfileGateProps) {
             Register to access your assessment report and receive your PDF.
           </p>
 
-          <form onSubmit={handleRegister} className="space-y-4">
+          <form name="orion-profile-gate-register" onSubmit={handleRegister} className="space-y-4">
             <div>
               <Label htmlFor="username">Username *</Label>
               <Input

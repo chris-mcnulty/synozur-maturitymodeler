@@ -432,7 +432,7 @@ export function TenantManagement() {
                 : 'Create a new tenant organization'}
             </DialogDescription>
           </DialogHeader>
-          <form onSubmit={handleSubmit}>
+          <form name="orion-tenant-management" onSubmit={handleSubmit}>
             <div className="space-y-4 py-4">
               <div className="space-y-2">
                 <Label htmlFor="name">Tenant Name</Label>
@@ -546,7 +546,7 @@ export function TenantManagement() {
               Add a domain for this tenant organization
             </DialogDescription>
           </DialogHeader>
-          <form onSubmit={handleDomainSubmit}>
+          <form name="orion-add-domain" onSubmit={handleDomainSubmit}>
             <div className="space-y-4 py-4">
               <div className="space-y-2">
                 <Label htmlFor="domain">Domain</Label>
@@ -606,7 +606,7 @@ export function TenantManagement() {
               Configure application access and features for this tenant
             </DialogDescription>
           </DialogHeader>
-          <form onSubmit={handleEntitlementSubmit}>
+          <form name="orion-manage-entitlements" onSubmit={handleEntitlementSubmit}>
             <div className="space-y-4 py-4">
               <div className="space-y-2">
                 <Label htmlFor="application">Application</Label>
