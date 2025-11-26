@@ -661,11 +661,18 @@ export default function Results() {
     );
   }
 
-  const maturityLevel = getMaturityLevel(result.overallScore, model.maturityScale || undefined);
+  // Parse maturity scale if it's a string (defensive handling)
+  const parsedMaturityScale = model.maturityScale 
+    ? (typeof model.maturityScale === 'string' 
+        ? JSON.parse(model.maturityScale) 
+        : model.maturityScale)
+    : undefined;
+  
+  const maturityLevel = getMaturityLevel(result.overallScore, parsedMaturityScale);
   
   // Calculate max score from model's maturity scale (or default to 500 for legacy models)
-  const maturityMaxScore = model.maturityScale && model.maturityScale.length > 0
-    ? Math.max(...model.maturityScale.map(level => level.maxScore))
+  const maturityMaxScore = parsedMaturityScale && parsedMaturityScale.length > 0
+    ? Math.max(...parsedMaturityScale.map((level: any) => level.maxScore))
     : 500;
   
   // For 100-point scale models, dimension scores sum to total (each dimension has equal weight)
