@@ -13,7 +13,7 @@ import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Download, Plus, Edit, Trash, FileSpreadsheet, Eye, BarChart3, Settings, FileDown, FileUp, ListOrdered, Users, Star, Upload, X, Sparkles, CheckCircle2, XCircle, Database, FileText, Brain, BookOpen, ClipboardList, Home, Building2, ChevronDown, Shield } from "lucide-react";
+import { Download, Plus, Edit, Trash, FileSpreadsheet, Eye, EyeOff, BarChart3, Settings, FileDown, FileUp, ListOrdered, Users, Star, Upload, X, Sparkles, CheckCircle2, XCircle, Database, FileText, Brain, BookOpen, ClipboardList, Home, Building2, ChevronDown, Shield } from "lucide-react";
 import type { Model, Result, Assessment, Dimension, Question, Answer, User } from "@shared/schema";
 import { USER_ROLES, type UserRole } from "@shared/constants";
 import { useAuth } from "@/hooks/use-auth";
@@ -473,6 +473,7 @@ export default function Admin() {
   const [selectedTenantFilter, setSelectedTenantFilter] = useState<string>('all');
   const [isUserImportDialogOpen, setIsUserImportDialogOpen] = useState(false);
   const [userImportData, setUserImportData] = useState<Array<{username: string; email: string; password: string; role: string}>>([]);
+  const [showPassword, setShowPassword] = useState(false);
   const [csvImportMode, setCSVImportMode] = useState<'add' | 'replace'>('add');
   const [isCSVImportDialogOpen, setIsCSVImportDialogOpen] = useState(false);
   const [pendingCSVFile, setPendingCSVFile] = useState<{file: File; modelId: string} | null>(null);
@@ -5222,6 +5223,7 @@ export default function Admin() {
         if (!open) {
           setIsCreatingUser(false);
           setEditingUser(null);
+          setShowPassword(false);
         }
       }}>
         <DialogContent>
@@ -5318,13 +5320,26 @@ export default function Admin() {
 
             <div className="space-y-2">
               <Label>{isCreatingUser ? 'Password' : 'New Password (optional)'}</Label>
-              <Input
-                type="password"
-                value={userForm.newPassword}
-                onChange={(e) => setUserForm({ ...userForm, newPassword: e.target.value })}
-                placeholder={isCreatingUser ? 'Enter password' : 'Leave empty to keep current password'}
-                data-testid="input-new-password"
-              />
+              <div className="relative">
+                <Input
+                  type={showPassword ? 'text' : 'password'}
+                  value={userForm.newPassword}
+                  onChange={(e) => setUserForm({ ...userForm, newPassword: e.target.value })}
+                  placeholder={isCreatingUser ? 'Enter password' : 'Leave empty to keep current password'}
+                  className="pr-10"
+                  data-testid="input-new-password"
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                  onClick={() => setShowPassword(!showPassword)}
+                  data-testid="button-toggle-password"
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4 text-muted-foreground" /> : <Eye className="h-4 w-4 text-muted-foreground" />}
+                </Button>
+              </div>
               <p className="text-sm text-muted-foreground">
                 Minimum 8 characters.
               </p>
