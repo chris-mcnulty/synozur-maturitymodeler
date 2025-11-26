@@ -327,17 +327,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Hash new password if provided
       if (newPassword) {
+        console.log(`[Password Update] User ${id}: Password update requested, length: ${newPassword.length}`);
         if (newPassword.length < 8) {
           return res.status(400).json({ error: "Password must be at least 8 characters" });
         }
         const hashedPassword = await hashPassword(newPassword);
+        console.log(`[Password Update] User ${id}: Hash generated, format: ${hashedPassword.substring(0, 20)}...`);
         updateData.password = hashedPassword;
       }
       
+      console.log(`[User Update] User ${id}: Fields being updated: ${Object.keys(updateData).join(', ')}`);
       const user = await storage.updateUser(id, updateData);
       if (!user) {
         return res.status(404).json({ error: "User not found" });
       }
+      console.log(`[User Update] User ${id}: Update successful, password field updated: ${updateData.password ? 'yes' : 'no'}`);
       // Remove password from response
       const { password: _, ...safeUser } = user;
       res.json(safeUser);
