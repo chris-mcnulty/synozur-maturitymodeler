@@ -662,6 +662,19 @@ export default function Results() {
   }
 
   const maturityLevel = getMaturityLevel(result.overallScore, model.maturityScale || undefined);
+  
+  // Calculate max score from model's maturity scale (or default to 500 for legacy models)
+  const maturityMaxScore = model.maturityScale && model.maturityScale.length > 0
+    ? Math.max(...model.maturityScale.map(level => level.maxScore))
+    : 500;
+  
+  // For 100-point scale models, dimension scores sum to total (each dimension has equal weight)
+  // For legacy 500-point models, scores are averaged across questions
+  const dimensionCount = model.dimensions.length;
+  const dimensionMaxScore = maturityMaxScore <= 100 && dimensionCount > 0
+    ? Math.round(maturityMaxScore / dimensionCount)
+    : maturityMaxScore;
+  
   const dimensionScores = model.dimensions.map(dim => ({
     key: dim.key,
     label: dim.label,
@@ -733,7 +746,7 @@ export default function Results() {
                   <div className="text-7xl font-bold text-primary mb-2" data-testid="text-score">
                     {result.overallScore}
                   </div>
-                  <div className="text-lg text-muted-foreground">out of 500</div>
+                  <div className="text-lg text-muted-foreground">out of {maturityMaxScore}</div>
                 </div>
                 
                 <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full ${maturityLevel.bgColor} ${maturityLevel.borderColor} border`}>
@@ -757,14 +770,14 @@ export default function Results() {
                           <span>Your Score</span>
                           <span className="font-medium">{result.overallScore}</span>
                         </div>
-                        <Progress value={(result.overallScore / 500) * 100} className="h-2" />
+                        <Progress value={(result.overallScore / maturityMaxScore) * 100} className="h-2" />
                       </div>
                       <div>
                         <div className="flex justify-between text-sm mb-1">
                           <span>Industry Average</span>
                           <span className="font-medium">{benchmark.meanScore}</span>
                         </div>
-                        <Progress value={(benchmark.meanScore / 500) * 100} className="h-2" />
+                        <Progress value={(benchmark.meanScore / maturityMaxScore) * 100} className="h-2" />
                       </div>
                       <p className="text-xs text-muted-foreground mt-2">
                         Based on {benchmark.sampleSize} organizations
@@ -860,9 +873,9 @@ export default function Results() {
                 <h3 className="font-semibold mb-3">{dim.label}</h3>
                 <div className="flex items-center justify-between mb-3">
                   <span className="text-3xl font-bold text-primary">{dim.score}</span>
-                  <span className="text-sm text-muted-foreground">/ 500</span>
+                  <span className="text-sm text-muted-foreground">/ {dimensionMaxScore}</span>
                 </div>
-                <Progress value={(dim.score / 500) * 100} className="h-2" />
+                <Progress value={(dim.score / dimensionMaxScore) * 100} className="h-2" />
               </Card>
             ))}
           </div>
