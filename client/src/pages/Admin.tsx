@@ -462,13 +462,17 @@ export default function Admin() {
   const [answerLocalState, setAnswerLocalState] = useState<Record<string, {text: string, score: number, order: number}>>({});
   const [editingUser, setEditingUser] = useState<Omit<User, 'password'> | null>(null);
   const [isUserDialogOpen, setIsUserDialogOpen] = useState(false);
+  const [isCreatingUser, setIsCreatingUser] = useState(false);
   const [userForm, setUserForm] = useState({
     role: 'user' as 'user' | 'tenant_modeler' | 'tenant_admin' | 'global_admin',
     username: '',
+    email: '',
     newPassword: '',
     tenantId: '' as string | null,
   });
   const [selectedTenantFilter, setSelectedTenantFilter] = useState<string>('all');
+  const [isUserImportDialogOpen, setIsUserImportDialogOpen] = useState(false);
+  const [userImportData, setUserImportData] = useState<Array<{username: string; email: string; password: string; role: string}>>([]);
   const [csvImportMode, setCSVImportMode] = useState<'add' | 'replace'>('add');
   const [isCSVImportDialogOpen, setIsCSVImportDialogOpen] = useState(false);
   const [pendingCSVFile, setPendingCSVFile] = useState<{file: File; modelId: string} | null>(null);
@@ -740,6 +744,55 @@ export default function Admin() {
       toast({
         title: "Error",
         description: error.message || "Failed to update user",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Create user mutation
+  const createUser = useMutation({
+    mutationFn: async (data: { username: string; email: string; password: string; role: string; tenantId?: string | null }) => {
+      return apiRequest('/api/users', 'POST', data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/users'] });
+      setIsUserDialogOpen(false);
+      setIsCreatingUser(false);
+      toast({
+        title: "User created",
+        description: "New user has been created successfully.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to create user",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Import users mutation
+  const importUsers = useMutation({
+    mutationFn: async (users: Array<{username: string; email: string; password: string; role: string}>) => {
+      return apiRequest('/api/users/import', 'POST', { users });
+    },
+    onSuccess: (data: any) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/users'] });
+      setIsUserImportDialogOpen(false);
+      setUserImportData([]);
+      toast({
+        title: "Import Complete",
+        description: data.message || `${data.details?.created || 0} users created`,
+      });
+      if (data.details?.errors?.length > 0) {
+        console.log('Import errors:', data.details.errors);
+      }
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to import users",
         variant: "destructive",
       });
     },
@@ -3172,6 +3225,32 @@ export default function Admin() {
                       <FileSpreadsheet className="mr-2 h-4 w-4" />
                       Export CSV
                     </Button>
+                    <Button 
+                      variant="outline"
+                      onClick={() => setIsUserImportDialogOpen(true)}
+                      data-testid="button-import-users"
+                    >
+                      <Upload className="mr-2 h-4 w-4" />
+                      Import
+                    </Button>
+                    <Button 
+                      onClick={() => {
+                        setEditingUser(null);
+                        setIsCreatingUser(true);
+                        setUserForm({
+                          role: 'user',
+                          username: '',
+                          email: '',
+                          newPassword: '',
+                          tenantId: currentUser && normalizeRole(currentUser.role) === USER_ROLES.TENANT_ADMIN ? currentUser.tenantId : null,
+                        });
+                        setIsUserDialogOpen(true);
+                      }}
+                      data-testid="button-create-user"
+                    >
+                      <Plus className="mr-2 h-4 w-4" />
+                      Create User
+                    </Button>
                   </div>
                 </div>
 
@@ -3217,9 +3296,11 @@ export default function Admin() {
                               <button
                                 onClick={() => {
                                   setEditingUser(user);
+                                  setIsCreatingUser(false);
                                   setUserForm({ 
                                     role: normalizeRole(user.role),
                                     username: user.username,
+                                    email: user.email || '',
                                     newPassword: '',
                                     tenantId: user.tenantId || null,
                                   });
@@ -3268,9 +3349,11 @@ export default function Admin() {
                                   size="icon"
                                   onClick={() => {
                                     setEditingUser(user);
+                                    setIsCreatingUser(false);
                                     setUserForm({ 
                                       role: normalizeRole(user.role),
                                       username: user.username,
+                                      email: user.email || '',
                                       newPassword: '',
                                       tenantId: user.tenantId || null,
                                     });
@@ -5133,17 +5216,25 @@ export default function Admin() {
         </DialogContent>
       </Dialog>
 
-      {/* User Edit Dialog */}
-      <Dialog open={isUserDialogOpen} onOpenChange={setIsUserDialogOpen}>
+      {/* User Create/Edit Dialog */}
+      <Dialog open={isUserDialogOpen} onOpenChange={(open) => {
+        setIsUserDialogOpen(open);
+        if (!open) {
+          setIsCreatingUser(false);
+          setEditingUser(null);
+        }
+      }}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Edit User</DialogTitle>
+            <DialogTitle>{isCreatingUser ? 'Create User' : 'Edit User'}</DialogTitle>
             <DialogDescription>
-              Update settings for user: {editingUser?.username}
+              {isCreatingUser 
+                ? 'Create a new user account with role and tenant assignment.'
+                : `Update settings for user: ${editingUser?.username}`}
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4 py-4">
+          <form name="orion-user-management" onSubmit={(e) => e.preventDefault()} className="space-y-4 py-4">
             <div className="space-y-2">
               <Label>Username</Label>
               <Input
@@ -5153,6 +5244,19 @@ export default function Admin() {
                 data-testid="input-username"
               />
             </div>
+
+            {isCreatingUser && (
+              <div className="space-y-2">
+                <Label>Email</Label>
+                <Input
+                  type="email"
+                  value={userForm.email}
+                  onChange={(e) => setUserForm({ ...userForm, email: e.target.value })}
+                  placeholder="Enter email address"
+                  data-testid="input-user-email"
+                />
+              </div>
+            )}
 
             <div className="space-y-2">
               <Label>User Role</Label>
@@ -5166,71 +5270,118 @@ export default function Admin() {
                 <SelectContent>
                   <SelectItem value="user">User</SelectItem>
                   <SelectItem value="tenant_modeler">Tenant Modeler</SelectItem>
-                  <SelectItem value="tenant_admin">Tenant Admin</SelectItem>
-                  <SelectItem value="global_admin">Global Admin</SelectItem>
+                  {currentUser && normalizeRole(currentUser.role) === USER_ROLES.GLOBAL_ADMIN && (
+                    <>
+                      <SelectItem value="tenant_admin">Tenant Admin</SelectItem>
+                      <SelectItem value="global_admin">Global Admin</SelectItem>
+                    </>
+                  )}
                 </SelectContent>
               </Select>
               <p className="text-sm text-muted-foreground">
-                Global Admin: full platform access. Tenant Admin: manage users/models in their tenant. Tenant Modeler: build models for their tenant. User: take assessments.
+                {currentUser && normalizeRole(currentUser.role) === USER_ROLES.GLOBAL_ADMIN
+                  ? 'Global Admin: full platform access. Tenant Admin: manage users/models in their tenant. Tenant Modeler: build models for their tenant. User: take assessments.'
+                  : 'As a Tenant Admin, you can assign User or Tenant Modeler roles within your organization.'}
               </p>
             </div>
 
             <div className="space-y-2">
               <Label>Tenant Assignment</Label>
-              <Select
-                value={userForm.tenantId || 'none'}
-                onValueChange={(value) => setUserForm({ ...userForm, tenantId: value === 'none' ? null : value })}
-              >
-                <SelectTrigger data-testid="select-user-tenant">
-                  <SelectValue placeholder="Select tenant" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">No Tenant</SelectItem>
-                  {tenants.map((tenant: any) => (
-                    <SelectItem key={tenant.id} value={tenant.id}>
-                      {tenant.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              {currentUser && normalizeRole(currentUser.role) === USER_ROLES.GLOBAL_ADMIN ? (
+                <Select
+                  value={userForm.tenantId || 'none'}
+                  onValueChange={(value) => setUserForm({ ...userForm, tenantId: value === 'none' ? null : value })}
+                >
+                  <SelectTrigger data-testid="select-user-tenant">
+                    <SelectValue placeholder="Select tenant" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">No Tenant</SelectItem>
+                    {tenants.map((tenant: any) => (
+                      <SelectItem key={tenant.id} value={tenant.id}>
+                        {tenant.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <div className="p-2 bg-muted rounded-md text-sm">
+                  {tenants.find((t: any) => t.id === currentUser?.tenantId)?.name || 'Your Tenant'}
+                </div>
+              )}
               <p className="text-sm text-muted-foreground">
-                Assign this user to a specific tenant organization.
+                {currentUser && normalizeRole(currentUser.role) === USER_ROLES.GLOBAL_ADMIN
+                  ? 'Assign this user to a specific tenant organization.'
+                  : 'Users you create will be assigned to your tenant.'}
               </p>
             </div>
 
             <div className="space-y-2">
-              <Label>New Password (optional)</Label>
+              <Label>{isCreatingUser ? 'Password' : 'New Password (optional)'}</Label>
               <Input
                 type="password"
                 value={userForm.newPassword}
                 onChange={(e) => setUserForm({ ...userForm, newPassword: e.target.value })}
-                placeholder="Leave empty to keep current password"
+                placeholder={isCreatingUser ? 'Enter password' : 'Leave empty to keep current password'}
                 data-testid="input-new-password"
               />
               <p className="text-sm text-muted-foreground">
-                Minimum 8 characters, must include uppercase letter and punctuation.
+                Minimum 8 characters.
               </p>
             </div>
-          </div>
+          </form>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsUserDialogOpen(false)}>
+            <Button variant="outline" onClick={() => {
+              setIsUserDialogOpen(false);
+              setIsCreatingUser(false);
+              setEditingUser(null);
+            }}>
               Cancel
             </Button>
             <Button
               onClick={() => {
-                if (editingUser) {
-                  // Validate username
-                  if (!userForm.username || userForm.username.trim().length === 0) {
+                // Validate username
+                if (!userForm.username || userForm.username.trim().length === 0) {
+                  toast({
+                    title: "Validation Error",
+                    description: "Username cannot be empty",
+                    variant: "destructive",
+                  });
+                  return;
+                }
+
+                if (isCreatingUser) {
+                  // Validate email for creation
+                  if (!userForm.email || userForm.email.trim().length === 0) {
                     toast({
                       title: "Validation Error",
-                      description: "Username cannot be empty",
+                      description: "Email is required",
                       variant: "destructive",
                     });
                     return;
                   }
                   
-                  // Validate password if provided
+                  // Validate password for creation
+                  if (!userForm.newPassword || userForm.newPassword.length < 8) {
+                    toast({
+                      title: "Validation Error",
+                      description: "Password must be at least 8 characters",
+                      variant: "destructive",
+                    });
+                    return;
+                  }
+                  
+                  // Create user
+                  createUser.mutate({
+                    username: userForm.username.trim(),
+                    email: userForm.email.trim(),
+                    password: userForm.newPassword,
+                    role: userForm.role,
+                    tenantId: userForm.tenantId,
+                  });
+                } else if (editingUser) {
+                  // Validate password if provided for update
                   if (userForm.newPassword && userForm.newPassword.length < 8) {
                     toast({
                       title: "Validation Error",
@@ -5259,9 +5410,159 @@ export default function Admin() {
                   setIsUserDialogOpen(false);
                 }
               }}
+              disabled={createUser.isPending || updateUser.isPending}
               data-testid="button-save-user"
             >
-              Save Changes
+              {createUser.isPending || updateUser.isPending ? 'Saving...' : (isCreatingUser ? 'Create User' : 'Save Changes')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* User Import Dialog */}
+      <Dialog open={isUserImportDialogOpen} onOpenChange={(open) => {
+        setIsUserImportDialogOpen(open);
+        if (!open) {
+          setUserImportData([]);
+        }
+      }}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Import Users</DialogTitle>
+            <DialogDescription>
+              Upload a CSV file to bulk import users. Required columns: username, email, password. Optional: role (user, tenant_modeler, tenant_admin, global_admin).
+            </DialogDescription>
+          </DialogHeader>
+
+          <form name="orion-import-users" onSubmit={(e) => e.preventDefault()} className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>CSV File</Label>
+              <Input
+                type="file"
+                accept=".csv"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                      const text = event.target?.result as string;
+                      const lines = text.split('\n').filter(line => line.trim());
+                      if (lines.length < 2) {
+                        toast({
+                          title: "Invalid CSV",
+                          description: "CSV must have a header row and at least one data row",
+                          variant: "destructive",
+                        });
+                        return;
+                      }
+                      
+                      const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+                      const usernameIdx = headers.indexOf('username');
+                      const emailIdx = headers.indexOf('email');
+                      const passwordIdx = headers.indexOf('password');
+                      const roleIdx = headers.indexOf('role');
+                      
+                      if (usernameIdx === -1 || emailIdx === -1 || passwordIdx === -1) {
+                        toast({
+                          title: "Missing columns",
+                          description: "CSV must have username, email, and password columns",
+                          variant: "destructive",
+                        });
+                        return;
+                      }
+                      
+                      const users = [];
+                      for (let i = 1; i < lines.length; i++) {
+                        const values = lines[i].split(',').map(v => v.trim());
+                        if (values.length >= 3) {
+                          users.push({
+                            username: values[usernameIdx] || '',
+                            email: values[emailIdx] || '',
+                            password: values[passwordIdx] || '',
+                            role: roleIdx !== -1 ? (values[roleIdx] || 'user') : 'user',
+                          });
+                        }
+                      }
+                      
+                      setUserImportData(users);
+                      toast({
+                        title: "CSV Parsed",
+                        description: `Found ${users.length} users to import`,
+                      });
+                    };
+                    reader.readAsText(file);
+                  }
+                }}
+                data-testid="input-user-csv"
+              />
+              <p className="text-sm text-muted-foreground">
+                CSV format: username, email, password, role (optional)
+              </p>
+            </div>
+
+            {userImportData.length > 0 && (
+              <div className="space-y-2">
+                <Label>Preview ({userImportData.length} users)</Label>
+                <div className="max-h-48 overflow-y-auto rounded-md border p-2">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b">
+                        <th className="text-left p-1">Username</th>
+                        <th className="text-left p-1">Email</th>
+                        <th className="text-left p-1">Role</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {userImportData.slice(0, 10).map((user, i) => (
+                        <tr key={i} className="border-b last:border-0">
+                          <td className="p-1">{user.username}</td>
+                          <td className="p-1">{user.email}</td>
+                          <td className="p-1">{user.role}</td>
+                        </tr>
+                      ))}
+                      {userImportData.length > 10 && (
+                        <tr>
+                          <td colSpan={3} className="p-1 text-muted-foreground">
+                            ... and {userImportData.length - 10} more
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {currentUser && normalizeRole(currentUser.role) === USER_ROLES.TENANT_ADMIN && (
+              <p className="text-sm text-muted-foreground bg-muted p-2 rounded-md">
+                As a Tenant Admin, imported users will be assigned to your tenant and can only have User or Tenant Modeler roles.
+              </p>
+            )}
+          </form>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => {
+              setIsUserImportDialogOpen(false);
+              setUserImportData([]);
+            }}>
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                if (userImportData.length === 0) {
+                  toast({
+                    title: "No users to import",
+                    description: "Please upload a valid CSV file first",
+                    variant: "destructive",
+                  });
+                  return;
+                }
+                importUsers.mutate(userImportData);
+              }}
+              disabled={importUsers.isPending || userImportData.length === 0}
+              data-testid="button-confirm-import-users"
+            >
+              {importUsers.isPending ? 'Importing...' : `Import ${userImportData.length} Users`}
             </Button>
           </DialogFooter>
         </DialogContent>

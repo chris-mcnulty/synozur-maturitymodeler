@@ -379,6 +379,92 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Import users from CSV
+  app.post('/api/users/import', ensureAnyAdmin, async (req, res) => {
+    try {
+      const currentUser = req.user!;
+      const { users: usersToImport } = req.body;
+      
+      if (!Array.isArray(usersToImport) || usersToImport.length === 0) {
+        return res.status(400).json({ error: "No users to import" });
+      }
+      
+      const results = {
+        created: 0,
+        skipped: 0,
+        errors: [] as string[],
+      };
+      
+      for (const userData of usersToImport) {
+        try {
+          const { username, email, password, role = 'user', tenantId } = userData;
+          
+          // Validate required fields
+          if (!username || !email || !password) {
+            results.errors.push(`Missing required fields for user: ${username || email || 'unknown'}`);
+            results.skipped++;
+            continue;
+          }
+          
+          // Validate role assignment
+          if (!canAssignRole(currentUser, role)) {
+            results.errors.push(`Cannot assign role '${role}' to user: ${username}`);
+            results.skipped++;
+            continue;
+          }
+          
+          // Validate tenant assignment
+          const effectiveTenantId = tenantId || (currentUser.tenantId && !checkIsGlobalAdmin(currentUser) ? currentUser.tenantId : null);
+          if (effectiveTenantId && !canManageUsers(currentUser, effectiveTenantId)) {
+            results.errors.push(`Cannot assign tenant to user: ${username}`);
+            results.skipped++;
+            continue;
+          }
+          
+          // Check if username already exists
+          const existingUsername = await storage.getUserByUsername(username);
+          if (existingUsername) {
+            results.errors.push(`Username already exists: ${username}`);
+            results.skipped++;
+            continue;
+          }
+          
+          // Check if email already exists
+          const existingEmail = await storage.getUserByEmail(email);
+          if (existingEmail) {
+            results.errors.push(`Email already exists: ${email}`);
+            results.skipped++;
+            continue;
+          }
+          
+          // Hash password and create user
+          const hashedPassword = await hashPassword(password);
+          await storage.createUser({
+            username,
+            email,
+            password: hashedPassword,
+            role,
+            tenantId: effectiveTenantId,
+          });
+          
+          results.created++;
+        } catch (error: any) {
+          results.errors.push(`Failed to create user: ${userData.username || 'unknown'} - ${error.message}`);
+          results.skipped++;
+        }
+      }
+      
+      res.json({
+        success: true,
+        message: `Imported ${results.created} users, skipped ${results.skipped}`,
+        details: results,
+      });
+    } catch (error: any) {
+      console.error('Error importing users:', error);
+      res.status(500).json({ error: "Failed to import users" });
+    }
+  });
+
   // Assign or unassign user to/from tenant
   app.patch('/api/users/:id/tenant', ensureAnyAdmin, async (req, res) => {
     try {
