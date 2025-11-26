@@ -7,76 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
-
-// Standard dropdown options
-const JOB_ROLES = [
-  "Chief Executive Officer (CEO)",
-  "Chief Technology Officer (CTO)",
-  "Chief Financial Officer (CFO)",
-  "Chief Marketing Officer (CMO)",
-  "Chief Operating Officer (COO)",
-  "Vice President",
-  "Director",
-  "Senior Manager",
-  "Manager",
-  "Team Lead",
-  "Project Manager",
-  "Product Manager",
-  "Software Engineer",
-  "Data Analyst",
-  "Business Analyst",
-  "Sales Executive",
-  "Marketing Specialist",
-  "Human Resources Specialist",
-  "Customer Support Representative",
-  "Other",
-];
-
-const INDUSTRIES = [
-  "Technology",
-  "Finance",
-  "Healthcare",
-  "Education",
-  "Manufacturing",
-  "Retail",
-  "Transportation",
-  "Energy",
-  "Telecommunications",
-  "Media & Entertainment",
-  "Real Estate",
-  "Construction",
-  "Agriculture",
-  "Government",
-  "Nonprofit",
-  "Professional Services",
-  "Insurance",
-  "Automotive",
-  "Pharmaceuticals",
-  "Other",
-];
-
-const COUNTRIES = [
-  "United States",
-  "Canada",
-  "United Kingdom",
-  "Australia",
-  "Germany",
-  "France",
-  "Italy",
-  "Spain",
-  "Netherlands",
-  "Sweden",
-  "Switzerland",
-  "Japan",
-  "China",
-  "India",
-  "Brazil",
-  "Mexico",
-  "South Africa",
-  "Singapore",
-  "United Arab Emirates",
-  "New Zealand",
-];
+import { JOB_ROLES, INDUSTRIES, COUNTRIES } from "@/lib/constants";
 
 interface ProfileGateProps {
   onComplete: (profile: any) => void;
