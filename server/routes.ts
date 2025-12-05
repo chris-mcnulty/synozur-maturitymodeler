@@ -4010,9 +4010,12 @@ If you didn't request this, please ignore this email—your password will remain
         
         exportData.assessments.push({
           id: assessment.id,
+          createdAt: assessment.startedAt,
+          startedAt: assessment.startedAt,
           completedAt: assessment.completedAt,
           user: userData,
           isImported: !!assessment.importBatchId,
+          isProxy: assessment.isProxy || false,
           results: {
             overallScore: result.overallScore,
             label: result.label,
