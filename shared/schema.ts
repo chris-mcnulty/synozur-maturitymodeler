@@ -596,6 +596,39 @@ export const insertKnowledgeDocumentSchema = createInsertSchema(knowledgeDocumen
   uploadedAt: true,
 });
 
+// Assessment tags table for categorizing and grouping assessments
+export const assessmentTags = pgTable("assessment_tags", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull().unique(),
+  color: varchar("color", { length: 7 }).notNull().default("#6366f1"), // Hex color for UI display
+  description: text("description"),
+  createdBy: varchar("created_by").references(() => users.id, { onDelete: "set null" }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// Assessment tag assignments - junction table
+export const assessmentTagAssignments = pgTable("assessment_tag_assignments", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  assessmentId: varchar("assessment_id").notNull().references(() => assessments.id, { onDelete: "cascade" }),
+  tagId: varchar("tag_id").notNull().references(() => assessmentTags.id, { onDelete: "cascade" }),
+  assignedBy: varchar("assigned_by").references(() => users.id, { onDelete: "set null" }),
+  assignedAt: timestamp("assigned_at").defaultNow().notNull(),
+}, (table) => ({
+  uniqueAssessmentTag: unique().on(table.assessmentId, table.tagId),
+  assessmentIdx: index("idx_tag_assignments_assessment").on(table.assessmentId),
+  tagIdx: index("idx_tag_assignments_tag").on(table.tagId),
+}));
+
+export const insertAssessmentTagSchema = createInsertSchema(assessmentTags).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertAssessmentTagAssignmentSchema = createInsertSchema(assessmentTagAssignments).omit({
+  id: true,
+  assignedAt: true,
+});
+
 // Types
 export type UserRole = 'user' | 'modeler' | 'admin';
 
@@ -831,3 +864,10 @@ export type InsertOauthToken = z.infer<typeof insertOauthTokenSchema>;
 
 export type TenantAuditLog = typeof tenantAuditLog.$inferSelect;
 export type InsertTenantAuditLog = z.infer<typeof insertTenantAuditLogSchema>;
+
+// TypeScript types for assessment tags
+export type AssessmentTag = typeof assessmentTags.$inferSelect;
+export type InsertAssessmentTag = z.infer<typeof insertAssessmentTagSchema>;
+
+export type AssessmentTagAssignment = typeof assessmentTagAssignments.$inferSelect;
+export type InsertAssessmentTagAssignment = z.infer<typeof insertAssessmentTagAssignmentSchema>;
