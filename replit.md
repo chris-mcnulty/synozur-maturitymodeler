@@ -1,11 +1,7 @@
 # Orion - Synozur Multi-Model Maturity Platform
 
 ## Overview
-Orion is a comprehensive fullstack JavaScript application designed for multi-model maturity assessments. Its core purpose is to provide dynamic routing for assessments, manage models via CSV, generate gated PDF results, offer benchmarking capabilities, and provide extensive administrative controls. The platform aims to help users "Find Their North Star" through insightful maturity assessments, aligning with Synozur's vision as "the Transformation Company."
-
-**Scoring System**: Orion supports dual scoring scales that automatically adapt based on model configuration:
-- **100-point scale**: For models with maturity scale maxScore ≤ 100, scores are summed directly (e.g., 25 questions × 4 points max = 100 total)
-- **100-500 scale**: For legacy models with maturity scale maxScore > 100, scores are averaged across questions
+Orion is a fullstack JavaScript application designed for multi-model maturity assessments. It provides dynamic routing for assessments, CSV-based model management, gated PDF result generation, benchmarking, and extensive administrative controls. The platform aims to help users "Find Their North Star" through insightful maturity assessments, aligning with Synozur's vision as "the Transformation Company." Orion also serves as a comprehensive OAuth 2.1/OpenID Connect identity provider for the Synozur ecosystem.
 
 ## User Preferences
 - Uses SendGrid for email delivery (API key method, not Replit connector)
@@ -13,53 +9,37 @@ Orion is a comprehensive fullstack JavaScript application designed for multi-mod
 - Assessment dimensions are valuable and should be emphasized
 
 ## System Architecture
-The application uses a modern fullstack architecture:
-- **Frontend**: React, Vite, TypeScript, Wouter for routing, and Shadcn UI for component styling.
-- **Backend**: Express.js for the API, PostgreSQL for the database, and Drizzle ORM for database interactions.
-- **Storage**: PostgreSQL for relational data and object storage (Google Cloud Storage) for assets like model images and knowledge documents.
-- **Authentication**: Passport-based session management with tenant-scoped role-based access control using a four-tier hierarchy (global_admin, tenant_admin, tenant_modeler, user). See Role System section below for details.
-- **UI/UX**: Features a dark-mode-first UI with a primary purple (#810FFB) and accent pink (#E60CB3) color scheme, utilizing the Inter font family. Responsive gradient styling is applied to hero titles. Admin sidebar is collapsible with icon-only mode via toggle button in header, with hover tooltips for all menu items. Dashboard home button provides quick access to model management screen.
-- **Core Features**: Dynamic model routing (/:modelSlug), assessment wizard with autosave, 100-500 point scoring engine, profile gating for results, email-delivered PDF reports, benchmarking, and a comprehensive admin console.
-- **Model Management**: CSV-driven import/export of models, dimensions, answer options, and resource editing. Models can be featured on the homepage. Custom model images (via imageUrl field) display as hero backgrounds on model launch pages (opacity-20) and results pages (opacity-10), with fallback to default graphic. **Admin UX redesign completed (Nov 2024)**: Replaced table-based model editing with modern card-based grid layout featuring visual badges for status, visibility, and model class. Integrated ModelBuilder component provides tab-based navigation (Overview, Structure, Resources, Maturity Scale) with nested accordions for hierarchical dimension → question → answer editing. Text inputs use debounced updates (500ms) with local state synchronization via useEffect for responsive UI. Import/Export panel supports three formats: .model (JSON backup), CSV full structure, and CSV simple (questions only). CSV import fully operational (Nov 18, 2024): Parser handles both numeric (1, 2, 3) and Q-prefix (Q1, Q2, Q3) question numbers, ImportExportPanel integrates with backend API for actual imports with progress feedback, proper model ID association via fixed closure dependencies. All icon-only buttons include aria-labels for accessibility.
-- **Role System**: Four-tier tenant-scoped hierarchy:
-  - `global_admin`: Platform-wide control (tenant CRUD, all users, all models)
-  - `tenant_admin`: Tenant user management, model management within tenant scope
-  - `tenant_modeler`: Model creation/editing within tenant scope
-  - `user`: Standard assessment access
-  - Legacy roles (`admin`, `modeler`) automatically normalize to new equivalents
-  - Permission system enforces tenant boundaries via middleware (ensureGlobalAdmin, ensureAnyAdmin, ensureCanManageModels)
-  - Frontend uses helper functions (isAdminUser, canManageModels, normalizeRole) for role checks
-- **User Management**: Admin panel for user CRUD, role assignment, email verification management, username changes, and password resets. Self-registration defaults to 'user' role. Global admins see all users and can create/import users with any role and tenant; tenant admins see only users within their tenant and can only create users with 'user' or 'tenant_modeler' roles scoped to their tenant. Features: Create User dialog with role/tenant selection, CSV bulk import with validation and preview, password management. Admin and modeler roles can access and manage draft models; regular users see published models only.
-- **Email System**: Integrated email verification, password reset, and PDF report delivery via SendGrid. Email templates support dynamic content and consistent branding.
-- **AI Integration**: Leverages Anthropic Claude Sonnet 4.5 (via Replit AI Integrations) for generating personalized recommendations, interpretations, and roadmaps, with a 90-day caching mechanism for cost efficiency. Cache keys use stringified userContextKey for stable profile separation. AI prompts enforce strict personalization rules to prevent cross-model content bleeding (e.g., GTM language in non-GTM models). Detailed logging tracks userContext and cache hits/misses for debugging. Includes an AI content review workflow for admin approval. Roadmap generation dynamically creates 1-3 priority action sections based on actual recommendations, never using generic placeholders. AI-generated content renders with semantic HTML via MarkdownContent component: headers (`# Title` → `<h3>`, `## Title` → `<h4>`), bold text (`**text**` → `<strong>`), bullet points (`• item` → `<ul><li>`), and automatic paragraph breaking for long text blocks (>400 chars split at sentence boundaries, commas, or word breaks).
-- **Knowledge Base**: User-uploadable documents (PDF, DOCX, DOC, TXT, MD) for AI grounding. Supports company-wide and model-specific scopes. Documents stored in object storage with metadata in `knowledge_documents` table (field: `name` for filename, not `fileName`).
-- **Data Import**: System for importing anonymized assessment data with validation, fuzzy text matching for question mapping, and batch tracking.
-- **Reporting**: Admin dashboard with statistics displaying actual user names and companies. CSV exports include real user data for assessment results and user accounts. Anonymous/imported assessments display as "Anonymous".
-- **Benchmarking**: Configurable benchmark calculation system with minimum sample size thresholds for different segment types (overall, industry, company size, country, and combinations). Admins can configure whether to include anonymous/imported assessments and proxy assessments in benchmark calculations. When anonymous inclusion is enabled, the system uses proxy profile fields for proxy assessments and user profile data for regular assessments, ensuring only assessments with valid profile data contribute to segment-specific benchmarks. Default behavior excludes anonymous data to maintain data quality.
-- **Profile Management**: User profile editing with standardized dropdowns for job title, industry, company size, and country, all with required validation. Profile fields are now collected during signup for better data quality. Profile edit button is positioned next to the "Profile Information" heading for easier access.
-- **Anonymous User Nudges**: Gentle prompts encourage anonymous users to create free accounts on model home pages and results pages, highlighting benefits like AI-powered personalized insights and saved progress.
-- **Assessment Claiming**: Anonymous users who complete assessments can sign up or log in via nudge buttons, and their assessment is automatically claimed (associated with their account) upon authentication. The system preserves assessment context through the auth flow via URL parameters, ensuring users return directly to their results after creating an account.
-- **Social Sharing**: Enables sharing assessment results across multiple social platforms with pre-filled content. Shares use special Open Graph URLs (`/api/og/:modelSlug`) that provide model-specific previews while auto-redirecting users to the actual model pages.
-- **Open Graph Integration**: Server-side rendered meta tags via `/api/og/:modelSlug` endpoint for model-specific social media previews. When users share model links (e.g., for AI Maturity Assessment), social media crawlers see the correct model name and description instead of generic homepage text. Real users visiting these URLs are automatically redirected to the actual model page via JavaScript. All pages use the same custom preview image with Synozur branding.
-- **Proxy Assessments**: Admins and modelers can create assessments on behalf of prospects without requiring real user accounts. Proxy assessments store prospect profile data (name, company, job title, industry, company size, country) directly in the assessment record with `isProxy` flag. AI-generated insights use the proxy profile data for personalization. Results pages display proxy profile information prominently. Admin results list shows "Proxy" badge for easy identification. Created via "Create Proxy Assessment" button in admin console header. Proxy assessments can be included in benchmark calculations when the "Include Anonymous/Imported Assessments" setting is enabled in benchmark configuration.
-- **Multi-Tenant Private Model Visibility**: ✅ **FULLY OPERATIONAL WITH MULTI-TENANT SUPPORT** (Updated Nov 18, 2024) - Models can be published as public (visible to all) or tenant-private (visible only to assigned tenant members + global admins). Private models now support assignment to MULTIPLE tenants via `model_tenants` junction table, enabling flexible cross-tenant collaboration. All model access endpoints enforce visibility checks via async `canAccessModel()` helper that queries the junction table, returning 404 for unauthorized access. Admin panel includes visibility selector and multi-tenant assignment selector for model creation/editing. "Tenant Private" badges display on model cards. Comprehensive automated Playwright tests verify: anonymous users blocked from private models, assigned-tenant users can access multi-tenant private models, non-assigned-tenant users blocked from private models, and global admins can access all models. Backend uses new four-tier role system exclusively. Added POST /api/users endpoint for admin user creation with role and tenant assignment. Architect recommendations: add composite index on model_tenants(model_id, tenant_id) for performance optimization, plan data migration for legacy records.
-- **OAuth 2.1 Identity Provider**: ✅ **FULLY OPERATIONAL** (Nov 15, 2025) - Orion serves as a complete OAuth 2.1/OpenID Connect identity provider for the Synozur ecosystem. Features include:
-  - **Client Management**: Admin UI for OAuth app CRUD with auto-generated credentials, secure bcrypt hashing, one-time secret display, redirect URI management, environment configuration
-  - **Core Endpoints**: `/oauth/authorize` (authorization code flow), `/oauth/token` (token exchange + refresh), `/oauth/userinfo` (user profile), `/.well-known/openid-configuration` (OIDC discovery), `/.well-known/jwks.json` (JWT signing keys)
-  - **Client Types**: Supports both confidential clients (with secrets, e.g., Nebula) and public clients (without secrets, e.g., SPAs/mobile apps)
-  - **Security**: PKCE mandatory for public clients (recommended for confidential), RS256 JWT signing, bcrypt credential hashing, HTTP Basic auth support, proper client authentication enforcement
-  - **Grant Types**: `authorization_code` (initial auth), `refresh_token` (token renewal)
-  - **User Consent**: Persistent consent management with auto-approval for Orion self-auth, consent revocation support
-  - **Testing**: Comprehensive test suite covering full OAuth flows, public/confidential client authentication, HTTP Basic auth, security enforcement
-  - See [NEBULA_OAUTH_INTEGRATION.md](./NEBULA_OAUTH_INTEGRATION.md) for integration guide and [OAUTH_PUBLIC_CLIENT_IMPLEMENTATION.md](./OAUTH_PUBLIC_CLIENT_IMPLEMENTATION.md) for implementation details
-- **Multi-Tenant Architecture (In Progress)**: Platform is transforming into a multi-tenant system serving as the OAuth 2.0/2.1 identity provider for the Synozur ecosystem (Orion, Nebula, Vega). Completed: tenant-private model visibility system with full access control enforcement, OAuth client management admin UI, full OAuth 2.1 authorization endpoints. Remaining: tenant-specific branding (logo, colors), domain-based tenant mapping, application entitlements per tenant, and support for individual skills assessments. Users can exist with or without tenant association. See [MULTI_TENANT_ARCHITECTURE.md](./MULTI_TENANT_ARCHITECTURE.md) for detailed specification and [PRODUCT_BACKLOG.md](./PRODUCT_BACKLOG.md) for implementation roadmap.
+The application features a modern fullstack architecture with a dark-mode-first UI.
+
+-   **Frontend**: React, Vite, TypeScript, Wouter for routing, Shadcn UI for styling.
+-   **Backend**: Express.js, PostgreSQL, Drizzle ORM.
+-   **Storage**: PostgreSQL for relational data, Google Cloud Storage for assets.
+-   **Authentication**: Passport-based session management with tenant-scoped, four-tier role-based access control (`global_admin`, `tenant_admin`, `tenant_modeler`, `user`).
+-   **UI/UX**: Dark-mode-first with primary purple and accent pink, Inter font. Responsive gradient styling. Collapsible admin sidebar with hover tooltips.
+-   **Core Features**: Dynamic model routing, assessment wizard with autosave, 100-500 point scoring engine, profile gating, email-delivered PDF reports, benchmarking, comprehensive admin console.
+-   **Model Management**: CSV-driven import/export, card-based grid layout for editing, ModelBuilder component for detailed editing (Overview, Structure, Resources, Maturity Scale tabs), debounced updates, accessibility via aria-labels.
+-   **User Management**: Admin CRUD for users, role assignment, email verification, password resets. Supports self-registration and bulk import.
+-   **Email System**: Integrated email verification, password reset, and PDF report delivery via SendGrid.
+-   **AI Integration**: Anthropic Claude Sonnet 4.5 for personalized recommendations and roadmaps, with 90-day caching and content review workflow.
+-   **Knowledge Base**: User-uploadable documents (PDF, DOCX, TXT, MD) for AI grounding, company-wide and model-specific scoping.
+-   **Data Import**: System for importing anonymized assessment data with validation and batch tracking.
+-   **Reporting**: Admin dashboard with user statistics and CSV exports.
+-   **Assessment Tagging**: Custom tag system for categorization with configurable names, colors, and descriptions.
+-   **Benchmarking**: Configurable calculation system with minimum sample size thresholds, supporting various segments and optional inclusion of anonymous/imported assessments.
+-   **Profile Management**: User profile editing with standardized dropdowns, required validation, collected during signup.
+-   **Anonymous User Nudges & Assessment Claiming**: Prompts for anonymous users to create accounts, with automatic assessment claiming upon authentication.
+-   **Social Sharing**: Enables sharing results with pre-filled content, using Open Graph URLs for model-specific previews.
+-   **Proxy Assessments**: Admins can create assessments on behalf of prospects, storing profile data directly for AI personalization.
+-   **Multi-Tenant Private Model Visibility**: Models can be public or tenant-private, assignable to multiple tenants. Access is enforced via `canAccessModel()` helper.
+-   **OAuth 2.1 Identity Provider**: Orion functions as an OAuth 2.1/OpenID Connect provider with client management (CRUD, auto-generated credentials, redirect URIs), core endpoints (`/oauth/authorize`, `/oauth/token`, `/oauth/userinfo`, OIDC discovery, JWKS), support for confidential and public clients (PKCE mandatory for public), RS256 JWT signing, `authorization_code` and `refresh_token` grant types, and persistent user consent management.
+-   **Multi-Tenant Architecture**: In progress, with tenant-private model visibility and OAuth client management completed. Future plans include tenant-specific branding and domain mapping.
 
 ## External Dependencies
-- **PostgreSQL**: Primary database for all application data.
-- **Google Cloud Storage**: Used for object storage of model images.
-- **SendGrid**: Email delivery service for verification, password resets, and PDF reports.
-- **Anthropic Claude Sonnet 4.5**: AI service (via Replit AI Integrations) for generating personalized recommendations, executive summaries, and transformation roadmaps.
-- **HubSpot**: Integrated for website tracking (Account ID: 49076134).
-- **jsPDF**: Library used for generating PDF reports.
-- **Uppy**: Frontend file uploader for image management in the admin panel.
-- **React Icons (react-icons/si)**: Provides social media icons for the sharing feature.
+-   **PostgreSQL**: Primary database.
+-   **Google Cloud Storage**: Object storage for model images.
+-   **SendGrid**: Email delivery service.
+-   **Anthropic Claude Sonnet 4.5**: AI service via Replit AI Integrations.
+-   **HubSpot**: Website tracking (Account ID: 49076134).
+-   **jsPDF**: PDF report generation library.
+-   **Uppy**: Frontend file uploader.
+-   **React Icons (react-icons/si)**: Social media icons.
