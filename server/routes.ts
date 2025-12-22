@@ -3842,6 +3842,215 @@ If you didn't request this, please ignore this email—your password will remain
     }
   });
 
+  // ========== ASSESSMENT TAG ROUTES ==========
+  
+  // Get all tags
+  app.get("/api/admin/tags", ensureAdminOrModeler, async (req, res) => {
+    try {
+      const tags = await db
+        .select()
+        .from(schema.assessmentTags)
+        .orderBy(schema.assessmentTags.name);
+      res.json(tags);
+    } catch (error) {
+      console.error('Error fetching tags:', error);
+      res.status(500).json({ error: "Failed to fetch tags" });
+    }
+  });
+  
+  // Create a new tag
+  app.post("/api/admin/tags", ensureAdminOrModeler, async (req, res) => {
+    try {
+      const { name, color, description } = req.body;
+      
+      if (!name || name.trim().length === 0) {
+        return res.status(400).json({ error: "Tag name is required" });
+      }
+      
+      const [newTag] = await db
+        .insert(schema.assessmentTags)
+        .values({
+          name: name.trim(),
+          color: color || "#6366f1",
+          description: description || null,
+          createdBy: req.user?.id || null,
+        })
+        .returning();
+      
+      res.status(201).json(newTag);
+    } catch (error: any) {
+      if (error.code === '23505') {
+        return res.status(400).json({ error: "A tag with this name already exists" });
+      }
+      console.error('Error creating tag:', error);
+      res.status(500).json({ error: "Failed to create tag" });
+    }
+  });
+  
+  // Update a tag
+  app.patch("/api/admin/tags/:id", ensureAdminOrModeler, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { name, color, description } = req.body;
+      
+      const updates: any = {};
+      if (name !== undefined) updates.name = name.trim();
+      if (color !== undefined) updates.color = color;
+      if (description !== undefined) updates.description = description;
+      
+      if (Object.keys(updates).length === 0) {
+        return res.status(400).json({ error: "No updates provided" });
+      }
+      
+      const [updatedTag] = await db
+        .update(schema.assessmentTags)
+        .set(updates)
+        .where(eq(schema.assessmentTags.id, id))
+        .returning();
+      
+      if (!updatedTag) {
+        return res.status(404).json({ error: "Tag not found" });
+      }
+      
+      res.json(updatedTag);
+    } catch (error: any) {
+      if (error.code === '23505') {
+        return res.status(400).json({ error: "A tag with this name already exists" });
+      }
+      console.error('Error updating tag:', error);
+      res.status(500).json({ error: "Failed to update tag" });
+    }
+  });
+  
+  // Delete a tag
+  app.delete("/api/admin/tags/:id", ensureAdminOrModeler, async (req, res) => {
+    try {
+      const { id } = req.params;
+      
+      const [deleted] = await db
+        .delete(schema.assessmentTags)
+        .where(eq(schema.assessmentTags.id, id))
+        .returning();
+      
+      if (!deleted) {
+        return res.status(404).json({ error: "Tag not found" });
+      }
+      
+      res.json({ success: true, message: "Tag deleted successfully" });
+    } catch (error) {
+      console.error('Error deleting tag:', error);
+      res.status(500).json({ error: "Failed to delete tag" });
+    }
+  });
+  
+  // Get tags for a specific assessment
+  app.get("/api/admin/assessments/:assessmentId/tags", ensureAdminOrModeler, async (req, res) => {
+    try {
+      const { assessmentId } = req.params;
+      
+      const assignments = await db
+        .select({
+          tag: schema.assessmentTags,
+          assignedAt: schema.assessmentTagAssignments.assignedAt,
+        })
+        .from(schema.assessmentTagAssignments)
+        .innerJoin(schema.assessmentTags, eq(schema.assessmentTagAssignments.tagId, schema.assessmentTags.id))
+        .where(eq(schema.assessmentTagAssignments.assessmentId, assessmentId));
+      
+      res.json(assignments.map(a => ({
+        ...a.tag,
+        assignedAt: a.assignedAt,
+      })));
+    } catch (error) {
+      console.error('Error fetching assessment tags:', error);
+      res.status(500).json({ error: "Failed to fetch assessment tags" });
+    }
+  });
+  
+  // Assign tags to an assessment (bulk update)
+  app.put("/api/admin/assessments/:assessmentId/tags", ensureAdminOrModeler, async (req, res) => {
+    try {
+      const { assessmentId } = req.params;
+      const { tagIds } = req.body;
+      
+      if (!Array.isArray(tagIds)) {
+        return res.status(400).json({ error: "tagIds must be an array" });
+      }
+      
+      // Remove existing tags for this assessment
+      await db
+        .delete(schema.assessmentTagAssignments)
+        .where(eq(schema.assessmentTagAssignments.assessmentId, assessmentId));
+      
+      // Add new tag assignments
+      if (tagIds.length > 0) {
+        await db
+          .insert(schema.assessmentTagAssignments)
+          .values(tagIds.map((tagId: string) => ({
+            assessmentId,
+            tagId,
+            assignedBy: req.user?.id || null,
+          })));
+      }
+      
+      // Return updated tags
+      const assignments = await db
+        .select({
+          tag: schema.assessmentTags,
+        })
+        .from(schema.assessmentTagAssignments)
+        .innerJoin(schema.assessmentTags, eq(schema.assessmentTagAssignments.tagId, schema.assessmentTags.id))
+        .where(eq(schema.assessmentTagAssignments.assessmentId, assessmentId));
+      
+      res.json(assignments.map(a => a.tag));
+    } catch (error) {
+      console.error('Error updating assessment tags:', error);
+      res.status(500).json({ error: "Failed to update assessment tags" });
+    }
+  });
+  
+  // Add a single tag to an assessment
+  app.post("/api/admin/assessments/:assessmentId/tags/:tagId", ensureAdminOrModeler, async (req, res) => {
+    try {
+      const { assessmentId, tagId } = req.params;
+      
+      await db
+        .insert(schema.assessmentTagAssignments)
+        .values({
+          assessmentId,
+          tagId,
+          assignedBy: req.user?.id || null,
+        })
+        .onConflictDoNothing();
+      
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Error adding tag to assessment:', error);
+      res.status(500).json({ error: "Failed to add tag to assessment" });
+    }
+  });
+  
+  // Remove a single tag from an assessment
+  app.delete("/api/admin/assessments/:assessmentId/tags/:tagId", ensureAdminOrModeler, async (req, res) => {
+    try {
+      const { assessmentId, tagId } = req.params;
+      
+      await db
+        .delete(schema.assessmentTagAssignments)
+        .where(
+          and(
+            eq(schema.assessmentTagAssignments.assessmentId, assessmentId),
+            eq(schema.assessmentTagAssignments.tagId, tagId)
+          )
+        );
+      
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Error removing tag from assessment:', error);
+      res.status(500).json({ error: "Failed to remove tag from assessment" });
+    }
+  });
+
   // Export analytical data for a specific model (for external analysis tools)
   app.get("/api/admin/export/model/:modelSlug/analysis", ensureAdminOrModeler, async (req, res) => {
     try {
