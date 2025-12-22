@@ -4177,6 +4177,16 @@ If you didn't request this, please ignore this email—your password will remain
           .from(schema.assessmentResponses)
           .where(eq(schema.assessmentResponses.assessmentId, assessment.id));
         
+        // Get tags for this assessment
+        const tagAssignments = await db
+          .select({
+            tagName: schema.assessmentTags.name,
+            tagColor: schema.assessmentTags.color,
+          })
+          .from(schema.assessmentTagAssignments)
+          .innerJoin(schema.assessmentTags, eq(schema.assessmentTagAssignments.tagId, schema.assessmentTags.id))
+          .where(eq(schema.assessmentTagAssignments.assessmentId, assessment.id));
+        
         // Build response details with full context
         const responseDetails = responses.map(r => {
           const question = questions.find(q => q.id === r.questionId);
@@ -4225,6 +4235,7 @@ If you didn't request this, please ignore this email—your password will remain
           user: userData,
           isImported: !!assessment.importBatchId,
           isProxy: assessment.isProxy || false,
+          tags: tagAssignments.map(t => t.tagName),
           results: {
             overallScore: result.overallScore,
             label: result.label,

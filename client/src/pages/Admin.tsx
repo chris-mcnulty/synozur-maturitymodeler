@@ -13,8 +13,8 @@ import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Download, Plus, Edit, Trash, FileSpreadsheet, Eye, EyeOff, BarChart3, Settings, FileDown, FileUp, ListOrdered, Users, Star, Upload, X, Sparkles, CheckCircle2, XCircle, Database, FileText, Brain, BookOpen, ClipboardList, Home, Building2, ChevronDown, Shield } from "lucide-react";
-import type { Model, Result, Assessment, Dimension, Question, Answer, User } from "@shared/schema";
+import { Download, Plus, Edit, Trash, FileSpreadsheet, Eye, EyeOff, BarChart3, Settings, FileDown, FileUp, ListOrdered, Users, Star, Upload, X, Sparkles, CheckCircle2, XCircle, Database, FileText, Brain, BookOpen, ClipboardList, Home, Building2, ChevronDown, Shield, Tag } from "lucide-react";
+import type { Model, Result, Assessment, Dimension, Question, Answer, User, AssessmentTag } from "@shared/schema";
 import { USER_ROLES, type UserRole } from "@shared/constants";
 import { useAuth } from "@/hooks/use-auth";
 import { ObjectUploader } from "@/components/ObjectUploader";
@@ -29,6 +29,8 @@ import { TenantManagement } from "@/components/admin/TenantManagement";
 import { OAuthApplications } from "@/components/admin/OAuthApplications";
 import { ImportExportPanel } from "@/components/admin/ImportExportPanel";
 import { ModelBuilder } from "@/components/admin/ModelBuilder";
+import { TagManagement } from "@/components/admin/TagManagement";
+import { AssessmentTagSelector } from "@/components/admin/AssessmentTagSelector";
 import {
   Sidebar,
   SidebarContent,
@@ -2089,6 +2091,17 @@ export default function Admin() {
                   </SidebarMenuItem>
                   <SidebarMenuItem>
                     <SidebarMenuButton 
+                      onClick={() => setActiveSection('tags')}
+                      isActive={activeSection === 'tags'}
+                      data-testid="tab-tags"
+                      tooltip="Tags"
+                    >
+                      <Tag className="h-4 w-4" />
+                      <span className="group-data-[collapsible=icon]:hidden">Tags</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton 
                       onClick={() => setActiveSection('audit')}
                       isActive={activeSection === 'audit'}
                       data-testid="tab-audit"
@@ -3470,6 +3483,7 @@ export default function Admin() {
                       <TableHead>Company</TableHead>
                       <TableHead>Model</TableHead>
                       <TableHead>Score</TableHead>
+                      <TableHead>Tags</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
@@ -3477,11 +3491,11 @@ export default function Admin() {
                   <TableBody>
                     {resultsLoading ? (
                       <TableRow>
-                        <TableCell colSpan={7} className="text-center">Loading results...</TableCell>
+                        <TableCell colSpan={8} className="text-center">Loading results...</TableCell>
                       </TableRow>
                     ) : results.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={7} className="text-center">No results found</TableCell>
+                        <TableCell colSpan={8} className="text-center">No results found</TableCell>
                       </TableRow>
                     ) : (
                       (() => {
@@ -3509,7 +3523,7 @@ export default function Admin() {
                               <TableCell className="font-semibold">
                                 Avg: {dateAvg}
                               </TableCell>
-                              <TableCell colSpan={2}></TableCell>
+                              <TableCell colSpan={3}></TableCell>
                             </TableRow>,
                             // Individual results for this date
                             ...dateResults.map((result) => (
@@ -3528,6 +3542,9 @@ export default function Admin() {
                                 <TableCell>{result.isProxy ? result.proxyCompany : (result.company || '-')}</TableCell>
                                 <TableCell>{result.modelName}</TableCell>
                                 <TableCell>{result.overallScore}</TableCell>
+                                <TableCell>
+                                  <AssessmentTagSelector assessmentId={result.assessmentId} />
+                                </TableCell>
                                 <TableCell>
                                   <Badge variant={result.status === 'completed' ? 'default' : 'secondary'}>
                                     {result.status || result.label}
@@ -3602,6 +3619,10 @@ export default function Admin() {
                   <ImportBatches />
                 </div>
               </div>
+              )}
+
+              {activeSection === 'tags' && (
+                <TagManagement />
               )}
 
               {activeSection === 'content' && (
