@@ -4255,6 +4255,262 @@ If you didn't request this, please ignore this email—your password will remain
     }
   });
 
+  // Traffic Analytics Routes
+  
+  // Track page visits (public endpoint - no auth required)
+  app.post("/api/traffic/track", async (req, res) => {
+    try {
+      const { page, referrer } = req.body;
+      
+      // Validate page
+      const validPages = ['homepage', 'signup', 'login'];
+      if (!page || !validPages.includes(page)) {
+        return res.status(400).json({ error: "Invalid page" });
+      }
+      
+      // Get client IP (handle proxies)
+      const ip = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || 
+                 req.socket.remoteAddress || 
+                 'unknown';
+      
+      // Hash IP for privacy (SHA-256 with daily salt)
+      const crypto = await import('crypto');
+      const today = new Date().toISOString().split('T')[0];
+      const ipHash = crypto.createHash('sha256').update(ip + today).digest('hex').substring(0, 16);
+      
+      // Get country from IP using geoip-lite
+      let country: string | null = null;
+      try {
+        const geoip = await import('geoip-lite');
+        const geo = geoip.lookup(ip);
+        country = geo?.country || null;
+      } catch (e) {
+        // Fallback: try to get from accept-language header
+        const acceptLanguage = req.headers['accept-language'];
+        if (acceptLanguage) {
+          // Try to extract country from locale (e.g., en-US -> US)
+          const match = acceptLanguage.match(/[a-z]{2}-([A-Z]{2})/);
+          country = match?.[1] || null;
+        }
+      }
+      
+      // Parse user agent for device and browser info
+      let deviceType: string | null = null;
+      let browser: string | null = null;
+      let browserVersion: string | null = null;
+      let os: string | null = null;
+      
+      const userAgent = req.headers['user-agent'];
+      if (userAgent) {
+        const UAParser = (await import('ua-parser-js')).default;
+        const parser = new UAParser(userAgent);
+        const result = parser.getResult();
+        
+        browser = result.browser?.name || null;
+        browserVersion = result.browser?.version || null;
+        os = result.os?.name || null;
+        
+        // Determine device type
+        const deviceTypeRaw = result.device?.type;
+        if (deviceTypeRaw === 'mobile') {
+          deviceType = 'mobile';
+        } else if (deviceTypeRaw === 'tablet') {
+          deviceType = 'tablet';
+        } else {
+          deviceType = 'desktop';
+        }
+      }
+      
+      // Insert traffic record (fire-and-forget style but await for safety)
+      await db.insert(schema.trafficVisits).values({
+        page,
+        country,
+        deviceType,
+        browser,
+        browserVersion,
+        os,
+        referrer: referrer || null,
+        ipHash,
+      });
+      
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Traffic tracking error:", error);
+      // Don't expose errors to client, just return success
+      res.json({ success: true });
+    }
+  });
+  
+  // Get traffic analytics data (admin only)
+  app.get("/api/traffic", ensureAnyAdmin, async (req, res) => {
+    try {
+      const { dateFrom, dateTo, page, country, deviceType, browser } = req.query;
+      
+      // Build conditions array
+      const conditions = [];
+      
+      if (dateFrom) {
+        conditions.push(gte(schema.trafficVisits.visitedAt, new Date(dateFrom as string)));
+      }
+      if (dateTo) {
+        // Add 1 day to include the end date
+        const endDate = new Date(dateTo as string);
+        endDate.setDate(endDate.getDate() + 1);
+        conditions.push(lt(schema.trafficVisits.visitedAt, endDate));
+      }
+      if (page && page !== 'all') {
+        conditions.push(eq(schema.trafficVisits.page, page as string));
+      }
+      if (country && country !== 'all') {
+        conditions.push(eq(schema.trafficVisits.country, country as string));
+      }
+      if (deviceType && deviceType !== 'all') {
+        conditions.push(eq(schema.trafficVisits.deviceType, deviceType as string));
+      }
+      if (browser && browser !== 'all') {
+        conditions.push(eq(schema.trafficVisits.browser, browser as string));
+      }
+      
+      // Get all matching visits
+      const visits = await db
+        .select()
+        .from(schema.trafficVisits)
+        .where(conditions.length > 0 ? and(...conditions) : undefined)
+        .orderBy(desc(schema.trafficVisits.visitedAt));
+      
+      // Calculate summary statistics
+      const totalVisits = visits.length;
+      
+      // Group by page
+      const pageBreakdown: Record<string, number> = {};
+      visits.forEach(v => {
+        pageBreakdown[v.page] = (pageBreakdown[v.page] || 0) + 1;
+      });
+      
+      // Group by country (top 10)
+      const countryBreakdown: Record<string, number> = {};
+      visits.forEach(v => {
+        const c = v.country || 'Unknown';
+        countryBreakdown[c] = (countryBreakdown[c] || 0) + 1;
+      });
+      const topCountries = Object.entries(countryBreakdown)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 10);
+      
+      // Group by device type
+      const deviceBreakdown: Record<string, number> = {};
+      visits.forEach(v => {
+        const d = v.deviceType || 'Unknown';
+        deviceBreakdown[d] = (deviceBreakdown[d] || 0) + 1;
+      });
+      
+      // Group by browser (top 10)
+      const browserBreakdown: Record<string, number> = {};
+      visits.forEach(v => {
+        const b = v.browser || 'Unknown';
+        browserBreakdown[b] = (browserBreakdown[b] || 0) + 1;
+      });
+      const topBrowsers = Object.entries(browserBreakdown)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 10);
+      
+      // Daily time series (last 30 days or filtered range)
+      const dailyVisits: Record<string, number> = {};
+      visits.forEach(v => {
+        const day = v.visitedAt.toISOString().split('T')[0];
+        dailyVisits[day] = (dailyVisits[day] || 0) + 1;
+      });
+      const timeSeries = Object.entries(dailyVisits)
+        .sort((a, b) => a[0].localeCompare(b[0]))
+        .map(([date, count]) => ({ date, count }));
+      
+      // Get unique values for filters
+      const uniqueCountries = [...new Set(visits.map(v => v.country).filter(Boolean))].sort();
+      const uniqueBrowsers = [...new Set(visits.map(v => v.browser).filter(Boolean))].sort();
+      
+      res.json({
+        totalVisits,
+        pageBreakdown,
+        topCountries,
+        deviceBreakdown,
+        topBrowsers,
+        timeSeries,
+        filterOptions: {
+          countries: uniqueCountries,
+          browsers: uniqueBrowsers,
+        },
+        visits: visits.slice(0, 100), // Return first 100 for detail view
+      });
+    } catch (error) {
+      console.error("Traffic analytics error:", error);
+      res.status(500).json({ error: "Failed to fetch traffic data" });
+    }
+  });
+  
+  // Export traffic data as CSV (admin only)
+  app.get("/api/traffic/export", ensureAnyAdmin, async (req, res) => {
+    try {
+      const { dateFrom, dateTo, page, country, deviceType, browser } = req.query;
+      
+      // Build conditions array
+      const conditions = [];
+      
+      if (dateFrom) {
+        conditions.push(gte(schema.trafficVisits.visitedAt, new Date(dateFrom as string)));
+      }
+      if (dateTo) {
+        const endDate = new Date(dateTo as string);
+        endDate.setDate(endDate.getDate() + 1);
+        conditions.push(lt(schema.trafficVisits.visitedAt, endDate));
+      }
+      if (page && page !== 'all') {
+        conditions.push(eq(schema.trafficVisits.page, page as string));
+      }
+      if (country && country !== 'all') {
+        conditions.push(eq(schema.trafficVisits.country, country as string));
+      }
+      if (deviceType && deviceType !== 'all') {
+        conditions.push(eq(schema.trafficVisits.deviceType, deviceType as string));
+      }
+      if (browser && browser !== 'all') {
+        conditions.push(eq(schema.trafficVisits.browser, browser as string));
+      }
+      
+      // Get all matching visits
+      const visits = await db
+        .select()
+        .from(schema.trafficVisits)
+        .where(conditions.length > 0 ? and(...conditions) : undefined)
+        .orderBy(desc(schema.trafficVisits.visitedAt));
+      
+      // Build CSV
+      const headers = ['Date', 'Time', 'Page', 'Country', 'Device Type', 'Browser', 'Browser Version', 'OS', 'Referrer'];
+      const rows = visits.map(v => [
+        v.visitedAt.toISOString().split('T')[0],
+        v.visitedAt.toISOString().split('T')[1].split('.')[0],
+        v.page,
+        v.country || '',
+        v.deviceType || '',
+        v.browser || '',
+        v.browserVersion || '',
+        v.os || '',
+        v.referrer || '',
+      ]);
+      
+      const csvContent = [
+        headers.join(','),
+        ...rows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+      ].join('\n');
+      
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', `attachment; filename="traffic-report-${new Date().toISOString().split('T')[0]}.csv"`);
+      res.send(csvContent);
+    } catch (error) {
+      console.error("Traffic export error:", error);
+      res.status(500).json({ error: "Failed to export traffic data" });
+    }
+  });
+
   // Knowledge base routes
   
   // Get upload URL for knowledge document
