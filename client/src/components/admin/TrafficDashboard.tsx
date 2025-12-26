@@ -414,7 +414,11 @@ export function TrafficDashboard() {
                   return (
                     <TableRow key={visit.id} data-testid={`row-visit-${visit.id}`}>
                       <TableCell>
-                        {new Date(visit.visitedAt).toLocaleString()}
+                        {new Date(visit.visitedAt).toLocaleString('en-US', { 
+                          timeZone: 'America/Los_Angeles',
+                          dateStyle: 'short',
+                          timeStyle: 'medium'
+                        })}
                       </TableCell>
                       <TableCell>
                         <Badge variant="outline">{pageLabels[visit.page] || visit.page}</Badge>

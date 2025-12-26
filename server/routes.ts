@@ -4303,8 +4303,9 @@ If you didn't request this, please ignore this email—your password will remain
       const userAgent = req.headers['user-agent'];
       if (userAgent) {
         const UAParserModule = await import('ua-parser-js');
-        const UAParser = UAParserModule.default || UAParserModule;
-        const result = UAParser(userAgent);
+        const UAParser = UAParserModule.default || UAParserModule.UAParser || UAParserModule;
+        const parser = new UAParser(userAgent);
+        const result = parser.getResult();
         
         browser = result.browser?.name || null;
         browserVersion = result.browser?.version || null;
@@ -4414,11 +4415,22 @@ If you didn't request this, please ignore this email—your password will remain
         .sort((a, b) => b[1] - a[1])
         .slice(0, 10);
       
-      // Daily time series (last 30 days or filtered range)
+      // Helper function to format date in Pacific time as YYYY-MM-DD
+      const toPacificDate = (date: Date): string => {
+        const parts = date.toLocaleString('en-US', { 
+          timeZone: 'America/Los_Angeles',
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit'
+        }).split('/');
+        return `${parts[2]}-${parts[0]}-${parts[1]}`;
+      };
+      
+      // Daily time series (last 30 days or filtered range) - using Pacific time
       const dailyVisits: Record<string, number> = {};
       visits.forEach(v => {
-        const day = v.visitedAt.toISOString().split('T')[0];
-        dailyVisits[day] = (dailyVisits[day] || 0) + 1;
+        const formattedDay = toPacificDate(v.visitedAt);
+        dailyVisits[formattedDay] = (dailyVisits[formattedDay] || 0) + 1;
       });
       const timeSeries = Object.entries(dailyVisits)
         .sort((a, b) => a[0].localeCompare(b[0]))
@@ -4483,19 +4495,43 @@ If you didn't request this, please ignore this email—your password will remain
         .where(conditions.length > 0 ? and(...conditions) : undefined)
         .orderBy(desc(schema.trafficVisits.visitedAt));
       
+      // Helper function to format date in Pacific time
+      const toPacificDateTime = (date: Date): { date: string; time: string } => {
+        const dateParts = date.toLocaleString('en-US', { 
+          timeZone: 'America/Los_Angeles',
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit'
+        }).split('/');
+        const time = date.toLocaleString('en-US', { 
+          timeZone: 'America/Los_Angeles',
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+          hour12: false
+        });
+        return {
+          date: `${dateParts[2]}-${dateParts[0]}-${dateParts[1]}`,
+          time: time
+        };
+      };
+      
       // Build CSV
-      const headers = ['Date', 'Time', 'Page', 'Country', 'Device Type', 'Browser', 'Browser Version', 'OS', 'Referrer'];
-      const rows = visits.map(v => [
-        v.visitedAt.toISOString().split('T')[0],
-        v.visitedAt.toISOString().split('T')[1].split('.')[0],
-        v.page,
-        v.country || '',
-        v.deviceType || '',
-        v.browser || '',
-        v.browserVersion || '',
-        v.os || '',
-        v.referrer || '',
-      ]);
+      const headers = ['Date (Pacific)', 'Time (Pacific)', 'Page', 'Country', 'Device Type', 'Browser', 'Browser Version', 'OS', 'Referrer'];
+      const rows = visits.map(v => {
+        const dt = toPacificDateTime(v.visitedAt);
+        return [
+          dt.date,
+          dt.time,
+          v.page,
+          v.country || '',
+          v.deviceType || '',
+          v.browser || '',
+          v.browserVersion || '',
+          v.os || '',
+          v.referrer || '',
+        ];
+      });
       
       const csvContent = [
         headers.join(','),
