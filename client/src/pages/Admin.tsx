@@ -13,7 +13,7 @@ import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Download, Plus, Edit, Trash, FileSpreadsheet, Eye, EyeOff, BarChart3, Settings, FileDown, FileUp, ListOrdered, Users, Star, Upload, X, Sparkles, CheckCircle2, XCircle, Database, FileText, Brain, BookOpen, ClipboardList, Home, Building2, ChevronDown, Shield, Tag } from "lucide-react";
+import { Download, Plus, Edit, Trash, FileSpreadsheet, Eye, EyeOff, BarChart3, Settings, FileDown, FileUp, ListOrdered, Users, Star, Upload, X, Sparkles, CheckCircle2, XCircle, Database, FileText, Brain, BookOpen, ClipboardList, Home, Building2, ChevronDown, Shield, Tag, Activity } from "lucide-react";
 import type { Model, Result, Assessment, Dimension, Question, Answer, User, AssessmentTag } from "@shared/schema";
 import { USER_ROLES, type UserRole } from "@shared/constants";
 import { useAuth } from "@/hooks/use-auth";
@@ -30,6 +30,7 @@ import { OAuthApplications } from "@/components/admin/OAuthApplications";
 import { ImportExportPanel } from "@/components/admin/ImportExportPanel";
 import { ModelBuilder } from "@/components/admin/ModelBuilder";
 import { TagManagement } from "@/components/admin/TagManagement";
+import { TrafficDashboard } from "@/components/admin/TrafficDashboard";
 import { AssessmentTagSelector } from "@/components/admin/AssessmentTagSelector";
 import {
   Sidebar,
@@ -2111,6 +2112,17 @@ export default function Admin() {
                       <span className="group-data-[collapsible=icon]:hidden">Audit Log</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton 
+                      onClick={() => setActiveSection('traffic')}
+                      isActive={activeSection === 'traffic'}
+                      data-testid="tab-traffic"
+                      tooltip="Traffic Analytics"
+                    >
+                      <Activity className="h-4 w-4" />
+                      <span className="group-data-[collapsible=icon]:hidden">Traffic</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
                 </SidebarMenu>
               </SidebarGroupContent>
             </SidebarGroup>
@@ -3623,6 +3635,10 @@ export default function Admin() {
 
               {activeSection === 'tags' && (
                 <TagManagement />
+              )}
+
+              {activeSection === 'traffic' && (
+                <TrafficDashboard />
               )}
 
               {activeSection === 'content' && (

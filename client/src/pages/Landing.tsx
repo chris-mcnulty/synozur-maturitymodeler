@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useLocation } from "wouter";
 import { Footer } from "@/components/Footer";
 import { ModelCard } from "@/components/ModelCard";
@@ -13,6 +14,13 @@ type ModelWithQuestionCount = Model & { questionCount: number };
 import heroBackground from '@assets/AI_network_hero_background.png';
 
 export default function Landing() {
+  useEffect(() => {
+    fetch('/api/traffic/track', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ page: 'homepage', referrer: document.referrer }),
+    }).catch(() => {});
+  }, []);
   const [, setLocation] = useLocation();
   
   const { data: models = [], isLoading } = useQuery<ModelWithQuestionCount[]>({

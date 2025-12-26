@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -16,6 +16,18 @@ export default function Auth() {
   const [, setLocation] = useLocation();
   const { user, loginMutation, registerMutation, isLoading, claimAssessmentAndRedirect } = useAuth();
   const { toast } = useToast();
+  const trackedRef = useRef(false);
+  
+  useEffect(() => {
+    if (!trackedRef.current) {
+      trackedRef.current = true;
+      fetch('/api/traffic/track', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ page: 'signup', referrer: document.referrer }),
+      }).catch(() => {});
+    }
+  }, []);
   const [loginForm, setLoginForm] = useState({ username: "", password: "" });
   const [registerForm, setRegisterForm] = useState({
     username: "",

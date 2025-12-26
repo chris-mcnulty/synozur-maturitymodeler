@@ -4302,9 +4302,9 @@ If you didn't request this, please ignore this email—your password will remain
       
       const userAgent = req.headers['user-agent'];
       if (userAgent) {
-        const UAParser = (await import('ua-parser-js')).default;
-        const parser = new UAParser(userAgent);
-        const result = parser.getResult();
+        const UAParserModule = await import('ua-parser-js');
+        const UAParser = UAParserModule.default || UAParserModule;
+        const result = UAParser(userAgent);
         
         browser = result.browser?.name || null;
         browserVersion = result.browser?.version || null;
@@ -4425,8 +4425,8 @@ If you didn't request this, please ignore this email—your password will remain
         .map(([date, count]) => ({ date, count }));
       
       // Get unique values for filters
-      const uniqueCountries = [...new Set(visits.map(v => v.country).filter(Boolean))].sort();
-      const uniqueBrowsers = [...new Set(visits.map(v => v.browser).filter(Boolean))].sort();
+      const uniqueCountries = Array.from(new Set(visits.map(v => v.country).filter((c): c is string => c !== null))).sort();
+      const uniqueBrowsers = Array.from(new Set(visits.map(v => v.browser).filter((b): b is string => b !== null))).sort();
       
       res.json({
         totalVisits,
