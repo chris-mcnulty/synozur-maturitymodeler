@@ -871,3 +871,29 @@ export type InsertAssessmentTag = z.infer<typeof insertAssessmentTagSchema>;
 
 export type AssessmentTagAssignment = typeof assessmentTagAssignments.$inferSelect;
 export type InsertAssessmentTagAssignment = z.infer<typeof insertAssessmentTagAssignmentSchema>;
+
+// Traffic visits table for analytics
+export const trafficVisits = pgTable("traffic_visits", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  page: text("page").notNull(), // 'homepage', 'signup', 'login'
+  visitedAt: timestamp("visited_at").defaultNow().notNull(),
+  country: text("country"), // ISO country code from geoip
+  deviceType: text("device_type"), // 'desktop', 'mobile', 'tablet'
+  browser: text("browser"), // Browser name
+  browserVersion: text("browser_version"),
+  os: text("os"), // Operating system
+  referrer: text("referrer"), // Referrer URL
+  ipHash: text("ip_hash"), // Hashed IP for uniqueness without PII
+}, (table) => ({
+  pageIdx: index("idx_traffic_page").on(table.page),
+  visitedAtIdx: index("idx_traffic_visited_at").on(table.visitedAt),
+  countryIdx: index("idx_traffic_country").on(table.country),
+}));
+
+export const insertTrafficVisitSchema = createInsertSchema(trafficVisits).omit({
+  id: true,
+  visitedAt: true,
+});
+
+export type TrafficVisit = typeof trafficVisits.$inferSelect;
+export type InsertTrafficVisit = z.infer<typeof insertTrafficVisitSchema>;
