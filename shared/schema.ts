@@ -153,6 +153,9 @@ export const assessments = pgTable("assessments", {
   tenantId: varchar("tenant_id"), // Tenant context for this assessment
 }, (table) => ({
   tenantStatusIdx: index("idx_assessments_tenant_status").on(table.tenantId, table.status),
+  startedAtIdx: index("idx_assessments_started_at").on(table.startedAt),
+  completedAtIdx: index("idx_assessments_completed_at").on(table.completedAt),
+  modelIdIdx: index("idx_assessments_model_id").on(table.modelId),
 }));
 
 // Assessment responses table
