@@ -643,6 +643,7 @@ export default function Admin() {
   const [resultsEndDateInput, setResultsEndDateInput] = useState(() => new Date().toISOString().split('T')[0]);
   const [resultsStatus, setResultsStatus] = useState<string>('completed'); // Default to completed only
   const [resultsModelFilter, setResultsModelFilter] = useState<string>('all'); // Model filter
+  const [resultsProxyFilter, setResultsProxyFilter] = useState<string>('all'); // Proxy filter
   
   // Debounced filter values that trigger queries
   const [resultsStartDate, setResultsStartDate] = useState(resultsStartDateInput);
@@ -665,7 +666,7 @@ export default function Admin() {
 
   // Fetch all assessments with results
   const { data: results = [], isLoading: resultsLoading } = useQuery<AdminResult[]>({
-    queryKey: ['/api/admin/results', resultsStartDate, resultsEndDate, resultsStatus, resultsModelFilter],
+    queryKey: ['/api/admin/results', resultsStartDate, resultsEndDate, resultsStatus, resultsModelFilter, resultsProxyFilter],
     queryFn: async () => {
       // Build query params
       const params = new URLSearchParams();
@@ -673,6 +674,7 @@ export default function Admin() {
       if (resultsEndDate) params.append('endDate', resultsEndDate);
       if (resultsStatus) params.append('status', resultsStatus);
       if (resultsModelFilter && resultsModelFilter !== 'all') params.append('modelId', resultsModelFilter);
+      if (resultsProxyFilter && resultsProxyFilter !== 'all') params.append('isProxy', resultsProxyFilter);
       
       // Fetch all assessments with user data (admin endpoint) with filters
       const assessments = await fetch(`/api/admin/assessments?${params.toString()}`).then(r => r.json());
@@ -3472,7 +3474,7 @@ export default function Admin() {
                 </div>
 
                 {/* Filters */}
-                <div className="mb-6 grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div className="mb-6 grid grid-cols-1 md:grid-cols-5 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="results-start-date">Start Date</Label>
                     <Input
@@ -3520,6 +3522,19 @@ export default function Admin() {
                         <SelectItem value="completed">Completed Only</SelectItem>
                         <SelectItem value="in_progress">In Progress</SelectItem>
                         <SelectItem value="abandoned">Abandoned</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="results-proxy">Type</Label>
+                    <Select value={resultsProxyFilter} onValueChange={setResultsProxyFilter}>
+                      <SelectTrigger id="results-proxy" data-testid="select-results-proxy">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Types</SelectItem>
+                        <SelectItem value="true">Proxy Only</SelectItem>
+                        <SelectItem value="false">Direct Only</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>

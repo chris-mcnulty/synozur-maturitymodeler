@@ -1458,7 +1458,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get all assessments with user data (admin only)
   app.get("/api/admin/assessments", ensureAdmin, async (req, res) => {
     try {
-      const { startDate, endDate, status, modelId } = req.query;
+      const { startDate, endDate, status, modelId, isProxy } = req.query;
       
       // Build query conditions
       let query = db.select().from(schema.assessments);
@@ -1483,6 +1483,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Apply model filter
       if (modelId && modelId !== 'all') {
         conditions.push(eq(schema.assessments.modelId, modelId as string));
+      }
+      
+      // Apply proxy filter
+      if (isProxy === 'true') {
+        conditions.push(eq(schema.assessments.isProxy, true));
+      } else if (isProxy === 'false') {
+        conditions.push(eq(schema.assessments.isProxy, false));
       }
       
       // Fetch assessments with conditions
