@@ -1458,7 +1458,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get all assessments with user data (admin only)
   app.get("/api/admin/assessments", ensureAdmin, async (req, res) => {
     try {
-      const { startDate, endDate, status } = req.query;
+      const { startDate, endDate, status, modelId } = req.query;
       
       // Build query conditions
       let query = db.select().from(schema.assessments);
@@ -1478,6 +1478,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Apply status filter
       if (status && status !== 'all') {
         conditions.push(eq(schema.assessments.status, status as string));
+      }
+      
+      // Apply model filter
+      if (modelId && modelId !== 'all') {
+        conditions.push(eq(schema.assessments.modelId, modelId as string));
       }
       
       // Fetch assessments with conditions

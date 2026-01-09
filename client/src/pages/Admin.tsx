@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -634,24 +634,45 @@ export default function Admin() {
     },
   });
 
-  // Results filters state
-  const [resultsStartDate, setResultsStartDate] = useState(() => {
+  // Results filters state - local state for inputs
+  const [resultsStartDateInput, setResultsStartDateInput] = useState(() => {
     const date = new Date();
     date.setDate(date.getDate() - 30); // Default to last 30 days
     return date.toISOString().split('T')[0];
   });
-  const [resultsEndDate, setResultsEndDate] = useState(() => new Date().toISOString().split('T')[0]);
+  const [resultsEndDateInput, setResultsEndDateInput] = useState(() => new Date().toISOString().split('T')[0]);
   const [resultsStatus, setResultsStatus] = useState<string>('completed'); // Default to completed only
+  const [resultsModelFilter, setResultsModelFilter] = useState<string>('all'); // Model filter
+  
+  // Debounced filter values that trigger queries
+  const [resultsStartDate, setResultsStartDate] = useState(resultsStartDateInput);
+  const [resultsEndDate, setResultsEndDate] = useState(resultsEndDateInput);
+  
+  // Debounce effect for date filters (500ms delay)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setResultsStartDate(resultsStartDateInput);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [resultsStartDateInput]);
+  
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setResultsEndDate(resultsEndDateInput);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [resultsEndDateInput]);
 
   // Fetch all assessments with results
   const { data: results = [], isLoading: resultsLoading } = useQuery<AdminResult[]>({
-    queryKey: ['/api/admin/results', resultsStartDate, resultsEndDate, resultsStatus],
+    queryKey: ['/api/admin/results', resultsStartDate, resultsEndDate, resultsStatus, resultsModelFilter],
     queryFn: async () => {
       // Build query params
       const params = new URLSearchParams();
       if (resultsStartDate) params.append('startDate', resultsStartDate);
       if (resultsEndDate) params.append('endDate', resultsEndDate);
       if (resultsStatus) params.append('status', resultsStatus);
+      if (resultsModelFilter && resultsModelFilter !== 'all') params.append('modelId', resultsModelFilter);
       
       // Fetch all assessments with user data (admin endpoint) with filters
       const assessments = await fetch(`/api/admin/assessments?${params.toString()}`).then(r => r.json());
@@ -669,6 +690,7 @@ export default function Admin() {
               return {
                 ...result,
                 assessmentId: assessment.id,
+                modelId: assessment.modelId,
                 status: assessment.status,
                 modelName: model?.name || 'Unknown Model',
                 userName: assessment.user?.name || null,
@@ -3450,14 +3472,14 @@ export default function Admin() {
                 </div>
 
                 {/* Filters */}
-                <div className="mb-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="mb-6 grid grid-cols-1 md:grid-cols-4 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="results-start-date">Start Date</Label>
                     <Input
                       id="results-start-date"
                       type="date"
-                      value={resultsStartDate}
-                      onChange={(e) => setResultsStartDate(e.target.value)}
+                      value={resultsStartDateInput}
+                      onChange={(e) => setResultsStartDateInput(e.target.value)}
                       data-testid="input-results-start-date"
                     />
                   </div>
@@ -3466,10 +3488,26 @@ export default function Admin() {
                     <Input
                       id="results-end-date"
                       type="date"
-                      value={resultsEndDate}
-                      onChange={(e) => setResultsEndDate(e.target.value)}
+                      value={resultsEndDateInput}
+                      onChange={(e) => setResultsEndDateInput(e.target.value)}
                       data-testid="input-results-end-date"
                     />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="results-model">Model</Label>
+                    <Select value={resultsModelFilter} onValueChange={setResultsModelFilter}>
+                      <SelectTrigger id="results-model" data-testid="select-results-model">
+                        <SelectValue placeholder="All Models" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Models</SelectItem>
+                        {models.map((model) => (
+                          <SelectItem key={model.id} value={model.id}>
+                            {model.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="results-status">Status</Label>
