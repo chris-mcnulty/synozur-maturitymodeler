@@ -3,10 +3,15 @@ import fetch from 'node-fetch';
 
 const BASE_URL = 'http://localhost:5000';
 
-// Configuration from previous step
-const CLIENT_ID = 'nebula_dev_eed8c7f6ed8ffbdd';
-const CLIENT_SECRET = 'nNIoaNk2SZtQwI6Q_CjF814l0dOqm8vVu-lIwjUvzXA';
-const REDIRECT_URI = 'http://localhost:3000/callback';
+// Configuration from environment variables
+const CLIENT_ID = process.env.OAUTH_TEST_CLIENT_ID;
+const CLIENT_SECRET = process.env.OAUTH_TEST_CLIENT_SECRET;
+const REDIRECT_URI = process.env.OAUTH_TEST_REDIRECT_URI || 'http://localhost:3000/callback';
+
+if (!CLIENT_ID || !CLIENT_SECRET) {
+  console.error('Error: OAUTH_TEST_CLIENT_ID and OAUTH_TEST_CLIENT_SECRET environment variables are required');
+  process.exit(1);
+}
 
 async function exchangeCodeForTokens(authCode, codeVerifier) {
   console.log('🔄 Exchanging authorization code for tokens...\n');
