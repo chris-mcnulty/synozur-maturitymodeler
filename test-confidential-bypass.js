@@ -26,12 +26,17 @@ async function testConfidentialClientBypass() {
   try {
     // Login
     console.log('1️⃣  Logging in as test user');
+    const testUsername = process.env.TEST_USERNAME;
+    const testPassword = process.env.TEST_PASSWORD;
+    if (!testUsername || !testPassword) {
+      throw new Error('TEST_USERNAME and TEST_PASSWORD environment variables are required');
+    }
     const loginRes = await fetchWithCookies(`${BASE_URL}/api/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        username: 'chris.mcnulty@synozur.com',
-        password: 'East2west!'
+        username: testUsername,
+        password: testPassword
       })
     });
     
@@ -39,9 +44,12 @@ async function testConfidentialClientBypass() {
     console.log('✅ Logged in\n');
 
     // Confidential client (Nebula Dev)
-    const CLIENT_ID = 'nebula_dev_eed8c7f6ed8ffbdd';
-    const CLIENT_SECRET = 'nNIoaNk2SZtQwI6Q_CjF814l0dOqm8vVu-lIwjUvzXA';
-    const REDIRECT_URI = 'https://e790b9bb-142e-4283-ad40-0d97909b078e-00-2m5ydpw5a67dn.spock.replit.dev/auth/callback';
+    const CLIENT_ID = process.env.TEST_CLIENT_ID;
+    const CLIENT_SECRET = process.env.TEST_CLIENT_SECRET;
+    const REDIRECT_URI = process.env.TEST_REDIRECT_URI;
+    if (!CLIENT_ID || !CLIENT_SECRET || !REDIRECT_URI) {
+      throw new Error('TEST_CLIENT_ID, TEST_CLIENT_SECRET, and TEST_REDIRECT_URI environment variables are required');
+    }
     
     console.log('2️⃣  Using Confidential OAuth Client (Nebula Dev)');
     console.log('────────────────────────────────────────────────────');
