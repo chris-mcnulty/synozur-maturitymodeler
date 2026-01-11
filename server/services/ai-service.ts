@@ -1061,18 +1061,20 @@ Return as JSON with structure:
         }))
         .sort((a, b) => b.avgScore - a.avgScore);
 
-      // Industry breakdown - use actual scores
+      // Industry breakdown - use actual scores (exclude unspecified)
       const industryBreakdown = assessments.reduce((acc, a) => {
-        const industry = a.userContext?.industry || 'Unknown';
+        const industry = a.userContext?.industry;
+        if (!industry || industry.trim() === '') return acc; // Skip unspecified
         if (!acc[industry]) acc[industry] = { count: 0, totalScore: 0 };
         acc[industry].count += 1;
         acc[industry].totalScore += a.totalScore;
         return acc;
       }, {} as Record<string, { count: number; totalScore: number }>);
 
-      // Company size breakdown - use actual scores
+      // Company size breakdown - use actual scores (exclude unspecified)
       const companySizeBreakdown = assessments.reduce((acc, a) => {
-        const size = a.userContext?.companySize || 'Unknown';
+        const size = a.userContext?.companySize;
+        if (!size || size.trim() === '') return acc; // Skip unspecified
         if (!acc[size]) acc[size] = { count: 0, totalScore: 0 };
         acc[size].count += 1;
         acc[size].totalScore += a.totalScore;
@@ -1107,12 +1109,14 @@ Return as JSON with structure:
       // Build the analysis prompt with 500-point scale
       const prompt = `Analyze this set of ${totalAssessments} maturity assessments and provide strategic insights about organizational maturity.
 
-${knowledgeContext ? `KNOWLEDGE BASE CONTEXT (Use this to ground your analysis):\n${knowledgeContext}\n\n` : ''}IMPORTANT INSTRUCTIONS:
+${knowledgeContext ? `KNOWLEDGE BASE CONTEXT (Use this to ground your analysis):\n${knowledgeContext}\n\n` : ''}CRITICAL INSTRUCTIONS:
 - All scores are on a ${maxScore}-point scale (not percentages)
-- Focus your analysis on what the data reveals about organizational MATURITY LEVELS and CAPABILITIES
-- Do NOT focus on how to improve data collection, data quality, or assessment methodology
-- Analyze what the scores and patterns tell us about the organizations' actual maturity state
-- Provide insights that help leaders understand where their organizations stand and what it means strategically
+- Focus EXCLUSIVELY on what the data reveals about organizational MATURITY LEVELS and CAPABILITIES
+- Do NOT comment on data collection, data quality, assessment methodology, or survey completion rates
+- Do NOT mention or analyze missing demographic information - if someone didn't specify their industry or company size, that's their choice and is irrelevant to the maturity analysis
+- Do NOT suggest improving data collection or encouraging more complete profiles
+- ONLY analyze the actual maturity scores and what they reveal about organizational readiness
+- Provide strategic insights about maturity state, transformation opportunities, and competitive positioning
 
 ASSESSMENT DATA SUMMARY:
 - Total Assessments: ${totalAssessments}
@@ -1132,21 +1136,21 @@ ${Object.entries(modelGroups).map(([name, group]) =>
 TAG BREAKDOWN:
 ${tagBreakdown}
 
-DIMENSION PERFORMANCE (Average Scores out of ${Math.round(maxScore / 5)}):
-${dimensionAverages.slice(0, 10).map(d => `- ${d.label}: ${d.avgScore}/${Math.round(maxScore / 5)}`).join('\n')}
+DIMENSION PERFORMANCE (Average Scores out of ${maxScore}):
+${dimensionAverages.slice(0, 10).map(d => `- ${d.label}: ${d.avgScore}/${maxScore}`).join('\n')}
 
-INDUSTRY BREAKDOWN:
+${Object.keys(industryBreakdown).length > 0 ? `INDUSTRY BREAKDOWN (respondents who specified):
 ${Object.entries(industryBreakdown)
   .sort((a, b) => b[1].count - a[1].count)
   .slice(0, 8)
   .map(([ind, data]) => `- ${ind}: ${data.count} assessments, avg score ${Math.round(data.totalScore / data.count)}/${maxScore}`)
-  .join('\n')}
+  .join('\n')}` : ''}
 
-COMPANY SIZE BREAKDOWN:
+${Object.keys(companySizeBreakdown).length > 0 ? `COMPANY SIZE BREAKDOWN (respondents who specified):
 ${Object.entries(companySizeBreakdown)
   .sort((a, b) => b[1].count - a[1].count)
   .map(([size, data]) => `- ${size}: ${data.count} assessments, avg score ${Math.round(data.totalScore / data.count)}/${maxScore}`)
-  .join('\n')}
+  .join('\n')}` : ''}
 
 MONTHLY TRENDS:
 ${Object.entries(monthlyTrends)
@@ -1157,14 +1161,18 @@ ${Object.entries(monthlyTrends)
 Based on this data, provide a comprehensive analysis in JSON format:
 {
   "summary": "A 2-3 paragraph executive summary focusing on what the maturity scores reveal about organizational capabilities, readiness, and strategic positioning. Highlight patterns that indicate maturity strengths and gaps across the population.",
-  "keyFindings": ["Finding 1", "Finding 2", ...], // 4-6 key findings about maturity patterns and what they mean for organizational transformation
-  "trends": ["Trend 1", "Trend 2", ...], // 3-5 notable trends in maturity levels over time or across segments
-  "recommendations": ["Recommendation 1", ...], // 3-5 strategic recommendations for advancing maturity based on current state
-  "strengthAreas": ["Area 1", ...], // Top 3-4 dimensions showing highest maturity levels
-  "improvementAreas": ["Area 1", ...] // Top 3-4 dimensions with lowest maturity that need attention
+  "keyFindings": ["Finding 1", "Finding 2", ...], // 4-6 key findings about MATURITY patterns - what the scores reveal about organizational transformation readiness
+  "trends": ["Trend 1", "Trend 2", ...], // 3-5 notable trends in MATURITY LEVELS over time or across segments
+  "recommendations": ["Recommendation 1", ...], // 3-5 strategic recommendations for ADVANCING MATURITY based on current state - NOT about data collection
+  "strengthAreas": ["Area 1", ...], // Top 3-4 DIMENSIONS showing highest maturity levels based on dimension scores
+  "improvementAreas": ["Area 1", ...] // Top 3-4 DIMENSIONS with lowest maturity that need attention based on dimension scores
 }
 
-Remember: Focus on maturity INSIGHTS (what the data tells us about organizational state), not on data collection improvements.`;
+ABSOLUTE RULES FOR YOUR RESPONSE:
+- strengthAreas and improvementAreas MUST be dimension names from the DIMENSION PERFORMANCE section above
+- recommendations MUST be about advancing organizational maturity, NOT about data collection or profile completion
+- Do NOT mention incomplete demographics, unknown industries, or missing data
+- Focus 100% on what the maturity scores tell us about organizational capabilities`;
 
       const response = await this.callOpenAI(prompt, undefined, false);
       
