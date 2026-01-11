@@ -645,6 +645,12 @@ export default function Admin() {
   const [resultsStatus, setResultsStatus] = useState<string>('completed'); // Default to completed only
   const [resultsModelFilter, setResultsModelFilter] = useState<string>('all'); // Model filter
   const [resultsProxyFilter, setResultsProxyFilter] = useState<string>('all'); // Proxy filter
+  const [resultsTagFilter, setResultsTagFilter] = useState<string>('all'); // Tag filter
+  
+  // Fetch all tags for filtering
+  const { data: allTags = [] } = useQuery<AssessmentTag[]>({
+    queryKey: ['/api/admin/tags'],
+  });
   
   // AI Insights state
   const [showInsightsDialog, setShowInsightsDialog] = useState(false);
@@ -680,7 +686,7 @@ export default function Admin() {
 
   // Fetch all assessments with results
   const { data: results = [], isLoading: resultsLoading } = useQuery<AdminResult[]>({
-    queryKey: ['/api/admin/results', resultsStartDate, resultsEndDate, resultsStatus, resultsModelFilter, resultsProxyFilter],
+    queryKey: ['/api/admin/results', resultsStartDate, resultsEndDate, resultsStatus, resultsModelFilter, resultsProxyFilter, resultsTagFilter],
     queryFn: async () => {
       // Build query params
       const params = new URLSearchParams();
@@ -689,6 +695,7 @@ export default function Admin() {
       if (resultsStatus) params.append('status', resultsStatus);
       if (resultsModelFilter && resultsModelFilter !== 'all') params.append('modelId', resultsModelFilter);
       if (resultsProxyFilter && resultsProxyFilter !== 'all') params.append('isProxy', resultsProxyFilter);
+      if (resultsTagFilter && resultsTagFilter !== 'all') params.append('tagId', resultsTagFilter);
       
       // Fetch all assessments with user data (admin endpoint) with filters
       const assessments = await fetch(`/api/admin/assessments?${params.toString()}`).then(r => r.json());
@@ -3633,7 +3640,7 @@ export default function Admin() {
                 </div>
 
                 {/* Filters */}
-                <div className="mb-6 grid grid-cols-1 md:grid-cols-5 gap-4">
+                <div className="mb-6 grid grid-cols-1 md:grid-cols-6 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="results-start-date">Start Date</Label>
                     <Input
@@ -3665,6 +3672,28 @@ export default function Admin() {
                         {models.map((model) => (
                           <SelectItem key={model.id} value={model.id}>
                             {model.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="results-tag">Tag</Label>
+                    <Select value={resultsTagFilter} onValueChange={setResultsTagFilter}>
+                      <SelectTrigger id="results-tag" data-testid="select-results-tag">
+                        <SelectValue placeholder="All Tags" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Tags</SelectItem>
+                        {allTags.map((tag) => (
+                          <SelectItem key={tag.id} value={tag.id}>
+                            <div className="flex items-center gap-2">
+                              <div 
+                                className="w-3 h-3 rounded-full" 
+                                style={{ backgroundColor: tag.color }}
+                              />
+                              {tag.name}
+                            </div>
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -4408,8 +4437,43 @@ export default function Admin() {
                 </div>
               )}
 
-              {/* Export Button */}
-              <div className="flex justify-end pt-4 border-t">
+              {/* Copy and Export Buttons */}
+              <div className="flex justify-end gap-2 pt-4 border-t">
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    if (!insightsData) return;
+                    const textContent = `AI Assessment Insights
+
+EXECUTIVE SUMMARY
+${insightsData.summary}
+
+KEY FINDINGS
+${insightsData.keyFindings.map((f, i) => `${i + 1}. ${f}`).join('\n')}
+
+TRENDS
+${insightsData.trends.map(t => `- ${t}`).join('\n')}
+
+STRENGTHS
+${insightsData.strengthAreas.map(s => `+ ${s}`).join('\n')}
+
+AREAS FOR IMPROVEMENT
+${insightsData.improvementAreas.map(a => `- ${a}`).join('\n')}
+
+STRATEGIC RECOMMENDATIONS
+${insightsData.recommendations.map((r, i) => `${i + 1}. ${r}`).join('\n')}
+`;
+                    navigator.clipboard.writeText(textContent);
+                    toast({
+                      title: "Copied to clipboard",
+                      description: "The analysis has been copied and is ready to paste.",
+                    });
+                  }}
+                  data-testid="button-copy-insights"
+                >
+                  <ClipboardList className="mr-2 h-4 w-4" />
+                  Copy Analysis
+                </Button>
                 <Button variant="outline" onClick={exportFilteredDataForInsights}>
                   <Download className="mr-2 h-4 w-4" />
                   Export Assessment Data

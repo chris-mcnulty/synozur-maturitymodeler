@@ -980,6 +980,7 @@ Return as JSON with structure:
   async generateAssessmentInsights(assessments: {
     id: string;
     modelName: string;
+    modelId?: string;
     totalScore: number;
     maxScore: number;
     completedAt: Date | null;
@@ -1013,9 +1014,10 @@ Return as JSON with structure:
         };
       }
 
-      // Aggregate statistics
+      // Aggregate statistics - use actual scores on 500 scale, not percentages
       const totalAssessments = assessments.length;
-      const avgScore = assessments.reduce((sum, a) => sum + (a.totalScore / a.maxScore * 100), 0) / totalAssessments;
+      const avgScore = Math.round(assessments.reduce((sum, a) => sum + a.totalScore, 0) / totalAssessments);
+      const maxScore = assessments[0]?.maxScore || 500;
       
       // Group by model
       const modelGroups = assessments.reduce((acc, a) => {
@@ -1023,8 +1025,23 @@ Return as JSON with structure:
         acc[a.modelName].push(a);
         return acc;
       }, {} as Record<string, typeof assessments>);
+      
+      // Check if all assessments are from a single model (for knowledge grounding)
+      const modelIdSet = new Set(assessments.map(a => a.modelId).filter(Boolean));
+      const uniqueModelIds = Array.from(modelIdSet);
+      const isSingleModel = uniqueModelIds.length === 1;
+      
+      // Aggregate tags for analysis
+      const tagCounts: Record<string, { count: number; totalScore: number }> = {};
+      assessments.forEach(a => {
+        (a.tags || []).forEach(tag => {
+          if (!tagCounts[tag]) tagCounts[tag] = { count: 0, totalScore: 0 };
+          tagCounts[tag].count += 1;
+          tagCounts[tag].totalScore += a.totalScore;
+        });
+      });
 
-      // Aggregate dimension scores
+      // Aggregate dimension scores - use actual scores not percentages
       const dimensionAggregates: Record<string, { total: number; count: number; label: string }> = {};
       assessments.forEach(a => {
         Object.entries(a.dimensionScores).forEach(([dimId, score]) => {
@@ -1040,45 +1057,67 @@ Return as JSON with structure:
         .map(([id, data]) => ({
           id,
           label: data.label,
-          avgScore: data.total / data.count
+          avgScore: Math.round(data.total / data.count)
         }))
         .sort((a, b) => b.avgScore - a.avgScore);
 
-      // Industry breakdown
+      // Industry breakdown - use actual scores
       const industryBreakdown = assessments.reduce((acc, a) => {
         const industry = a.userContext?.industry || 'Unknown';
         if (!acc[industry]) acc[industry] = { count: 0, totalScore: 0 };
         acc[industry].count += 1;
-        acc[industry].totalScore += (a.totalScore / a.maxScore * 100);
+        acc[industry].totalScore += a.totalScore;
         return acc;
       }, {} as Record<string, { count: number; totalScore: number }>);
 
-      // Company size breakdown
+      // Company size breakdown - use actual scores
       const companySizeBreakdown = assessments.reduce((acc, a) => {
         const size = a.userContext?.companySize || 'Unknown';
         if (!acc[size]) acc[size] = { count: 0, totalScore: 0 };
         acc[size].count += 1;
-        acc[size].totalScore += (a.totalScore / a.maxScore * 100);
+        acc[size].totalScore += a.totalScore;
         return acc;
       }, {} as Record<string, { count: number; totalScore: number }>);
 
-      // Time trends (by month)
+      // Time trends (by month) - use actual scores
       const monthlyTrends = assessments
         .filter(a => a.completedAt)
         .reduce((acc, a) => {
           const month = new Date(a.completedAt!).toISOString().slice(0, 7);
           if (!acc[month]) acc[month] = { count: 0, totalScore: 0 };
           acc[month].count += 1;
-          acc[month].totalScore += (a.totalScore / a.maxScore * 100);
+          acc[month].totalScore += a.totalScore;
           return acc;
         }, {} as Record<string, { count: number; totalScore: number }>);
+      
+      // Fetch knowledge context if single model
+      let knowledgeContext = '';
+      if (isSingleModel && uniqueModelIds[0]) {
+        knowledgeContext = await this.getKnowledgeContext(uniqueModelIds[0]);
+      }
+      
+      // Tag breakdown section
+      const tagBreakdown = Object.entries(tagCounts).length > 0
+        ? Object.entries(tagCounts)
+            .sort((a, b) => b[1].count - a[1].count)
+            .map(([tag, data]) => `- ${tag}: ${data.count} assessments, avg score ${Math.round(data.totalScore / data.count)}/${maxScore}`)
+            .join('\n')
+        : 'No tags assigned';
 
-      // Build the analysis prompt
-      const prompt = `Analyze this set of ${totalAssessments} maturity assessments and provide strategic insights.
+      // Build the analysis prompt with 500-point scale
+      const prompt = `Analyze this set of ${totalAssessments} maturity assessments and provide strategic insights about organizational maturity.
+
+${knowledgeContext ? `KNOWLEDGE BASE CONTEXT (Use this to ground your analysis):\n${knowledgeContext}\n\n` : ''}IMPORTANT INSTRUCTIONS:
+- All scores are on a ${maxScore}-point scale (not percentages)
+- Focus your analysis on what the data reveals about organizational MATURITY LEVELS and CAPABILITIES
+- Do NOT focus on how to improve data collection, data quality, or assessment methodology
+- Analyze what the scores and patterns tell us about the organizations' actual maturity state
+- Provide insights that help leaders understand where their organizations stand and what it means strategically
 
 ASSESSMENT DATA SUMMARY:
 - Total Assessments: ${totalAssessments}
-- Average Overall Score: ${avgScore.toFixed(1)}%
+- Average Overall Score: ${avgScore}/${maxScore}
+- Score Range: ${Math.min(...assessments.map(a => a.totalScore))} - ${Math.max(...assessments.map(a => a.totalScore))}
 - Date Range: ${assessments.filter(a => a.completedAt).length > 0 ? 
   `${new Date(Math.min(...assessments.filter(a => a.completedAt).map(a => a.completedAt!.getTime()))).toLocaleDateString()} to ${new Date(Math.max(...assessments.filter(a => a.completedAt).map(a => a.completedAt!.getTime()))).toLocaleDateString()}` : 
   'N/A'}
@@ -1087,42 +1126,45 @@ ASSESSMENT DATA SUMMARY:
 
 MODELS ASSESSED:
 ${Object.entries(modelGroups).map(([name, group]) => 
-  `- ${name}: ${group.length} assessments, avg score ${(group.reduce((sum, a) => sum + (a.totalScore / a.maxScore * 100), 0) / group.length).toFixed(1)}%`
+  `- ${name}: ${group.length} assessments, avg score ${Math.round(group.reduce((sum, a) => sum + a.totalScore, 0) / group.length)}/${maxScore}`
 ).join('\n')}
 
-DIMENSION PERFORMANCE (Average Scores):
-${dimensionAverages.slice(0, 10).map(d => `- ${d.label}: ${d.avgScore.toFixed(1)}%`).join('\n')}
+TAG BREAKDOWN:
+${tagBreakdown}
+
+DIMENSION PERFORMANCE (Average Scores out of ${Math.round(maxScore / 5)}):
+${dimensionAverages.slice(0, 10).map(d => `- ${d.label}: ${d.avgScore}/${Math.round(maxScore / 5)}`).join('\n')}
 
 INDUSTRY BREAKDOWN:
 ${Object.entries(industryBreakdown)
   .sort((a, b) => b[1].count - a[1].count)
   .slice(0, 8)
-  .map(([ind, data]) => `- ${ind}: ${data.count} assessments, avg score ${(data.totalScore / data.count).toFixed(1)}%`)
+  .map(([ind, data]) => `- ${ind}: ${data.count} assessments, avg score ${Math.round(data.totalScore / data.count)}/${maxScore}`)
   .join('\n')}
 
 COMPANY SIZE BREAKDOWN:
 ${Object.entries(companySizeBreakdown)
   .sort((a, b) => b[1].count - a[1].count)
-  .map(([size, data]) => `- ${size}: ${data.count} assessments, avg score ${(data.totalScore / data.count).toFixed(1)}%`)
+  .map(([size, data]) => `- ${size}: ${data.count} assessments, avg score ${Math.round(data.totalScore / data.count)}/${maxScore}`)
   .join('\n')}
 
 MONTHLY TRENDS:
 ${Object.entries(monthlyTrends)
   .sort((a, b) => a[0].localeCompare(b[0]))
-  .map(([month, data]) => `- ${month}: ${data.count} assessments, avg score ${(data.totalScore / data.count).toFixed(1)}%`)
+  .map(([month, data]) => `- ${month}: ${data.count} assessments, avg score ${Math.round(data.totalScore / data.count)}/${maxScore}`)
   .join('\n')}
 
 Based on this data, provide a comprehensive analysis in JSON format:
 {
-  "summary": "A 2-3 paragraph executive summary of the overall findings, highlighting the most significant patterns and insights across the assessment dataset.",
-  "keyFindings": ["Finding 1", "Finding 2", ...], // 4-6 key findings as bullet points
-  "trends": ["Trend 1", "Trend 2", ...], // 3-5 notable trends over time or across segments
-  "recommendations": ["Recommendation 1", ...], // 3-5 strategic recommendations based on the data
-  "strengthAreas": ["Area 1", ...], // Top 3-4 strongest performing dimensions/areas
-  "improvementAreas": ["Area 1", ...] // Top 3-4 areas needing improvement
+  "summary": "A 2-3 paragraph executive summary focusing on what the maturity scores reveal about organizational capabilities, readiness, and strategic positioning. Highlight patterns that indicate maturity strengths and gaps across the population.",
+  "keyFindings": ["Finding 1", "Finding 2", ...], // 4-6 key findings about maturity patterns and what they mean for organizational transformation
+  "trends": ["Trend 1", "Trend 2", ...], // 3-5 notable trends in maturity levels over time or across segments
+  "recommendations": ["Recommendation 1", ...], // 3-5 strategic recommendations for advancing maturity based on current state
+  "strengthAreas": ["Area 1", ...], // Top 3-4 dimensions showing highest maturity levels
+  "improvementAreas": ["Area 1", ...] // Top 3-4 dimensions with lowest maturity that need attention
 }
 
-Focus on actionable insights that would help organizational leaders understand patterns across their assessment data.`;
+Remember: Focus on maturity INSIGHTS (what the data tells us about organizational state), not on data collection improvements.`;
 
       const response = await this.callOpenAI(prompt, undefined, false);
       

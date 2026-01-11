@@ -1454,7 +1454,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get all assessments with user data (admin only)
   app.get("/api/admin/assessments", ensureAdmin, async (req, res) => {
     try {
-      const { startDate, endDate, status, modelId, isProxy } = req.query;
+      const { startDate, endDate, status, modelId, isProxy, tagId } = req.query;
       
       // Build query conditions
       let query = db.select().from(schema.assessments);
@@ -1489,9 +1489,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Fetch assessments with conditions
-      const allAssessments = conditions.length > 0 
+      let allAssessments = conditions.length > 0 
         ? await db.select().from(schema.assessments).where(and(...conditions))
         : await db.select().from(schema.assessments);
+      
+      // Apply tag filter if specified
+      if (tagId && tagId !== 'all') {
+        const tagAssignments = await db.select()
+          .from(schema.assessmentTagAssignments)
+          .where(eq(schema.assessmentTagAssignments.tagId, tagId as string));
+        const assessmentIdsWithTag = new Set(tagAssignments.map(ta => ta.assessmentId));
+        allAssessments = allAssessments.filter(a => assessmentIdsWithTag.has(a.id));
+      }
       
       // Fetch user data for each assessment
       const assessmentsWithUsers = await Promise.all(
@@ -2973,6 +2982,7 @@ Respond in JSON format:
 
         return {
           id: a.id,
+          modelId: a.modelId,
           modelName: model?.name || 'Unknown Model',
           totalScore: result?.overallScore || 0,
           maxScore,
