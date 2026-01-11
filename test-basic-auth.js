@@ -30,8 +30,8 @@ async function testBasicAuthFlow() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        username: 'chris.mcnulty@synozur.com',
-        password: 'East2west!'
+        username: process.env.TEST_USERNAME,
+        password: process.env.TEST_PASSWORD
       })
     });
     
@@ -39,9 +39,9 @@ async function testBasicAuthFlow() {
     console.log('✅ Logged in\n');
 
     // OAuth client credentials
-    const CLIENT_ID = 'nebula_dev_eed8c7f6ed8ffbdd';
-    const CLIENT_SECRET = 'nNIoaNk2SZtQwI6Q_CjF814l0dOqm8vVu-lIwjUvzXA';
-    const REDIRECT_URI = 'https://e790b9bb-142e-4283-ad40-0d97909b078e-00-2m5ydpw5a67dn.spock.replit.dev/auth/callback';
+    const CLIENT_ID = process.env.TEST_CLIENT_ID;
+    const CLIENT_SECRET = process.env.TEST_CLIENT_SECRET;
+    const REDIRECT_URI = process.env.TEST_REDIRECT_URI;
 
     // Generate PKCE
     const codeVerifier = generateCodeVerifier();
