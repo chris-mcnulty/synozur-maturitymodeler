@@ -1094,6 +1094,95 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Duplicate a model (in-app copy without file export)
+  app.post("/api/models/:id/duplicate", ensureAdminOrModeler, async (req, res) => {
+    try {
+      const sourceModel = await storage.getModel(req.params.id);
+      if (!sourceModel) {
+        return res.status(404).json({ error: "Model not found" });
+      }
+
+      // Get all related data
+      const dimensions = await storage.getDimensionsByModelId(sourceModel.id);
+      const questions = await storage.getQuestionsByModelId(sourceModel.id);
+
+      // Generate unique name and slug
+      const baseName = `${sourceModel.name} (Copy)`;
+      const baseSlug = `${sourceModel.slug}-copy`;
+      
+      // Check for existing copies and increment
+      const existingModels = await storage.getAllModels();
+      let copyNum = 1;
+      let newName = baseName;
+      let newSlug = baseSlug;
+      
+      while (existingModels.some(m => m.name === newName || m.slug === newSlug)) {
+        copyNum++;
+        newName = `${sourceModel.name} (Copy ${copyNum})`;
+        newSlug = `${sourceModel.slug}-copy-${copyNum}`;
+      }
+
+      // Create the new model
+      const newModel = await storage.createModel({
+        name: newName,
+        slug: newSlug,
+        description: sourceModel.description,
+        version: sourceModel.version,
+        estimatedTime: sourceModel.estimatedTime,
+        status: 'draft',
+        featured: false,
+        imageUrl: sourceModel.imageUrl,
+        maturityScale: sourceModel.maturityScale as any,
+        generalResources: sourceModel.generalResources as any,
+        visibility: sourceModel.visibility,
+        ownerTenantId: sourceModel.ownerTenantId,
+      });
+
+      // Create dimensions and build ID map
+      const dimensionIdMap = new Map<string, string>();
+      for (const dim of dimensions.sort((a, b) => a.order - b.order)) {
+        const newDim = await storage.createDimension({
+          modelId: newModel.id,
+          key: dim.key,
+          label: dim.label,
+          description: dim.description,
+          order: dim.order,
+        });
+        dimensionIdMap.set(dim.id, newDim.id);
+      }
+
+      // Create questions and answers
+      for (const q of questions.sort((a, b) => a.order - b.order)) {
+        const newQuestion = await storage.createQuestion({
+          modelId: newModel.id,
+          dimensionId: q.dimensionId ? dimensionIdMap.get(q.dimensionId) || null : null,
+          text: q.text,
+          order: q.order,
+        });
+
+        // Get and copy answers
+        const answers = await storage.getAnswersByQuestionId(q.id);
+        for (const a of answers.sort((a, b) => a.order - b.order)) {
+          await storage.createAnswer({
+            questionId: newQuestion.id,
+            text: a.text,
+            score: a.score,
+            order: a.order,
+          });
+        }
+      }
+
+      res.json({ 
+        success: true, 
+        model: newModel,
+        message: `Created "${newModel.name}" with ${dimensions.length} dimensions and ${questions.length} questions`
+      });
+    } catch (error) {
+      console.error("Error duplicating model:", error);
+      res.status(500).json({ error: "Failed to duplicate model" });
+    }
+  });
+
   // Delete all assessment data for a model (admin only, for testing purposes)
   app.delete("/api/models/:id/assessment-data", ensureAdmin, async (req, res) => {
     try {

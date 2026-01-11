@@ -13,7 +13,7 @@ import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Download, Plus, Edit, Trash, FileSpreadsheet, Eye, EyeOff, BarChart3, Settings, FileDown, FileUp, ListOrdered, Users, Star, Upload, X, Sparkles, CheckCircle2, XCircle, Database, FileText, Brain, BookOpen, ClipboardList, Home, Building2, ChevronDown, Shield, Tag, Activity } from "lucide-react";
+import { Download, Plus, Edit, Trash, FileSpreadsheet, Eye, EyeOff, BarChart3, Settings, FileDown, FileUp, ListOrdered, Users, Star, Upload, X, Sparkles, CheckCircle2, XCircle, Database, FileText, Brain, BookOpen, ClipboardList, Home, Building2, ChevronDown, Shield, Tag, Activity, Copy } from "lucide-react";
 import type { Model, Result, Assessment, Dimension, Question, Answer, User, AssessmentTag } from "@shared/schema";
 import { USER_ROLES, type UserRole } from "@shared/constants";
 import { useAuth } from "@/hooks/use-auth";
@@ -1208,6 +1208,28 @@ export default function Admin() {
       toast({
         title: "Error",
         description: error.message || "Failed to delete assessment data",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Duplicate model mutation (in-app copy)
+  const duplicateModel = useMutation({
+    mutationFn: async (modelId: string) => {
+      return apiRequest(`/api/models/${modelId}/duplicate`, 'POST');
+    },
+    onSuccess: (data: any) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/models'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/models'] });
+      toast({
+        title: "Model duplicated",
+        description: data.message || "A copy of the model has been created.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to duplicate model",
         variant: "destructive",
       });
     },
@@ -2645,6 +2667,16 @@ export default function Admin() {
                               <Button
                                 variant="ghost"
                                 size="icon"
+                                onClick={() => duplicateModel.mutate(model.id)}
+                                disabled={duplicateModel.isPending}
+                                data-testid={`button-duplicate-${model.id}`}
+                                title="Duplicate model"
+                              >
+                                <Copy className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
                                 onClick={() => {
                                   setDeleteDataModelId(model.id);
                                   setDeleteDataModelName(model.name);
@@ -2976,6 +3008,16 @@ export default function Admin() {
                                 title="Edit General Resources"
                               >
                                 <FileSpreadsheet className="h-4 w-4" />
+                              </Button>
+                              <Button 
+                                variant="ghost" 
+                                size="icon"
+                                onClick={() => duplicateModel.mutate(model.id)}
+                                disabled={duplicateModel.isPending}
+                                data-testid={`button-duplicate-${model.id}`}
+                                title="Duplicate Model"
+                              >
+                                <Copy className="h-4 w-4" />
                               </Button>
                               <Button 
                                 variant="ghost" 
