@@ -976,6 +976,178 @@ Return as JSON with structure:
     return 'Ad Hoc';
   }
 
+  // Generate aggregate insights and trends from a set of assessments
+  async generateAssessmentInsights(assessments: {
+    id: string;
+    modelName: string;
+    totalScore: number;
+    maxScore: number;
+    completedAt: Date | null;
+    dimensionScores: Record<string, number>;
+    dimensionLabels: Record<string, string>;
+    userContext?: {
+      industry?: string;
+      companySize?: string;
+      jobTitle?: string;
+      country?: string;
+    };
+    isProxy?: boolean;
+    tags?: string[];
+  }[]): Promise<{
+    summary: string;
+    keyFindings: string[];
+    trends: string[];
+    recommendations: string[];
+    strengthAreas: string[];
+    improvementAreas: string[];
+  }> {
+    try {
+      if (assessments.length === 0) {
+        return {
+          summary: "No assessments available for analysis.",
+          keyFindings: [],
+          trends: [],
+          recommendations: [],
+          strengthAreas: [],
+          improvementAreas: []
+        };
+      }
+
+      // Aggregate statistics
+      const totalAssessments = assessments.length;
+      const avgScore = assessments.reduce((sum, a) => sum + (a.totalScore / a.maxScore * 100), 0) / totalAssessments;
+      
+      // Group by model
+      const modelGroups = assessments.reduce((acc, a) => {
+        if (!acc[a.modelName]) acc[a.modelName] = [];
+        acc[a.modelName].push(a);
+        return acc;
+      }, {} as Record<string, typeof assessments>);
+
+      // Aggregate dimension scores
+      const dimensionAggregates: Record<string, { total: number; count: number; label: string }> = {};
+      assessments.forEach(a => {
+        Object.entries(a.dimensionScores).forEach(([dimId, score]) => {
+          if (!dimensionAggregates[dimId]) {
+            dimensionAggregates[dimId] = { total: 0, count: 0, label: a.dimensionLabels[dimId] || dimId };
+          }
+          dimensionAggregates[dimId].total += score;
+          dimensionAggregates[dimId].count += 1;
+        });
+      });
+
+      const dimensionAverages = Object.entries(dimensionAggregates)
+        .map(([id, data]) => ({
+          id,
+          label: data.label,
+          avgScore: data.total / data.count
+        }))
+        .sort((a, b) => b.avgScore - a.avgScore);
+
+      // Industry breakdown
+      const industryBreakdown = assessments.reduce((acc, a) => {
+        const industry = a.userContext?.industry || 'Unknown';
+        if (!acc[industry]) acc[industry] = { count: 0, totalScore: 0 };
+        acc[industry].count += 1;
+        acc[industry].totalScore += (a.totalScore / a.maxScore * 100);
+        return acc;
+      }, {} as Record<string, { count: number; totalScore: number }>);
+
+      // Company size breakdown
+      const companySizeBreakdown = assessments.reduce((acc, a) => {
+        const size = a.userContext?.companySize || 'Unknown';
+        if (!acc[size]) acc[size] = { count: 0, totalScore: 0 };
+        acc[size].count += 1;
+        acc[size].totalScore += (a.totalScore / a.maxScore * 100);
+        return acc;
+      }, {} as Record<string, { count: number; totalScore: number }>);
+
+      // Time trends (by month)
+      const monthlyTrends = assessments
+        .filter(a => a.completedAt)
+        .reduce((acc, a) => {
+          const month = new Date(a.completedAt!).toISOString().slice(0, 7);
+          if (!acc[month]) acc[month] = { count: 0, totalScore: 0 };
+          acc[month].count += 1;
+          acc[month].totalScore += (a.totalScore / a.maxScore * 100);
+          return acc;
+        }, {} as Record<string, { count: number; totalScore: number }>);
+
+      // Build the analysis prompt
+      const prompt = `Analyze this set of ${totalAssessments} maturity assessments and provide strategic insights.
+
+ASSESSMENT DATA SUMMARY:
+- Total Assessments: ${totalAssessments}
+- Average Overall Score: ${avgScore.toFixed(1)}%
+- Date Range: ${assessments.filter(a => a.completedAt).length > 0 ? 
+  `${new Date(Math.min(...assessments.filter(a => a.completedAt).map(a => a.completedAt!.getTime()))).toLocaleDateString()} to ${new Date(Math.max(...assessments.filter(a => a.completedAt).map(a => a.completedAt!.getTime()))).toLocaleDateString()}` : 
+  'N/A'}
+- Proxy Assessments: ${assessments.filter(a => a.isProxy).length}
+- Direct Assessments: ${assessments.filter(a => !a.isProxy).length}
+
+MODELS ASSESSED:
+${Object.entries(modelGroups).map(([name, group]) => 
+  `- ${name}: ${group.length} assessments, avg score ${(group.reduce((sum, a) => sum + (a.totalScore / a.maxScore * 100), 0) / group.length).toFixed(1)}%`
+).join('\n')}
+
+DIMENSION PERFORMANCE (Average Scores):
+${dimensionAverages.slice(0, 10).map(d => `- ${d.label}: ${d.avgScore.toFixed(1)}%`).join('\n')}
+
+INDUSTRY BREAKDOWN:
+${Object.entries(industryBreakdown)
+  .sort((a, b) => b[1].count - a[1].count)
+  .slice(0, 8)
+  .map(([ind, data]) => `- ${ind}: ${data.count} assessments, avg score ${(data.totalScore / data.count).toFixed(1)}%`)
+  .join('\n')}
+
+COMPANY SIZE BREAKDOWN:
+${Object.entries(companySizeBreakdown)
+  .sort((a, b) => b[1].count - a[1].count)
+  .map(([size, data]) => `- ${size}: ${data.count} assessments, avg score ${(data.totalScore / data.count).toFixed(1)}%`)
+  .join('\n')}
+
+MONTHLY TRENDS:
+${Object.entries(monthlyTrends)
+  .sort((a, b) => a[0].localeCompare(b[0]))
+  .map(([month, data]) => `- ${month}: ${data.count} assessments, avg score ${(data.totalScore / data.count).toFixed(1)}%`)
+  .join('\n')}
+
+Based on this data, provide a comprehensive analysis in JSON format:
+{
+  "summary": "A 2-3 paragraph executive summary of the overall findings, highlighting the most significant patterns and insights across the assessment dataset.",
+  "keyFindings": ["Finding 1", "Finding 2", ...], // 4-6 key findings as bullet points
+  "trends": ["Trend 1", "Trend 2", ...], // 3-5 notable trends over time or across segments
+  "recommendations": ["Recommendation 1", ...], // 3-5 strategic recommendations based on the data
+  "strengthAreas": ["Area 1", ...], // Top 3-4 strongest performing dimensions/areas
+  "improvementAreas": ["Area 1", ...] // Top 3-4 areas needing improvement
+}
+
+Focus on actionable insights that would help organizational leaders understand patterns across their assessment data.`;
+
+      const response = await this.callOpenAI(prompt, undefined, false);
+      
+      // Parse JSON response
+      const jsonMatch = response.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) {
+        throw new Error('Failed to parse AI response as JSON');
+      }
+      
+      const parsed = JSON.parse(jsonMatch[0]);
+      
+      return {
+        summary: parsed.summary || "Analysis complete.",
+        keyFindings: parsed.keyFindings || [],
+        trends: parsed.trends || [],
+        recommendations: parsed.recommendations || [],
+        strengthAreas: parsed.strengthAreas || [],
+        improvementAreas: parsed.improvementAreas || []
+      };
+    } catch (error) {
+      console.error('Error generating assessment insights:', error);
+      throw new Error('Failed to generate assessment insights: ' + (error instanceof Error ? error.message : 'Unknown error'));
+    }
+  }
+
   // Fallback recommendations when AI is unavailable
   private getFallbackRecommendations(context: RecommendationContext): GeneratedRecommendation[] {
     const { dimensions, scores } = context;

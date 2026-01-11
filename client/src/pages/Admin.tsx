@@ -98,6 +98,7 @@ interface AdminResult extends Result {
   isProxy?: boolean;
   proxyName?: string;
   proxyCompany?: string;
+  maxScore?: number;
 }
 
 // Benchmark Configuration Component
@@ -645,6 +646,19 @@ export default function Admin() {
   const [resultsModelFilter, setResultsModelFilter] = useState<string>('all'); // Model filter
   const [resultsProxyFilter, setResultsProxyFilter] = useState<string>('all'); // Proxy filter
   
+  // AI Insights state
+  const [showInsightsDialog, setShowInsightsDialog] = useState(false);
+  const [insightsLoading, setInsightsLoading] = useState(false);
+  const [insightsData, setInsightsData] = useState<{
+    summary: string;
+    keyFindings: string[];
+    trends: string[];
+    recommendations: string[];
+    strengthAreas: string[];
+    improvementAreas: string[];
+  } | null>(null);
+  const [insightsError, setInsightsError] = useState<string | null>(null);
+  
   // Debounced filter values that trigger queries
   const [resultsStartDate, setResultsStartDate] = useState(resultsStartDateInput);
   const [resultsEndDate, setResultsEndDate] = useState(resultsEndDateInput);
@@ -689,6 +703,12 @@ export default function Admin() {
             ]);
             
             if (result) {
+              // Calculate max score from model's maturity scale
+              const maturityScale = model?.maturityScale as any[] || [];
+              const maxScore = maturityScale.length > 0 
+                ? Math.max(...maturityScale.map((s: any) => s.maxScore || 100))
+                : 100;
+              
               return {
                 ...result,
                 assessmentId: assessment.id,
@@ -701,6 +721,7 @@ export default function Admin() {
                 isProxy: assessment.isProxy || false,
                 proxyName: assessment.proxyName || null,
                 proxyCompany: assessment.proxyCompany || null,
+                maxScore,
               };
             }
           } catch {
@@ -1914,6 +1935,131 @@ export default function Admin() {
     toast({
       title: "Export successful",
       description: "Results exported to CSV file.",
+    });
+  };
+
+  // Generate AI insights for filtered assessments
+  const generateInsights = async () => {
+    if (!results.length) {
+      toast({
+        title: "No data",
+        description: "No completed assessments to analyze.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Only include completed assessments
+    const completedResults = results.filter(r => r.status === 'completed');
+    if (!completedResults.length) {
+      toast({
+        title: "No completed assessments",
+        description: "AI insights require completed assessments.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setInsightsLoading(true);
+    setInsightsError(null);
+    setShowInsightsDialog(true);
+    
+    try {
+      const assessmentIds = completedResults.map(r => r.assessmentId);
+      const response = await fetch('/api/admin/ai/generate-insights', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ assessmentIds }),
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to generate insights');
+      }
+      
+      const data = await response.json();
+      setInsightsData(data);
+    } catch (error) {
+      setInsightsError(error instanceof Error ? error.message : 'Failed to generate insights');
+    } finally {
+      setInsightsLoading(false);
+    }
+  };
+
+  // Export filtered assessment data for analysis
+  const exportFilteredDataForInsights = () => {
+    if (!results.length) {
+      toast({
+        title: "No data",
+        description: "No results to export.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Create comprehensive CSV for analysis
+    const headers = [
+      'Assessment ID',
+      'Date',
+      'Status',
+      'Type',
+      'User Name',
+      'Company',
+      'Job Title',
+      'Industry',
+      'Company Size',
+      'Country',
+      'Model',
+      'Score',
+      'Max Score',
+      'Percentage',
+      'Level',
+    ];
+    
+    const rows = results.map(r => {
+      const maxScore = r.maxScore || 100;
+      const percentage = r.overallScore !== undefined 
+        ? ((r.overallScore / maxScore) * 100).toFixed(1) 
+        : '';
+      return [
+        r.assessmentId || '',
+        new Date(r.date || Date.now()).toLocaleDateString(),
+        r.status || 'completed',
+        r.isProxy ? 'Proxy' : 'Direct',
+        r.isProxy ? (r.proxyName || '') : (r.userName || ''),
+        r.isProxy ? (r.proxyCompany || '') : (r.company || ''),
+        '', // Job title
+        '', // Industry
+        '', // Company size
+        '', // Country
+        r.modelName || '',
+        r.overallScore?.toString() || '',
+        maxScore.toString(),
+        percentage,
+        r.label || '',
+      ];
+    });
+
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => row.map(cell => `"${cell}"`).join(',')),
+    ].join('\n');
+
+    // Download CSV
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `assessment-analysis-data-${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+
+    toast({
+      title: "Export successful",
+      description: `Exported ${results.length} assessments for analysis.`,
     });
   };
 
@@ -3461,7 +3607,20 @@ export default function Admin() {
               <Card className="p-6">
                 <div className="flex justify-between items-center mb-6">
                   <h2 className="text-xl font-bold">Assessment Results</h2>
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 flex-wrap">
+                    <Button 
+                      variant="default" 
+                      onClick={generateInsights} 
+                      disabled={insightsLoading || !results.length}
+                      data-testid="button-generate-insights"
+                    >
+                      <Sparkles className="mr-2 h-4 w-4" />
+                      {insightsLoading ? 'Generating...' : 'AI Insights'}
+                    </Button>
+                    <Button variant="outline" onClick={exportFilteredDataForInsights} data-testid="button-export-filtered">
+                      <Download className="mr-2 h-4 w-4" />
+                      Export Data
+                    </Button>
                     <Button variant="outline" onClick={exportResultsToCSV} data-testid="button-export-results">
                       <FileSpreadsheet className="mr-2 h-4 w-4" />
                       Export CSV
@@ -4122,6 +4281,144 @@ export default function Admin() {
           </main>
         </div>
       </div>
+
+      {/* AI Insights Dialog */}
+      <Dialog open={showInsightsDialog} onOpenChange={setShowInsightsDialog}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-primary" />
+              AI Assessment Insights
+            </DialogTitle>
+            <DialogDescription>
+              Analysis of {results.filter(r => r.status === 'completed').length} completed assessments
+            </DialogDescription>
+          </DialogHeader>
+          
+          {insightsLoading ? (
+            <div className="flex flex-col items-center justify-center py-12 space-y-4">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+              <p className="text-muted-foreground">Analyzing assessment data...</p>
+              <p className="text-sm text-muted-foreground">This may take a moment</p>
+            </div>
+          ) : insightsError ? (
+            <div className="text-center py-8">
+              <XCircle className="h-12 w-12 text-destructive mx-auto mb-4" />
+              <p className="text-destructive font-semibold">Failed to generate insights</p>
+              <p className="text-sm text-muted-foreground mt-2">{insightsError}</p>
+              <Button variant="outline" className="mt-4" onClick={generateInsights}>
+                Try Again
+              </Button>
+            </div>
+          ) : insightsData ? (
+            <div className="space-y-6">
+              {/* Executive Summary */}
+              <div className="space-y-2">
+                <h3 className="font-semibold text-lg flex items-center gap-2">
+                  <FileText className="h-4 w-4" />
+                  Executive Summary
+                </h3>
+                <div className="bg-card border rounded-md p-4 text-sm whitespace-pre-wrap">
+                  {insightsData.summary}
+                </div>
+              </div>
+
+              {/* Key Findings */}
+              {insightsData.keyFindings && insightsData.keyFindings.length > 0 && (
+                <div className="space-y-2">
+                  <h3 className="font-semibold text-lg flex items-center gap-2">
+                    <CheckCircle2 className="h-4 w-4 text-green-600" />
+                    Key Findings
+                  </h3>
+                  <ul className="bg-card border rounded-md p-4 space-y-2">
+                    {insightsData.keyFindings.map((finding, idx) => (
+                      <li key={idx} className="text-sm flex gap-2">
+                        <span className="text-primary font-semibold">{idx + 1}.</span>
+                        {finding}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* Trends */}
+              {insightsData.trends && insightsData.trends.length > 0 && (
+                <div className="space-y-2">
+                  <h3 className="font-semibold text-lg flex items-center gap-2">
+                    <Activity className="h-4 w-4 text-blue-600" />
+                    Trends
+                  </h3>
+                  <ul className="bg-card border rounded-md p-4 space-y-2">
+                    {insightsData.trends.map((trend, idx) => (
+                      <li key={idx} className="text-sm flex gap-2">
+                        <span className="text-blue-600">-</span>
+                        {trend}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* Strength & Improvement Areas */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {insightsData.strengthAreas && insightsData.strengthAreas.length > 0 && (
+                  <div className="space-y-2">
+                    <h3 className="font-semibold flex items-center gap-2">
+                      <CheckCircle2 className="h-4 w-4 text-green-600" />
+                      Strengths
+                    </h3>
+                    <ul className="bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 rounded-md p-4 space-y-1">
+                      {insightsData.strengthAreas.map((area, idx) => (
+                        <li key={idx} className="text-sm text-green-800 dark:text-green-200">+ {area}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {insightsData.improvementAreas && insightsData.improvementAreas.length > 0 && (
+                  <div className="space-y-2">
+                    <h3 className="font-semibold flex items-center gap-2">
+                      <XCircle className="h-4 w-4 text-amber-600" />
+                      Areas for Improvement
+                    </h3>
+                    <ul className="bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-md p-4 space-y-1">
+                      {insightsData.improvementAreas.map((area, idx) => (
+                        <li key={idx} className="text-sm text-amber-800 dark:text-amber-200">- {area}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+
+              {/* Strategic Recommendations */}
+              {insightsData.recommendations && insightsData.recommendations.length > 0 && (
+                <div className="space-y-2">
+                  <h3 className="font-semibold text-lg flex items-center gap-2">
+                    <Sparkles className="h-4 w-4 text-primary" />
+                    Strategic Recommendations
+                  </h3>
+                  <ul className="bg-primary/5 border border-primary/20 rounded-md p-4 space-y-2">
+                    {insightsData.recommendations.map((rec, idx) => (
+                      <li key={idx} className="text-sm flex gap-2">
+                        <span className="text-primary font-bold">{idx + 1}.</span>
+                        {rec}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* Export Button */}
+              <div className="flex justify-end pt-4 border-t">
+                <Button variant="outline" onClick={exportFilteredDataForInsights}>
+                  <Download className="mr-2 h-4 w-4" />
+                  Export Assessment Data
+                </Button>
+              </div>
+            </div>
+          ) : null}
+        </DialogContent>
+      </Dialog>
 
       {/* Delete Assessment Data Confirmation Dialog */}
       <Dialog open={isDeleteDataDialogOpen} onOpenChange={setIsDeleteDataDialogOpen}>

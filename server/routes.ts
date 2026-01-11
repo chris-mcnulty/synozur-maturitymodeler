@@ -2863,6 +2863,151 @@ Respond in JSON format:
     }
   });
 
+  // Generate AI insights for a set of filtered assessments
+  app.post("/api/admin/ai/generate-insights", ensureAdminOrModeler, async (req, res) => {
+    try {
+      const { assessmentIds } = req.body;
+      
+      if (!assessmentIds || !Array.isArray(assessmentIds) || assessmentIds.length === 0) {
+        return res.status(400).json({ error: "Assessment IDs are required" });
+      }
+
+      // Fetch assessments with their data
+      const assessments = await db.select()
+        .from(schema.assessments)
+        .where(inArray(schema.assessments.id, assessmentIds));
+      
+      if (assessments.length === 0) {
+        return res.status(404).json({ error: "No assessments found" });
+      }
+
+      // Fetch results for these assessments (contains scores)
+      const results = await db.select()
+        .from(schema.results)
+        .where(inArray(schema.results.assessmentId, assessmentIds));
+      const resultsMap = new Map(results.map(r => [r.assessmentId, r]));
+
+      // Fetch models for the assessments
+      const modelIds = Array.from(new Set(assessments.map(a => a.modelId)));
+      const models = await db.select()
+        .from(schema.models)
+        .where(inArray(schema.models.id, modelIds));
+      const modelMap = new Map(models.map(m => [m.id, m]));
+
+      // Fetch dimensions for each model
+      const dimensions = await db.select()
+        .from(schema.dimensions)
+        .where(inArray(schema.dimensions.modelId, modelIds));
+      const dimensionsByModel = dimensions.reduce((acc, d) => {
+        if (!acc[d.modelId]) acc[d.modelId] = [];
+        acc[d.modelId].push(d);
+        return acc;
+      }, {} as Record<string, typeof dimensions>);
+
+      // Fetch users for user context (if not proxy)
+      const userIds = Array.from(new Set(assessments.filter(a => a.userId).map(a => a.userId!)));
+      const users = userIds.length > 0 
+        ? await db.select().from(schema.users).where(inArray(schema.users.id, userIds))
+        : [];
+      const userMap = new Map(users.map(u => [u.id, u]));
+
+      // Fetch tags for assessments
+      const tagAssignments = await db.select()
+        .from(schema.assessmentTagAssignments)
+        .where(inArray(schema.assessmentTagAssignments.assessmentId, assessmentIds));
+      
+      // Get unique tag IDs
+      const tagIds = Array.from(new Set(tagAssignments.map(ta => ta.tagId)));
+      const tags = tagIds.length > 0
+        ? await db.select().from(schema.assessmentTags).where(inArray(schema.assessmentTags.id, tagIds))
+        : [];
+      const tagMap = new Map(tags.map(t => [t.id, t]));
+      
+      // Map assessment IDs to their tag names
+      const assessmentTagsMap = new Map<string, string[]>();
+      tagAssignments.forEach(ta => {
+        if (!assessmentTagsMap.has(ta.assessmentId)) {
+          assessmentTagsMap.set(ta.assessmentId, []);
+        }
+        const tag = tagMap.get(ta.tagId);
+        if (tag) {
+          assessmentTagsMap.get(ta.assessmentId)!.push(tag.name);
+        }
+      });
+
+      // Prepare assessment data for AI analysis
+      const assessmentData = assessments.map(a => {
+        const model = modelMap.get(a.modelId);
+        const result = resultsMap.get(a.id);
+        const dims = dimensionsByModel[a.modelId] || [];
+        const user = a.userId ? userMap.get(a.userId) : null;
+        
+        // Get dimension scores from result
+        const dimensionScoresRaw = (result?.dimensionScores || {}) as Record<string, number>;
+        const dimensionScores: Record<string, number> = {};
+        const dimensionLabels: Record<string, string> = {};
+        
+        dims.forEach(dim => {
+          dimensionScores[dim.id] = dimensionScoresRaw[dim.id] || 0;
+          dimensionLabels[dim.id] = dim.label;
+        });
+
+        // Get user context - either from proxy fields or user
+        let userContext: { industry?: string; companySize?: string; jobTitle?: string; country?: string } = {};
+        if (a.isProxy) {
+          userContext = {
+            industry: a.proxyIndustry || undefined,
+            companySize: a.proxyCompanySize || undefined,
+            jobTitle: a.proxyJobTitle || undefined,
+            country: a.proxyCountry || undefined
+          };
+        } else if (user) {
+          userContext = {
+            industry: user.industry || undefined,
+            companySize: user.companySize || undefined,
+            jobTitle: user.jobTitle || undefined,
+            country: user.country || undefined
+          };
+        }
+
+        // Calculate max score based on model's maturity scale
+        const maturityScale = model?.maturityScale as any[] || [];
+        const maxScaleScore = maturityScale.length > 0 ? Math.max(...maturityScale.map(s => s.maxScore || 100)) : 100;
+        const maxScore = maxScaleScore;
+
+        return {
+          id: a.id,
+          modelName: model?.name || 'Unknown Model',
+          totalScore: result?.overallScore || 0,
+          maxScore,
+          completedAt: a.completedAt,
+          dimensionScores,
+          dimensionLabels,
+          userContext,
+          isProxy: a.isProxy || false,
+          tags: assessmentTagsMap.get(a.id) || []
+        };
+      });
+
+      // Generate insights using AI service
+      const { aiService } = await import('./services/ai-service');
+      const insights = await aiService.generateAssessmentInsights(assessmentData);
+
+      // Log AI usage
+      await storage.createAiUsageLog({
+        userId: req.user!.id,
+        modelName: 'claude-sonnet-4-5',
+        operation: 'generate-assessment-insights',
+        estimatedCost: 5 // Higher cost for aggregate analysis
+      });
+
+      res.json(insights);
+    } catch (error) {
+      console.error('Failed to generate assessment insights:', error);
+      res.status(500).json({ error: "Failed to generate assessment insights" });
+    }
+  });
+
   app.patch("/api/admin/models/:id", ensureAdminOrModeler, async (req, res) => {
     try {
       const model = await storage.updateModel(req.params.id, req.body);
