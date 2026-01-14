@@ -528,32 +528,35 @@ export default function Admin() {
   const [isImportExportOpen, setIsImportExportOpen] = useState(false);
   const [importExportModel, setImportExportModel] = useState<Model | null>(null);
   
-  // Fetch all data for the import/export model
+  // Fetch all data for the import/export model using correct API endpoints
   const { data: importExportQuestions = [] } = useQuery({
-    queryKey: ['/api/questions', importExportModel?.id],
+    queryKey: ['/api/questions', 'export', importExportModel?.id],
     queryFn: async () => {
       if (!importExportModel?.id) return [];
-      const response = await fetch(`/api/models/${importExportModel.id}/questions`);
+      const response = await fetch(`/api/questions?modelId=${importExportModel.id}`, { credentials: 'include' });
+      if (!response.ok) return [];
       return response.json();
     },
     enabled: !!importExportModel?.id,
   });
   
   const { data: importExportAnswers = [] } = useQuery({
-    queryKey: ['/api/models', importExportModel?.id, 'answers'],
+    queryKey: ['/api/answers', 'export', importExportModel?.id],
     queryFn: async () => {
       if (!importExportModel?.id) return [];
-      const response = await fetch(`/api/models/${importExportModel.id}/answers`);
+      const response = await fetch(`/api/models/${importExportModel.id}/answers`, { credentials: 'include' });
+      if (!response.ok) return [];
       return response.json();
     },
     enabled: !!importExportModel?.id,
   });
   
   const { data: importExportDimensions = [] } = useQuery({
-    queryKey: ['/api/dimensions', importExportModel?.id],
+    queryKey: ['/api/dimensions', 'export', importExportModel?.id],
     queryFn: async () => {
       if (!importExportModel?.id) return [];
-      const response = await fetch(`/api/dimensions/${importExportModel.id}`);
+      const response = await fetch(`/api/dimensions/${importExportModel.id}`, { credentials: 'include' });
+      if (!response.ok) return [];
       return response.json();
     },
     enabled: !!importExportModel?.id,

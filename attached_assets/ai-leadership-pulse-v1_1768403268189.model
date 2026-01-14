@@ -1,0 +1,296 @@
+{
+  "model": {
+    "id": "b8ea08a5-e701-4aee-9122-088b5445c097",
+    "slug": "ai-leadership-pulse-v1",
+    "name": "AI Leadership Pulse v1",
+    "description": "",
+    "version": "1.0",
+    "estimatedTime": null,
+    "status": "draft",
+    "featured": false,
+    "imageUrl": null,
+    "maturityScale": [
+      {
+        "id": "1",
+        "name": "Fundamentals: Prompting & Instructions",
+        "description": "Fundamentals: Prompting & Instructions",
+        "minScore": 0,
+        "maxScore": 39
+      },
+      {
+        "id": "2",
+        "name": "Leading with AI: Manager Workflows",
+        "description": "Leading with AI: Manager Workflows",
+        "minScore": 40,
+        "maxScore": 69
+      },
+      {
+        "id": "3",
+        "name": "Declarative Agent Building & Automation",
+        "description": "Declarative Agent Building & Automation",
+        "minScore": 70,
+        "maxScore": 100
+      }
+    ],
+    "generalResources": null,
+    "visibility": "public",
+    "ownerTenantId": null,
+    "modelClass": "organizational",
+    "createdAt": "2026-01-14T13:54:14.701Z",
+    "updatedAt": "2026-01-14T13:54:14.701Z",
+    "questionCount": 5,
+    "dimensionCount": 0
+  },
+  "dimensions": [],
+  "questions": {
+    "error": "Model not found"
+  },
+  "answers": [
+    {
+      "id": "6637b28e-1a04-492a-9777-7d0e62c23b68",
+      "questionId": "05c2f12a-9e31-49e7-8dce-5c2879b54897",
+      "text": "No automation",
+      "score": 0,
+      "order": 0,
+      "improvementStatement": null,
+      "resourceTitle": null,
+      "resourceLink": null,
+      "resourceDescription": null
+    },
+    {
+      "id": "52866205-167a-4df6-a99d-3047f5eec197",
+      "questionId": "dc0b3913-acc0-4bf8-a580-8ece158df6b3",
+      "text": "Single prompt; accept first result",
+      "score": 0,
+      "order": 0,
+      "improvementStatement": null,
+      "resourceTitle": null,
+      "resourceLink": null,
+      "resourceDescription": null
+    },
+    {
+      "id": "d2247a5c-e8d3-48dd-9149-68bd0c0f84f7",
+      "questionId": "7679ca71-950c-461b-bad6-35c9476c59a1",
+      "text": "No formal checks",
+      "score": 0,
+      "order": 0,
+      "improvementStatement": null,
+      "resourceTitle": null,
+      "resourceLink": null,
+      "resourceDescription": null
+    },
+    {
+      "id": "9c23996b-2ab8-4699-93bf-bd213adbea3f",
+      "questionId": "a3568021-7d47-4d0f-9548-e28e5a146e75",
+      "text": "None",
+      "score": 0,
+      "order": 0,
+      "improvementStatement": null,
+      "resourceTitle": null,
+      "resourceLink": null,
+      "resourceDescription": null
+    },
+    {
+      "id": "4f52fc2a-6313-4344-a4b4-31d294ec7954",
+      "questionId": "63cbc919-beb6-4667-b7bb-e75692580266",
+      "text": "None",
+      "score": 0,
+      "order": 0,
+      "improvementStatement": null,
+      "resourceTitle": null,
+      "resourceLink": null,
+      "resourceDescription": null
+    },
+    {
+      "id": "29e164eb-3eed-4881-b645-afa8e703f1e4",
+      "questionId": "a3568021-7d47-4d0f-9548-e28e5a146e75",
+      "text": "Tried a template once",
+      "score": 1,
+      "order": 1,
+      "improvementStatement": null,
+      "resourceTitle": null,
+      "resourceLink": null,
+      "resourceDescription": null
+    },
+    {
+      "id": "ebbc0637-4114-457d-8067-6551dc83844b",
+      "questionId": "05c2f12a-9e31-49e7-8dce-5c2879b54897",
+      "text": "Basic AI-generated step",
+      "score": 1,
+      "order": 1,
+      "improvementStatement": null,
+      "resourceTitle": null,
+      "resourceLink": null,
+      "resourceDescription": null
+    },
+    {
+      "id": "76a8093c-f009-4760-a327-e3b3a837601f",
+      "questionId": "7679ca71-950c-461b-bad6-35c9476c59a1",
+      "text": "Spot-check for obvious issues",
+      "score": 1,
+      "order": 1,
+      "improvementStatement": null,
+      "resourceTitle": null,
+      "resourceLink": null,
+      "resourceDescription": null
+    },
+    {
+      "id": "3db11ee1-e94a-4822-8dd0-2c047deb9a71",
+      "questionId": "dc0b3913-acc0-4bf8-a580-8ece158df6b3",
+      "text": "Add some context; light edits",
+      "score": 1,
+      "order": 1,
+      "improvementStatement": null,
+      "resourceTitle": null,
+      "resourceLink": null,
+      "resourceDescription": null
+    },
+    {
+      "id": "71fb833e-94c7-4189-b10a-0eb72f8dd3cc",
+      "questionId": "63cbc919-beb6-4667-b7bb-e75692580266",
+      "text": "Basic",
+      "score": 1,
+      "order": 1,
+      "improvementStatement": null,
+      "resourceTitle": null,
+      "resourceLink": null,
+      "resourceDescription": null
+    },
+    {
+      "id": "d1f1c4a4-cf82-4888-9e9d-97413ad17fcb",
+      "questionId": "a3568021-7d47-4d0f-9548-e28e5a146e75",
+      "text": "Adapted a template for my function",
+      "score": 2,
+      "order": 2,
+      "improvementStatement": null,
+      "resourceTitle": null,
+      "resourceLink": null,
+      "resourceDescription": null
+    },
+    {
+      "id": "49c00583-26ae-4558-b008-bdb6d5a9afe6",
+      "questionId": "63cbc919-beb6-4667-b7bb-e75692580266",
+      "text": "Working",
+      "score": 2,
+      "order": 2,
+      "improvementStatement": null,
+      "resourceTitle": null,
+      "resourceLink": null,
+      "resourceDescription": null
+    },
+    {
+      "id": "2ee76e9b-726c-4582-9c16-c9af33f355db",
+      "questionId": "dc0b3913-acc0-4bf8-a580-8ece158df6b3",
+      "text": "Structured prompt + 1–2 iterations",
+      "score": 2,
+      "order": 2,
+      "improvementStatement": null,
+      "resourceTitle": null,
+      "resourceLink": null,
+      "resourceDescription": null
+    },
+    {
+      "id": "b1203d8e-4a97-4e69-a3cf-a7bd385aec0a",
+      "questionId": "05c2f12a-9e31-49e7-8dce-5c2879b54897",
+      "text": "Semi-automated with tools",
+      "score": 2,
+      "order": 2,
+      "improvementStatement": null,
+      "resourceTitle": null,
+      "resourceLink": null,
+      "resourceDescription": null
+    },
+    {
+      "id": "a5324d06-e4ad-4a3b-a823-c3856b89a4d7",
+      "questionId": "7679ca71-950c-461b-bad6-35c9476c59a1",
+      "text": "Simple checklist applied",
+      "score": 2,
+      "order": 2,
+      "improvementStatement": null,
+      "resourceTitle": null,
+      "resourceLink": null,
+      "resourceDescription": null
+    },
+    {
+      "id": "fc67f267-93fe-46c4-867f-7ea44760b62d",
+      "questionId": "05c2f12a-9e31-49e7-8dce-5c2879b54897",
+      "text": "End-to-end chain with human review",
+      "score": 4,
+      "order": 3,
+      "improvementStatement": null,
+      "resourceTitle": null,
+      "resourceLink": null,
+      "resourceDescription": null
+    },
+    {
+      "id": "5cad7f0d-b570-4588-8dbd-27722f94af2d",
+      "questionId": "dc0b3913-acc0-4bf8-a580-8ece158df6b3",
+      "text": "Multi-step prompt workflow + prompt library",
+      "score": 4,
+      "order": 3,
+      "improvementStatement": null,
+      "resourceTitle": null,
+      "resourceLink": null,
+      "resourceDescription": null
+    },
+    {
+      "id": "416df092-595c-48a7-905c-5ff3f6d99a21",
+      "questionId": "63cbc919-beb6-4667-b7bb-e75692580266",
+      "text": "Dialed-in",
+      "score": 4,
+      "order": 3,
+      "improvementStatement": null,
+      "resourceTitle": null,
+      "resourceLink": null,
+      "resourceDescription": null
+    },
+    {
+      "id": "b3d9dee1-d74e-4f9e-a654-17cbf1d0c56d",
+      "questionId": "a3568021-7d47-4d0f-9548-e28e5a146e75",
+      "text": "Built/maintain agents used by my team",
+      "score": 4,
+      "order": 3,
+      "improvementStatement": null,
+      "resourceTitle": null,
+      "resourceLink": null,
+      "resourceDescription": null
+    },
+    {
+      "id": "0d657986-33ce-4e37-bac4-7d46384fbea2",
+      "questionId": "7679ca71-950c-461b-bad6-35c9476c59a1",
+      "text": "Documented checklist + red-team + audit",
+      "score": 4,
+      "order": 3,
+      "improvementStatement": null,
+      "resourceTitle": null,
+      "resourceLink": null,
+      "resourceDescription": null
+    }
+  ],
+  "scoringLevels": [
+    {
+      "id": "1",
+      "name": "Fundamentals: Prompting & Instructions",
+      "description": "Fundamentals: Prompting & Instructions",
+      "minScore": 0,
+      "maxScore": 39,
+      "label": "Fundamentals: Prompting & Instructions"
+    },
+    {
+      "id": "2",
+      "name": "Leading with AI: Manager Workflows",
+      "description": "Leading with AI: Manager Workflows",
+      "minScore": 40,
+      "maxScore": 69,
+      "label": "Leading with AI: Manager Workflows"
+    },
+    {
+      "id": "3",
+      "name": "Declarative Agent Building & Automation",
+      "description": "Declarative Agent Building & Automation",
+      "minScore": 70,
+      "maxScore": 100,
+      "label": "Declarative Agent Building & Automation"
+    }
+  ]
+}
