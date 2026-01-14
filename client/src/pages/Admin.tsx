@@ -2772,6 +2772,7 @@ export default function Admin() {
                           ownerTenantId: newOwnerTenantId,
                           tenantIds: [],
                           modelClass: (editingModel.modelClass || 'organizational') as 'organizational' | 'individual',
+                          allowAnonymousResults: editingModel.allowAnonymousResults ?? false,
                           generalResources: editingModel.generalResources || [],
                           maturityScale: editingModel.maturityScale || [],
                         } as any);
@@ -2811,6 +2812,7 @@ export default function Admin() {
                         ownerTenantId: updatedModel.ownerTenantId || null,
                         tenantIds: [],
                         modelClass: (updatedModel.modelClass || 'organizational') as 'organizational' | 'individual',
+                        allowAnonymousResults: updatedModel.allowAnonymousResults ?? false,
                         generalResources: updatedModel.generalResources || [],
                         maturityScale: updatedModel.maturityScale || [],
                       } as any);
