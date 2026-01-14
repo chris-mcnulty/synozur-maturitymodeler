@@ -3349,9 +3349,79 @@ Respond in JSON format:
     try {
       const { modelData, newName, newSlug } = req.body;
 
+      // Transform production format (separate answers array) to standard format (nested answers)
+      let transformedData = modelData;
+      if (modelData && modelData.answers && Array.isArray(modelData.answers)) {
+        // Production format detected - transform it
+        console.log('Detected production export format, transforming...');
+        
+        // Build a map of questionId -> answers
+        const answersByQuestion = new Map<string, any[]>();
+        for (const answer of modelData.answers) {
+          if (!answersByQuestion.has(answer.questionId)) {
+            answersByQuestion.set(answer.questionId, []);
+          }
+          answersByQuestion.get(answer.questionId)!.push({
+            text: answer.text,
+            score: answer.score,
+            order: answer.order,
+            improvementStatement: answer.improvementStatement,
+            resourceTitle: answer.resourceTitle,
+            resourceLink: answer.resourceLink,
+            resourceDescription: answer.resourceDescription,
+          });
+        }
+        
+        // Build a map of dimensionId -> dimension key
+        const dimensionIdToKey = new Map<string, string>();
+        for (const dim of modelData.dimensions || []) {
+          dimensionIdToKey.set(dim.id, dim.key);
+        }
+        
+        // Transform to standard format
+        transformedData = {
+          formatVersion: modelData.formatVersion || '1.0',
+          exportedAt: modelData.exportedAt,
+          model: {
+            name: modelData.model.name,
+            slug: modelData.model.slug,
+            description: modelData.model.description || '',
+            version: modelData.model.version || '1.0',
+            estimatedTime: modelData.model.estimatedTime,
+            status: modelData.model.status || 'draft',
+            featured: modelData.model.featured || false,
+            imageUrl: modelData.model.imageUrl,
+            maturityScale: modelData.model.maturityScale,
+            generalResources: modelData.model.generalResources,
+          },
+          dimensions: (modelData.dimensions || []).map((d: any) => ({
+            key: d.key,
+            label: d.label,
+            description: d.description || '',
+            order: d.order,
+          })),
+          questions: (modelData.questions || []).map((q: any) => ({
+            dimensionKey: q.dimensionId ? dimensionIdToKey.get(q.dimensionId) : (q.dimensionKey || null),
+            text: q.text,
+            type: q.type,
+            order: q.order,
+            minValue: q.minValue,
+            maxValue: q.maxValue,
+            unit: q.unit,
+            placeholder: q.placeholder,
+            improvementStatement: q.improvementStatement,
+            resourceTitle: q.resourceTitle,
+            resourceLink: q.resourceLink,
+            resourceDescription: q.resourceDescription,
+            answers: answersByQuestion.get(q.id) || [],
+          })),
+        };
+      }
+
       // Validate the import data
-      const validationResult = schema.modelExportFormatSchema.safeParse(modelData);
+      const validationResult = schema.modelExportFormatSchema.safeParse(transformedData);
       if (!validationResult.success) {
+        console.error('Model import validation failed:', validationResult.error.issues);
         return res.status(400).json({ 
           error: "Invalid model file format", 
           details: validationResult.error.issues 
