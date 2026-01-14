@@ -34,6 +34,9 @@ The application features a modern fullstack architecture with a dark-mode-first 
 -   **OAuth 2.1 Identity Provider**: Orion functions as an OAuth 2.1/OpenID Connect provider with client management (CRUD, auto-generated credentials, redirect URIs), core endpoints (`/oauth/authorize`, `/oauth/token`, `/oauth/userinfo`, OIDC discovery, JWKS), support for confidential and public clients (PKCE mandatory for public), RS256 JWT signing, `authorization_code` and `refresh_token` grant types, and persistent user consent management.
 -   **Multi-Tenant Architecture**: In progress, with tenant-private model visibility and OAuth client management completed. Future plans include tenant-specific branding and domain mapping.
 
+## Backlog / Technical Debt
+- **ExecAI/Copilot import format**: One-off simple format (`modelName`, `options`, `routing`) added for compatibility. Consider deprecating once models are migrated to standard Orion format.
+
 ## External Dependencies
 -   **PostgreSQL**: Primary database.
 -   **Google Cloud Storage**: Object storage for model images.
