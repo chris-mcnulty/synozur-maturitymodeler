@@ -3349,9 +3349,73 @@ Respond in JSON format:
     try {
       const { modelData, newName, newSlug } = req.body;
 
-      // Transform production format (separate answers array) to standard format (nested answers)
+      // Transform various import formats to standard format
       let transformedData = modelData;
-      if (modelData && modelData.answers && Array.isArray(modelData.answers)) {
+      
+      // Detect "ExecAI" simple format (has modelName and options instead of answers)
+      if (modelData && modelData.modelName && modelData.questions?.[0]?.options) {
+        console.log('Detected ExecAI simple format, transforming...');
+        
+        // Generate a slug from the model name
+        const generatedSlug = modelData.modelName
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/^-|-$/g, '');
+        
+        // Convert routing ranges to maturity scale
+        const maturityScale = (modelData.routing || []).map((r: any, idx: number) => {
+          const [minStr, maxStr] = (r.range || '0-100').split('-');
+          return {
+            id: String(idx + 1),
+            name: r.breakout || `Level ${idx + 1}`,
+            description: r.breakout || '',
+            minScore: parseInt(minStr, 10) || 0,
+            maxScore: parseInt(maxStr, 10) || 100,
+          };
+        });
+        
+        transformedData = {
+          formatVersion: '1.0',
+          model: {
+            name: modelData.modelName,
+            slug: generatedSlug,
+            description: modelData.description || '',
+            version: '1.0',
+            estimatedTime: null,
+            status: 'draft',
+            featured: false,
+            imageUrl: null,
+            maturityScale: maturityScale.length > 0 ? maturityScale : null,
+            generalResources: null,
+          },
+          dimensions: [],
+          questions: (modelData.questions || []).map((q: any, qIdx: number) => ({
+            dimensionKey: null,
+            text: q.text,
+            type: 'multiple_choice',
+            order: qIdx,
+            minValue: null,
+            maxValue: null,
+            unit: null,
+            placeholder: null,
+            improvementStatement: null,
+            resourceTitle: null,
+            resourceLink: null,
+            resourceDescription: null,
+            answers: (q.options || []).map((opt: any, optIdx: number) => ({
+              text: opt.label,
+              score: opt.score,
+              order: optIdx,
+              improvementStatement: null,
+              resourceTitle: null,
+              resourceLink: null,
+              resourceDescription: null,
+            })),
+          })),
+        };
+      }
+      // Transform production format (separate answers array) to standard format (nested answers)
+      else if (modelData && modelData.answers && Array.isArray(modelData.answers)) {
         // Production format detected - transform it
         console.log('Detected production export format, transforming...');
         

@@ -1,0 +1,63 @@
+
+{
+  "modelName": "AI Leadership Pulse v1",
+  "scale": "0-100",
+  "conversion": "sum(q1..q5) * 5",
+  "questions": [
+    {
+      "id": "Q1",
+      "text": "Which best describes how you’ve set up AI “instructions” or custom settings (ChatGPT or Copilot)?",
+      "options": [
+        {"label": "None", "score": 0},
+        {"label": "Basic", "score": 1},
+        {"label": "Working", "score": 2},
+        {"label": "Dialed-in", "score": 4}
+      ]
+    },
+    {
+      "id": "Q2",
+      "text": "When you ask AI to draft or analyze, what’s your typical approach?",
+      "options": [
+        {"label": "Single prompt; accept first result", "score": 0},
+        {"label": "Add some context; light edits", "score": 1},
+        {"label": "Structured prompt + 1–2 iterations", "score": 2},
+        {"label": "Multi-step prompt workflow + prompt library", "score": 4}
+      ]
+    },
+    {
+      "id": "Q3",
+      "text": "Your experience creating or using task-specific agents (e.g., interview agent, research assistant, custom GPT):",
+      "options": [
+        {"label": "None", "score": 0},
+        {"label": "Tried a template once", "score": 1},
+        {"label": "Adapted a template for my function", "score": 2},
+        {"label": "Built/maintain agents used by my team", "score": 4}
+      ]
+    },
+    {
+      "id": "Q4",
+      "text": "How have you automated recurring leadership workflows with AI?",
+      "options": [
+        {"label": "No automation", "score": 0},
+        {"label": "Basic AI-generated step", "score": 1},
+        {"label": "Semi-automated with tools", "score": 2},
+        {"label": "End-to-end chain with human review", "score": 4}
+      ]
+    },
+    {
+      "id": "Q5",
+      "text": "How do you ensure responsible use (bias checks, values grounding, confidentiality, human-in-the-loop)?",
+      "options": [
+        {"label": "No formal checks", "score": 0},
+        {"label": "Spot-check for obvious issues", "score": 1},
+        {"label": "Simple checklist applied", "score": 2},
+        {"label": "Documented checklist + red-team + audit", "score": 4}
+      ]
+    }
+  ],
+  "routing": [
+    {"range": "0-39", "breakout": "Fundamentals: Prompting & Instructions"},
+    {"range": "40-69", "breakout": "Leading with AI: Manager Workflows"},
+    {"range": "70-100", "breakout": "Declarative Agent Building & Automation"}
+  ]
+}
