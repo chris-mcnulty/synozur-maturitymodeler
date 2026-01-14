@@ -1,0 +1,459 @@
+{
+  "model": {
+    "id": "b8ea08a5-e701-4aee-9122-088b5445c097",
+    "slug": "ai-leadership-pulse",
+    "name": "AI Leadership Pulse",
+    "description": "A quick assessment of how you work with AI today and what you know about how it functions.",
+    "version": "1.0",
+    "estimatedTime": "2-3 Minutes",
+    "status": "draft",
+    "featured": false,
+    "imageUrl": "/objects/uploads/39fd51fc-cc13-4557-b449-b907c0c8f7f6",
+    "maturityScale": [
+      {
+        "id": "1",
+        "name": "Fundamental",
+        "description": "Starter with AI skills; develop prompting skills",
+        "minScore": 0,
+        "maxScore": 39
+      },
+      {
+        "id": "2",
+        "name": "Intermediate",
+        "description": "Baseline skills suggest readiness for more advanced automation and agent use.",
+        "minScore": 40,
+        "maxScore": 69
+      },
+      {
+        "id": "3",
+        "name": "Agent Boss",
+        "description": "Your core AI skills and knowledge suggest exploring customer personal agents in more depth.",
+        "minScore": 70,
+        "maxScore": 100
+      }
+    ],
+    "generalResources": [
+      {
+        "id": "c82aa2f5-832d-4345-85b9-60799f90dbab",
+        "title": "Synozur AI",
+        "description": "Synozur's online collection of resources to lean and manage AI for the business world",
+        "link": "https://aka.synozur.com/ai"
+      }
+    ],
+    "visibility": "public",
+    "ownerTenantId": null,
+    "modelClass": "individual",
+    "createdAt": "2026-01-14T13:54:14.701Z",
+    "updatedAt": "2026-01-14T16:19:46.823Z",
+    "questionCount": 6,
+    "dimensionCount": 2
+  },
+  "dimensions": [
+    {
+      "id": "b9b68b4b-b82c-47b1-afd2-89a05de15d9f",
+      "modelId": "b8ea08a5-e701-4aee-9122-088b5445c097",
+      "key": "skills",
+      "label": "Skills",
+      "description": "Your personal capability for interacting with AI systems",
+      "order": 1
+    },
+    {
+      "id": "cad6cf58-9936-4127-879a-41b6bde1355b",
+      "modelId": "b8ea08a5-e701-4aee-9122-088b5445c097",
+      "key": "knowledge",
+      "label": "Knowledge",
+      "description": "Your understanding of how AI processes operate",
+      "order": 2
+    }
+  ],
+  "questions": [
+    {
+      "id": "63cbc919-beb6-4667-b7bb-e75692580266",
+      "modelId": "b8ea08a5-e701-4aee-9122-088b5445c097",
+      "dimensionId": "b9b68b4b-b82c-47b1-afd2-89a05de15d9f",
+      "text": "Which best describes how you’ve set up AI “instructions” or custom settings (ChatGPT or Copilot)?",
+      "type": "multiple_choice",
+      "minValue": null,
+      "maxValue": null,
+      "unit": null,
+      "placeholder": "",
+      "order": 0,
+      "improvementStatement": "",
+      "resourceTitle": "",
+      "resourceLink": "",
+      "resourceDescription": ""
+    },
+    {
+      "id": "dc0b3913-acc0-4bf8-a580-8ece158df6b3",
+      "modelId": "b8ea08a5-e701-4aee-9122-088b5445c097",
+      "dimensionId": "b9b68b4b-b82c-47b1-afd2-89a05de15d9f",
+      "text": "When you ask AI to draft or analyze, what’s your typical approach?",
+      "type": "multiple_choice",
+      "minValue": null,
+      "maxValue": null,
+      "unit": null,
+      "placeholder": "",
+      "order": 1,
+      "improvementStatement": "",
+      "resourceTitle": "",
+      "resourceLink": "",
+      "resourceDescription": ""
+    },
+    {
+      "id": "a3568021-7d47-4d0f-9548-e28e5a146e75",
+      "modelId": "b8ea08a5-e701-4aee-9122-088b5445c097",
+      "dimensionId": "b9b68b4b-b82c-47b1-afd2-89a05de15d9f",
+      "text": "Your experience creating or using task-specific agents (e.g., interview agent, research assistant, custom GPT):",
+      "type": "multiple_choice",
+      "minValue": null,
+      "maxValue": null,
+      "unit": null,
+      "placeholder": "",
+      "order": 2,
+      "improvementStatement": "",
+      "resourceTitle": "",
+      "resourceLink": "",
+      "resourceDescription": ""
+    },
+    {
+      "id": "05c2f12a-9e31-49e7-8dce-5c2879b54897",
+      "modelId": "b8ea08a5-e701-4aee-9122-088b5445c097",
+      "dimensionId": "b9b68b4b-b82c-47b1-afd2-89a05de15d9f",
+      "text": "How have you automated recurring leadership workflows with AI?",
+      "type": "multiple_choice",
+      "minValue": null,
+      "maxValue": null,
+      "unit": null,
+      "placeholder": "",
+      "order": 3,
+      "improvementStatement": "",
+      "resourceTitle": "",
+      "resourceLink": "",
+      "resourceDescription": ""
+    },
+    {
+      "id": "7679ca71-950c-461b-bad6-35c9476c59a1",
+      "modelId": "b8ea08a5-e701-4aee-9122-088b5445c097",
+      "dimensionId": "cad6cf58-9936-4127-879a-41b6bde1355b",
+      "text": "How do you ensure responsible use (bias checks, values grounding, confidentiality, human-in-the-loop)?",
+      "type": "multiple_choice",
+      "minValue": null,
+      "maxValue": null,
+      "unit": null,
+      "placeholder": "",
+      "order": 4,
+      "improvementStatement": "",
+      "resourceTitle": "",
+      "resourceLink": "",
+      "resourceDescription": ""
+    },
+    {
+      "id": "bf875993-338c-468c-ba60-aac0924da720",
+      "modelId": "b8ea08a5-e701-4aee-9122-088b5445c097",
+      "dimensionId": "cad6cf58-9936-4127-879a-41b6bde1355b",
+      "text": "How do generative AI tools (like Copilot or ChatGPT) produce answers to your prompts?",
+      "type": "multiple_choice",
+      "minValue": null,
+      "maxValue": null,
+      "unit": null,
+      "placeholder": "",
+      "order": 5,
+      "improvementStatement": "Correct: details how generative AI relies on probability and training data patterns to generate language",
+      "resourceTitle": "",
+      "resourceLink": "https://shelf.io/blog/how-to-prevent-microsoft-copilot-hallucinations/",
+      "resourceDescription": ""
+    }
+  ],
+  "answers": [
+    {
+      "id": "9c23996b-2ab8-4699-93bf-bd213adbea3f",
+      "questionId": "a3568021-7d47-4d0f-9548-e28e5a146e75",
+      "text": "None",
+      "score": 0,
+      "order": 0,
+      "improvementStatement": null,
+      "resourceTitle": null,
+      "resourceLink": null,
+      "resourceDescription": null
+    },
+    {
+      "id": "d2247a5c-e8d3-48dd-9149-68bd0c0f84f7",
+      "questionId": "7679ca71-950c-461b-bad6-35c9476c59a1",
+      "text": "No formal checks",
+      "score": 0,
+      "order": 0,
+      "improvementStatement": null,
+      "resourceTitle": null,
+      "resourceLink": null,
+      "resourceDescription": null
+    },
+    {
+      "id": "52866205-167a-4df6-a99d-3047f5eec197",
+      "questionId": "dc0b3913-acc0-4bf8-a580-8ece158df6b3",
+      "text": "Single prompt; accept first result",
+      "score": 50,
+      "order": 0,
+      "improvementStatement": null,
+      "resourceTitle": null,
+      "resourceLink": null,
+      "resourceDescription": null
+    },
+    {
+      "id": "4f52fc2a-6313-4344-a4b4-31d294ec7954",
+      "questionId": "63cbc919-beb6-4667-b7bb-e75692580266",
+      "text": "Never",
+      "score": 0,
+      "order": 0,
+      "improvementStatement": null,
+      "resourceTitle": null,
+      "resourceLink": null,
+      "resourceDescription": null
+    },
+    {
+      "id": "6637b28e-1a04-492a-9777-7d0e62c23b68",
+      "questionId": "05c2f12a-9e31-49e7-8dce-5c2879b54897",
+      "text": "No automation",
+      "score": 0,
+      "order": 0,
+      "improvementStatement": null,
+      "resourceTitle": null,
+      "resourceLink": null,
+      "resourceDescription": null
+    },
+    {
+      "id": "71fb833e-94c7-4189-b10a-0eb72f8dd3cc",
+      "questionId": "63cbc919-beb6-4667-b7bb-e75692580266",
+      "text": "I know about it but can't find them",
+      "score": 10,
+      "order": 1,
+      "improvementStatement": null,
+      "resourceTitle": null,
+      "resourceLink": null,
+      "resourceDescription": null
+    },
+    {
+      "id": "76a8093c-f009-4760-a327-e3b3a837601f",
+      "questionId": "7679ca71-950c-461b-bad6-35c9476c59a1",
+      "text": "Spot-check for obvious issues",
+      "score": 50,
+      "order": 1,
+      "improvementStatement": null,
+      "resourceTitle": null,
+      "resourceLink": null,
+      "resourceDescription": null
+    },
+    {
+      "id": "9f321953-e81e-4a07-a384-0357b78f1343",
+      "questionId": "bf875993-338c-468c-ba60-aac0924da720",
+      "text": "They predict words based on patterns learned from large datasets, not by recalling exact facts",
+      "score": 100,
+      "order": 1,
+      "improvementStatement": null,
+      "resourceTitle": null,
+      "resourceLink": null,
+      "resourceDescription": null
+    },
+    {
+      "id": "ebbc0637-4114-457d-8067-6551dc83844b",
+      "questionId": "05c2f12a-9e31-49e7-8dce-5c2879b54897",
+      "text": "Basic AI-generated step",
+      "score": 65,
+      "order": 1,
+      "improvementStatement": null,
+      "resourceTitle": null,
+      "resourceLink": null,
+      "resourceDescription": null
+    },
+    {
+      "id": "29e164eb-3eed-4881-b645-afa8e703f1e4",
+      "questionId": "a3568021-7d47-4d0f-9548-e28e5a146e75",
+      "text": "Tried a template once",
+      "score": 50,
+      "order": 1,
+      "improvementStatement": null,
+      "resourceTitle": null,
+      "resourceLink": null,
+      "resourceDescription": null
+    },
+    {
+      "id": "3db11ee1-e94a-4822-8dd0-2c047deb9a71",
+      "questionId": "dc0b3913-acc0-4bf8-a580-8ece158df6b3",
+      "text": "Add some context; light edits",
+      "score": 70,
+      "order": 1,
+      "improvementStatement": null,
+      "resourceTitle": null,
+      "resourceLink": null,
+      "resourceDescription": null
+    },
+    {
+      "id": "55e1f9b4-49ec-4b2d-a0f3-f145f5eb648a",
+      "questionId": "bf875993-338c-468c-ba60-aac0924da720",
+      "text": "They do a real-time internet search and return verbatim information",
+      "score": 65,
+      "order": 2,
+      "improvementStatement": null,
+      "resourceTitle": null,
+      "resourceLink": null,
+      "resourceDescription": null
+    },
+    {
+      "id": "b1203d8e-4a97-4e69-a3cf-a7bd385aec0a",
+      "questionId": "05c2f12a-9e31-49e7-8dce-5c2879b54897",
+      "text": "Semi-automated with tools",
+      "score": 80,
+      "order": 2,
+      "improvementStatement": null,
+      "resourceTitle": null,
+      "resourceLink": null,
+      "resourceDescription": null
+    },
+    {
+      "id": "a5324d06-e4ad-4a3b-a823-c3856b89a4d7",
+      "questionId": "7679ca71-950c-461b-bad6-35c9476c59a1",
+      "text": "Simple checklist applied",
+      "score": 75,
+      "order": 2,
+      "improvementStatement": null,
+      "resourceTitle": null,
+      "resourceLink": null,
+      "resourceDescription": null
+    },
+    {
+      "id": "49c00583-26ae-4558-b008-bdb6d5a9afe6",
+      "questionId": "63cbc919-beb6-4667-b7bb-e75692580266",
+      "text": "I have a basic set of instructions",
+      "score": 80,
+      "order": 2,
+      "improvementStatement": null,
+      "resourceTitle": null,
+      "resourceLink": null,
+      "resourceDescription": null
+    },
+    {
+      "id": "2ee76e9b-726c-4582-9c16-c9af33f355db",
+      "questionId": "dc0b3913-acc0-4bf8-a580-8ece158df6b3",
+      "text": "Structured prompt + 1–2 iterations",
+      "score": 85,
+      "order": 2,
+      "improvementStatement": null,
+      "resourceTitle": null,
+      "resourceLink": null,
+      "resourceDescription": null
+    },
+    {
+      "id": "d1f1c4a4-cf82-4888-9e9d-97413ad17fcb",
+      "questionId": "a3568021-7d47-4d0f-9548-e28e5a146e75",
+      "text": "Adapted a template for my function",
+      "score": 80,
+      "order": 2,
+      "improvementStatement": null,
+      "resourceTitle": null,
+      "resourceLink": null,
+      "resourceDescription": null
+    },
+    {
+      "id": "b3d9dee1-d74e-4f9e-a654-17cbf1d0c56d",
+      "questionId": "a3568021-7d47-4d0f-9548-e28e5a146e75",
+      "text": "Built/maintain agents used by my team",
+      "score": 100,
+      "order": 3,
+      "improvementStatement": null,
+      "resourceTitle": null,
+      "resourceLink": null,
+      "resourceDescription": null
+    },
+    {
+      "id": "5cad7f0d-b570-4588-8dbd-27722f94af2d",
+      "questionId": "dc0b3913-acc0-4bf8-a580-8ece158df6b3",
+      "text": "Multi-step prompt workflow + prompt library",
+      "score": 100,
+      "order": 3,
+      "improvementStatement": null,
+      "resourceTitle": null,
+      "resourceLink": null,
+      "resourceDescription": null
+    },
+    {
+      "id": "0effc96a-1e8a-4737-a299-756116eb938b",
+      "questionId": "bf875993-338c-468c-ba60-aac0924da720",
+      "text": "They pull answers from a static database of Q&A",
+      "score": 0,
+      "order": 3,
+      "improvementStatement": null,
+      "resourceTitle": null,
+      "resourceLink": null,
+      "resourceDescription": null
+    },
+    {
+      "id": "0d657986-33ce-4e37-bac4-7d46384fbea2",
+      "questionId": "7679ca71-950c-461b-bad6-35c9476c59a1",
+      "text": "Documented checklist + red-team + audit",
+      "score": 100,
+      "order": 3,
+      "improvementStatement": null,
+      "resourceTitle": null,
+      "resourceLink": null,
+      "resourceDescription": null
+    },
+    {
+      "id": "416df092-595c-48a7-905c-5ff3f6d99a21",
+      "questionId": "63cbc919-beb6-4667-b7bb-e75692580266",
+      "text": "I have different sets of instructions for chat, notebooks and agentsl",
+      "score": 100,
+      "order": 3,
+      "improvementStatement": null,
+      "resourceTitle": null,
+      "resourceLink": null,
+      "resourceDescription": null
+    },
+    {
+      "id": "fc67f267-93fe-46c4-867f-7ea44760b62d",
+      "questionId": "05c2f12a-9e31-49e7-8dce-5c2879b54897",
+      "text": "End-to-end chain with human review",
+      "score": 100,
+      "order": 3,
+      "improvementStatement": null,
+      "resourceTitle": null,
+      "resourceLink": null,
+      "resourceDescription": null
+    },
+    {
+      "id": "3926c8a0-9c34-4dfb-ac2e-7f76e0738b25",
+      "questionId": "bf875993-338c-468c-ba60-aac0924da720",
+      "text": "A human operator writes the responses live",
+      "score": 0,
+      "order": 4,
+      "improvementStatement": null,
+      "resourceTitle": null,
+      "resourceLink": null,
+      "resourceDescription": null
+    }
+  ],
+  "scoringLevels": [
+    {
+      "id": "1",
+      "name": "Fundamental",
+      "description": "Starter with AI skills; develop prompting skills",
+      "minScore": 0,
+      "maxScore": 39,
+      "label": "Fundamental"
+    },
+    {
+      "id": "2",
+      "name": "Intermediate",
+      "description": "Baseline skills suggest readiness for more advanced automation and agent use.",
+      "minScore": 40,
+      "maxScore": 69,
+      "label": "Intermediate"
+    },
+    {
+      "id": "3",
+      "name": "Agent Boss",
+      "description": "Your core AI skills and knowledge suggest exploring customer personal agents in more depth.",
+      "minScore": 70,
+      "maxScore": 100,
+      "label": "Agent Boss"
+    }
+  ]
+}

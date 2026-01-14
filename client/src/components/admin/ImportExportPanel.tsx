@@ -21,11 +21,12 @@ function transformLegacyModelFormat(rawData: any) {
     // Create dimension key mapping (use dimension id as key for legacy format)
     const dimensionIdToKey = new Map<string, string>();
     const transformedDimensions = (rawData.dimensions || []).map((dim: any, index: number) => {
-      const key = dim.name?.toLowerCase().replace(/[^a-z0-9]+/g, '_') || `dimension_${index + 1}`;
+      // Use existing key if present, otherwise generate from label/name
+      const key = dim.key || (dim.label || dim.name)?.toLowerCase().replace(/[^a-z0-9]+/g, '_') || `dimension_${index + 1}`;
       dimensionIdToKey.set(dim.id, key);
       return {
         key,
-        label: dim.name,
+        label: dim.label || dim.name,  // Support both "label" and "name" fields
         description: dim.description || null,
         order: dim.order || index + 1,
       };
@@ -236,8 +237,29 @@ export function ImportExportPanel({
         const rawData = JSON.parse(text);
         
         // Transform the data to the expected format
-        // Handle both old format (all at root level) and new format (nested under 'model')
-        const modelData = rawData.model ? rawData : transformLegacyModelFormat(rawData);
+        // Handle various formats:
+        // 1. Standard format: has formatVersion and nested questions with answers
+        // 2. Legacy root format: dimensions/questions/answers at root level (no model object)
+        // 3. Production export format: has model object but answers is separate array
+        let modelData;
+        if (rawData.formatVersion && rawData.model && !rawData.answers) {
+          // Standard format - use as-is
+          modelData = rawData;
+        } else if (rawData.model && rawData.answers) {
+          // Production format with nested model but separate answers - transform it
+          modelData = transformLegacyModelFormat({
+            ...rawData.model,
+            dimensions: rawData.dimensions,
+            questions: rawData.questions,
+            answers: rawData.answers,
+          });
+        } else if (!rawData.model && rawData.dimensions) {
+          // Legacy format - transform it
+          modelData = transformLegacyModelFormat(rawData);
+        } else {
+          // Assume it's close enough to standard format
+          modelData = rawData;
+        }
         
         // Call the backend import endpoint
         const response = await fetch('/api/models/import-model', {
