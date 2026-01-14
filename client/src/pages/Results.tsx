@@ -675,12 +675,9 @@ export default function Results() {
     ? Math.max(...parsedMaturityScale.map((level: any) => level.maxScore))
     : 500;
   
-  // For 100-point scale models, dimension scores sum to total (each dimension has equal weight)
-  // For legacy 500-point models, scores are averaged across questions
-  const dimensionCount = model.dimensions.length;
-  const dimensionMaxScore = maturityMaxScore <= 100 && dimensionCount > 0
-    ? Math.round(maturityMaxScore / dimensionCount)
-    : maturityMaxScore;
+  // For 100-point scale models, each dimension is scored independently on 0-100 scale
+  // For legacy 500-point models, dimension scores also use the same max as overall
+  const dimensionMaxScore = maturityMaxScore <= 100 ? 100 : maturityMaxScore;
   
   const dimensionScores = model.dimensions.map(dim => ({
     key: dim.key,
