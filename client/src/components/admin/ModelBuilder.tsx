@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Plus, Edit, Trash, GripVertical, ChevronRight, Upload, X, ChevronDown } from "lucide-react";
 import { ObjectUploader } from "@/components/ObjectUploader";
@@ -829,6 +830,36 @@ export function ModelBuilder({
               Add Level
             </Button>
           </div>
+          
+          {/* Scoring Method Toggle */}
+          <Card className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <Label className="text-base font-medium">Scoring Method</Label>
+                <p className="text-sm text-muted-foreground">
+                  Average (default): Best for 0-100 answer scores. Sum: For traditional 0-4 answer scores.
+                </p>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className={`text-sm ${!(localMaturityScale as any)?.scoringMethod || (localMaturityScale as any)?.scoringMethod === 'average' ? 'font-medium' : 'text-muted-foreground'}`}>
+                  Average
+                </span>
+                <Switch
+                  checked={(localMaturityScale as any)?.scoringMethod === 'sum'}
+                  onCheckedChange={(checked) => {
+                    const updatedScale = Object.assign([...localMaturityScale], {
+                      scoringMethod: checked ? 'sum' : 'average'
+                    });
+                    handleMaturityScaleChange(updatedScale);
+                  }}
+                  data-testid="switch-scoring-method"
+                />
+                <span className={`text-sm ${(localMaturityScale as any)?.scoringMethod === 'sum' ? 'font-medium' : 'text-muted-foreground'}`}>
+                  Sum
+                </span>
+              </div>
+            </div>
+          </Card>
 
           {localMaturityScale.length === 0 ? (
             <Card className="p-12">
