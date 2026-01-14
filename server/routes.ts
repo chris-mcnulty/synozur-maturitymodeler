@@ -4437,6 +4437,60 @@ If you didn't request this, please ignore this email—your password will remain
     }
   });
 
+  // Bulk assign demographics to all assessments with a specific tag
+  app.post("/api/admin/assessments/bulk-demographics", ensureAdminOrModeler, async (req, res) => {
+    try {
+      const { tagId, industry, companySize, country } = req.body;
+      
+      if (!tagId) {
+        return res.status(400).json({ error: "Tag ID is required" });
+      }
+      
+      // Check that at least one demographic field is provided
+      if (!industry && !companySize && !country) {
+        return res.status(400).json({ error: "At least one demographic field (industry, companySize, or country) is required" });
+      }
+      
+      // Get all assessment IDs with this tag
+      const tagAssignments = await db
+        .select({ assessmentId: schema.assessmentTagAssignments.assessmentId })
+        .from(schema.assessmentTagAssignments)
+        .where(eq(schema.assessmentTagAssignments.tagId, tagId));
+      
+      if (tagAssignments.length === 0) {
+        return res.status(404).json({ error: "No assessments found with this tag" });
+      }
+      
+      const assessmentIds = tagAssignments.map(a => a.assessmentId);
+      
+      // Build the update object with only provided fields
+      const updateData: Record<string, string> = {};
+      if (industry) updateData.proxyIndustry = industry;
+      if (companySize) updateData.proxyCompanySize = companySize;
+      if (country) updateData.proxyCountry = country;
+      
+      // Update all assessments with the demographic data
+      let updatedCount = 0;
+      for (const assessmentId of assessmentIds) {
+        await db
+          .update(schema.assessments)
+          .set(updateData)
+          .where(eq(schema.assessments.id, assessmentId));
+        updatedCount++;
+      }
+      
+      res.json({ 
+        success: true, 
+        message: `Updated demographics for ${updatedCount} assessments`,
+        updatedCount,
+        demographics: updateData
+      });
+    } catch (error) {
+      console.error('Error bulk assigning demographics:', error);
+      res.status(500).json({ error: "Failed to bulk assign demographics" });
+    }
+  });
+
   // Export analytical data for a specific model (for external analysis tools)
   app.get("/api/admin/export/model/:modelSlug/analysis", ensureAdminOrModeler, async (req, res) => {
     try {

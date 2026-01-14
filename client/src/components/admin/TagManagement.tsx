@@ -5,11 +5,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Plus, Edit, Trash, Tag } from "lucide-react";
+import { Plus, Edit, Trash, Tag, Users } from "lucide-react";
 import type { AssessmentTag } from "@shared/schema";
+import { INDUSTRIES, COMPANY_SIZES, COUNTRIES } from "@/lib/constants";
 
 const TAG_COLORS = [
   "#6366f1", // Indigo
@@ -42,6 +44,12 @@ export function TagManagement() {
     color: "#6366f1",
     description: "",
   });
+  
+  // Bulk demographic assignment state
+  const [bulkDemoTagId, setBulkDemoTagId] = useState<string>("");
+  const [bulkDemoIndustry, setBulkDemoIndustry] = useState<string>("");
+  const [bulkDemoCompanySize, setBulkDemoCompanySize] = useState<string>("");
+  const [bulkDemoCountry, setBulkDemoCountry] = useState<string>("");
 
   const { data: tags = [], isLoading } = useQuery<AssessmentTag[]>({
     queryKey: ['/api/admin/tags'],
@@ -98,6 +106,49 @@ export function TagManagement() {
       });
     },
   });
+
+  const bulkDemographicsMutation = useMutation({
+    mutationFn: (data: { tagId: string; industry?: string; companySize?: string; country?: string }) =>
+      apiRequest('/api/admin/assessments/bulk-demographics', 'POST', data),
+    onSuccess: (response: any) => {
+      toast({ 
+        title: "Demographics assigned successfully",
+        description: `Updated ${response.updatedCount} assessments`,
+      });
+      // Reset the form
+      setBulkDemoTagId("");
+      setBulkDemoIndustry("");
+      setBulkDemoCompanySize("");
+      setBulkDemoCountry("");
+      // Invalidate related queries
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/results'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/assessments'] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Failed to assign demographics",
+        description: error.message || "Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleBulkDemographicsAssign = () => {
+    if (!bulkDemoTagId) {
+      toast({ title: "Please select a tag", variant: "destructive" });
+      return;
+    }
+    if (!bulkDemoIndustry && !bulkDemoCompanySize && !bulkDemoCountry) {
+      toast({ title: "Please select at least one demographic field", variant: "destructive" });
+      return;
+    }
+    bulkDemographicsMutation.mutate({
+      tagId: bulkDemoTagId,
+      industry: bulkDemoIndustry || undefined,
+      companySize: bulkDemoCompanySize || undefined,
+      country: bulkDemoCountry || undefined,
+    });
+  };
 
   const resetForm = () => {
     setFormData({ name: "", color: "#6366f1", description: "" });
@@ -215,6 +266,116 @@ export function TagManagement() {
                 </div>
               </Card>
             ))}
+          </div>
+        )}
+      </Card>
+
+      {/* Bulk Demographic Assignment */}
+      <Card className="p-6">
+        <div className="mb-6">
+          <h2 className="text-xl font-semibold flex items-center gap-2">
+            <Users className="h-5 w-5" />
+            Bulk Demographic Assignment
+          </h2>
+          <p className="text-muted-foreground text-sm mt-1">
+            Assign demographics to all assessments with a specific tag. Useful for cohorts where you know the participants' company information.
+          </p>
+        </div>
+
+        {tags.length === 0 ? (
+          <p className="text-muted-foreground text-sm">Create tags first to use this feature.</p>
+        ) : (
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {/* Tag Selector */}
+              <div className="space-y-2">
+                <Label>Select Tag *</Label>
+                <Select value={bulkDemoTagId} onValueChange={setBulkDemoTagId}>
+                  <SelectTrigger data-testid="select-bulk-tag">
+                    <SelectValue placeholder="Choose a tag" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {tags.map((tag) => (
+                      <SelectItem key={tag.id} value={tag.id}>
+                        <div className="flex items-center gap-2">
+                          <div
+                            className="w-3 h-3 rounded-full"
+                            style={{ backgroundColor: tag.color }}
+                          />
+                          {tag.name}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Industry Selector */}
+              <div className="space-y-2">
+                <Label>Industry</Label>
+                <Select value={bulkDemoIndustry} onValueChange={setBulkDemoIndustry}>
+                  <SelectTrigger data-testid="select-bulk-industry">
+                    <SelectValue placeholder="Select industry" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {INDUSTRIES.map((industry) => (
+                      <SelectItem key={industry} value={industry}>
+                        {industry}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Company Size Selector */}
+              <div className="space-y-2">
+                <Label>Company Size</Label>
+                <Select value={bulkDemoCompanySize} onValueChange={setBulkDemoCompanySize}>
+                  <SelectTrigger data-testid="select-bulk-company-size">
+                    <SelectValue placeholder="Select size" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {COMPANY_SIZES.map((size) => (
+                      <SelectItem key={size.value} value={size.value}>
+                        {size.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Country Selector */}
+              <div className="space-y-2">
+                <Label>Country</Label>
+                <Select value={bulkDemoCountry} onValueChange={setBulkDemoCountry}>
+                  <SelectTrigger data-testid="select-bulk-country">
+                    <SelectValue placeholder="Select country" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {COUNTRIES.map((country) => (
+                      <SelectItem key={country} value={country}>
+                        {country}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-4">
+              <Button
+                onClick={handleBulkDemographicsAssign}
+                disabled={bulkDemographicsMutation.isPending || !bulkDemoTagId}
+                data-testid="button-apply-bulk-demographics"
+              >
+                {bulkDemographicsMutation.isPending ? "Applying..." : "Apply Demographics"}
+              </Button>
+              {bulkDemoTagId && (bulkDemoIndustry || bulkDemoCompanySize || bulkDemoCountry) && (
+                <p className="text-sm text-muted-foreground">
+                  Will update all assessments tagged with the selected tag
+                </p>
+              )}
+            </div>
           </div>
         )}
       </Card>
