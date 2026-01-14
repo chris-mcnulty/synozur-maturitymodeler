@@ -5119,24 +5119,37 @@ ${insightsData.recommendations.map((r, i) => `${i + 1}. ${r}`).join('\n')}
               </div>
             )}
 
-            <div>
-              <Label htmlFor="dimension">Dimension (Optional)</Label>
-              <Select
-                value={questionForm.dimensionId || 'none'}
-                onValueChange={(value) => setQuestionForm({ ...questionForm, dimensionId: value === 'none' ? '' : value })}
-              >
-                <SelectTrigger id="dimension" data-testid="select-dimension">
-                  <SelectValue placeholder="No dimension" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">No dimension</SelectItem>
-                  {dimensions.map((dimension) => (
-                    <SelectItem key={dimension.id} value={dimension.id}>
-                      {dimension.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="dimension">Dimension (Optional)</Label>
+                <Select
+                  value={questionForm.dimensionId || 'none'}
+                  onValueChange={(value) => setQuestionForm({ ...questionForm, dimensionId: value === 'none' ? '' : value })}
+                >
+                  <SelectTrigger id="dimension" data-testid="select-dimension">
+                    <SelectValue placeholder="No dimension" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">No dimension</SelectItem>
+                    {dimensions.map((dimension) => (
+                      <SelectItem key={dimension.id} value={dimension.id}>
+                        {dimension.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="question-order">Order</Label>
+                <Input
+                  id="question-order"
+                  type="number"
+                  value={questionForm.order}
+                  onChange={(e) => setQuestionForm({ ...questionForm, order: parseInt(e.target.value) || 1 })}
+                  min={1}
+                  data-testid="input-question-order"
+                />
+              </div>
             </div>
 
             <div>
