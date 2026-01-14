@@ -111,18 +111,25 @@ export function TagManagement() {
     mutationFn: (data: { tagId: string; industry?: string; companySize?: string; country?: string }) =>
       apiRequest('/api/admin/assessments/bulk-demographics', 'POST', data),
     onSuccess: (response: any) => {
-      toast({ 
-        title: "Demographics assigned successfully",
-        description: `Updated ${response.updatedCount} assessments`,
-      });
-      // Reset the form
-      setBulkDemoTagId("");
-      setBulkDemoIndustry("");
-      setBulkDemoCompanySize("");
-      setBulkDemoCountry("");
-      // Invalidate related queries
-      queryClient.invalidateQueries({ queryKey: ['/api/admin/results'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/admin/assessments'] });
+      if (response.updatedCount === 0) {
+        toast({ 
+          title: "No assessments found",
+          description: "No assessments are currently tagged with this tag. Tag assessments first, then apply demographics.",
+        });
+      } else {
+        toast({ 
+          title: "Demographics assigned successfully",
+          description: `Updated ${response.updatedCount} assessment${response.updatedCount > 1 ? 's' : ''}`,
+        });
+        // Reset the form only on success
+        setBulkDemoTagId("");
+        setBulkDemoIndustry("");
+        setBulkDemoCompanySize("");
+        setBulkDemoCountry("");
+        // Invalidate related queries
+        queryClient.invalidateQueries({ queryKey: ['/api/admin/results'] });
+        queryClient.invalidateQueries({ queryKey: ['/api/admin/assessments'] });
+      }
     },
     onError: (error: any) => {
       toast({

@@ -4458,7 +4458,12 @@ If you didn't request this, please ignore this email—your password will remain
         .where(eq(schema.assessmentTagAssignments.tagId, tagId));
       
       if (tagAssignments.length === 0) {
-        return res.status(404).json({ error: "No assessments found with this tag" });
+        return res.json({ 
+          success: true, 
+          message: "No assessments found with this tag",
+          updatedCount: 0,
+          demographics: {}
+        });
       }
       
       const assessmentIds = tagAssignments.map(a => a.assessmentId);
