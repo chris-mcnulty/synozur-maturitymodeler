@@ -143,12 +143,64 @@ export function ImportExportPanel({
       let mimeType = "";
 
       if (exportFormat === "model") {
+        // Build dimension key map
+        const dimensionIdToKey = new Map<string, string>();
+        dimensions.forEach(d => dimensionIdToKey.set(d.id, d.key));
+        
+        // Build answers map by question ID
+        const answersByQuestion = new Map<string, Answer[]>();
+        answers.forEach(a => {
+          if (!answersByQuestion.has(a.questionId)) {
+            answersByQuestion.set(a.questionId, []);
+          }
+          answersByQuestion.get(a.questionId)!.push(a);
+        });
+        
+        // Build standard export format with nested answers
         const modelData = {
-          model: selectedModel,
-          dimensions,
-          questions,
-          answers,
-          scoringLevels,
+          formatVersion: "1.0",
+          exportedAt: new Date().toISOString(),
+          model: {
+            name: selectedModel.name,
+            slug: selectedModel.slug,
+            description: selectedModel.description || '',
+            version: selectedModel.version || '1.0',
+            estimatedTime: selectedModel.estimatedTime,
+            status: selectedModel.status,
+            featured: selectedModel.featured || false,
+            imageUrl: selectedModel.imageUrl,
+            maturityScale: selectedModel.maturityScale,
+            generalResources: selectedModel.generalResources,
+          },
+          dimensions: dimensions.map(d => ({
+            key: d.key,
+            label: d.label,
+            description: d.description || '',
+            order: d.order,
+          })),
+          questions: questions.map(q => ({
+            dimensionKey: q.dimensionId ? dimensionIdToKey.get(q.dimensionId) || null : null,
+            text: q.text,
+            type: q.type,
+            order: q.order,
+            minValue: q.minValue,
+            maxValue: q.maxValue,
+            unit: q.unit,
+            placeholder: q.placeholder,
+            improvementStatement: q.improvementStatement,
+            resourceTitle: q.resourceTitle,
+            resourceLink: q.resourceLink,
+            resourceDescription: q.resourceDescription,
+            answers: (answersByQuestion.get(q.id) || []).map(a => ({
+              text: a.text,
+              score: a.score,
+              order: a.order,
+              improvementStatement: a.improvementStatement,
+              resourceTitle: a.resourceTitle,
+              resourceLink: a.resourceLink,
+              resourceDescription: a.resourceDescription,
+            })),
+          })),
         };
         content = JSON.stringify(modelData, null, 2);
         filename = `${selectedModel.slug}.model`;
