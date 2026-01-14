@@ -291,6 +291,24 @@ export function ModelBuilder({
                 </div>
               </div>
 
+              {/* Allow Anonymous Results Toggle */}
+              <div className="flex items-center justify-between p-4 rounded-lg border border-border">
+                <div className="space-y-0.5">
+                  <Label htmlFor="allow-anonymous-results" className="cursor-pointer">
+                    Allow Anonymous Results
+                  </Label>
+                  <p className="text-sm text-muted-foreground">
+                    When enabled, users can view their summary report without logging in or creating a profile
+                  </p>
+                </div>
+                <Switch
+                  id="allow-anonymous-results"
+                  checked={model.allowAnonymousResults ?? false}
+                  onCheckedChange={(checked) => onUpdateModel({ allowAnonymousResults: checked })}
+                  data-testid="switch-allow-anonymous-results"
+                />
+              </div>
+
               {/* Tenant Assignment (only for private models) */}
               {model.visibility === 'private' && (
                 <div>

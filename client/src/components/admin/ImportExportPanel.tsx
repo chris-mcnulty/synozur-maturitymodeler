@@ -168,6 +168,7 @@ export function ImportExportPanel({
             estimatedTime: selectedModel.estimatedTime,
             status: selectedModel.status,
             featured: selectedModel.featured || false,
+            allowAnonymousResults: selectedModel.allowAnonymousResults || false,
             imageUrl: selectedModel.imageUrl,
             maturityScale: selectedModel.maturityScale,
             generalResources: selectedModel.generalResources,

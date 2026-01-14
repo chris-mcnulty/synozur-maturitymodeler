@@ -3328,6 +3328,7 @@ Respond in JSON format:
           estimatedTime: model.estimatedTime,
           status: model.status,
           featured: model.featured,
+          allowAnonymousResults: model.allowAnonymousResults,
           imageUrl: model.imageUrl,
           maturityScale: model.maturityScale as any,
           generalResources: model.generalResources as any,

@@ -584,18 +584,26 @@ export default function Results() {
     }
 
     setPdfAction(action);
-    if (!user) {
+    
+    // Check if model allows anonymous results (bypasses login requirement)
+    const allowAnonymous = model?.allowAnonymousResults ?? false;
+    
+    if (!user && !allowAnonymous) {
+      // User not logged in and model requires login - show profile gate
       setShowProfileGate(true);
+    } else if (action === 'download') {
+      // User logged in OR model allows anonymous - proceed with download
+      generateAndDownloadPDF();
     } else {
-      // User is logged in, proceed with action
-      if (action === 'download') {
-        generateAndDownloadPDF();
+      // Email action - still requires a user email
+      if (user?.email) {
+        sendPdfEmail(user.email, user.name || undefined);
       } else {
-        // Send email to logged-in user
-        sendPdfEmail(user.email || '', user.name || undefined);
+        // No user, but allow anonymous - show profile gate for email (need email address)
+        setShowProfileGate(true);
       }
     }
-  }, [user, generateAndDownloadPDF, sendPdfEmail, aiContentLoading, aiContentReady, toast]);
+  }, [user, model, generateAndDownloadPDF, sendPdfEmail, aiContentLoading, aiContentReady, toast]);
 
   const handleProfileComplete = useCallback((profile: any) => {
     setShowProfileGate(false);
