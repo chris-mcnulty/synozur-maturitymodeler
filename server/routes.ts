@@ -2801,16 +2801,16 @@ Respond in JSON format:
   // Generate maturity summary using AI
   app.post("/api/ai/generate-maturity-summary", ensureAuthenticated, async (req, res) => {
     try {
-      const { overallScore, dimensionScores, modelName, userContext } = req.body;
+      const { overallScore, dimensionScores, modelName, userContext, maxScore } = req.body;
       
       // Validate input
       if (!overallScore || !dimensionScores || !modelName) {
         return res.status(400).json({ error: "Missing required fields" });
       }
 
-      // Generate cache key
+      // Generate cache key (include maxScore for proper cache separation)
       const contextHash = createHash('md5')
-        .update(JSON.stringify({ overallScore, dimensionScores, modelName, userContext }))
+        .update(JSON.stringify({ overallScore, dimensionScores, modelName, userContext, maxScore }))
         .digest('hex');
 
       // Check cache first
@@ -2819,12 +2819,13 @@ Respond in JSON format:
         return res.json({ summary: cached.content });
       }
 
-      // Generate using AI
+      // Generate using AI with correct max score (defaults to 500 for legacy models)
       const summary = await aiService.generateMaturitySummary(
         overallScore,
         dimensionScores,
         modelName,
-        userContext
+        userContext,
+        maxScore || 500
       );
 
       // Cache the result for 30 days

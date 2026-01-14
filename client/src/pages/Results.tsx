@@ -272,6 +272,16 @@ export default function Results() {
           } : undefined;
         }
         
+        // Calculate max score from model's maturity scale
+        const parsedScale = model.maturityScale 
+          ? (typeof model.maturityScale === 'string' 
+              ? JSON.parse(model.maturityScale) 
+              : model.maturityScale)
+          : undefined;
+        const maxScore = parsedScale && parsedScale.length > 0
+          ? Math.max(...parsedScale.map((level: any) => level.maxScore))
+          : 500;
+        
         const maturityResponse = await fetch('/api/ai/generate-maturity-summary', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -279,7 +289,8 @@ export default function Results() {
             overallScore: result.overallScore,
             dimensionScores: dimensionScoresForAI,
             modelName: model.name,
-            userContext
+            userContext,
+            maxScore
           })
         });
 

@@ -374,7 +374,8 @@ class AIService {
     overallScore: number,
     dimensionScores: Record<string, { score: number; label: string }>,
     modelName: string,
-    userContext?: { industry?: string; companySize?: string; jobTitle?: string }
+    userContext?: { industry?: string; companySize?: string; jobTitle?: string },
+    maxScore: number = 500
   ): Promise<string> {
     // Get model ID to fetch knowledge version
     let modelId: string | undefined;
@@ -410,30 +411,43 @@ class AIService {
         .filter(([, dim]) => dim && dim.label && dim.label.trim() !== '')
         .sort(([, a], [, b]) => b.score - a.score);
       
+      // Determine performance level based on percentage of max score
+      const scorePercent = (overallScore / maxScore) * 100;
+      const performanceLevel = scorePercent >= 80 ? 'advanced' : scorePercent >= 60 ? 'developing' : 'emerging';
+      
       // Ensure we have at least 2 dimensions to work with
       if (validDimensions.length < 2) {
         console.warn('Insufficient dimension data for AI summary:', { dimensionScores, validCount: validDimensions.length });
         // Return a generic summary if we don't have enough dimension data
-        return `Your organization demonstrates ${overallScore >= 400 ? 'advanced' : overallScore >= 300 ? 'developing' : 'emerging'} maturity at ${overallScore}/500.
+        return `Your organization demonstrates ${performanceLevel} maturity at ${overallScore}/${maxScore}.
 
 Your assessment shows areas of strength and opportunities for growth. The Synozur Alliance LLC is here to help you find your North Star and make the desirable achievable.`;
       }
       
+      // For 100-point scale models, dimension scores are also 0-100
+      const dimensionMax = maxScore <= 100 ? 100 : maxScore;
+      
       const topStrengths = validDimensions.slice(0, 2)
-        .map(([, dim]) => `${dim.label} (${dim.score}/500)`);
+        .map(([, dim]) => `${dim.label} (${dim.score}/${dimensionMax})`);
       
       const opportunities = validDimensions.slice(-2)
-        .map(([, dim]) => `${dim.label} (${dim.score}/500)`);
+        .map(([, dim]) => `${dim.label} (${dim.score}/${dimensionMax})`);
 
       // Fetch knowledge context from uploaded documents (modelId already retrieved above)
       const knowledgeContext = await this.getKnowledgeContext(modelId);
 
+      // Provide score interpretation context for the AI
+      const scoreInterpretation = maxScore <= 100 
+        ? `This is a 100-point scale. ${scorePercent >= 80 ? 'A score of ' + overallScore + ' is excellent (80%+).' : scorePercent >= 60 ? 'A score of ' + overallScore + ' is good (60-79%).' : 'A score of ' + overallScore + ' indicates room for growth.'}`
+        : `This is a 500-point scale. ${overallScore >= 400 ? 'A score of ' + overallScore + ' is advanced.' : overallScore >= 300 ? 'A score of ' + overallScore + ' is developing.' : 'A score of ' + overallScore + ' is emerging.'}`;
+      
       const prompt = `You are a transformation expert from The Synozur Alliance LLC. Write a comprehensive executive summary.
 
 ${knowledgeContext}
 
 Assessment: ${modelName}
-Overall Score: ${overallScore}/500
+Overall Score: ${overallScore} out of ${maxScore}
+Score Interpretation: ${scoreInterpretation}
 ${userContext ? `Context: ${userContext.jobTitle || 'Leader'} in ${userContext.industry || 'Industry'}, ${userContext.companySize || 'Company'}` : ''}
 
 STRUCTURE (DO NOT include these labels in your output - they are instructions only):
@@ -472,8 +486,10 @@ CRITICAL: Write smooth, flowing paragraphs. Do NOT include labels like "Paragrap
       return summary;
     } catch (error) {
       console.error('Error generating maturity summary:', error);
-      // Return a fallback summary
-      return `Your organization demonstrates ${overallScore >= 400 ? 'advanced' : overallScore >= 300 ? 'developing' : 'emerging'} maturity at ${overallScore}/500.
+      // Return a fallback summary using percentage-based performance level
+      const fallbackScorePercent = (overallScore / maxScore) * 100;
+      const fallbackLevel = fallbackScorePercent >= 80 ? 'advanced' : fallbackScorePercent >= 60 ? 'developing' : 'emerging';
+      return `Your organization demonstrates ${fallbackLevel} maturity at ${overallScore}/${maxScore}.
 
 Key strengths provide solid foundations. Priority areas offer clear transformation paths.
 
