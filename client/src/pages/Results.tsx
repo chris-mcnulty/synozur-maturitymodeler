@@ -289,6 +289,7 @@ export default function Results() {
             overallScore: result.overallScore,
             dimensionScores: dimensionScoresForAI,
             modelName: model.name,
+            modelId: model.id,
             userContext,
             maxScore
           })
@@ -310,6 +311,7 @@ export default function Results() {
                 description: r.description
               })),
               modelName: model.name,
+              modelId: model.id,
               userContext // Use the same context determined above (proxy or real user)
             })
           });

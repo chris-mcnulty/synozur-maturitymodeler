@@ -2799,13 +2799,24 @@ Respond in JSON format:
   });
 
   // Generate maturity summary using AI
-  app.post("/api/ai/generate-maturity-summary", ensureAuthenticated, async (req, res) => {
+  app.post("/api/ai/generate-maturity-summary", async (req, res) => {
     try {
-      const { overallScore, dimensionScores, modelName, userContext, maxScore } = req.body;
+      const { overallScore, dimensionScores, modelName, userContext, maxScore, modelId } = req.body;
       
       // Validate input
       if (!overallScore || !dimensionScores || !modelName) {
         return res.status(400).json({ error: "Missing required fields" });
+      }
+      
+      // Check if model allows anonymous results - if not, require authentication
+      let allowAnonymous = false;
+      if (modelId) {
+        const model = await storage.getModel(modelId);
+        allowAnonymous = model?.allowAnonymousResults ?? false;
+      }
+      
+      if (!allowAnonymous && !req.isAuthenticated()) {
+        return res.status(401).json({ error: "Authentication required" });
       }
 
       // Generate cache key (include maxScore for proper cache separation)
@@ -2840,13 +2851,15 @@ Respond in JSON format:
         expiresAt
       });
 
-      // Log usage
-      await storage.createAiUsageLog({
-        userId: req.user!.id,
-        modelName: 'gpt-5-mini',
-        operation: 'generate-maturity-summary',
-        estimatedCost: 3
-      });
+      // Log usage (only if authenticated)
+      if (req.user) {
+        await storage.createAiUsageLog({
+          userId: req.user.id,
+          modelName: 'gpt-5-mini',
+          operation: 'generate-maturity-summary',
+          estimatedCost: 3
+        });
+      }
 
       res.json({ summary });
     } catch (error) {
@@ -2856,13 +2869,24 @@ Respond in JSON format:
   });
 
   // Generate recommendations summary using AI
-  app.post("/api/ai/generate-recommendations-summary", ensureAuthenticated, async (req, res) => {
+  app.post("/api/ai/generate-recommendations-summary", async (req, res) => {
     try {
-      const { recommendations, modelName, userContext } = req.body;
+      const { recommendations, modelName, userContext, modelId } = req.body;
       
       // Validate input
       if (!recommendations || !modelName) {
         return res.status(400).json({ error: "Missing required fields" });
+      }
+      
+      // Check if model allows anonymous results - if not, require authentication
+      let allowAnonymous = false;
+      if (modelId) {
+        const model = await storage.getModel(modelId);
+        allowAnonymous = model?.allowAnonymousResults ?? false;
+      }
+      
+      if (!allowAnonymous && !req.isAuthenticated()) {
+        return res.status(401).json({ error: "Authentication required" });
       }
 
       // Generate cache key
@@ -2895,13 +2919,15 @@ Respond in JSON format:
         expiresAt
       });
 
-      // Log usage
-      await storage.createAiUsageLog({
-        userId: req.user!.id,
-        modelName: 'gpt-5-mini',
-        operation: 'generate-recommendations-summary',
-        estimatedCost: 2
-      });
+      // Log usage (only if authenticated)
+      if (req.user) {
+        await storage.createAiUsageLog({
+          userId: req.user.id,
+          modelName: 'gpt-5-mini',
+          operation: 'generate-recommendations-summary',
+          estimatedCost: 2
+        });
+      }
 
       res.json({ summary });
     } catch (error) {
