@@ -47,13 +47,14 @@ export const models = pgTable("models", {
   featured: boolean("featured").notNull().default(false), // Whether model appears in featured section on homepage
   imageUrl: text("image_url"),
   // Maturity scale configuration (JSONB array of levels)
+  // scoringMethod: 'average' (default) averages answer scores, 'sum' adds them
   maturityScale: json("maturity_scale").$type<Array<{
     id: string;
     name: string;
     description: string;
     minScore: number;
     maxScore: number;
-  }>>(),
+  }> & { scoringMethod?: 'average' | 'sum' }>(),
   // General resources displayed at end of results (JSONB array)
   generalResources: json("general_resources").$type<Array<{
     id: string;

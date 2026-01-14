@@ -1867,13 +1867,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const questions = await storage.getQuestionsByModelId(model.id);
       
       // Determine scoring system based on maturity scale
-      // If maturity scale max is <= 100, use 100-point scale (sum scores)
-      // Otherwise use 100-500 scale (average scores)
+      // If maturity scale max is <= 100, use 100-point scale
+      // Default to averaging scores; can override with scoringMethod: 'sum'
       const modelMaturityScale = model.maturityScale || [];
       const maxMaturityScore = modelMaturityScale.length > 0 
         ? Math.max(...modelMaturityScale.map(level => level.maxScore))
         : 500;
       const use100PointScale = maxMaturityScore <= 100;
+      
+      // Check for scoring method override on the maturity scale
+      // Default: 'average' for 100-point scale, always average for 500-point scale
+      const scoringMethodOverride = (modelMaturityScale as any)?.scoringMethod;
+      const useSumScoring = use100PointScale && scoringMethodOverride === 'sum';
 
       // Calculate scores
       let totalScore = 0;
@@ -1945,22 +1950,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Calculate dimension scores
       const dimensionAverages: Record<string, number> = {};
       for (const [key, scores] of Object.entries(dimensionScores)) {
-        if (use100PointScale) {
-          // For 100-point scale, sum dimension scores
+        if (useSumScoring) {
+          // Sum mode: add up dimension scores (for models with 0-4 answer scores)
           dimensionAverages[key] = Math.round(scores.reduce((a, b) => a + b, 0));
         } else {
-          // For 100-500 scale, average dimension scores
+          // Average mode (default): average dimension scores
           dimensionAverages[key] = Math.round(scores.reduce((a, b) => a + b, 0) / scores.length);
         }
       }
 
       // Calculate overall score
       let overallScore;
-      if (use100PointScale) {
-        // For 100-point scale, sum all scores
+      if (useSumScoring) {
+        // Sum mode: add all scores (for models with 0-4 answer scores)
         overallScore = Math.round(totalScore);
       } else {
-        // For 100-500 scale, average all scores
+        // Average mode (default): average all scores
         overallScore = questionCount > 0 ? Math.round(totalScore / questionCount) : 0;
       }
 

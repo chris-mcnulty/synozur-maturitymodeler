@@ -16,7 +16,8 @@ The application features a modern fullstack architecture with a dark-mode-first 
 -   **Storage**: PostgreSQL for relational data, Google Cloud Storage for assets.
 -   **Authentication**: Passport-based session management with tenant-scoped, four-tier role-based access control (`global_admin`, `tenant_admin`, `tenant_modeler`, `user`).
 -   **UI/UX**: Dark-mode-first with primary purple and accent pink, Inter font. Responsive gradient styling. Collapsible admin sidebar with hover tooltips.
--   **Core Features**: Dynamic model routing, assessment wizard with autosave, 100-500 point scoring engine, profile gating, email-delivered PDF reports, benchmarking, comprehensive admin console.
+-   **Core Features**: Dynamic model routing, assessment wizard with autosave, flexible scoring engine (100-point or 100-500 point scales), profile gating, email-delivered PDF reports, benchmarking, comprehensive admin console.
+-   **Scoring System**: For 100-point scale models, defaults to **averaging** answer scores (suitable for percentage-based answers 0-100). Models can override with `scoringMethod: 'sum'` in maturity scale config for traditional 0-4 answer scoring. 500-point scale models always average.
 -   **Model Management**: CSV-driven import/export, card-based grid layout for editing, ModelBuilder component for detailed editing (Overview, Structure, Resources, Maturity Scale tabs), debounced updates, accessibility via aria-labels.
 -   **User Management**: Admin CRUD for users, role assignment, email verification, password resets. Supports self-registration and bulk import.
 -   **Email System**: Integrated email verification, password reset, and PDF report delivery via SendGrid.
