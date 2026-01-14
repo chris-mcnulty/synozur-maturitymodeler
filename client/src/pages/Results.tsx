@@ -815,7 +815,7 @@ export default function Results() {
           </Card>
 
           {/* AI-Generated Maturity Summary */}
-          {!user ? (
+          {!user && !model?.allowAnonymousResults ? (
             <Card className="p-8 mb-8 border-2 border-primary/20 bg-gradient-to-br from-primary/5 to-secondary/5">
               <div className="flex items-start gap-4 mb-4">
                 <div className="p-3 rounded-lg bg-primary/10">
@@ -913,7 +913,7 @@ export default function Results() {
           <h2 className="text-3xl font-bold mb-8 text-center text-foreground">Strategic Recommendations</h2>
           
           {/* AI-Generated Recommendations Summary */}
-          {!user ? (
+          {!user && !model?.allowAnonymousResults ? (
             <Card className="p-6 mb-8 border-2 border-secondary/20 bg-gradient-to-br from-secondary/5 to-primary/5">
               <div className="flex items-start gap-4">
                 <div className="p-3 rounded-lg bg-secondary/10">
