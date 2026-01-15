@@ -1074,6 +1074,18 @@ Return as JSON with structure:
       const uniqueModelIds = Array.from(modelIdSet);
       const isSingleModel = uniqueModelIds.length === 1;
       
+      // Determine model class for appropriate language (individual vs organizational)
+      let modelClass: string = 'organizational'; // Default to organizational
+      if (isSingleModel && uniqueModelIds[0]) {
+        try {
+          const models = await db.select().from(schema.models).where(eq(schema.models.id, uniqueModelIds[0])).limit(1);
+          modelClass = models[0]?.modelClass || 'organizational';
+        } catch (error) {
+          console.error('Error fetching model class for bulk analysis:', error);
+        }
+      }
+      const isIndividual = modelClass === 'individual';
+      
       // Aggregate tags for analysis
       const tagCounts: Record<string, { count: number; totalScore: number }> = {};
       assessments.forEach(a => {
@@ -1149,17 +1161,33 @@ Return as JSON with structure:
             .join('\n')
         : 'No tags assigned';
 
+      // Audience-appropriate terminology
+      const subjectTermPlural = isIndividual ? 'participants' : 'organizations';
+      const subjectTermSingular = isIndividual ? 'participant' : 'organization';
+      const maturityContext = isIndividual ? 'individual maturity and personal development' : 'organizational maturity';
+      const readinessContext = isIndividual ? 'personal readiness and growth potential' : 'organizational readiness';
+      const capabilitiesContext = isIndividual ? 'individual capabilities and competencies' : 'organizational capabilities';
+      
+      // Audience guidance for the AI
+      const audienceGuidance = isIndividual 
+        ? `IMPORTANT AUDIENCE CONTEXT: These are INDIVIDUAL assessments of people (e.g., conference attendees, employees, professionals). 
+           Use individual-centric language: "participants", "individuals", "people", "respondents", "professionals".
+           Do NOT use organizational language like "organizations", "companies", or "teams" - these are personal maturity assessments.`
+        : `AUDIENCE CONTEXT: These are ORGANIZATIONAL assessments. Reference organizations, companies, and teams appropriately.`;
+      
       // Build the analysis prompt with 500-point scale
-      const prompt = `Analyze this set of ${totalAssessments} maturity assessments and provide strategic insights about organizational maturity.
+      const prompt = `Analyze this set of ${totalAssessments} maturity assessments and provide strategic insights about ${maturityContext}.
+
+${audienceGuidance}
 
 ${knowledgeContext ? `KNOWLEDGE BASE CONTEXT (Use this to ground your analysis):\n${knowledgeContext}\n\n` : ''}CRITICAL INSTRUCTIONS:
 - All scores are on a ${maxScore}-point scale (not percentages)
-- Focus EXCLUSIVELY on what the data reveals about organizational MATURITY LEVELS and CAPABILITIES
+- Focus EXCLUSIVELY on what the data reveals about ${capabilitiesContext} and MATURITY LEVELS
 - Do NOT comment on data collection, data quality, assessment methodology, or survey completion rates
 - Do NOT mention or analyze missing demographic information - if someone didn't specify their industry or company size, that's their choice and is irrelevant to the maturity analysis
 - Do NOT suggest improving data collection or encouraging more complete profiles
-- ONLY analyze the actual maturity scores and what they reveal about organizational readiness
-- Provide strategic insights about maturity state, transformation opportunities, and competitive positioning
+- ONLY analyze the actual maturity scores and what they reveal about ${readinessContext}
+- Provide strategic insights about maturity state, transformation opportunities, and ${isIndividual ? 'professional development paths' : 'competitive positioning'}
 
 ASSESSMENT DATA SUMMARY:
 - Total Assessments: ${totalAssessments}
@@ -1203,8 +1231,8 @@ ${Object.entries(monthlyTrends)
 
 Based on this data, provide a comprehensive analysis in JSON format:
 {
-  "summary": "A 2-3 paragraph executive summary focusing on what the maturity scores reveal about organizational capabilities, readiness, and strategic positioning. Highlight patterns that indicate maturity strengths and gaps across the population.",
-  "keyFindings": ["Finding 1", "Finding 2", ...], // 4-6 key findings about MATURITY patterns - what the scores reveal about organizational transformation readiness
+  "summary": "A 2-3 paragraph executive summary focusing on what the maturity scores reveal about ${capabilitiesContext}, ${readinessContext}, and strategic positioning. Highlight patterns that indicate maturity strengths and gaps across the ${subjectTermPlural}.",
+  "keyFindings": ["Finding 1", "Finding 2", ...], // 4-6 key findings about MATURITY patterns - what the scores reveal about ${isIndividual ? 'individual growth and development readiness' : 'organizational transformation readiness'}
   "trends": ["Trend 1", "Trend 2", ...], // 3-5 notable trends in MATURITY LEVELS over time or across segments
   "recommendations": ["Recommendation 1", ...], // 3-5 strategic recommendations for ADVANCING MATURITY based on current state - NOT about data collection
   "strengthAreas": ["Area 1", ...], // Top 3-4 DIMENSIONS showing highest maturity levels based on dimension scores
@@ -1213,9 +1241,10 @@ Based on this data, provide a comprehensive analysis in JSON format:
 
 ABSOLUTE RULES FOR YOUR RESPONSE:
 - strengthAreas and improvementAreas MUST be dimension names from the DIMENSION PERFORMANCE section above
-- recommendations MUST be about advancing organizational maturity, NOT about data collection or profile completion
+- recommendations MUST be about advancing ${isIndividual ? 'individual' : 'organizational'} maturity, NOT about data collection or profile completion
 - Do NOT mention incomplete demographics, unknown industries, or missing data
-- Focus 100% on what the maturity scores tell us about organizational capabilities`;
+- Focus 100% on what the maturity scores tell us about ${capabilitiesContext}
+- ${isIndividual ? 'Use individual-centric language throughout (participants, individuals, people) - NOT organizational language' : 'Reference organizations appropriately'}`;
 
       const response = await this.callOpenAI(prompt, undefined, false);
       
