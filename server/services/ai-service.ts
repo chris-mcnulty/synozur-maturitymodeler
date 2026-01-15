@@ -377,14 +377,22 @@ class AIService {
     userContext?: { industry?: string; companySize?: string; jobTitle?: string },
     maxScore: number = 500
   ): Promise<string> {
-    // Get model ID to fetch knowledge version
+    // Get model ID and class to fetch knowledge version and determine audience type
     let modelId: string | undefined;
+    let modelClass: string = 'organizational'; // Default to organizational
     try {
       const models = await db.select().from(schema.models).where(eq(schema.models.name, modelName)).limit(1);
       modelId = models[0]?.id;
+      modelClass = models[0]?.modelClass || 'organizational';
     } catch (error) {
       console.error('Error fetching modelId for knowledge context:', error);
     }
+    
+    // Determine subject language based on model class
+    const isIndividual = modelClass === 'individual';
+    const subjectTerm = isIndividual ? 'You demonstrate' : 'Your organization demonstrates';
+    const subjectPossessive = isIndividual ? 'your' : "your organization's";
+    const subjectNoun = isIndividual ? 'you' : 'your organization';
 
     // Get knowledge version hash for cache invalidation
     const knowledgeVersion = await this.getKnowledgeVersionHash(modelId);
@@ -419,7 +427,7 @@ class AIService {
       if (validDimensions.length < 2) {
         console.warn('Insufficient dimension data for AI summary:', { dimensionScores, validCount: validDimensions.length });
         // Return a generic summary if we don't have enough dimension data
-        return `Your organization demonstrates ${performanceLevel} maturity at ${overallScore}/${maxScore}.
+        return `${subjectTerm} ${performanceLevel} maturity at ${overallScore}/${maxScore}.
 
 Your assessment shows areas of strength and opportunities for growth. The Synozur Alliance LLC is here to help you find your North Star and make the desirable achievable.`;
       }
@@ -441,7 +449,14 @@ Your assessment shows areas of strength and opportunities for growth. The Synozu
         ? `This is a 100-point scale. ${scorePercent >= 80 ? 'A score of ' + overallScore + ' is excellent (80%+).' : scorePercent >= 60 ? 'A score of ' + overallScore + ' is good (60-79%).' : 'A score of ' + overallScore + ' indicates room for growth.'}`
         : `This is a 500-point scale. ${overallScore >= 400 ? 'A score of ' + overallScore + ' is advanced.' : overallScore >= 300 ? 'A score of ' + overallScore + ' is developing.' : 'A score of ' + overallScore + ' is emerging.'}`;
       
+      // Audience type guidance for AI
+      const audienceGuidance = isIndividual 
+        ? 'IMPORTANT: This is an INDIVIDUAL assessment. Write directly to the person (use "you", "your"). Do NOT reference "organization", "company", or "team" - focus on their personal development and growth.'
+        : 'This is an ORGANIZATIONAL assessment. Reference the organization, company, and team where appropriate.';
+      
       const prompt = `You are a transformation expert from The Synozur Alliance LLC. Write a comprehensive executive summary.
+
+${audienceGuidance}
 
 ${knowledgeContext}
 
@@ -489,7 +504,7 @@ CRITICAL: Write smooth, flowing paragraphs. Do NOT include labels like "Paragrap
       // Return a fallback summary using percentage-based performance level
       const fallbackScorePercent = (overallScore / maxScore) * 100;
       const fallbackLevel = fallbackScorePercent >= 80 ? 'advanced' : fallbackScorePercent >= 60 ? 'developing' : 'emerging';
-      return `Your organization demonstrates ${fallbackLevel} maturity at ${overallScore}/${maxScore}.
+      return `${subjectTerm} ${fallbackLevel} maturity at ${overallScore}/${maxScore}.
 
 Key strengths provide solid foundations. Priority areas offer clear transformation paths.
 
@@ -510,16 +525,21 @@ The Synozur Alliance LLC is here to help you find your North Star and make the d
       recommendationTitles: recommendations.slice(0, 3).map(r => r.title)
     });
     
-    // Get model ID to fetch knowledge version
+    // Get model ID, slug, and class to fetch knowledge version and determine audience type
     let modelId: string | undefined;
     let modelSlug: string | undefined;
+    let modelClass: string = 'organizational'; // Default to organizational
     try {
       const models = await db.select().from(schema.models).where(eq(schema.models.name, modelName)).limit(1);
       modelId = models[0]?.id;
       modelSlug = models[0]?.slug;
+      modelClass = models[0]?.modelClass || 'organizational';
     } catch (error) {
       console.error('Error fetching modelId for knowledge context:', error);
     }
+    
+    // Determine subject language based on model class
+    const isIndividual = modelClass === 'individual';
 
     // Get knowledge version hash for cache invalidation
     const knowledgeVersion = await this.getKnowledgeVersionHash(modelId);
@@ -573,7 +593,14 @@ Write a ${3-4} sentence paragraph explaining this action. ${idx === 0 ? 'Explain
 CRITICAL: The section heading MUST be exactly "## ${rec.title}" - NOT "## ${ordinal} priority action" or "## ${ordinal} Priority Action" or any other variation. Use the EXACT title provided.`;
       }).join('\n\n');
 
+      // Audience type guidance for AI
+      const audienceGuidance = isIndividual 
+        ? 'IMPORTANT: This is an INDIVIDUAL assessment. Write directly to the person (use "you", "your"). Do NOT reference "organization", "company", or "team" - focus on their personal development and growth.'
+        : 'This is an ORGANIZATIONAL assessment. Reference the organization, company, and team where appropriate.';
+      
       const prompt = `You are a transformation expert from The Synozur Alliance LLC. Write a comprehensive transformation roadmap.
+
+${audienceGuidance}
 
 ${knowledgeContext}
 
@@ -601,7 +628,7 @@ ${topRecs.map((r, i) => `${i + 1}. "${r.title}"`).join('\n')}
 STRUCTURE:
 
 Paragraph 1 - Opening (3-4 sentences):
-Frame their unique transformation journey and what it means for their organization. Explain the strategic context and why focusing on these priority actions matters. Use insights from the knowledge base to provide specific guidance. End with "Priority actions to focus on:" followed by EXACTLY these ${topRecs.length} bulleted items:
+Frame their unique transformation journey and what it means for ${isIndividual ? 'their personal growth' : 'their organization'}. Explain the strategic context and why focusing on these priority actions matters. Use insights from the knowledge base to provide specific guidance. End with "Priority actions to focus on:" followed by EXACTLY these ${topRecs.length} bulleted items:
 ${bulletList}
 
 [BLANK LINE]
