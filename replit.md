@@ -36,6 +36,8 @@ The application features a modern fullstack architecture with a dark-mode-first 
 -   **Multi-Tenant Architecture**: In progress, with tenant-private model visibility and OAuth client management completed. Future plans include tenant-specific branding and domain mapping.
 
 ## Backlog / Technical Debt
+- **Entra SSO**: Add Microsoft Entra ID (Azure AD) single sign-on integration for enterprise authentication.
+- **Model Archiving**: Ability to archive models, removing them from homepage and default admin views while preserving data.
 - **ExecAI/Copilot import format**: One-off simple format (`modelName`, `options`, `routing`) added for compatibility. Consider deprecating once models are migrated to standard Orion format.
 
 ## External Dependencies
