@@ -983,9 +983,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const allModels = await storage.getAllModels(status);
       
-      // Filter by visibility and tenant access using centralized helper
+      // Filter out archived models for public access (archived models are never shown publicly)
+      // Also filter by visibility and tenant access using centralized helper
       const filteredModels = [];
       for (const model of allModels) {
+        // Always exclude archived models from public view
+        if (model.status === 'archived') continue;
+        
         if (await canAccessModel(user, model)) {
           filteredModels.push(model);
         }
@@ -2192,7 +2196,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/admin/models", ensureAdminOrModeler, async (req, res) => {
     try {
-      const models = await storage.getAllModels();
+      // By default exclude archived models unless explicitly requested
+      const includeArchived = req.query.includeArchived === 'true';
+      
+      const allModels = await storage.getAllModels();
+      
+      // Filter out archived models unless includeArchived is true
+      const models = includeArchived 
+        ? allModels 
+        : allModels.filter(m => m.status !== 'archived');
+      
       const modelsWithStats = await Promise.all(
         models.map(async (model) => {
           const dimensions = await storage.getDimensionsByModelId(model.id);
