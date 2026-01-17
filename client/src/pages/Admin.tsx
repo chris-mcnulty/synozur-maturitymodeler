@@ -276,8 +276,14 @@ function BenchmarksByModel() {
   const { toast } = useToast();
   const [selectedModelId, setSelectedModelId] = useState<string>('');
 
+  // Fetch ALL models including archived for admin dropdown
   const { data: models } = useQuery<Model[]>({
-    queryKey: ['/api/models'],
+    queryKey: ['/api/admin/models', { includeArchived: true }],
+    queryFn: async () => {
+      const response = await fetch(`/api/admin/models?includeArchived=true`, { credentials: 'include' });
+      if (!response.ok) throw new Error('Failed to fetch models');
+      return response.json();
+    },
     refetchOnWindowFocus: false,
     refetchOnMount: false,
     refetchOnReconnect: false,
@@ -321,7 +327,7 @@ function BenchmarksByModel() {
             <SelectContent>
               {models?.map((model) => (
                 <SelectItem key={model.id} value={model.id}>
-                  {model.name}
+                  {model.name}{model.status === 'archived' ? ' (archived)' : ''}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -563,11 +569,24 @@ export default function Admin() {
     enabled: !!importExportModel?.id,
   });
 
-  // Fetch models with counts
+  // Fetch models with counts (respects "Show archived" toggle for Models grid)
   const { data: models = [], isLoading: modelsLoading } = useQuery<Array<Model & { dimensionCount?: number; questionCount?: number }>>({
     queryKey: ['/api/admin/models', { includeArchived: showArchivedModels }],
     queryFn: async () => {
       const response = await fetch(`/api/admin/models?includeArchived=${showArchivedModels}`, { credentials: 'include' });
+      if (!response.ok) throw new Error('Failed to fetch models');
+      return response.json();
+    },
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    refetchOnReconnect: false,
+  });
+
+  // Fetch ALL models including archived (for admin dropdowns in Results, Benchmarks, etc.)
+  const { data: allModels = [] } = useQuery<Array<Model & { dimensionCount?: number; questionCount?: number }>>({
+    queryKey: ['/api/admin/models', { includeArchived: true }],
+    queryFn: async () => {
+      const response = await fetch(`/api/admin/models?includeArchived=true`, { credentials: 'include' });
       if (!response.ok) throw new Error('Failed to fetch models');
       return response.json();
     },
@@ -3738,9 +3757,9 @@ export default function Admin() {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="all">All Models</SelectItem>
-                        {models.map((model) => (
+                        {allModels.map((model) => (
                           <SelectItem key={model.id} value={model.id}>
-                            {model.name}
+                            {model.name}{model.status === 'archived' ? ' (archived)' : ''}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -4121,9 +4140,9 @@ export default function Admin() {
                                 <SelectValue placeholder="Choose a model..." />
                               </SelectTrigger>
                               <SelectContent>
-                                {models.map((model) => (
+                                {allModels.map((model) => (
                                   <SelectItem key={model.id} value={model.id}>
-                                    {model.name}
+                                    {model.name}{model.status === 'archived' ? ' (archived)' : ''}
                                   </SelectItem>
                                 ))}
                               </SelectContent>
