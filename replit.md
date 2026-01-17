@@ -32,12 +32,12 @@ The application features a modern fullstack architecture with a dark-mode-first 
 -   **Social Sharing**: Enables sharing results with pre-filled content, using Open Graph URLs for model-specific previews.
 -   **Proxy Assessments**: Admins can create assessments on behalf of prospects, storing profile data directly for AI personalization.
 -   **Multi-Tenant Private Model Visibility**: Models can be public or tenant-private, assignable to multiple tenants. Access is enforced via `canAccessModel()` helper.
+-   **Model Archiving**: Models can be archived to remove them from homepage and default admin views while preserving all data and assessment history. Archived models can be viewed via "Show archived" toggle in admin.
 -   **OAuth 2.1 Identity Provider**: Orion functions as an OAuth 2.1/OpenID Connect provider with client management (CRUD, auto-generated credentials, redirect URIs), core endpoints (`/oauth/authorize`, `/oauth/token`, `/oauth/userinfo`, OIDC discovery, JWKS), support for confidential and public clients (PKCE mandatory for public), RS256 JWT signing, `authorization_code` and `refresh_token` grant types, and persistent user consent management.
 -   **Multi-Tenant Architecture**: In progress, with tenant-private model visibility and OAuth client management completed. Future plans include tenant-specific branding and domain mapping.
 
 ## Backlog / Technical Debt
 - **Entra SSO**: Add Microsoft Entra ID (Azure AD) single sign-on integration for enterprise authentication.
-- **Model Archiving**: Ability to archive models, removing them from homepage and default admin views while preserving data.
 - **ExecAI/Copilot import format**: One-off simple format (`modelName`, `options`, `routing`) added for compatibility. Consider deprecating once models are migrated to standard Orion format.
 
 ## External Dependencies
