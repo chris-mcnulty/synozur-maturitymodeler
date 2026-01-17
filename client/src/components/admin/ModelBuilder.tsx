@@ -232,7 +232,7 @@ export function ModelBuilder({
                   <Label>Status</Label>
                   <Select
                     value={model.status || 'draft'}
-                    onValueChange={(value: 'draft' | 'published') => {
+                    onValueChange={(value: 'draft' | 'published' | 'archived') => {
                       onUpdateModel({ status: value });
                     }}
                   >
@@ -242,12 +242,15 @@ export function ModelBuilder({
                     <SelectContent>
                       <SelectItem value="draft">Draft</SelectItem>
                       <SelectItem value="published">Published</SelectItem>
+                      <SelectItem value="archived">Archived</SelectItem>
                     </SelectContent>
                   </Select>
                   <p className="text-xs text-muted-foreground mt-1">
                     {model.status === 'published' 
                       ? 'Visible to users' 
-                      : 'Only visible to admins'}
+                      : model.status === 'archived'
+                        ? 'Hidden from homepage and default admin view'
+                        : 'Only visible to admins'}
                   </p>
                 </div>
                 <div>

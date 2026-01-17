@@ -419,13 +419,14 @@ export default function Admin() {
   const [editingQuestion, setEditingQuestion] = useState<Question | null>(null);
   const [editingDimension, setEditingDimension] = useState<Dimension | null>(null);
   const [heroModelId, setHeroModelId] = useState<string>('');
+  const [showArchivedModels, setShowArchivedModels] = useState(false);
   const [modelForm, setModelForm] = useState({
     name: '',
     slug: '',
     description: '',
     version: '1.0.0',
     estimatedTime: '15-20 minutes',
-    status: 'draft' as 'draft' | 'published',
+    status: 'draft' as 'draft' | 'published' | 'archived',
     imageUrl: '',
     visibility: 'public' as 'public' | 'private',
     ownerTenantId: null as string | null, // Kept for backward compatibility
@@ -564,7 +565,12 @@ export default function Admin() {
 
   // Fetch models with counts
   const { data: models = [], isLoading: modelsLoading } = useQuery<Array<Model & { dimensionCount?: number; questionCount?: number }>>({
-    queryKey: ['/api/admin/models'],
+    queryKey: ['/api/admin/models', { includeArchived: showArchivedModels }],
+    queryFn: async () => {
+      const response = await fetch(`/api/admin/models?includeArchived=${showArchivedModels}`, { credentials: 'include' });
+      if (!response.ok) throw new Error('Failed to fetch models');
+      return response.json();
+    },
     refetchOnWindowFocus: false,
     refetchOnMount: false,
     refetchOnReconnect: false,
@@ -2490,25 +2496,38 @@ export default function Admin() {
                       Manage assessment models, dimensions, and questions
                     </p>
                   </div>
-                  <div className="flex gap-2">
-                    <Button 
-                      variant="outline"
-                      onClick={handleModelImportClick}
-                      data-testid="button-import-model"
-                    >
-                      <Upload className="mr-2 h-4 w-4" />
-                      Import Model
-                    </Button>
-                    <Button 
-                      onClick={() => {
-                        resetModelForm();
-                        setIsModelDialogOpen(true);
-                      }}
-                      data-testid="button-create-model"
-                    >
-                      <Plus className="mr-2 h-4 w-4" />
-                      Create Model
-                    </Button>
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2">
+                      <Switch
+                        id="show-archived"
+                        checked={showArchivedModels}
+                        onCheckedChange={setShowArchivedModels}
+                        data-testid="switch-show-archived"
+                      />
+                      <Label htmlFor="show-archived" className="text-sm text-muted-foreground cursor-pointer">
+                        Show archived
+                      </Label>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button 
+                        variant="outline"
+                        onClick={handleModelImportClick}
+                        data-testid="button-import-model"
+                      >
+                        <Upload className="mr-2 h-4 w-4" />
+                        Import Model
+                      </Button>
+                      <Button 
+                        onClick={() => {
+                          resetModelForm();
+                          setIsModelDialogOpen(true);
+                        }}
+                        data-testid="button-create-model"
+                      >
+                        <Plus className="mr-2 h-4 w-4" />
+                        Create Model
+                      </Button>
+                    </div>
                   </div>
                 </div>
 
@@ -2570,7 +2589,10 @@ export default function Admin() {
                               </div>
 
                               <div className="flex gap-2 flex-wrap">
-                                <Badge variant={model.status === 'published' ? 'default' : 'secondary'}>
+                                <Badge 
+                                  variant={model.status === 'published' ? 'default' : model.status === 'archived' ? 'outline' : 'secondary'}
+                                  className={model.status === 'archived' ? 'text-muted-foreground' : ''}
+                                >
                                   {model.status || 'draft'}
                                 </Badge>
                                 {model.featured && (
