@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRoute, useLocation } from "wouter";
 import { Helmet } from "react-helmet-async";
 import { Footer } from "@/components/Footer";
@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { ArrowRight, CheckCircle2, Target, TrendingUp, ArrowLeft, Sparkles, Save } from "lucide-react";
+import { ArrowRight, CheckCircle2, Target, TrendingUp, ArrowLeft, Sparkles, Save, Archive, Home } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { Model, Dimension, Assessment, User } from "@shared/schema";
@@ -16,12 +16,28 @@ export default function ModelHome() {
   const [, params] = useRoute("/:modelSlug");
   const [, setLocation] = useLocation();
   const modelSlug = params?.modelSlug || "";
+  const [isArchived, setIsArchived] = useState(false);
 
   // Fetch model data from API based on modelSlug
-  const { data: model, isLoading } = useQuery<Model & { dimensions: Dimension[] }>({
+  const { data: model, isLoading, error } = useQuery<Model & { dimensions: Dimension[] }>({
     queryKey: ['/api/models', modelSlug],
     enabled: !!modelSlug,
+    retry: (failureCount, error: any) => {
+      // Don't retry on archived models
+      if (error?.message?.includes('model_archived')) return false;
+      return failureCount < 3;
+    },
   });
+
+  // Check if model is archived from error response
+  useEffect(() => {
+    if (error) {
+      const errorMessage = (error as any)?.message || '';
+      if (errorMessage.includes('model_archived')) {
+        setIsArchived(true);
+      }
+    }
+  }, [error]);
 
   // Check if user is logged in
   const { data: user } = useQuery<User>({
@@ -64,6 +80,46 @@ export default function ModelHome() {
         <main className="flex-1 flex items-center justify-center">
           <div className="text-center">
             <div className="text-lg text-muted-foreground">Loading model...</div>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
+  // Show archived model screen
+  if (isArchived) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Helmet>
+          <title>Assessment Unavailable | The Synozur Alliance</title>
+        </Helmet>
+        <main className="flex-1 flex items-center justify-center bg-gradient-to-b from-background to-muted/30">
+          <div className="container mx-auto px-4 py-16">
+            <Card className="max-w-lg mx-auto p-8 text-center" data-testid="card-archived-model">
+              <div className="flex justify-center mb-6">
+                <div className="w-20 h-20 rounded-full bg-muted flex items-center justify-center">
+                  <Archive className="h-10 w-10 text-muted-foreground" />
+                </div>
+              </div>
+              <h1 className="text-2xl font-bold mb-3" data-testid="text-archived-title">
+                Assessment No Longer Available
+              </h1>
+              <p className="text-muted-foreground mb-6" data-testid="text-archived-message">
+                This assessment has been archived and is no longer accepting new responses. 
+                Please explore our other available assessments to find insights that can help guide your journey.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                <Button onClick={() => setLocation('/')} data-testid="button-browse-assessments">
+                  <Home className="mr-2 h-4 w-4" />
+                  Browse Assessments
+                </Button>
+                <Button variant="outline" onClick={() => window.history.back()} data-testid="button-go-back">
+                  <ArrowLeft className="mr-2 h-4 w-4" />
+                  Go Back
+                </Button>
+              </div>
+            </Card>
           </div>
         </main>
         <Footer />

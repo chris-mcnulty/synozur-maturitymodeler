@@ -1323,12 +1323,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Model not found" }); // 404 to hide existence
       }
 
-      // Only admins and modelers can access draft models
+      // Only admins and modelers can access draft/archived models
       const canSeeDrafts = req.isAuthenticated() && (
         req.user?.role === 'global_admin' || 
         req.user?.role === 'tenant_admin' || 
         req.user?.role === 'tenant_modeler'
       );
+
+      // Archived models return a specific error code
+      if (!canSeeDrafts && model.status === 'archived') {
+        return res.status(403).json({ error: "model_archived", message: "This assessment is no longer available" });
+      }
 
       if (!canSeeDrafts && model.status !== 'published') {
         return res.status(404).json({ error: "Model not found" });
@@ -1353,12 +1358,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Model not found" }); // 404 to hide existence
       }
 
-      // Only admins and modelers can access draft models
+      // Only admins and modelers can access draft/archived models
       const canSeeDrafts = req.isAuthenticated() && (
         req.user?.role === 'global_admin' || 
         req.user?.role === 'tenant_admin' || 
         req.user?.role === 'tenant_modeler'
       );
+
+      // Archived models return a specific error code
+      if (!canSeeDrafts && model.status === 'archived') {
+        return res.status(403).json({ error: "model_archived", message: "This assessment is no longer available" });
+      }
 
       if (!canSeeDrafts && model.status !== 'published') {
         return res.status(404).json({ error: "Model not found" });
