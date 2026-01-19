@@ -13,7 +13,7 @@ import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Download, Plus, Edit, Trash, FileSpreadsheet, Eye, EyeOff, BarChart3, Settings, FileDown, FileUp, ListOrdered, Users, Star, Upload, X, Sparkles, CheckCircle2, XCircle, Database, FileText, Brain, BookOpen, ClipboardList, Home, Building2, ChevronDown, Shield, Tag, Activity, Copy } from "lucide-react";
+import { Download, Plus, Edit, Trash, FileSpreadsheet, Eye, EyeOff, BarChart3, Settings, FileDown, FileUp, ListOrdered, Users, Star, Upload, X, Sparkles, CheckCircle2, XCircle, Database, FileText, Brain, BookOpen, ClipboardList, Home, Building2, ChevronDown, Shield, Tag, Activity, Copy, Archive, ArchiveRestore } from "lucide-react";
 import type { Model, Result, Assessment, Dimension, Question, Answer, User, AssessmentTag } from "@shared/schema";
 import { USER_ROLES, type UserRole } from "@shared/constants";
 import { useAuth } from "@/hooks/use-auth";
@@ -1258,6 +1258,32 @@ export default function Admin() {
       toast({
         title: "Error",
         description: error.message || "Failed to duplicate model",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Archive/unarchive model mutation
+  const archiveModel = useMutation({
+    mutationFn: async ({ modelId, archive }: { modelId: string; archive: boolean }) => {
+      return apiRequest(`/api/models/${modelId}`, 'PUT', { 
+        status: archive ? 'archived' : 'draft' 
+      });
+    },
+    onSuccess: (_data: any, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/models'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/models'] });
+      toast({
+        title: variables.archive ? "Model archived" : "Model restored",
+        description: variables.archive 
+          ? "The model is now hidden from public view." 
+          : "The model is now visible again.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update model",
         variant: "destructive",
       });
     },
@@ -2717,6 +2743,27 @@ export default function Admin() {
                                 title="Duplicate model"
                               >
                                 <Copy className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => {
+                                  const isArchived = model.status === 'archived';
+                                  if (confirm(isArchived 
+                                    ? `Restore "${model.name}" from archive? It will be visible again.`
+                                    : `Archive "${model.name}"? It will be hidden from public view but all data will be preserved.`
+                                  )) {
+                                    archiveModel.mutate({ modelId: model.id, archive: !isArchived });
+                                  }
+                                }}
+                                disabled={archiveModel.isPending}
+                                data-testid={`button-archive-${model.id}`}
+                                title={model.status === 'archived' ? "Restore from archive" : "Archive model"}
+                              >
+                                {model.status === 'archived' 
+                                  ? <ArchiveRestore className="h-4 w-4" />
+                                  : <Archive className="h-4 w-4" />
+                                }
                               </Button>
                               <Button
                                 variant="ghost"
