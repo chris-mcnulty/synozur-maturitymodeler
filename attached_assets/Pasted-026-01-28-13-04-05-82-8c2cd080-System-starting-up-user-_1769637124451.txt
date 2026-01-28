@@ -1,0 +1,108 @@
+026-01-28 13:04:05.82
+8c2cd080
+System
+starting up user application
+2026-01-28 13:04:05.82
+8c2cd080
+System
+forwarding local port 5000 to external port 80 (mapped as 1104)
+2026-01-28 13:04:08.07
+8c2cd080
+User
+> NODE_ENV=production node dist/index.js
+2026-01-28 13:04:08.07
+8c2cd080
+User
+> rest-express@1.0.0 start
+2026-01-28 13:04:12.91
+8c2cd080
+User
+JWT signing service initialized
+2026-01-28 13:04:13.01
+8c2cd080
+User
+6:04:12 PM [express] serving on port 5000
+2026-01-28 13:06:17.97
+7b761780
+System
+system: received signal terminated
+2026-01-28 14:01:14.58
+8c2cd080
+System
+system: received signal terminated
+2026-01-28 14:04:35.40
+8c2cd080
+System
+metasidecar: loaded enterprise status from environment is_enterprise=false
+2026-01-28 14:04:35.40
+8c2cd080
+System
+starting up user application
+2026-01-28 14:04:35.41
+8c2cd080
+System
+forwarding local port 5000 to external port 80 (mapped as 1104)
+2026-01-28 14:04:36.70
+8c2cd080
+User
+> rest-express@1.0.0 start
+2026-01-28 14:04:36.70
+8c2cd080
+User
+> NODE_ENV=production node dist/index.js
+2026-01-28 14:04:39.80
+8c2cd080
+User
+JWT signing service initialized
+2026-01-28 14:04:39.86
+8c2cd080
+User
+7:04:39 PM [express] serving on port 5000
+2026-01-28 14:21:54.59
+8c2cd080
+System
+system: received signal terminated
+2026-01-28 14:23:43.85
+8c2cd080
+System
+starting up user application
+2026-01-28 14:23:43.85
+8c2cd080
+System
+forwarding local port 5000 to external port 80 (mapped as 1104)
+2026-01-28 14:23:43.85
+8c2cd080
+System
+metasidecar: loaded enterprise status from environment is_enterprise=false
+2026-01-28 14:23:45.27
+8c2cd080
+User
+> rest-express@1.0.0 start
+2026-01-28 14:23:45.27
+8c2cd080
+User
+> NODE_ENV=production node dist/index.js
+2026-01-28 14:23:47.81
+8c2cd080
+User
+JWT signing service initialized
+2026-01-28 14:23:47.91
+8c2cd080
+User
+7:23:47 PM [express] serving on port 5000
+2026-01-28 14:41:10.98
+8c2cd080
+User
+7:41:10 PM [express] GET /api/user 401 in 3ms
+2026-01-28 14:41:11.76
+8c2cd080
+User
+7:41:11 PM [express] GET /api/models/ai-maturity 200 in 769ms :: {"id":"15b918b5-71c4-4c5c-9341-fc35…
+2026-01-28 15:15:44.59
+8c2cd080
+System
+system: received signal terminated
+2026-01-28 15:23:55.59
+8c2cd080
+System
+metasidecar: loaded enterprise status from environment is_enterprise=false

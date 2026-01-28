@@ -664,12 +664,9 @@ export default function Admin() {
   });
 
   // Results filters state - local state for inputs
-  const [resultsStartDateInput, setResultsStartDateInput] = useState(() => {
-    const date = new Date();
-    date.setDate(date.getDate() - 30); // Default to last 30 days
-    return date.toISOString().split('T')[0];
-  });
-  const [resultsEndDateInput, setResultsEndDateInput] = useState(() => new Date().toISOString().split('T')[0]);
+  // Default to no date filter (show all results) to avoid confusion when data is older
+  const [resultsStartDateInput, setResultsStartDateInput] = useState('');
+  const [resultsEndDateInput, setResultsEndDateInput] = useState('');
   const [resultsStatus, setResultsStatus] = useState<string>('completed'); // Default to completed only
   const [resultsModelFilter, setResultsModelFilter] = useState<string>('all'); // Model filter
   const [resultsProxyFilter, setResultsProxyFilter] = useState<string>('all'); // Proxy filter
