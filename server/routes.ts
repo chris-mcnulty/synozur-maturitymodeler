@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { db } from "./db";
-import { eq, inArray, desc, gte, lt, and } from "drizzle-orm";
+import { eq, inArray, desc, gte, lt, and, sql, isNotNull } from "drizzle-orm";
 import * as schema from "@shared/schema";
 import { insertAssessmentSchema, insertAssessmentResponseSchema, insertResultSchema, insertModelSchema, insertDimensionSchema, insertQuestionSchema, insertAnswerSchema, Answer } from "@shared/schema";
 import { readFileSync } from "fs";
@@ -1636,6 +1636,140 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Failed to fetch assessments:', error);
       res.status(500).json({ error: "Failed to fetch all assessments" });
+    }
+  });
+
+  // Optimized endpoint for admin results - fetches everything in one query
+  app.get("/api/admin/results", ensureAdmin, async (req, res) => {
+    try {
+      const { startDate, endDate, status, modelId, isProxy, tagId } = req.query;
+      
+      // Build conditions array
+      let conditions: any[] = [];
+      
+      // Only get completed assessments with results
+      conditions.push(eq(schema.assessments.status, 'completed'));
+      conditions.push(isNotNull(schema.results.id));
+      
+      // Apply date range filter
+      if (startDate) {
+        conditions.push(gte(schema.assessments.completedAt, new Date(startDate as string)));
+      }
+      if (endDate) {
+        const endDateTime = new Date(endDate as string);
+        endDateTime.setDate(endDateTime.getDate() + 1);
+        conditions.push(lt(schema.assessments.completedAt, endDateTime));
+      }
+      
+      // Apply status filter (for results, we mainly care about completed)
+      if (status && status !== 'all' && status !== 'completed') {
+        conditions.push(eq(schema.assessments.status, status as string));
+      }
+      
+      // Apply model filter
+      if (modelId && modelId !== 'all') {
+        conditions.push(eq(schema.assessments.modelId, modelId as string));
+      }
+      
+      // Apply proxy filter
+      if (isProxy === 'true') {
+        conditions.push(eq(schema.assessments.isProxy, true));
+      } else if (isProxy === 'false') {
+        conditions.push(eq(schema.assessments.isProxy, false));
+      }
+      
+      // Single query with JOINs to get all data at once
+      const resultsData = await db
+        .select({
+          // Result fields
+          resultId: schema.results.id,
+          overallScore: schema.results.overallScore,
+          dimensionScores: schema.results.dimensionScores,
+          maturityLevel: schema.results.label,
+          resultCreatedAt: schema.results.createdAt,
+          // Assessment fields
+          assessmentId: schema.assessments.id,
+          modelId: schema.assessments.modelId,
+          assessmentStatus: schema.assessments.status,
+          startedAt: schema.assessments.startedAt,
+          completedAt: schema.assessments.completedAt,
+          isProxy: schema.assessments.isProxy,
+          proxyName: schema.assessments.proxyName,
+          proxyCompany: schema.assessments.proxyCompany,
+          proxyJobTitle: schema.assessments.proxyJobTitle,
+          proxyIndustry: schema.assessments.proxyIndustry,
+          proxyCompanySize: schema.assessments.proxyCompanySize,
+          proxyCountry: schema.assessments.proxyCountry,
+          userId: schema.assessments.userId,
+          // User fields (may be null for anonymous)
+          userName: schema.users.name,
+          userEmail: schema.users.email,
+          userCompany: schema.users.company,
+          // Model fields
+          modelName: schema.models.name,
+          modelSlug: schema.models.slug,
+          maturityScale: schema.models.maturityScale,
+        })
+        .from(schema.results)
+        .innerJoin(schema.assessments, eq(schema.results.assessmentId, schema.assessments.id))
+        .innerJoin(schema.models, eq(schema.assessments.modelId, schema.models.id))
+        .leftJoin(schema.users, eq(schema.assessments.userId, schema.users.id))
+        .where(and(...conditions))
+        .orderBy(desc(schema.assessments.completedAt));
+      
+      // Apply tag filter if specified (requires separate query due to many-to-many)
+      let filteredResults = resultsData;
+      if (tagId && tagId !== 'all') {
+        const tagAssignments = await db.select()
+          .from(schema.assessmentTagAssignments)
+          .where(eq(schema.assessmentTagAssignments.tagId, tagId as string));
+        const assessmentIdsWithTag = new Set(tagAssignments.map(ta => ta.assessmentId));
+        filteredResults = resultsData.filter(r => assessmentIdsWithTag.has(r.assessmentId));
+      }
+      
+      // Transform to expected format
+      const formattedResults = filteredResults.map(r => {
+        const maturityScale = (r.maturityScale as any[]) || [];
+        const maxScore = maturityScale.length > 0 
+          ? Math.max(...maturityScale.map((s: any) => s.maxScore || 100))
+          : 100;
+        
+        // Build proxy profile object if this is a proxy assessment
+        const proxyProfile = r.isProxy ? {
+          name: r.proxyName,
+          company: r.proxyCompany,
+          jobTitle: r.proxyJobTitle,
+          industry: r.proxyIndustry,
+          companySize: r.proxyCompanySize,
+          country: r.proxyCountry,
+        } : null;
+        
+        return {
+          id: r.resultId,
+          assessmentId: r.assessmentId,
+          modelId: r.modelId,
+          overallScore: r.overallScore,
+          dimensionScores: r.dimensionScores,
+          maturityLevel: r.maturityLevel,
+          createdAt: r.resultCreatedAt,
+          status: r.assessmentStatus,
+          modelName: r.modelName,
+          modelSlug: r.modelSlug,
+          userName: r.userName,
+          userEmail: r.userEmail,
+          userCompany: r.userCompany,
+          isProxy: r.isProxy,
+          proxyProfile,
+          completedAt: r.completedAt,
+          startedAt: r.startedAt,
+          maxScore,
+        };
+      });
+      
+      res.json(formattedResults);
+    } catch (error) {
+      console.error('Failed to fetch admin results:', error);
+      res.status(500).json({ error: "Failed to fetch results" });
     }
   });
 

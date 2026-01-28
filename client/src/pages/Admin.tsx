@@ -712,7 +712,7 @@ export default function Admin() {
     return () => clearTimeout(timer);
   }, [resultsEndDateInput]);
 
-  // Fetch all assessments with results
+  // Fetch all results with optimized single-query endpoint
   const { data: results = [], isLoading: resultsLoading } = useQuery<AdminResult[]>({
     queryKey: ['/api/admin/results', resultsStartDate, resultsEndDate, resultsStatus, resultsModelFilter, resultsProxyFilter, resultsTagFilter],
     queryFn: async () => {
@@ -725,49 +725,21 @@ export default function Admin() {
       if (resultsProxyFilter && resultsProxyFilter !== 'all') params.append('isProxy', resultsProxyFilter);
       if (resultsTagFilter && resultsTagFilter !== 'all') params.append('tagId', resultsTagFilter);
       
-      // Fetch all assessments with user data (admin endpoint) with filters
-      const assessments = await fetch(`/api/admin/assessments?${params.toString()}`).then(r => r.json());
+      // Use optimized endpoint that returns all data in one query
+      const response = await fetch(`/api/admin/results?${params.toString()}`, { credentials: 'include' });
+      if (!response.ok) throw new Error('Failed to fetch results');
+      const resultsData = await response.json();
       
-      // Fetch results and models for each assessment
-      const resultsWithDetails = await Promise.all(
-        assessments.map(async (assessment: any) => {
-          try {
-            const [result, model] = await Promise.all([
-              fetch(`/api/results/${assessment.id}`).then(r => r.ok ? r.json() : null),
-              fetch(`/api/models/by-id/${assessment.modelId}`).then(r => r.json()),
-            ]);
-            
-            if (result) {
-              // Calculate max score from model's maturity scale
-              const maturityScale = model?.maturityScale as any[] || [];
-              const maxScore = maturityScale.length > 0 
-                ? Math.max(...maturityScale.map((s: any) => s.maxScore || 100))
-                : 100;
-              
-              return {
-                ...result,
-                assessmentId: assessment.id,
-                modelId: assessment.modelId,
-                status: assessment.status,
-                modelName: model?.name || 'Unknown Model',
-                userName: assessment.user?.name || null,
-                company: assessment.user?.company || null,
-                date: assessment.startedAt ? new Date(assessment.startedAt).toISOString() : new Date().toISOString(),
-                isProxy: assessment.isProxy || false,
-                proxyName: assessment.proxyName || null,
-                proxyCompany: assessment.proxyCompany || null,
-                maxScore,
-              };
-            }
-          } catch {
-            return null;
-          }
-        })
-      );
-      
-      // Sort by date descending (most recent first)
-      const filtered = resultsWithDetails.filter(Boolean);
-      return filtered.sort((a, b) => new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime());
+      // Transform to expected AdminResult format
+      return resultsData.map((r: any) => ({
+        ...r,
+        userName: r.userName || null,
+        company: r.userCompany || null,
+        date: r.completedAt ? new Date(r.completedAt).toISOString() : new Date().toISOString(),
+        isProxy: r.isProxy || false,
+        proxyName: r.proxyProfile?.name || null,
+        proxyCompany: r.proxyProfile?.company || null,
+      }));
     },
   });
 
