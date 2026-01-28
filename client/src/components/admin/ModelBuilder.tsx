@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { useToast } from "@/hooks/use-toast";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
@@ -10,8 +11,9 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Plus, Edit, Trash, GripVertical, ChevronRight, Upload, X, ChevronDown } from "lucide-react";
+import { Plus, Edit, Trash, GripVertical, ChevronRight, Upload, X, ChevronDown, Copy, Check, Link, QrCode } from "lucide-react";
 import { ObjectUploader } from "@/components/ObjectUploader";
+import { QRCodeSVG } from "qrcode.react";
 import type { Model, Dimension, Question, Answer } from "@shared/schema";
 
 interface Tenant {
@@ -39,6 +41,150 @@ interface ModelBuilderProps {
   onUploadComplete: (result: any) => void;
   onRemoveImage: () => void;
   isRemovingImage?: boolean;
+}
+
+// Share Links component with URL and QR code
+function ShareLinksCard({ slug }: { slug: string }) {
+  const [urlCopied, setUrlCopied] = useState(false);
+  const [qrCopied, setQrCopied] = useState(false);
+  const qrRef = useRef<HTMLDivElement>(null);
+  
+  // Construct the full URL
+  const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
+  const fullUrl = `${baseUrl}/${slug}`;
+  
+  const copyUrl = async () => {
+    try {
+      await navigator.clipboard.writeText(fullUrl);
+      setUrlCopied(true);
+      setTimeout(() => setUrlCopied(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy URL:', err);
+    }
+  };
+  
+  const copyQrCode = async () => {
+    if (!qrRef.current) return;
+    
+    try {
+      const svgElement = qrRef.current.querySelector('svg');
+      if (!svgElement) return;
+      
+      // Create a canvas from the SVG
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+      
+      const svgData = new XMLSerializer().serializeToString(svgElement);
+      const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+      const svgUrl = URL.createObjectURL(svgBlob);
+      
+      const img = new Image();
+      img.onload = async () => {
+        canvas.width = img.width;
+        canvas.height = img.height;
+        ctx.fillStyle = 'white';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, 0, 0);
+        URL.revokeObjectURL(svgUrl);
+        
+        canvas.toBlob(async (blob) => {
+          if (blob) {
+            try {
+              await navigator.clipboard.write([
+                new ClipboardItem({ 'image/png': blob })
+              ]);
+              setQrCopied(true);
+              setTimeout(() => setQrCopied(false), 2000);
+            } catch (err) {
+              // Fallback: download the image
+              const link = document.createElement('a');
+              link.download = `${slug}-qrcode.png`;
+              link.href = canvas.toDataURL('image/png');
+              link.click();
+              setQrCopied(true);
+              setTimeout(() => setQrCopied(false), 2000);
+            }
+          }
+        }, 'image/png');
+      };
+      img.src = svgUrl;
+    } catch (err) {
+      console.error('Failed to copy QR code:', err);
+    }
+  };
+  
+  return (
+    <Card className="p-6">
+      <div className="space-y-4">
+        <div className="flex items-center gap-2">
+          <Link className="h-5 w-5 text-muted-foreground" />
+          <h3 className="text-lg font-semibold">Share Links</h3>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* URL Section */}
+          <div className="space-y-3">
+            <Label className="text-sm font-medium">Assessment URL</Label>
+            <div className="flex gap-2">
+              <Input 
+                value={fullUrl} 
+                readOnly 
+                className="font-mono text-sm"
+                data-testid="input-share-url"
+              />
+              <Button 
+                variant="outline" 
+                size="icon" 
+                onClick={copyUrl}
+                data-testid="button-copy-url"
+                title="Copy URL to clipboard"
+              >
+                {urlCopied ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Share this link to allow users to take this assessment
+            </p>
+          </div>
+          
+          {/* QR Code Section */}
+          <div className="space-y-3">
+            <Label className="text-sm font-medium">QR Code</Label>
+            <div className="flex items-start gap-4">
+              <div 
+                ref={qrRef}
+                className="bg-white p-3 rounded-lg border border-border"
+                data-testid="qr-code-container"
+              >
+                <QRCodeSVG 
+                  value={fullUrl} 
+                  size={120}
+                  level="M"
+                  includeMargin={false}
+                />
+              </div>
+              <div className="space-y-2">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={copyQrCode}
+                  data-testid="button-copy-qr"
+                  className="w-full"
+                >
+                  {qrCopied ? <Check className="h-4 w-4 mr-2 text-green-500" /> : <QrCode className="h-4 w-4 mr-2" />}
+                  {qrCopied ? 'Copied!' : 'Copy QR Code'}
+                </Button>
+                <p className="text-xs text-muted-foreground">
+                  Copy or download QR code for print materials
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Card>
+  );
 }
 
 export function ModelBuilder({
@@ -436,6 +582,9 @@ export function ModelBuilder({
               </div>
             </div>
           </Card>
+
+          {/* Share Links Card */}
+          <ShareLinksCard slug={model.slug} />
         </TabsContent>
 
         <TabsContent value="structure" className="space-y-4">
