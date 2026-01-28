@@ -1643,6 +1643,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/admin/results", ensureAdmin, async (req, res) => {
     try {
       const { startDate, endDate, status, modelId, isProxy, tagId } = req.query;
+      console.log('Admin results query params:', { startDate, endDate, status, modelId, isProxy, tagId });
       
       // Build conditions array
       let conditions: any[] = [];
@@ -1716,6 +1717,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .leftJoin(schema.users, eq(schema.assessments.userId, schema.users.id))
         .where(and(...conditions))
         .orderBy(desc(schema.assessments.completedAt));
+      
+      console.log('Admin results query returned:', resultsData.length, 'results');
       
       // Apply tag filter if specified (requires separate query due to many-to-many)
       let filteredResults = resultsData;
