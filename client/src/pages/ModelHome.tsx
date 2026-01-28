@@ -52,7 +52,7 @@ export default function ModelHome() {
   // Update page title when model loads
   useEffect(() => {
     if (model) {
-      document.title = `${model.name} | The Synozur Alliance`;
+      document.title = `${model.name} | Orion - The Synozur Alliance`;
     }
   }, [model]);
 
@@ -92,7 +92,7 @@ export default function ModelHome() {
     return (
       <div className="min-h-screen flex flex-col">
         <Helmet>
-          <title>Assessment Unavailable | The Synozur Alliance</title>
+          <title>Assessment Unavailable | Orion - The Synozur Alliance</title>
         </Helmet>
         <main className="flex-1 flex items-center justify-center bg-gradient-to-b from-background to-muted/30">
           <div className="container mx-auto px-4 py-16">
@@ -147,13 +147,13 @@ export default function ModelHome() {
   return (
     <div className="min-h-screen flex flex-col">
       <Helmet>
-        <title>{model.name} | The Synozur Alliance</title>
+        <title>{model.name} | Orion - The Synozur Alliance</title>
         <meta name="description" content={model.description} />
         
         {/* Open Graph / Facebook */}
         <meta property="og:type" content="website" />
         <meta property="og:url" content={`https://models.synozur.com/${model.slug}`} />
-        <meta property="og:title" content={`${model.name} | The Synozur Alliance`} />
+        <meta property="og:title" content={`${model.name} | Orion - The Synozur Alliance`} />
         <meta property="og:description" content={model.description} />
         <meta property="og:image" content="https://models.synozur.com/og-image.jpg" />
         <meta property="og:image:width" content="1024" />
@@ -162,7 +162,7 @@ export default function ModelHome() {
         {/* Twitter */}
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:url" content={`https://models.synozur.com/${model.slug}`} />
-        <meta name="twitter:title" content={`${model.name} | The Synozur Alliance`} />
+        <meta name="twitter:title" content={`${model.name} | Orion - The Synozur Alliance`} />
         <meta name="twitter:description" content={model.description} />
         <meta name="twitter:image" content="https://models.synozur.com/og-image.jpg" />
       </Helmet>

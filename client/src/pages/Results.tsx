@@ -158,7 +158,7 @@ export default function Results() {
   // Update page title when model loads
   useEffect(() => {
     if (model) {
-      document.title = `${model.name} Results | The Synozur Alliance`;
+      document.title = `${model.name} Results | Orion - The Synozur Alliance`;
     }
   }, [model]);
 
