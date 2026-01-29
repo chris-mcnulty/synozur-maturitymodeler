@@ -732,7 +732,10 @@ export default function Admin() {
         ...r,
         userName: r.userName || null,
         company: r.userCompany || null,
-        date: r.completedAt ? new Date(r.completedAt).toISOString() : new Date().toISOString(),
+        // Use completedAt if available, otherwise fall back to createdAt (result creation time)
+        date: r.completedAt 
+          ? new Date(r.completedAt).toISOString() 
+          : (r.createdAt ? new Date(r.createdAt).toISOString() : new Date().toISOString()),
         isProxy: r.isProxy || false,
         proxyName: r.proxyProfile?.name || null,
         proxyCompany: r.proxyProfile?.company || null,
