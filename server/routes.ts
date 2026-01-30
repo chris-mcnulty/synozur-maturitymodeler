@@ -3229,13 +3229,15 @@ Respond in JSON format:
         const user = a.userId ? userMap.get(a.userId) : null;
         
         // Get dimension scores from result
+        // Note: dimensionScores are stored by dimension KEY (e.g., "skills"), not by dimension ID (UUID)
         const dimensionScoresRaw = (result?.dimensionScores || {}) as Record<string, number>;
         const dimensionScores: Record<string, number> = {};
         const dimensionLabels: Record<string, string> = {};
         
         dims.forEach(dim => {
-          dimensionScores[dim.id] = dimensionScoresRaw[dim.id] || 0;
-          dimensionLabels[dim.id] = dim.label;
+          // Use dim.key to look up scores, as that's how they're stored in results
+          dimensionScores[dim.key] = dimensionScoresRaw[dim.key] || 0;
+          dimensionLabels[dim.key] = dim.label;
         });
 
         // Get user context - either from proxy fields or user
