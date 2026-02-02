@@ -51,7 +51,11 @@ The application features a modern fullstack architecture with a dark-mode-first 
     - **Auto-Provisioning**: 
         - Users auto-provision into existing tenants when their email domain matches a tenant's allowed domains
         - First user from a new domain can auto-provision a NEW tenant (domain becomes that tenant's allowed domain)
-        - Public domains (gmail.com, yahoo.com, outlook.com, etc.) create invite-only personal tenants to prevent domain squatting
+        - **Public Domain Protection**: Consumer domains (gmail.com, yahoo.com, outlook.com, hotmail.com, icloud.com, etc.) are blocklisted from tenant creation - users from these domains:
+            - Cannot auto-create a tenant (prevents someone from "claiming" gmail.com)
+            - Cannot control subsequent users from that domain
+            - Must be explicitly invited to join an existing tenant, OR
+            - Get a personal single-user tenant (invite-only mode) that doesn't claim the domain
     - **Multi-Tenancy**: UUID-based tenant IDs, tenant-scoped data isolation, `TenantContext` and `TenantSwitcher` components
     - **RBAC**: 6 defined roles (`tenant_user`, `tenant_admin`, `admin`, `global_admin`, `vega_consultant`, `vega_admin`)
     - **Vocabulary Module**: Customizable terminology with system defaults and tenant overrides
