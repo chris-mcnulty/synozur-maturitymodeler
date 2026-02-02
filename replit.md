@@ -37,8 +37,25 @@ The application features a modern fullstack architecture with a dark-mode-first 
 -   **Multi-Tenant Architecture**: In progress, with tenant-private model visibility and OAuth client management completed. Future plans include tenant-specific branding and domain mapping.
 
 ## Backlog / Technical Debt
-- **Entra SSO**: Add Microsoft Entra ID (Azure AD) single sign-on integration for enterprise authentication.
+- **Entra SSO**: Add Microsoft Entra ID (Azure AD) single sign-on integration for enterprise authentication with auto-provisioning (see Related Synozur Products for Vega patterns).
 - **ExecAI/Copilot import format**: One-off simple format (`modelName`, `options`, `routing`) added for compatibility. Consider deprecating once models are migrated to standard Orion format.
+
+## Related Synozur Products
+
+### Vega (Synozur Company OS Platform)
+- **Repository**: https://github.com/chris-mcnulty/synozur-vega
+- **Replit**: https://replit.com/@chrismcnulty1/VegaPrototype
+- **Purpose**: Multi-tenant AI-augmented Company Operating System for OKR management, strategy tracking, and focus rhythm. Aligns organizational strategy with execution through AI-powered modules.
+- **Relevant Patterns for Orion**:
+    - **Microsoft Entra ID SSO**: Multi-tenant MSAL-based Azure AD authentication with PKCE flow, just-in-time (JIT) user provisioning, and tenant mapping by email domain.
+    - **Auto-Provisioning**: 
+        - Users auto-provision into existing tenants when their email domain matches a tenant's allowed domains
+        - First user from a new domain can auto-provision a NEW tenant (domain becomes that tenant's allowed domain)
+        - Public domains (gmail.com, yahoo.com, outlook.com, etc.) create invite-only personal tenants to prevent domain squatting
+    - **Multi-Tenancy**: UUID-based tenant IDs, tenant-scoped data isolation, `TenantContext` and `TenantSwitcher` components
+    - **RBAC**: 6 defined roles (`tenant_user`, `tenant_admin`, `admin`, `global_admin`, `vega_consultant`, `vega_admin`)
+    - **Vocabulary Module**: Customizable terminology with system defaults and tenant overrides
+- **Shared UI/UX**: Maintains consistent aesthetic with Orion for Synozur brand continuity
 
 ## External Dependencies
 -   **PostgreSQL**: Primary database.
