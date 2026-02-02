@@ -38,6 +38,7 @@ The application features a modern fullstack architecture with a dark-mode-first 
 
 ## Backlog / Technical Debt
 - **Entra SSO**: Add Microsoft Entra ID (Azure AD) single sign-on integration for enterprise authentication with auto-provisioning (see Related Synozur Products for Vega patterns).
+- **reCAPTCHA for Standard Signup**: Add Google reCAPTCHA to email/password signup and password reset forms to prevent bot registrations.
 - **ExecAI/Copilot import format**: One-off simple format (`modelName`, `options`, `routing`) added for compatibility. Consider deprecating once models are migrated to standard Orion format.
 
 ## Related Synozur Products
