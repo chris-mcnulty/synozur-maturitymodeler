@@ -57,6 +57,22 @@ The application features a modern fullstack architecture with a dark-mode-first 
     - **Vocabulary Module**: Customizable terminology with system defaults and tenant overrides
 - **Shared UI/UX**: Maintains consistent aesthetic with Orion for Synozur brand continuity
 
+### Orbit (Synozur Domain/Service Management Platform)
+- **Repository**: https://github.com/chris-mcnulty/synozur-orbit (private)
+- **Purpose**: Domain and service management platform with sophisticated domain-based access controls.
+- **Relevant Patterns for Orion**:
+    - **Domain-Based Service Limiting**: System for restricting/allowing service access based on email domains
+    - **Granular Provisioning Controls**: Multi-level settings for tenant and user provisioning
+
+## Provisioning Settings (For Entra SSO Implementation)
+
+### App-Level Settings
+- **Allow Tenant Self-Creation**: Whether new tenants can be auto-created when first user from a new domain signs in (default: yes)
+
+### Per-Tenant Settings
+- **Allow User Self-Provisioning**: Whether users can auto-provision into this tenant via SSO when their email domain matches (default: yes)
+- **Sync to HubSpot**: Whether new account creation should create/update HubSpot contacts (default: yes)
+
 ## External Dependencies
 -   **PostgreSQL**: Primary database.
 -   **Google Cloud Storage**: Object storage for model images.
