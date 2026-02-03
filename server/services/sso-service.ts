@@ -312,6 +312,12 @@ async function generateUniqueUsername(email: string): Promise<string> {
   return username;
 }
 
+// Check if user profile has all required fields completed
+export function isProfileComplete(user: any): boolean {
+  const requiredFields = ['company', 'companySize', 'jobTitle', 'industry', 'country'];
+  return requiredFields.every(field => user[field] && user[field].trim() !== '');
+}
+
 async function getAppSetting(key: string, defaultValue: any): Promise<any> {
   try {
     const setting = await storage.getSetting(key);

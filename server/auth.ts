@@ -160,6 +160,35 @@ export function setupAuth(app: Express) {
     }
   });
 
+  // Update current user's profile (for SSO users completing their profile)
+  app.patch("/api/user/profile", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      const userId = req.user!.id;
+      const { company, companySize, jobTitle, industry, country } = req.body;
+      
+      // Only allow updating profile fields, not sensitive fields like role/email/password
+      const updatedUser = await storage.updateUser(userId, {
+        company,
+        companySize,
+        jobTitle,
+        industry,
+        country,
+      });
+      
+      if (!updatedUser) {
+        return res.status(404).json({ error: "User not found" });
+      }
+      
+      const { password: _, ...safeUser } = updatedUser;
+      res.json(safeUser);
+    } catch (error: any) {
+      console.error('Profile update error:', error);
+      res.status(500).json({ error: error.message || "Failed to update profile" });
+    }
+  });
+
   // Email verification endpoint
   app.post("/api/auth/verify-email", async (req, res) => {
     try {
@@ -240,7 +269,7 @@ export function setupAuth(app: Express) {
 
   app.get("/auth/sso/callback", async (req, res) => {
     try {
-      const { handleCallback, provisionOrLinkUser } = await import('./services/sso-service.js');
+      const { handleCallback, provisionUser, isProfileComplete } = await import('./services/sso-service.js');
       
       const { code, state, error: authError, error_description } = req.query;
       
@@ -262,14 +291,26 @@ export function setupAuth(app: Express) {
       );
       
       // Provision or link user to existing account
-      const allowTenantCreation = true; // TODO: read from app settings
-      const result = await provisionOrLinkUser(ssoUser, allowTenantCreation);
+      const result = await provisionUser(ssoUser);
+      
+      // Check for provisioning errors
+      if (result.error || !result.user) {
+        const errorMessage = result.error || 'Failed to provision user account';
+        return res.redirect(`/auth?error=${encodeURIComponent(errorMessage)}`);
+      }
       
       // Log in the user
       req.login(result.user, (err: any) => {
         if (err) {
           console.error('SSO login session error:', err);
           return res.redirect('/login?error=Session+creation+failed');
+        }
+        
+        // Check if user needs to complete their profile (new SSO users)
+        if (result.isNewUser || !isProfileComplete(result.user)) {
+          // Redirect to profile completion with the original destination
+          const returnTo = encodeURIComponent(redirectUrl || '/');
+          return res.redirect(`/complete-profile?returnTo=${returnTo}`);
         }
         
         // Redirect to the original page or home
