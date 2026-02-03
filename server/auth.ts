@@ -294,6 +294,74 @@ export function setupAuth(app: Express) {
       res.json({ microsoft: false });
     }
   });
+
+  // Generate admin consent URL for IT administrators (public - generates generic URL)
+  app.get("/api/auth/sso/admin-consent", async (req, res) => {
+    try {
+      const { generateAdminConsentUrl, isSsoConfigured } = await import('./services/sso-service.js');
+      
+      if (!isSsoConfigured()) {
+        return res.status(400).json({ error: 'Microsoft SSO is not configured' });
+      }
+      
+      // For authenticated users, use their tenant's Azure AD ID if available
+      let azureTenantId: string | undefined;
+      if (req.isAuthenticated() && req.user?.tenantId) {
+        const tenant = await storage.getTenant(req.user.tenantId);
+        azureTenantId = tenant?.ssoTenantId || undefined;
+      }
+      
+      const consentInfo = generateAdminConsentUrl(azureTenantId);
+      res.json(consentInfo);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message || 'Failed to generate admin consent URL' });
+    }
+  });
+
+  // Get consent status for caller's tenant (requires authentication)
+  app.get("/api/auth/sso/consent-status", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
+      
+      if (!req.user?.tenantId) {
+        return res.status(400).json({ error: 'User is not associated with a tenant' });
+      }
+      
+      const { getConsentStatusForTenant } = await import('./services/sso-service.js');
+      const status = await getConsentStatusForTenant(req.user.tenantId);
+      res.json(status);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message || 'Failed to get consent status' });
+    }
+  });
+
+  // Mark admin consent as granted (requires tenant_admin or global_admin)
+  app.post("/api/auth/sso/consent-granted", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
+      
+      const user = req.user as any;
+      const isTenantAdmin = user.role === 'tenant_admin' || user.role === 'global_admin';
+      
+      if (!isTenantAdmin) {
+        return res.status(403).json({ error: 'Tenant admin or global admin access required' });
+      }
+      
+      if (!user.tenantId) {
+        return res.status(400).json({ error: 'User is not associated with a tenant' });
+      }
+      
+      const { markAdminConsentGranted } = await import('./services/sso-service.js');
+      await markAdminConsentGranted(user.tenantId);
+      res.json({ success: true });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message || 'Failed to mark consent as granted' });
+    }
+  });
 }
 
 // Middleware to ensure user is authenticated

@@ -230,9 +230,14 @@ export const tenants = pgTable("tenants", {
   allowUserSelfProvisioning: boolean("allow_user_self_provisioning").notNull().default(true), // Allow users to auto-provision via SSO when domain matches
   syncToHubSpot: boolean("sync_to_hubspot").notNull().default(true), // Sync new accounts to HubSpot
   inviteOnly: boolean("invite_only").notNull().default(false), // If true, users can only join via explicit invitation (for public domains)
+  // Azure AD / Entra ID integration
+  ssoTenantId: text("sso_tenant_id"), // Azure AD tenant ID (tid claim) for this organization
+  ssoAdminConsentGranted: boolean("sso_admin_consent_granted").notNull().default(false), // Whether org-wide admin consent has been granted
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
+}, (table) => ({
+  ssoTenantIdx: index("idx_tenants_sso_tenant").on(table.ssoTenantId),
+}));
 
 // Tenant domains table - supports multiple domains per tenant
 export const tenantDomains = pgTable("tenant_domains", {

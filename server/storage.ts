@@ -105,6 +105,7 @@ export interface IStorage {
   // SSO/Tenant methods
   getUserBySsoProvider(provider: string, providerId: string): Promise<User | undefined>;
   getTenant(id: string): Promise<schema.Tenant | undefined>;
+  getTenantBySsoTenantId(ssoTenantId: string): Promise<schema.Tenant | undefined>;
   createTenant(tenant: schema.InsertTenant): Promise<schema.Tenant>;
   updateTenant(id: string, tenant: Partial<schema.InsertTenant>): Promise<schema.Tenant | undefined>;
   getTenantDomainByDomain(domain: string): Promise<schema.TenantDomain | undefined>;
@@ -541,6 +542,14 @@ export class DatabaseStorage implements IStorage {
     const [tenant] = await db.select()
       .from(schema.tenants)
       .where(eq(schema.tenants.id, id))
+      .limit(1);
+    return tenant;
+  }
+
+  async getTenantBySsoTenantId(ssoTenantId: string): Promise<schema.Tenant | undefined> {
+    const [tenant] = await db.select()
+      .from(schema.tenants)
+      .where(eq(schema.tenants.ssoTenantId, ssoTenantId))
       .limit(1);
     return tenant;
   }

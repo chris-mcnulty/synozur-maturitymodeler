@@ -14,7 +14,7 @@ The application features a modern fullstack architecture with a dark-mode-first 
 -   **Frontend**: React, Vite, TypeScript, Wouter for routing, Shadcn UI for styling.
 -   **Backend**: Express.js, PostgreSQL, Drizzle ORM.
 -   **Storage**: PostgreSQL for relational data, Google Cloud Storage for assets.
--   **Authentication**: Passport-based session management with tenant-scoped, four-tier role-based access control (`global_admin`, `tenant_admin`, `tenant_modeler`, `user`). Supports Microsoft Entra ID (Azure AD) SSO with PKCE flow and auto-provisioning.
+-   **Authentication**: Passport-based session management with tenant-scoped, four-tier role-based access control (`global_admin`, `tenant_admin`, `tenant_modeler`, `user`). Supports Microsoft Entra ID (Azure AD) SSO with PKCE flow, auto-provisioning, Azure AD tenant ID tracking, and admin consent URL generation for enterprise onboarding.
 -   **UI/UX**: Dark-mode-first with primary purple and accent pink, Inter font. Responsive gradient styling. Collapsible admin sidebar with hover tooltips.
 -   **Core Features**: Dynamic model routing, assessment wizard with autosave, flexible scoring engine (100-point or 100-500 point scales), profile gating, email-delivered PDF reports, benchmarking, comprehensive admin console.
 -   **Scoring System**: For 100-point scale models, defaults to **averaging** answer scores (suitable for percentage-based answers 0-100). Models can override with `scoringMethod: 'sum'` in maturity scale config for traditional 0-4 answer scoring. 500-point scale models always average.

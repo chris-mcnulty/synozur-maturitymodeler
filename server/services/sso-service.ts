@@ -105,6 +105,7 @@ export async function getAuthorizationUrl(redirectUri: string, returnUrl?: strin
 interface TokenClaims {
   oid?: string;
   sub?: string;
+  tid?: string; // Azure AD tenant ID
   preferred_username?: string;
   email?: string;
   name?: string;
@@ -118,6 +119,7 @@ export interface SsoUserInfo {
   name: string;
   firstName?: string;
   lastName?: string;
+  ssoTenantId?: string; // Azure AD tenant ID for the user's organization
 }
 
 export async function handleCallback(code: string, state: string, redirectUri: string): Promise<{
@@ -171,6 +173,7 @@ export async function handleCallback(code: string, state: string, redirectUri: s
       name: name || email.split('@')[0],
       firstName: claims.given_name,
       lastName: claims.family_name,
+      ssoTenantId: claims.tid, // Azure AD tenant ID for the user's organization
     },
     codeVerifier: savedState.codeVerifier,
     redirectUrl: savedState.redirectUrl || undefined,
@@ -209,15 +212,27 @@ export async function provisionUser(ssoUserInfo: SsoUserInfo): Promise<Provision
   const allowTenantCreation = await getAppSetting('allowTenantSelfCreation', true);
   
   if (!isPublic) {
-    const tenantDomain = await storage.getTenantDomainByDomain(domain);
+    // First, try to find tenant by Azure AD tenant ID (most reliable)
+    let tenant: any = null;
+    if (ssoUserInfo.ssoTenantId) {
+      tenant = await storage.getTenantBySsoTenantId(ssoUserInfo.ssoTenantId);
+    }
     
-    if (tenantDomain) {
-      const tenant = await storage.getTenant(tenantDomain.tenantId);
-      
-      if (!tenant) {
-        return { user: null, isNewUser: false, isNewTenant: false, error: 'Tenant not found' };
+    // Fall back to domain-based lookup if no Azure AD tenant match
+    if (!tenant) {
+      const tenantDomain = await storage.getTenantDomainByDomain(domain);
+      if (tenantDomain) {
+        tenant = await storage.getTenant(tenantDomain.tenantId);
+        
+        // Update tenant with Azure AD tenant ID if not already set
+        if (tenant && !tenant.ssoTenantId && ssoUserInfo.ssoTenantId) {
+          await storage.updateTenant(tenant.id, { ssoTenantId: ssoUserInfo.ssoTenantId });
+          tenant.ssoTenantId = ssoUserInfo.ssoTenantId;
+        }
       }
-      
+    }
+    
+    if (tenant) {
       if (!tenant.allowUserSelfProvisioning) {
         return { user: null, isNewUser: false, isNewTenant: false, error: 'This organization does not allow self-provisioning. Please contact your administrator for an invitation.' };
       }
@@ -241,6 +256,7 @@ export async function provisionUser(ssoUserInfo: SsoUserInfo): Promise<Provision
         allowUserSelfProvisioning: true,
         syncToHubSpot: true,
         inviteOnly: false,
+        ssoTenantId: ssoUserInfo.ssoTenantId || null, // Store Azure AD tenant ID
       });
       
       await storage.createTenantDomain({
@@ -307,6 +323,65 @@ async function getAppSetting(key: string, defaultValue: any): Promise<any> {
 
 async function syncUserToHubSpot(user: any, tenant: any): Promise<void> {
   console.log(`[HubSpot Sync] New SSO user created: ${user.email} in tenant ${tenant?.name || 'none'}`);
+}
+
+// Admin consent URL generation for enterprise onboarding
+export interface AdminConsentInfo {
+  consentUrl: string;
+  appName: string;
+  requiredPermissions: string[];
+  instructions: string;
+}
+
+export function generateAdminConsentUrl(azureTenantId?: string): AdminConsentInfo {
+  if (!process.env.AZURE_CLIENT_ID) {
+    throw new Error('Azure SSO is not configured');
+  }
+  
+  // Use 'common' for multi-tenant apps, or specific tenant ID if provided
+  const tenantIdOrCommon = azureTenantId || 'common';
+  
+  const consentUrl = `https://login.microsoftonline.com/${tenantIdOrCommon}/adminconsent?client_id=${process.env.AZURE_CLIENT_ID}`;
+  
+  return {
+    consentUrl,
+    appName: 'Orion Maturity Assessment Platform',
+    requiredPermissions: [
+      'Sign in and read user profile (openid, profile)',
+      'View user email address (email)',
+      'Read basic user information (User.Read)',
+    ],
+    instructions: `
+To enable seamless sign-in for your organization:
+
+1. Open the Admin Consent URL below (requires Azure AD Global Administrator or Application Administrator role)
+2. Review the permissions requested by Orion
+3. Click "Accept" to grant consent for all users in your organization
+
+Once granted, users in your organization can sign in without seeing individual consent prompts.
+
+Note: These are minimal, read-only permissions that allow Orion to authenticate users and read their basic profile information. No sensitive data access is requested.
+    `.trim(),
+  };
+}
+
+export async function getConsentStatusForTenant(tenantId: string): Promise<{
+  hasAdminConsent: boolean;
+  ssoTenantId: string | null;
+}> {
+  const tenant = await storage.getTenant(tenantId);
+  if (!tenant) {
+    throw new Error('Tenant not found');
+  }
+  
+  return {
+    hasAdminConsent: tenant.ssoAdminConsentGranted,
+    ssoTenantId: tenant.ssoTenantId,
+  };
+}
+
+export async function markAdminConsentGranted(tenantId: string): Promise<void> {
+  await storage.updateTenant(tenantId, { ssoAdminConsentGranted: true });
 }
 
 // Periodic cleanup of expired SSO auth states (runs every 5 minutes)
