@@ -19,11 +19,15 @@ export const users = pgTable("users", {
   emailVerified: boolean("email_verified").notNull().default(false),
   verificationToken: varchar("verification_token"),
   verificationTokenExpiry: timestamp("verification_token_expiry"),
+  // SSO fields
+  ssoProvider: text("sso_provider"), // 'microsoft', 'google', etc.
+  ssoProviderId: text("sso_provider_id"), // The provider's unique user ID (e.g., Azure AD oid)
   // Multi-tenant fields (nullable for backward compatibility)
   tenantId: varchar("tenant_id"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 }, (table) => ({
   tenantIdx: index("idx_users_tenant").on(table.tenantId),
+  ssoProviderIdx: index("idx_users_sso_provider").on(table.ssoProvider, table.ssoProviderId),
 }));
 
 // Password reset tokens table
@@ -222,6 +226,10 @@ export const tenants = pgTable("tenants", {
   primaryColor: varchar("primary_color", { length: 7 }), // Hex color #RRGGBB
   secondaryColor: varchar("secondary_color", { length: 7 }), // Hex color #RRGGBB
   autoCreateUsers: boolean("auto_create_users").notNull().default(false),
+  // SSO Provisioning settings
+  allowUserSelfProvisioning: boolean("allow_user_self_provisioning").notNull().default(true), // Allow users to auto-provision via SSO when domain matches
+  syncToHubSpot: boolean("sync_to_hubspot").notNull().default(true), // Sync new accounts to HubSpot
+  inviteOnly: boolean("invite_only").notNull().default(false), // If true, users can only join via explicit invitation (for public domains)
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
