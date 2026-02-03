@@ -101,6 +101,14 @@ export interface IStorage {
   getAiReviewById(id: string): Promise<AiContentReview | undefined>;
   approveAiReview(id: string, reviewedBy: string): Promise<AiContentReview | undefined>;
   rejectAiReview(id: string, reviewedBy: string, reason?: string): Promise<AiContentReview | undefined>;
+  
+  // SSO/Tenant methods
+  getUserBySsoProvider(provider: string, providerId: string): Promise<User | undefined>;
+  getTenant(id: string): Promise<schema.Tenant | undefined>;
+  createTenant(tenant: schema.InsertTenant): Promise<schema.Tenant>;
+  updateTenant(id: string, tenant: Partial<schema.InsertTenant>): Promise<schema.Tenant | undefined>;
+  getTenantDomainByDomain(domain: string): Promise<schema.TenantDomain | undefined>;
+  createTenantDomain(domain: schema.InsertTenantDomain): Promise<schema.TenantDomain>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -509,6 +517,56 @@ export class DatabaseStorage implements IStorage {
       .where(eq(schema.aiContentReviews.id, id))
       .returning();
     return updated;
+  }
+
+  // SSO/Tenant methods
+  async getUserBySsoProvider(provider: string, providerId: string): Promise<User | undefined> {
+    const [user] = await db.select()
+      .from(schema.users)
+      .where(and(
+        eq(schema.users.ssoProvider, provider),
+        eq(schema.users.ssoProviderId, providerId)
+      ))
+      .limit(1);
+    return user;
+  }
+
+  async getTenant(id: string): Promise<schema.Tenant | undefined> {
+    const [tenant] = await db.select()
+      .from(schema.tenants)
+      .where(eq(schema.tenants.id, id))
+      .limit(1);
+    return tenant;
+  }
+
+  async createTenant(tenant: schema.InsertTenant): Promise<schema.Tenant> {
+    const [created] = await db.insert(schema.tenants)
+      .values(tenant)
+      .returning();
+    return created;
+  }
+
+  async updateTenant(id: string, tenantData: Partial<schema.InsertTenant>): Promise<schema.Tenant | undefined> {
+    const [updated] = await db.update(schema.tenants)
+      .set({ ...tenantData, updatedAt: new Date() })
+      .where(eq(schema.tenants.id, id))
+      .returning();
+    return updated;
+  }
+
+  async getTenantDomainByDomain(domain: string): Promise<schema.TenantDomain | undefined> {
+    const [tenantDomain] = await db.select()
+      .from(schema.tenantDomains)
+      .where(eq(schema.tenantDomains.domain, domain.toLowerCase()))
+      .limit(1);
+    return tenantDomain;
+  }
+
+  async createTenantDomain(domainData: schema.InsertTenantDomain): Promise<schema.TenantDomain> {
+    const [created] = await db.insert(schema.tenantDomains)
+      .values({ ...domainData, domain: domainData.domain.toLowerCase() })
+      .returning();
+    return created;
   }
 }
 
