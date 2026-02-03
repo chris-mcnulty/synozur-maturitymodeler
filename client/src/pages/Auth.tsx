@@ -402,6 +402,36 @@ export default function Auth() {
                     "Sign Up"
                   )}
                 </Button>
+                
+                {ssoStatus?.microsoft && (
+                  <>
+                    <div className="relative my-4">
+                      <div className="absolute inset-0 flex items-center">
+                        <span className="w-full border-t" />
+                      </div>
+                      <div className="relative flex justify-center text-xs uppercase">
+                        <span className="bg-card px-2 text-muted-foreground">
+                          Or sign up with
+                        </span>
+                      </div>
+                    </div>
+                    
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-full"
+                      onClick={() => {
+                        const returnUrl = redirectPath || '/';
+                        window.location.href = `/auth/sso/microsoft?returnUrl=${encodeURIComponent(returnUrl)}`;
+                      }}
+                      data-testid="button-sso-microsoft-register"
+                    >
+                      <MicrosoftIcon className="mr-2 h-4 w-4" />
+                      Sign up with Microsoft
+                    </Button>
+                  </>
+                )}
+                
                 <p className="text-xs text-center text-muted-foreground mt-4">
                   By signing up, you agree to our{" "}
                   <a 
