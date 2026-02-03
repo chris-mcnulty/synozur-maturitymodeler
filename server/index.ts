@@ -2,6 +2,7 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { initializeJWTService } from "./services/jwt-signing";
+import { startSsoStateCleanup } from "./services/sso-service";
 
 const app = express();
 app.use(express.json({ limit: '10mb' }));
@@ -40,6 +41,9 @@ app.use((req, res, next) => {
 (async () => {
   // Initialize JWT signing service for OAuth
   await initializeJWTService();
+  
+  // Initialize SSO auth state cleanup (database-backed for production scalability)
+  startSsoStateCleanup();
   
   const server = await registerRoutes(app);
 

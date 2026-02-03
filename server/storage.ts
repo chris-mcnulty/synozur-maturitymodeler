@@ -109,6 +109,12 @@ export interface IStorage {
   updateTenant(id: string, tenant: Partial<schema.InsertTenant>): Promise<schema.Tenant | undefined>;
   getTenantDomainByDomain(domain: string): Promise<schema.TenantDomain | undefined>;
   createTenantDomain(domain: schema.InsertTenantDomain): Promise<schema.TenantDomain>;
+  
+  // SSO Auth State methods (database-backed for production)
+  createSsoAuthState(state: schema.InsertSsoAuthState): Promise<schema.SsoAuthState>;
+  getSsoAuthState(state: string): Promise<schema.SsoAuthState | undefined>;
+  deleteSsoAuthState(state: string): Promise<void>;
+  cleanupExpiredSsoAuthStates(): Promise<number>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -567,6 +573,34 @@ export class DatabaseStorage implements IStorage {
       .values({ ...domainData, domain: domainData.domain.toLowerCase() })
       .returning();
     return created;
+  }
+
+  // SSO Auth State methods (database-backed for production)
+  async createSsoAuthState(stateData: schema.InsertSsoAuthState): Promise<schema.SsoAuthState> {
+    const [created] = await db.insert(schema.ssoAuthStates)
+      .values(stateData)
+      .returning();
+    return created;
+  }
+
+  async getSsoAuthState(state: string): Promise<schema.SsoAuthState | undefined> {
+    const [authState] = await db.select()
+      .from(schema.ssoAuthStates)
+      .where(eq(schema.ssoAuthStates.state, state))
+      .limit(1);
+    return authState;
+  }
+
+  async deleteSsoAuthState(state: string): Promise<void> {
+    await db.delete(schema.ssoAuthStates)
+      .where(eq(schema.ssoAuthStates.state, state));
+  }
+
+  async cleanupExpiredSsoAuthStates(): Promise<number> {
+    const result = await db.delete(schema.ssoAuthStates)
+      .where(sql`${schema.ssoAuthStates.expiresAt} < NOW()`)
+      .returning();
+    return result.length;
   }
 }
 

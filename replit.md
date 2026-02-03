@@ -37,7 +37,6 @@ The application features a modern fullstack architecture with a dark-mode-first 
 -   **Multi-Tenant Architecture**: In progress, with tenant-private model visibility and OAuth client management completed. Future plans include tenant-specific branding and domain mapping.
 
 ## Backlog / Technical Debt
-- **SSO State Storage**: Current SSO auth state is in-memory (Map). For multi-instance deployment, move to database storage following Vega's session management model.
 - **reCAPTCHA for Standard Signup**: Add Google reCAPTCHA to email/password signup and password reset forms to prevent bot registrations.
 - **ExecAI/Copilot import format**: One-off simple format (`modelName`, `options`, `routing`) added for compatibility. Consider deprecating once models are migrated to standard Orion format.
 

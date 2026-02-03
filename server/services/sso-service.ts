@@ -73,13 +73,6 @@ export function extractDomain(email: string): string {
   return parts.length > 1 ? parts[1].toLowerCase() : '';
 }
 
-interface SsoState {
-  codeVerifier: string;
-  redirectUrl?: string;
-}
-
-const pendingAuthStates = new Map<string, SsoState>();
-
 export async function getAuthorizationUrl(redirectUri: string, returnUrl?: string): Promise<{ url: string; state: string }> {
   const client = getMsalClient();
   
@@ -87,14 +80,14 @@ export async function getAuthorizationUrl(redirectUri: string, returnUrl?: strin
   const challenge = generateCodeChallenge(verifier);
   const state = generateState();
   
-  pendingAuthStates.set(state, {
+  // Store state in database for production scalability (10-minute expiry)
+  const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+  await storage.createSsoAuthState({
+    state,
     codeVerifier: verifier,
-    redirectUrl: returnUrl,
+    redirectUrl: returnUrl || null,
+    expiresAt,
   });
-  
-  setTimeout(() => {
-    pendingAuthStates.delete(state);
-  }, 10 * 60 * 1000);
   
   const authCodeUrlParameters: AuthorizationUrlRequest = {
     scopes: ['openid', 'profile', 'email', 'User.Read'],
@@ -134,11 +127,20 @@ export async function handleCallback(code: string, state: string, redirectUri: s
 }> {
   const client = getMsalClient();
   
-  const savedState = pendingAuthStates.get(state);
+  // Retrieve state from database instead of in-memory Map
+  const savedState = await storage.getSsoAuthState(state);
   if (!savedState) {
     throw new Error('Invalid or expired authentication state');
   }
-  pendingAuthStates.delete(state);
+  
+  // Check if state has expired
+  if (new Date() > savedState.expiresAt) {
+    await storage.deleteSsoAuthState(state);
+    throw new Error('Authentication state has expired');
+  }
+  
+  // Delete state immediately to prevent replay attacks
+  await storage.deleteSsoAuthState(state);
   
   const tokenRequest: AuthorizationCodeRequest = {
     code,
@@ -171,7 +173,7 @@ export async function handleCallback(code: string, state: string, redirectUri: s
       lastName: claims.family_name,
     },
     codeVerifier: savedState.codeVerifier,
-    redirectUrl: savedState.redirectUrl,
+    redirectUrl: savedState.redirectUrl || undefined,
   };
 }
 
@@ -305,4 +307,31 @@ async function getAppSetting(key: string, defaultValue: any): Promise<any> {
 
 async function syncUserToHubSpot(user: any, tenant: any): Promise<void> {
   console.log(`[HubSpot Sync] New SSO user created: ${user.email} in tenant ${tenant?.name || 'none'}`);
+}
+
+// Periodic cleanup of expired SSO auth states (runs every 5 minutes)
+let cleanupIntervalId: NodeJS.Timeout | null = null;
+
+export function startSsoStateCleanup(): void {
+  if (cleanupIntervalId) return; // Already running
+  
+  cleanupIntervalId = setInterval(async () => {
+    try {
+      const cleaned = await storage.cleanupExpiredSsoAuthStates();
+      if (cleaned > 0) {
+        console.log(`[SSO Cleanup] Removed ${cleaned} expired auth state(s)`);
+      }
+    } catch (error) {
+      console.error('[SSO Cleanup] Error cleaning up expired states:', error);
+    }
+  }, 5 * 60 * 1000); // Every 5 minutes
+  
+  console.log('[SSO] Database-backed auth state management initialized');
+}
+
+export function stopSsoStateCleanup(): void {
+  if (cleanupIntervalId) {
+    clearInterval(cleanupIntervalId);
+    cleanupIntervalId = null;
+  }
 }

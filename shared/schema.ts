@@ -911,3 +911,21 @@ export const insertTrafficVisitSchema = createInsertSchema(trafficVisits).omit({
 
 export type TrafficVisit = typeof trafficVisits.$inferSelect;
 export type InsertTrafficVisit = z.infer<typeof insertTrafficVisitSchema>;
+
+// SSO Auth States table for production-ready session management
+export const ssoAuthStates = pgTable("sso_auth_states", {
+  state: varchar("state").primaryKey(), // The OAuth state parameter (UUID)
+  codeVerifier: text("code_verifier").notNull(), // PKCE code verifier
+  redirectUrl: text("redirect_url"), // Optional return URL after auth
+  expiresAt: timestamp("expires_at").notNull(), // When this state expires (10 minutes)
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  expiresAtIdx: index("idx_sso_auth_states_expires").on(table.expiresAt),
+}));
+
+export const insertSsoAuthStateSchema = createInsertSchema(ssoAuthStates).omit({
+  createdAt: true,
+});
+
+export type SsoAuthState = typeof ssoAuthStates.$inferSelect;
+export type InsertSsoAuthState = z.infer<typeof insertSsoAuthStateSchema>;
