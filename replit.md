@@ -14,7 +14,7 @@ The application features a modern fullstack architecture with a dark-mode-first 
 -   **Frontend**: React, Vite, TypeScript, Wouter for routing, Shadcn UI for styling.
 -   **Backend**: Express.js, PostgreSQL, Drizzle ORM.
 -   **Storage**: PostgreSQL for relational data, Google Cloud Storage for assets.
--   **Authentication**: Passport-based session management with tenant-scoped, four-tier role-based access control (`global_admin`, `tenant_admin`, `tenant_modeler`, `user`).
+-   **Authentication**: Passport-based session management with tenant-scoped, four-tier role-based access control (`global_admin`, `tenant_admin`, `tenant_modeler`, `user`). Supports Microsoft Entra ID (Azure AD) SSO with PKCE flow and auto-provisioning.
 -   **UI/UX**: Dark-mode-first with primary purple and accent pink, Inter font. Responsive gradient styling. Collapsible admin sidebar with hover tooltips.
 -   **Core Features**: Dynamic model routing, assessment wizard with autosave, flexible scoring engine (100-point or 100-500 point scales), profile gating, email-delivered PDF reports, benchmarking, comprehensive admin console.
 -   **Scoring System**: For 100-point scale models, defaults to **averaging** answer scores (suitable for percentage-based answers 0-100). Models can override with `scoringMethod: 'sum'` in maturity scale config for traditional 0-4 answer scoring. 500-point scale models always average.
@@ -37,9 +37,9 @@ The application features a modern fullstack architecture with a dark-mode-first 
 -   **Multi-Tenant Architecture**: In progress, with tenant-private model visibility and OAuth client management completed. Future plans include tenant-specific branding and domain mapping.
 
 ## Backlog / Technical Debt
-- **Entra SSO**: Add Microsoft Entra ID (Azure AD) single sign-on integration for enterprise authentication with auto-provisioning (see Related Synozur Products for Vega patterns).
 - **reCAPTCHA for Standard Signup**: Add Google reCAPTCHA to email/password signup and password reset forms to prevent bot registrations.
 - **ExecAI/Copilot import format**: One-off simple format (`modelName`, `options`, `routing`) added for compatibility. Consider deprecating once models are migrated to standard Orion format.
+- **SSO State Storage**: Current SSO auth state is in-memory (Map). For multi-instance deployment, move to Redis or database storage.
 
 ## Related Synozur Products
 
