@@ -60,6 +60,10 @@ function getMsalClient(): ConfidentialClientApplication {
   return msalClient;
 }
 
+export function isSsoConfigured(): boolean {
+  return !!(process.env.AZURE_CLIENT_ID && process.env.AZURE_CLIENT_SECRET && process.env.AZURE_TENANT_ID);
+}
+
 export function isPublicDomain(domain: string): boolean {
   return PUBLIC_DOMAINS.has(domain.toLowerCase());
 }

@@ -217,6 +217,83 @@ export function setupAuth(app: Express) {
       res.status(500).json({ error: "Failed to send verification email" });
     }
   });
+
+  // Microsoft Entra ID SSO Routes
+  app.get("/auth/sso/microsoft", async (req, res) => {
+    try {
+      const { getAuthorizationUrl, isSsoConfigured } = await import('./services/sso-service.js');
+      
+      if (!isSsoConfigured()) {
+        return res.status(503).json({ error: "Microsoft SSO is not configured" });
+      }
+      
+      const redirectUri = `${req.protocol}://${req.get('host')}/auth/sso/callback`;
+      const returnUrl = (req.query.returnUrl as string) || '/';
+      
+      const { url } = await getAuthorizationUrl(redirectUri, returnUrl);
+      res.redirect(url);
+    } catch (error) {
+      console.error('SSO initiation error:', error);
+      res.status(500).json({ error: "Failed to initiate SSO login" });
+    }
+  });
+
+  app.get("/auth/sso/callback", async (req, res) => {
+    try {
+      const { handleCallback, provisionOrLinkUser } = await import('./services/sso-service.js');
+      
+      const { code, state, error: authError, error_description } = req.query;
+      
+      if (authError) {
+        console.error('SSO auth error:', authError, error_description);
+        return res.redirect(`/login?error=${encodeURIComponent(error_description as string || 'SSO authentication failed')}`);
+      }
+      
+      if (!code || !state) {
+        return res.redirect('/login?error=Invalid+SSO+response');
+      }
+      
+      const redirectUri = `${req.protocol}://${req.get('host')}/auth/sso/callback`;
+      
+      const { user: ssoUser, redirectUrl } = await handleCallback(
+        code as string,
+        state as string,
+        redirectUri
+      );
+      
+      // Provision or link user to existing account
+      const allowTenantCreation = true; // TODO: read from app settings
+      const result = await provisionOrLinkUser(ssoUser, allowTenantCreation);
+      
+      // Log in the user
+      req.login(result.user, (err: any) => {
+        if (err) {
+          console.error('SSO login session error:', err);
+          return res.redirect('/login?error=Session+creation+failed');
+        }
+        
+        // Redirect to the original page or home
+        const destination = redirectUrl || '/';
+        res.redirect(destination);
+      });
+    } catch (error: any) {
+      console.error('SSO callback error:', error);
+      const errorMessage = error.message || 'SSO authentication failed';
+      res.redirect(`/login?error=${encodeURIComponent(errorMessage)}`);
+    }
+  });
+
+  // Check if SSO is available
+  app.get("/api/auth/sso/status", async (req, res) => {
+    try {
+      const { isSsoConfigured } = await import('./services/sso-service.js');
+      res.json({ 
+        microsoft: isSsoConfigured(),
+      });
+    } catch (error) {
+      res.json({ microsoft: false });
+    }
+  });
 }
 
 // Middleware to ensure user is authenticated

@@ -10,13 +10,27 @@ import { useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
 import synozurLogo from "@assets/SynozurLogo_color 1400_1759973943542.png";
+
+function MicrosoftIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 23 23" className={className} fill="currentColor">
+      <path d="M0 0h11v11H0zM12 0h11v11H12zM0 12h11v11H0zM12 12h11v11H12z"/>
+    </svg>
+  );
+}
 import { JOB_ROLES, INDUSTRIES, COMPANY_SIZES, COUNTRIES } from "@/lib/constants";
+import { useQuery } from "@tanstack/react-query";
 
 export default function Auth() {
   const [, setLocation] = useLocation();
   const { user, loginMutation, registerMutation, isLoading, claimAssessmentAndRedirect } = useAuth();
   const { toast } = useToast();
   const trackedRef = useRef(false);
+  
+  // Check if Microsoft SSO is available
+  const { data: ssoStatus } = useQuery<{ microsoft: boolean }>({
+    queryKey: ["/api/auth/sso/status"],
+  });
   
   useEffect(() => {
     if (!trackedRef.current) {
@@ -45,6 +59,20 @@ export default function Auth() {
   const queryParams = new URLSearchParams(window.location.search);
   const redirectPath = queryParams.get('redirect');
   const claimAssessmentId = queryParams.get('claimAssessment');
+  const ssoError = queryParams.get('error');
+
+  // Display SSO error if present
+  useEffect(() => {
+    if (ssoError) {
+      toast({
+        title: "Sign in failed",
+        description: decodeURIComponent(ssoError),
+        variant: "destructive",
+      });
+      // Clean up the URL
+      window.history.replaceState({}, '', '/auth');
+    }
+  }, [ssoError, toast]);
 
   // Redirect if already logged in
   useEffect(() => {
@@ -189,6 +217,35 @@ export default function Auth() {
                     "Login"
                   )}
                 </Button>
+                
+                {ssoStatus?.microsoft && (
+                  <>
+                    <div className="relative my-4">
+                      <div className="absolute inset-0 flex items-center">
+                        <span className="w-full border-t" />
+                      </div>
+                      <div className="relative flex justify-center text-xs uppercase">
+                        <span className="bg-card px-2 text-muted-foreground">
+                          Or continue with
+                        </span>
+                      </div>
+                    </div>
+                    
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-full"
+                      onClick={() => {
+                        const returnUrl = redirectPath || '/';
+                        window.location.href = `/auth/sso/microsoft?returnUrl=${encodeURIComponent(returnUrl)}`;
+                      }}
+                      data-testid="button-sso-microsoft"
+                    >
+                      <MicrosoftIcon className="mr-2 h-4 w-4" />
+                      Sign in with Microsoft
+                    </Button>
+                  </>
+                )}
               </form>
             </TabsContent>
 
