@@ -11,7 +11,7 @@ import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Plus, Edit, Trash, Globe, CheckCircle, XCircle } from "lucide-react";
+import { Plus, Edit, Trash, Globe, CheckCircle, XCircle, Shield, ShieldCheck, ShieldX, Copy, ExternalLink } from "lucide-react";
 
 interface Tenant {
   id: string;
@@ -20,6 +20,8 @@ interface Tenant {
   primaryColor: string | null;
   secondaryColor: string | null;
   autoCreateUsers: boolean;
+  ssoTenantId: string | null;
+  ssoAdminConsentGranted: boolean;
   createdAt: string;
   updatedAt: string;
   domains?: TenantDomain[];
@@ -58,6 +60,7 @@ export function TenantManagement() {
     primaryColor: '',
     secondaryColor: '',
     autoCreateUsers: false,
+    ssoTenantId: '',
   });
 
   const [domainForm, setDomainForm] = useState({
@@ -194,6 +197,7 @@ export function TenantManagement() {
       primaryColor: '',
       secondaryColor: '',
       autoCreateUsers: false,
+      ssoTenantId: '',
     });
   };
 
@@ -220,6 +224,7 @@ export function TenantManagement() {
       primaryColor: tenant.primaryColor || '',
       secondaryColor: tenant.secondaryColor || '',
       autoCreateUsers: tenant.autoCreateUsers,
+      ssoTenantId: tenant.ssoTenantId || '',
     });
     setIsDialogOpen(true);
   };
@@ -281,6 +286,7 @@ export function TenantManagement() {
             <TableHeader>
               <TableRow>
                 <TableHead>Name</TableHead>
+                <TableHead>SSO Tenant ID</TableHead>
                 <TableHead>Domains</TableHead>
                 <TableHead>Entitlements</TableHead>
                 <TableHead>Auto-Create Users</TableHead>
@@ -302,6 +308,44 @@ export function TenantManagement() {
                       )}
                       <span>{tenant.name}</span>
                     </div>
+                  </TableCell>
+                  <TableCell>
+                    {tenant.ssoTenantId ? (
+                      <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1">
+                          {tenant.ssoAdminConsentGranted ? (
+                            <span title="Admin consent granted">
+                              <ShieldCheck className="h-4 w-4 text-green-500" />
+                            </span>
+                          ) : (
+                            <span title="Admin consent not yet granted">
+                              <Shield className="h-4 w-4 text-muted-foreground" />
+                            </span>
+                          )}
+                          <code className="text-xs bg-muted px-1 py-0.5 rounded max-w-[120px] truncate" title={tenant.ssoTenantId}>
+                            {tenant.ssoTenantId.substring(0, 8)}...
+                          </code>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6"
+                          onClick={() => {
+                            navigator.clipboard.writeText(tenant.ssoTenantId!);
+                            toast({ title: "Copied to clipboard" });
+                          }}
+                          data-testid={`button-copy-sso-id-${tenant.id}`}
+                          title="Copy full SSO Tenant ID"
+                        >
+                          <Copy className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <span className="text-xs text-muted-foreground flex items-center gap-1">
+                        <ShieldX className="h-4 w-4" />
+                        Not set
+                      </span>
+                    )}
                   </TableCell>
                   <TableCell>
                     <div className="flex flex-col gap-1">
@@ -510,6 +554,30 @@ export function TenantManagement() {
                 <Label htmlFor="autoCreateUsers">
                   Auto-create users on first login
                 </Label>
+              </div>
+
+              <div className="space-y-2 border-t pt-4 mt-4">
+                <Label htmlFor="ssoTenantId" className="flex items-center gap-2">
+                  <Shield className="h-4 w-4" />
+                  Azure AD Tenant ID (SSO)
+                </Label>
+                <Input
+                  id="ssoTenantId"
+                  value={tenantForm.ssoTenantId}
+                  onChange={(e) => setTenantForm({ ...tenantForm, ssoTenantId: e.target.value })}
+                  placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+                  data-testid="input-sso-tenant-id"
+                />
+                <p className="text-xs text-muted-foreground">
+                  The Microsoft Azure AD tenant ID. This is captured automatically when users sign in via SSO, 
+                  or you can set it manually to pre-configure SSO for an organization.
+                </p>
+                {editingTenant?.ssoAdminConsentGranted && (
+                  <Badge variant="default" className="gap-1">
+                    <ShieldCheck className="h-3 w-3" />
+                    Admin consent granted
+                  </Badge>
+                )}
               </div>
             </div>
             <DialogFooter>
