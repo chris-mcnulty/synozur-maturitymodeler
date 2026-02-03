@@ -306,7 +306,3 @@ async function getAppSetting(key: string, defaultValue: any): Promise<any> {
 async function syncUserToHubSpot(user: any, tenant: any): Promise<void> {
   console.log(`[HubSpot Sync] New SSO user created: ${user.email} in tenant ${tenant?.name || 'none'}`);
 }
-
-export function isSsoConfigured(): boolean {
-  return !!(process.env.AZURE_CLIENT_ID && process.env.AZURE_CLIENT_SECRET);
-}
