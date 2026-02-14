@@ -1,228 +1,438 @@
-# Orion Product Backlog
+# Orion Platform Master Backlog
 
-## Overview
+**Last Updated:** February 14, 2026 (Documentation overhaul, SSO profile completion)
 
-This document tracks major features and enhancements planned for the Orion platform. Features are organized by priority and implementation status.
+> **Note:** This is the single source of truth for all Orion feature proposals, implementation plans, UX enhancements, known issues, and technical decisions. All coding agents should reference this document for backlog-related questions.
 
-## Status Definitions
+---
 
-- **🔵 Planned**: Specified but not started
-- **🟡 In Progress**: Currently being developed
-- **🟢 Completed**: Fully implemented and deployed
-- **🔴 On Hold**: Temporarily paused
+## TABLE OF CONTENTS
 
-## High Priority Features
+1. [Executive Summary & Priority Sequence](#executive-summary--priority-sequence)
+2. [High Priority Features](#high-priority-features)
+3. [Medium Priority Features](#medium-priority-features)
+4. [Lower Priority / Future Features](#lower-priority--future-features)
+5. [UX Enhancements](#ux-enhancements)
+6. [Known Issues & Bugs](#known-issues--bugs)
+7. [Technical Decisions](#technical-decisions)
+8. [Completed Features](#completed-features)
+9. [Dependencies](#dependencies)
+10. [Metrics for Success](#metrics-for-success)
 
-### 1. Multi-Tenant Architecture [🔵 Planned]
-**Specification**: [MULTI_TENANT_ARCHITECTURE.md](./MULTI_TENANT_ARCHITECTURE.md)
+---
 
-Transform Orion into a multi-tenant platform with:
-- OAuth 2.0 identity provider for Synozur ecosystem
-- Tenant-specific branding and models
-- Cross-application user management
-- Application entitlements (Orion, Nebula, Vega)
+## EXECUTIVE SUMMARY & PRIORITY SEQUENCE
 
-**Key Deliverables**:
-- [ ] Database schema for multi-tenancy
-- [ ] OAuth 2.0 provider implementation
-- [ ] Tenant management interface
-- [ ] Model visibility per tenant
-- [ ] Tenant branding system
+### Current Status Assessment (February 14, 2026)
 
-### 2. Individual Assessment Models [🔵 Planned]
-Support for personal/skills-based assessments within organizations:
-- Different scoring system (100 or 500 points)
-- Individual-focused questions and recommendations
-- Tenant-level reporting for HR/management
-- Skills progression tracking
+| Item | Status | Notes |
+|------|--------|-------|
+| **Core Assessment Engine** | Complete | Multi-model, flexible scoring (100/500-point), auto-save, anonymous access |
+| **AI-Powered Insights** | Complete | Claude Sonnet 4.5, 90-day caching, content review workflow |
+| **Benchmarking** | Complete | Industry, company size, country, combined segments with min thresholds |
+| **PDF Reports & Email** | Complete | jsPDF generation, SendGrid delivery |
+| **Model Management** | Complete | CSV + .model JSON import/export, ModelBuilder, archiving, duplication |
+| **User Management** | Complete | CRUD, bulk import, roles, email verification, password resets |
+| **RBAC** | Complete | Four-tier: global_admin, tenant_admin, tenant_modeler, user |
+| **Knowledge Base** | Complete | Document upload for AI grounding, model-specific scoping |
+| **Assessment Tagging** | Complete | Custom tags with colors, bulk assignment |
+| **Social Sharing** | Complete | LinkedIn, Twitter, Facebook, email with OG previews, QR codes |
+| **Proxy Assessments** | Complete | Admin-created assessments for prospects |
+| **OAuth 2.1 Identity Provider** | Complete | OIDC endpoints, PKCE, RS256 JWT, client management |
+| **Microsoft Entra ID SSO** | Complete | PKCE flow, auto-provisioning, tenant mapping, admin consent |
+| **SSO Profile Completion** | Complete | Required profile fields for new SSO users |
+| **Multi-Tenant Architecture** | ~60% | Tenant-private models, OAuth clients, SSO provisioning done. Branding, domain mapping remaining. |
+| **Data Import** | Complete | Anonymized assessment data with validation and batch tracking |
+| **Traffic Analytics** | Complete | Visit tracking, engagement metrics, CSV export |
+| **Documentation** | Complete | User Guide v2.0, Admin Guide, Changelog, Backlog |
 
-### 3. Billing & Subscriptions [🔵 Planned]
-Implement monetization through Stripe:
-- Tenant-level subscriptions
-- Feature entitlements
-- Usage tracking
-- Payment management portal
+### Recommended Priority Sequence
 
-## Medium Priority Features
+```
+PHASE 1: Multi-Tenant Completion (Q1 2026)
+├── Tenant-specific branding (logo, colors)
+├── Custom subdomain/domain mapping
+└── Tenant entitlements and feature gating
 
-### 4. Enhanced Admin Results View [🟢 Completed]
-**Completed**: November 2025
+PHASE 2: Individual Assessments & Billing (Q2 2026)
+├── Individual/skills-based assessment models
+├── Stripe billing and subscriptions
+└── Usage-based feature entitlements
 
-Admin assessment results with:
-- Date range filtering (default: last 30 days)
-- Status filtering (completed, in progress, abandoned)
-- Results grouped by date with subtotals
-- Export capabilities
+PHASE 3: Advanced Analytics & Enterprise (Q2-Q3 2026)
+├── Enhanced reporting dashboards
+├── Cross-model comparison analytics
+├── Trend analysis over time
+└── API rate limiting per tenant
+```
 
-### 5. Custom Subdomains [🔵 Planned]
+---
+
+## HIGH PRIORITY FEATURES
+
+### 1. Multi-Tenant Architecture Completion
+
+**Status:** ~60% Complete
+**Priority:** High
+**Effort:** 4-6 weeks remaining
+
+**What's Built:**
+- Tenant-private model visibility with `canAccessModel()` enforcement
+- Model-to-tenant assignment (multi-select)
+- OAuth client management per tenant
+- Microsoft Entra ID SSO with auto-provisioning by domain/Azure AD tenant ID
+- Tenant Management UI with Azure AD tenant tracking and consent status
+- Four-tier RBAC with tenant scoping
+
+**Remaining Work:**
+
+| Feature | Effort | Description |
+|---------|--------|-------------|
+| **Tenant Branding** | 2 weeks | Custom logo, primary/secondary colors, favicon per tenant |
+| **Domain Mapping** | 1 week | Map tenants to allowed email domains for auto-provisioning |
+| **Tenant Entitlements** | 1 week | Feature gating based on subscription tier |
+| **Tenant Data Isolation Audit** | 1 week | Verify all queries are tenant-scoped where appropriate |
+
+---
+
+### 2. Individual Assessment Models
+
+**Status:** Not Started
+**Priority:** High
+**Effort:** 3-4 weeks
+
+**Overview:**
+Support personal/skills-based assessments within organizations, complementing the current organizational maturity models.
+
+| Feature | Description |
+|---------|-------------|
+| **Individual Scoring** | Different scoring system optimized for personal skills |
+| **Individual Questions** | Question types suited to personal assessment (self-evaluation, frequency, proficiency) |
+| **Tenant Reporting** | HR/management dashboards showing team skill distribution |
+| **Skills Progression** | Track individual improvement over repeated assessments |
+| **Privacy Controls** | Individual results visible only to the user and designated managers |
+
+**Implementation Approach:**
+- Add `assessmentType` field to models (`organizational` vs `individual`)
+- Adapt AI prompts for individual context (already partially done)
+- Individual-specific benchmarking (role-based, level-based)
+- Privacy-aware result sharing
+
+---
+
+### 3. Billing & Subscriptions
+
+**Status:** Not Started
+**Priority:** High
+**Effort:** 4-6 weeks
+
+**Overview:**
+Monetization through Stripe at the tenant level.
+
+| Feature | Description |
+|---------|-------------|
+| **Stripe Integration** | Tenant-level subscription management |
+| **Subscription Tiers** | Free, Professional, Enterprise with different feature sets |
+| **Usage Tracking** | Assessment count, AI usage, user count per tenant |
+| **Payment Portal** | Self-service billing management for tenant admins |
+| **Feature Gating** | Restrict features based on subscription tier |
+
+**Tier Structure (Proposed):**
+
+| Feature | Free | Professional | Enterprise |
+|---------|------|-------------|------------|
+| Assessments/month | 10 | Unlimited | Unlimited |
+| AI Insights | Basic | Full | Full + Custom |
+| Benchmarking | Overall only | All segments | Custom segments |
+| Custom Models | No | Yes | Yes |
+| White Label | No | No | Yes |
+| SSO | No | No | Yes |
+
+---
+
+## MEDIUM PRIORITY FEATURES
+
+### 4. Enhanced Reporting & Analytics
+
+**Status:** Not Started
+**Priority:** Medium
+**Effort:** 3-4 weeks
+
+| Feature | Description |
+|---------|-------------|
+| **Tenant Dashboards** | Per-tenant analytics with assessment trends |
+| **Cross-Model Comparisons** | Compare maturity across different models |
+| **Trend Analysis** | Track score changes over time for repeat assessments |
+| **Custom Report Builder** | Admin-configurable report templates |
+| **PowerPoint Export** | Presentation-ready slides from assessment data |
+
+---
+
+### 5. Dedicated Tenant Visibility Manager
+
+**Status:** Not Started
+**Priority:** Medium
+**Effort:** 1-2 weeks
+
+**Overview:**
+Advanced UI for managing model-to-tenant assignments, replacing the current multi-select dropdown.
+
+| Feature | Description |
+|---------|-------------|
+| **Visual Tenant Grid** | All tenants with checkboxes and search |
+| **Bulk Assignment** | Assign/remove models to multiple tenants at once |
+| **Assignment History** | Audit log of visibility changes |
+| **Quick Filters** | Filter by tenant name, domain, or status |
+
+---
+
+### 6. API Rate Limiting
+
+**Status:** Not Started
+**Priority:** Medium
+**Effort:** 1-2 weeks
+
+| Feature | Description |
+|---------|-------------|
+| **Per-Tenant Quotas** | Request limits based on subscription tier |
+| **Usage Monitoring** | Real-time usage tracking dashboard |
+| **Overage Handling** | Graceful degradation or upgrade prompts |
+| **Rate Limit Headers** | Standard rate limit headers in API responses |
+
+---
+
+### 7. What's New Modal
+
+**Status:** Not Started
+**Priority:** Medium
+**Effort:** 1 week
+
+**Overview:**
+Following Vega's pattern, show users an AI-generated summary of recent platform updates when they log in after a new release.
+
+| Feature | Description |
+|---------|-------------|
+| **Auto-Display** | Modal appears after login when there are new updates since last visit |
+| **AI Summary** | Friendly, plain-language summary of recent changes from CHANGELOG.md |
+| **Dismiss Logic** | "Got it" button saves current version; won't show again until next release |
+| **Admin Toggle** | Tenant admins can enable/disable for their organization |
+
+---
+
+## LOWER PRIORITY / FUTURE FEATURES
+
+### 8. Custom Subdomains
+
+**Status:** Not Started
+**Priority:** Low
+**Effort:** 2-3 weeks
+
 Premium feature for tenant-specific URLs:
 - tenant.orion.synozur.com routing
 - SSL certificate management
 - DNS configuration interface
 
-### 6. Advanced Analytics [🔵 Planned]
-Enhanced reporting capabilities:
-- Tenant-specific dashboards
-- Cross-model comparisons
-- Trend analysis over time
-- Custom report builder
+---
 
-### 7. API Rate Limiting [🔵 Planned]
-Per-tenant usage controls:
-- Request quotas
-- Bandwidth limits
-- Usage monitoring
-- Overage handling
+### 9. White-Label Options
 
-### 8. Microsoft 365 SSO & Identity Enrichment [🔵 Planned]
-**Specification**: [M365_SSO_INTEGRATION_PLAN.md](./M365_SSO_INTEGRATION_PLAN.md)
-**Priority**: Medium (no active customer requests)
-**Estimated Duration**: 12 weeks
+**Status:** Not Started
+**Priority:** Low
+**Effort:** 3-4 weeks
 
-Enable enterprise users to authenticate via Microsoft 365 and inherit tenant/RBAC:
-- M365 as external identity provider for Orion
-- Automatic tenant alignment from M365 domains/groups
-- Role transformation (M365 groups → Orion/Nebula/Vega roles)
-- Token pass-through for Vega's M365 service access
-- Federated identity chain: M365 → Orion → All Synozur Apps
-
-**Key Deliverables**:
-- [ ] External identity provider schema and services
-- [ ] M365 OAuth client implementation ("Sign in with Microsoft")
-- [ ] Identity enrichment engine (tenant/role mapping)
-- [ ] Admin UI for tenant mapping rules
-- [ ] Token pass-through for downstream apps
-- [ ] Automated user provisioning from M365
-
-**Benefits**:
-- Enterprise SSO compliance
-- Single identity across Synozur ecosystem
-- IT-friendly deployment (managed through M365)
-- Enables Vega's native M365 integrations
-
-### 9. Dedicated Tenant Visibility Manager [🔵 Planned]
-Advanced UI for managing model-to-tenant assignments:
-- Dedicated "Manage Model Visibility" button in admin console
-- Dialog/modal showing all tenants with visual indicators
-- Bulk tenant assignment operations
-- Visual representation of tenant access
-- Quick search/filter for tenants
-- Assignment history/audit log
-
-**Note**: Currently implemented with multi-select dropdown (Option B). This would provide a more comprehensive management interface.
-
-## Low Priority Features
-
-### 10. White-Label Options [🔵 Planned]
 Complete branding customization:
 - Custom domains
 - Email sender configuration
-- Remove Synozur branding (premium)
-
-### 11. Data Export Compliance [🔵 Planned]
-GDPR and data portability:
-- Bulk data export for tenants
-- User data deletion workflows
-- Audit trail exports
-
-### 12. Mobile Applications [🔵 Planned]
-Native mobile experience:
-- iOS application
-- Android application
-- Offline assessment capability
-
-## Recently Completed Features
-
-### Social Sharing [🟢 Completed]
-- Multiple platform support
-- Open Graph meta tags
-- Model-specific previews
-
-### Proxy Assessments [🟢 Completed]
-- Admin/modeler can create assessments for prospects
-- Profile data stored in assessment
-- Visible in results and exports
-
-### Anonymous User Claiming [🟢 Completed]
-- Anonymous users can claim assessments after signup
-- Seamless auth flow preservation
-
-### Knowledge Base System [🟢 Completed]
-- Document upload (PDF, DOCX, TXT, MD)
-- AI grounding for better recommendations
-- Model-specific and global documents
-
-## Continuous Improvements
-
-### Performance Optimization
-- Query optimization for large datasets
-- Caching strategy improvements
-- Frontend bundle size reduction
-
-### User Experience
-- Accessibility improvements (WCAG compliance)
-- Responsive design enhancements
-- Loading state improvements
-
-### Security
-- Regular security audits
-- Penetration testing
-- Compliance certifications
-
-## Feature Request Process
-
-1. **Submission**: Features can be requested through support@synozur.com
-2. **Review**: Product team evaluates impact and feasibility
-3. **Prioritization**: Based on customer value and strategic alignment
-4. **Planning**: Detailed specification created (like MULTI_TENANT_ARCHITECTURE.md)
-5. **Implementation**: Development in phases with testing
-6. **Release**: Staged rollout with monitoring
-
-## Release Schedule
-
-- **Q4 2025**: Multi-tenant foundation (Phase 1-2)
-- **Q1 2026**: OAuth provider and tenant features (Phase 3)
-- **Q2 2026**: Individual assessments and billing
-- **Q3 2026**: Advanced analytics and white-label
-
-## Technical Debt
-
-### To Address
-- [ ] Migrate from in-memory session storage to Redis
-- [ ] Implement comprehensive API versioning
-- [ ] Add database connection pooling
-- [ ] Improve error handling consistency
-- [ ] Add comprehensive logging system
-
-### Addressed
-- [x] CSV import/export functionality
-- [x] Email template system
-- [x] AI caching mechanism
-
-## Dependencies
-
-- **Database**: PostgreSQL (Neon)
-- **Object Storage**: Google Cloud Storage
-- **Email**: SendGrid
-- **AI**: Azure OpenAI GPT-4o mini
-- **Payment Processing**: Stripe (planned)
-- **Authentication**: Passport.js → OAuth 2.0 (planned)
-
-## Metrics for Success
-
-- User engagement: Monthly active users
-- Assessment completion rates
-- Tenant retention rates
-- API response times < 200ms
-- 99.9% uptime SLA
-
-## Contact
-
-- Product Owner: Synozur Development Team
-- Technical Lead: Engineering Team
-- Support: support@synozur.com
+- Remove Synozur branding (premium tier)
+- Custom landing pages
 
 ---
 
-*Last Updated: November 2025*
-*Next Review: December 2025*
+### 10. Data Export Compliance (GDPR)
+
+**Status:** Not Started
+**Priority:** Low
+**Effort:** 2 weeks
+
+- Bulk data export for tenants
+- User data deletion workflows
+- Audit trail exports
+- Data retention policies
+
+---
+
+### 11. Mobile Applications
+
+**Status:** Not Started
+**Priority:** Low
+**Effort:** 8-12 weeks
+
+- Progressive Web App (PWA) first
+- iOS and Android native apps (future)
+- Offline assessment capability
+
+---
+
+### 12. Help Chatbot
+
+**Status:** Not Started
+**Priority:** Low
+**Effort:** 2-3 weeks
+
+Following Vega's pattern:
+- AI-powered help assistant grounded on User Guide
+- Streaming responses for conversational experience
+- Escalation to support ticket form
+- Accessible from header toolbar
+
+---
+
+## UX ENHANCEMENTS
+
+### Continuous Improvements
+
+| Enhancement | Priority | Effort | Description |
+|------------|----------|--------|-------------|
+| Accessibility (WCAG) | Medium | Ongoing | ARIA labels, keyboard navigation, screen reader support |
+| Responsive Design | Medium | 1 week | Mobile-optimized assessment experience |
+| Loading States | Low | 3 days | Skeleton screens for all data-loading components |
+| Error Boundaries | Low | 2 days | Graceful error handling with recovery options |
+| Assessment Progress Bar | Low | 1 day | Visual progress indicator during assessments |
+
+---
+
+## KNOWN ISSUES & BUGS
+
+| Issue | Severity | Status | Description |
+|-------|----------|--------|-------------|
+| None critical | - | - | No known critical issues |
+
+---
+
+## TECHNICAL DECISIONS
+
+### Architecture Choices
+
+| Decision | Rationale | Date |
+|----------|-----------|------|
+| Anthropic Claude over OpenAI | Better reasoning for nuanced maturity analysis, via Replit AI Integrations | Oct 2025 |
+| PostgreSQL over NoSQL | Relational data model fits assessment structure; Neon-backed via Replit | Sep 2025 |
+| SendGrid API over SMTP | Reliable transactional email with templates | Oct 2025 |
+| Drizzle ORM over Prisma | Lighter weight, better TypeScript inference, simpler migrations | Sep 2025 |
+| jsPDF over server-side PDF | Client-side generation reduces server load | Oct 2025 |
+| 90-day AI cache | Balances freshness with cost; AI insights don't change frequently | Nov 2025 |
+| Database sessions over in-memory | Production-ready SSO state management | Feb 2026 |
+| PKCE for SSO | Security best practice for public client OAuth flows | Feb 2026 |
+
+### Technical Debt
+
+| Item | Priority | Notes |
+|------|----------|-------|
+| ExecAI import format | Low | One-off simple format for compatibility. Deprecate once all models migrated. |
+| API versioning | Medium | Implement v1/v2 versioning before public API release |
+| Connection pooling | Low | Add when traffic warrants optimization |
+| Comprehensive logging | Medium | Structured logging with request correlation IDs |
+| Error handling consistency | Medium | Standardize error response format across all endpoints |
+
+---
+
+## COMPLETED FEATURES
+
+### February 2026
+- SSO Profile Completion for new Microsoft users
+- SSO Sign-Up tab with Microsoft button
+- Secured SSO consent endpoints
+- .model format reference in Import/Export panel
+- Documentation overhaul (User Guide v2.0, Changelog, Backlog)
+
+### January-February 2026
+- Microsoft Entra ID SSO with PKCE flow
+- Database-backed SSO state storage
+- Azure AD tenant tracking and consent management
+- reCAPTCHA for standard signup
+
+### January 2026
+- Share links and QR codes for models
+- Model archiving with admin toggle
+- AI analysis for individual vs. organizational assessments
+- Anonymous AI access when enabled
+- Flexible scoring engine (100-point averaging/sum, 500-point)
+- Bulk demographic assignment
+- Multi-format model import
+- Model duplication
+- Assessment filtering and reporting
+- AI-powered cohort insights
+- Security cleanup (credentials, logging)
+- Performance indexes for assessment filtering
+
+### November 2025
+- OAuth 2.1 Identity Provider (OIDC, PKCE, RS256)
+- Multi-tenant architecture (Phase 1)
+- Knowledge Base system
+- Assessment data import with batch tracking
+- Assessment tagging system
+- Proxy assessments
+- Social sharing with OG previews
+- AI content review workflow
+- Benchmarking system
+- User management with bulk import
+
+### October 2025
+- AI-powered insights (Claude Sonnet 4.5)
+- PDF report generation and email delivery
+- Anonymous user claiming
+- Assessment wizard with autosave
+
+### September 2025
+- Core assessment engine
+- Dynamic model routing
+- CSV import/export
+- ModelBuilder
+- Admin console
+- User authentication and RBAC
+- Dark-mode-first UI
+
+---
+
+## DEPENDENCIES
+
+| Dependency | Purpose | Status |
+|------------|---------|--------|
+| PostgreSQL (Neon) | Primary database | Active |
+| Google Cloud Storage | Object storage for model images | Active |
+| SendGrid | Email delivery (verification, passwords, reports) | Active |
+| Anthropic Claude Sonnet 4.5 | AI insights via Replit AI Integrations | Active |
+| HubSpot | Website tracking (Account ID: 49076134) | Active |
+| jsPDF | PDF report generation | Active |
+| Uppy | Frontend file uploader | Active |
+| Stripe | Payment processing | Planned |
+
+---
+
+## METRICS FOR SUCCESS
+
+- User engagement: Monthly active users and assessment completions
+- Assessment completion rate: % of started assessments that finish
+- AI insight generation rate: % of completed assessments that generate insights
+- Tenant retention: Monthly active tenant rate
+- API response times: < 200ms for core endpoints
+- Uptime: 99.9% SLA target
+
+---
+
+## RELEASE SCHEDULE
+
+| Quarter | Focus |
+|---------|-------|
+| Q1 2026 | Multi-tenant completion, SSO hardening, documentation |
+| Q2 2026 | Individual assessments, Stripe billing, enhanced reporting |
+| Q3 2026 | Advanced analytics, white-label, mobile optimization |
+| Q4 2026 | Enterprise features, API marketplace, compliance |
+
+---
+
+## CONTACT
+
+- Product Owner: Synozur Development Team
+- Support: [ContactUs@synozur.com](mailto:ContactUs@synozur.com)
+- Website: [www.synozur.com](https://www.synozur.com)
