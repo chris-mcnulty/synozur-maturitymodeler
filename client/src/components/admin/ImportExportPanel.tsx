@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { Upload, Download, FileJson, FileSpreadsheet, X, AlertCircle, CheckCircle2 } from "lucide-react";
+import { Upload, Download, FileJson, FileSpreadsheet, X, AlertCircle, CheckCircle2, ChevronDown, ChevronUp, Copy, BookOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -92,6 +92,171 @@ function transformLegacyModelFormat(rawData: any) {
 
   // Already in new format
   return rawData;
+}
+
+const MODEL_FORMAT_EXAMPLE = `{
+  "formatVersion": "1.0",
+  "exportedAt": "2025-01-15T10:30:00.000Z",
+  "model": {
+    "name": "Your Model Name",
+    "slug": "your-model-name",
+    "description": "A description of what this maturity model assesses.",
+    "version": "1.0.0",
+    "estimatedTime": "15-20 minutes",
+    "status": "published",
+    "featured": false,
+    "allowAnonymousResults": false,
+    "imageUrl": null,
+    "maturityScale": [
+      {
+        "id": "1",
+        "name": "Level 1 Name (e.g. Initial)",
+        "description": "Description of what this maturity level means.",
+        "minScore": 0,
+        "maxScore": 25
+      },
+      {
+        "id": "2",
+        "name": "Level 2 Name (e.g. Developing)",
+        "description": "Description of this level.",
+        "minScore": 26,
+        "maxScore": 50
+      },
+      {
+        "id": "3",
+        "name": "Level 3 Name (e.g. Defined)",
+        "description": "Description of this level.",
+        "minScore": 51,
+        "maxScore": 75
+      },
+      {
+        "id": "4",
+        "name": "Level 4 Name (e.g. Optimized)",
+        "description": "Description of this level.",
+        "minScore": 76,
+        "maxScore": 100
+      }
+    ],
+    "generalResources": [
+      {
+        "id": "1",
+        "title": "Resource Title",
+        "description": "What this resource covers.",
+        "link": "https://example.com/resource"
+      }
+    ]
+  },
+  "dimensions": [
+    {
+      "key": "dimension-slug",
+      "label": "Dimension Display Name",
+      "description": "What this dimension measures.",
+      "order": 1
+    }
+  ],
+  "questions": [
+    {
+      "dimensionKey": "dimension-slug",
+      "text": "The question text shown to the assessment taker.",
+      "type": "multiple_choice",
+      "order": 1,
+      "minValue": null,
+      "maxValue": null,
+      "unit": null,
+      "placeholder": null,
+      "improvementStatement": "General guidance for improving in this area.",
+      "resourceTitle": "Helpful Resource",
+      "resourceLink": "https://example.com/help",
+      "resourceDescription": "What this resource covers.",
+      "answers": [
+        {
+          "text": "Answer option text (lowest maturity)",
+          "score": 0,
+          "order": 1,
+          "improvementStatement": "Specific improvement advice if this answer is selected.",
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Answer option text (highest maturity)",
+          "score": 100,
+          "order": 2,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        }
+      ]
+    }
+  ]
+}`;
+
+function ModelFormatReference() {
+  const [expanded, setExpanded] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = useCallback(() => {
+    navigator.clipboard.writeText(MODEL_FORMAT_EXAMPLE).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  }, []);
+
+  return (
+    <div className="border rounded-lg overflow-hidden">
+      <button
+        type="button"
+        className="flex items-center justify-between w-full p-3 text-left text-sm font-medium hover-elevate"
+        onClick={() => setExpanded(!expanded)}
+        data-testid="button-toggle-format-reference"
+      >
+        <span className="flex items-center gap-2">
+          <BookOpen className="h-4 w-4 text-muted-foreground" />
+          .model JSON Format Reference
+        </span>
+        {expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+      </button>
+
+      {expanded && (
+        <div className="border-t p-3 space-y-3">
+          <div className="space-y-2 text-xs text-muted-foreground">
+            <p><strong className="text-foreground">formatVersion</strong> &mdash; Always <code className="bg-muted px-1 rounded">"1.0"</code>.</p>
+            <p><strong className="text-foreground">model.slug</strong> &mdash; URL-safe, lowercase, hyphens only. Must be unique. Example: <code className="bg-muted px-1 rounded">"ai-readiness"</code>.</p>
+            <p><strong className="text-foreground">model.status</strong> &mdash; One of: <code className="bg-muted px-1 rounded">"draft"</code>, <code className="bg-muted px-1 rounded">"published"</code>, <code className="bg-muted px-1 rounded">"archived"</code>.</p>
+            <p><strong className="text-foreground">Scoring (100-point)</strong> &mdash; Default. Answer scores 0&ndash;100, averaged across questions. Maturity scale ranges span 0&ndash;100. For sum scoring (e.g. 0-4 Likert), add <code className="bg-muted px-1 rounded">"scoringMethod": "sum"</code> on the maturityScale array.</p>
+            <p><strong className="text-foreground">Scoring (500-point)</strong> &mdash; For 5 dimensions &times; 100 max each. Set maturity scale ranges to 100&ndash;500. Always averaged.</p>
+            <p><strong className="text-foreground">maturityScale</strong> &mdash; Array of maturity levels with non-overlapping <code className="bg-muted px-1 rounded">minScore</code>/<code className="bg-muted px-1 rounded">maxScore</code> ranges. Typically 4&ndash;5 levels.</p>
+            <p><strong className="text-foreground">dimensions</strong> &mdash; Logical groupings (e.g. People, Process, Technology). Each needs a unique <code className="bg-muted px-1 rounded">key</code> (slug format). Typically 3&ndash;7.</p>
+            <p><strong className="text-foreground">questions</strong> &mdash; Each belongs to a dimension via <code className="bg-muted px-1 rounded">dimensionKey</code>. Use <code className="bg-muted px-1 rounded">"multiple_choice"</code> type with 4&ndash;5 answers.</p>
+            <p><strong className="text-foreground">answers</strong> &mdash; Each needs a numeric <code className="bg-muted px-1 rounded">score</code> and <code className="bg-muted px-1 rounded">order</code> (1-based). For 100-point averaging: use scores like 0, 25, 50, 75, 100. Progress from lowest to highest maturity.</p>
+            <p><strong className="text-foreground">improvementStatement</strong> &mdash; Optional. On an answer: specific advice when selected. On a question: general improvement guidance.</p>
+            <p><strong className="text-foreground">resources</strong> &mdash; <code className="bg-muted px-1 rounded">resourceTitle</code>, <code className="bg-muted px-1 rounded">resourceLink</code>, <code className="bg-muted px-1 rounded">resourceDescription</code> are optional on questions and answers. <code className="bg-muted px-1 rounded">generalResources</code> on the model are shown after results.</p>
+            <p><strong className="text-foreground">Nullable fields</strong> &mdash; <code className="bg-muted px-1 rounded">estimatedTime</code>, <code className="bg-muted px-1 rounded">imageUrl</code>, <code className="bg-muted px-1 rounded">improvementStatement</code>, all resource fields, <code className="bg-muted px-1 rounded">minValue</code>, <code className="bg-muted px-1 rounded">maxValue</code>, <code className="bg-muted px-1 rounded">unit</code>, <code className="bg-muted px-1 rounded">placeholder</code> can be <code className="bg-muted px-1 rounded">null</code>.</p>
+          </div>
+
+          <div className="relative">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-xs font-medium">Example Template</span>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={handleCopy}
+                className="h-7 text-xs gap-1"
+                data-testid="button-copy-format"
+              >
+                <Copy className="h-3 w-3" />
+                {copied ? "Copied" : "Copy"}
+              </Button>
+            </div>
+            <pre className="bg-muted rounded-md p-3 text-[10px] leading-tight overflow-x-auto max-h-[300px] overflow-y-auto font-mono">
+              {MODEL_FORMAT_EXAMPLE}
+            </pre>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
 
 interface ImportExportPanelProps {
@@ -588,6 +753,8 @@ export function ImportExportPanel({
                   </div>
                 </RadioGroup>
               </div>
+
+              <ModelFormatReference />
 
               {/* Drag and Drop Zone */}
               <div
