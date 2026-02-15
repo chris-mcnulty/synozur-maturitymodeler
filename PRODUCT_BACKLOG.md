@@ -54,6 +54,11 @@ PHASE 1: Multi-Tenant Completion (Q1 2026)
 ├── Custom subdomain/domain mapping
 └── Tenant entitlements and feature gating
 
+PHASE 1.5: In-App Documentation & What's New (Q1 2026)
+├── In-app User Guide / Help pages
+├── What's New modal with AI-generated summaries
+└── Admin Guide integration
+
 PHASE 2: Individual Assessments & Billing (Q2 2026)
 ├── Individual/skills-based assessment models
 ├── Stripe billing and subscriptions
@@ -95,7 +100,34 @@ PHASE 3: Advanced Analytics & Enterprise (Q2-Q3 2026)
 
 ---
 
-### 2. Individual Assessment Models
+### 2. In-App Documentation & What's New
+
+**Status:** Not Started
+**Priority:** High
+**Effort:** 2-3 weeks
+
+**Overview:**
+Following Vega and Constellation patterns, surface platform documentation directly within the app. Users should be able to access the User Guide, see what's changed, and find help without leaving the application.
+
+| Feature | Description |
+|---------|-------------|
+| **In-App User Guide** | Render USER_GUIDE.md content as browsable help pages accessible from the app header/footer |
+| **In-App Admin Guide** | Render ADMIN_GUIDE.md within the admin console for admin users |
+| **What's New Modal** | Auto-display modal after login showing AI-generated summary of recent CHANGELOG.md updates since last visit |
+| **Dismiss Logic** | "Got it" button saves current version; won't show again until next release |
+| **Help Sidebar/Page** | Dedicated help section with searchable documentation |
+| **Changelog Page** | Browsable changelog showing platform update history |
+| **Footer/Header Links** | Quick access links to documentation from main navigation |
+
+**Implementation Approach:**
+- Serve markdown files via API endpoints, render with a markdown component on the frontend
+- Track user's `lastSeenVersion` to control What's New modal display
+- Admin Guide visible only to admin roles
+- Follow Vega's pattern: clean typography, collapsible sections, search
+
+---
+
+### 3. Individual Assessment Models
 
 **Status:** Not Started
 **Priority:** High
@@ -120,7 +152,7 @@ Support personal/skills-based assessments within organizations, complementing th
 
 ---
 
-### 3. Billing & Subscriptions
+### 4. Billing & Subscriptions
 
 **Status:** Not Started
 **Priority:** High
@@ -152,7 +184,7 @@ Monetization through Stripe at the tenant level.
 
 ## MEDIUM PRIORITY FEATURES
 
-### 4. Enhanced Reporting & Analytics
+### 5. Enhanced Reporting & Analytics
 
 **Status:** Not Started
 **Priority:** Medium
@@ -168,7 +200,7 @@ Monetization through Stripe at the tenant level.
 
 ---
 
-### 5. Dedicated Tenant Visibility Manager
+### 6. Dedicated Tenant Visibility Manager
 
 **Status:** Not Started
 **Priority:** Medium
@@ -186,7 +218,7 @@ Advanced UI for managing model-to-tenant assignments, replacing the current mult
 
 ---
 
-### 6. API Rate Limiting
+### 7. API Rate Limiting
 
 **Status:** Not Started
 **Priority:** Medium
@@ -201,27 +233,9 @@ Advanced UI for managing model-to-tenant assignments, replacing the current mult
 
 ---
 
-### 7. What's New Modal
-
-**Status:** Not Started
-**Priority:** Medium
-**Effort:** 1 week
-
-**Overview:**
-Following Vega's pattern, show users an AI-generated summary of recent platform updates when they log in after a new release.
-
-| Feature | Description |
-|---------|-------------|
-| **Auto-Display** | Modal appears after login when there are new updates since last visit |
-| **AI Summary** | Friendly, plain-language summary of recent changes from CHANGELOG.md |
-| **Dismiss Logic** | "Got it" button saves current version; won't show again until next release |
-| **Admin Toggle** | Tenant admins can enable/disable for their organization |
-
----
-
 ## LOWER PRIORITY / FUTURE FEATURES
 
-### 8. Custom Subdomains
+### 8. Custom Subdomains (Premium)
 
 **Status:** Not Started
 **Priority:** Low
@@ -273,7 +287,7 @@ Complete branding customization:
 
 ---
 
-### 12. Help Chatbot
+### 12. AI Help Chatbot
 
 **Status:** Not Started
 **Priority:** Low

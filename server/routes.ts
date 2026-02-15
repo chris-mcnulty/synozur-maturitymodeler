@@ -1652,14 +1652,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       conditions.push(eq(schema.assessments.status, 'completed'));
       conditions.push(isNotNull(schema.results.id));
       
-      // Apply date range filter
+      // Apply date range filter using COALESCE(completed_at, started_at) to handle legacy NULLs
       if (startDate) {
-        conditions.push(gte(schema.assessments.completedAt, new Date(startDate as string)));
+        conditions.push(sql`COALESCE(${schema.assessments.completedAt}, ${schema.assessments.startedAt}) >= ${new Date(startDate as string)}`);
       }
       if (endDate) {
         const endDateTime = new Date(endDate as string);
         endDateTime.setDate(endDateTime.getDate() + 1);
-        conditions.push(lt(schema.assessments.completedAt, endDateTime));
+        conditions.push(sql`COALESCE(${schema.assessments.completedAt}, ${schema.assessments.startedAt}) < ${endDateTime}`);
       }
       
       // Apply status filter (for results, we mainly care about completed)
@@ -1716,7 +1716,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .innerJoin(schema.models, eq(schema.assessments.modelId, schema.models.id))
         .leftJoin(schema.users, eq(schema.assessments.userId, schema.users.id))
         .where(and(...conditions))
-        .orderBy(desc(schema.assessments.completedAt));
+        .orderBy(sql`COALESCE(${schema.assessments.completedAt}, ${schema.assessments.startedAt}) DESC`);
       
       console.log('Admin results query returned:', resultsData.length, 'results');
       
@@ -2149,9 +2149,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         dimensionScores: dimensionAverages,
       });
 
-      // Update assessment status
+      // Update assessment status and completion timestamp
       await storage.updateAssessment(req.params.id, {
         status: "completed",
+        completedAt: new Date(),
       } as any);
 
       res.json(result);

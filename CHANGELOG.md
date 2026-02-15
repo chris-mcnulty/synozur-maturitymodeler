@@ -21,6 +21,11 @@ This changelog documents new features, improvements, and fixes in Orion. Updates
 - Changelog: New CHANGELOG.md tracking all platform updates (this file)
 - Backlog: PRODUCT_BACKLOG.md rewritten with executive summary status table, priority sequencing, and detailed feature specifications
 
+**Bug Fixes**
+- **Results screen ordering**: Fixed random ordering of assessment results -- now consistently sorted by most recent first, using completion date with fallback to start date for legacy assessments
+- **Date range filtering**: Fixed date filters returning no results -- 55 completed assessments had missing completion timestamps, causing them to be excluded from any date filter. Backfilled missing timestamps and updated filtering logic to handle legacy data.
+- **Assessment completion timestamps**: Fixed assessment submission to properly record completion timestamp (was only setting status to "completed" without recording when)
+
 **Improvements**
 - Profile update API (`PATCH /api/user/profile`) allows users to update their own demographic fields securely
 - SSO callback flow checks profile completeness and redirects to completion page with return URL preservation
