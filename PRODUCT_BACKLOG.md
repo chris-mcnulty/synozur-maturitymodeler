@@ -1,6 +1,6 @@
 # Orion Platform Master Backlog
 
-**Last Updated:** February 14, 2026 (Documentation overhaul, SSO profile completion)
+**Last Updated:** February 18, 2026 (Added reassessment reminders backlog item)
 
 > **Note:** This is the single source of truth for all Orion feature proposals, implementation plans, UX enhancements, known issues, and technical decisions. All coding agents should reference this document for backlog-related questions.
 
@@ -233,9 +233,41 @@ Advanced UI for managing model-to-tenant assignments, replacing the current mult
 
 ---
 
+### 8. Automated Assessment Reassessment Reminders
+
+**Status:** Not Started
+**Priority:** Medium
+**Effort:** 1-2 weeks
+
+**Overview:**
+Automatically send email reminders to registered users 6 and 12 months after their last completed assessment, encouraging them to retake the same model to track maturity progression over time.
+
+| Feature | Description |
+|---------|-------------|
+| **6-Month Reminder** | Email sent 6 months after last completed assessment for a given model, with direct link to start the same assessment |
+| **12-Month Reminder** | Follow-up email at 12 months if the user hasn't retaken the assessment |
+| **Per-Model Tracking** | Reminders are model-specific; a user with multiple models gets independent reminder timelines |
+| **Opt-Out** | Users can unsubscribe from reminders via profile settings or email link |
+| **Smart Suppression** | Skip reminder if user has already retaken the assessment since the last completion |
+| **Admin Controls** | Global and per-model toggle to enable/disable reminders; preview email templates |
+
+**Implementation Approach:**
+- Scheduled job (cron or background worker) runs daily checking for assessments reaching 6/12-month milestones
+- Query: completed assessments where `completedAt` is 6 or 12 months ago AND no newer assessment exists for the same user+model
+- Send via SendGrid with personalized template including model name, previous score, and direct assessment link
+- Track reminder history (sent dates, opened, clicked) in a `reminder_log` table
+- Add `reminderOptOut` boolean to user profile or a per-model opt-out table
+- Respect tenant-level settings for reminder enablement
+
+**Email Content (Proposed):**
+- Subject: "It's been 6 months - time to reassess your {Model Name} maturity?"
+- Body: Previous score summary, link to retake, benefits of reassessment, unsubscribe link
+
+---
+
 ## LOWER PRIORITY / FUTURE FEATURES
 
-### 8. Custom Subdomains (Premium)
+### 9. Custom Subdomains (Premium)
 
 **Status:** Not Started
 **Priority:** Low
@@ -248,7 +280,7 @@ Premium feature for tenant-specific URLs:
 
 ---
 
-### 9. White-Label Options
+### 10. White-Label Options
 
 **Status:** Not Started
 **Priority:** Low
@@ -262,7 +294,7 @@ Complete branding customization:
 
 ---
 
-### 10. Data Export Compliance (GDPR)
+### 11. Data Export Compliance (GDPR)
 
 **Status:** Not Started
 **Priority:** Low
@@ -275,7 +307,7 @@ Complete branding customization:
 
 ---
 
-### 11. Mobile Applications
+### 12. Mobile Applications
 
 **Status:** Not Started
 **Priority:** Low
@@ -287,7 +319,7 @@ Complete branding customization:
 
 ---
 
-### 12. AI Help Chatbot
+### 13. AI Help Chatbot
 
 **Status:** Not Started
 **Priority:** Low
