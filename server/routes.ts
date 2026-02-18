@@ -1554,6 +1554,87 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get user's assessment history with model names and results (for profile page)
+  app.get("/api/user/assessment-history", ensureAuthenticated, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      const historyData = await db
+        .select({
+          assessmentId: schema.assessments.id,
+          modelId: schema.assessments.modelId,
+          modelName: schema.models.name,
+          modelSlug: schema.models.slug,
+          status: schema.assessments.status,
+          startedAt: schema.assessments.startedAt,
+          completedAt: schema.assessments.completedAt,
+          isProxy: schema.assessments.isProxy,
+          resultId: schema.results.id,
+          overallScore: schema.results.overallScore,
+          maturityLevel: schema.results.label,
+          resultCreatedAt: schema.results.createdAt,
+          maturityScale: schema.models.maturityScale,
+        })
+        .from(schema.assessments)
+        .innerJoin(schema.models, eq(schema.assessments.modelId, schema.models.id))
+        .leftJoin(schema.results, eq(schema.results.assessmentId, schema.assessments.id))
+        .where(eq(schema.assessments.userId, userId))
+        .orderBy(sql`COALESCE(${schema.assessments.completedAt}, ${schema.assessments.startedAt}) DESC`);
+
+      const formatted = historyData.map(r => {
+        const maturityScale = (r.maturityScale as any[]) || [];
+        const maxScore = maturityScale.length > 0
+          ? Math.max(...maturityScale.map((s: any) => s.maxScore || 100))
+          : 100;
+        return {
+          assessmentId: r.assessmentId,
+          modelId: r.modelId,
+          modelName: r.modelName,
+          modelSlug: r.modelSlug,
+          status: r.status,
+          startedAt: r.startedAt,
+          completedAt: r.completedAt,
+          isProxy: r.isProxy,
+          resultId: r.resultId,
+          overallScore: r.overallScore,
+          maturityLevel: r.maturityLevel,
+          resultCreatedAt: r.resultCreatedAt,
+          maxScore,
+        };
+      });
+
+      res.json(formatted);
+    } catch (error) {
+      console.error('Failed to fetch user assessment history:', error);
+      res.status(500).json({ error: "Failed to fetch assessment history" });
+    }
+  });
+
+  // Delete an assessment (owner or admin only)
+  app.delete("/api/assessments/:id", ensureAuthenticated, async (req, res) => {
+    try {
+      const assessment = await storage.getAssessment(req.params.id);
+      if (!assessment) {
+        return res.status(404).json({ error: "Assessment not found" });
+      }
+      const isOwner = assessment.userId === req.user!.id;
+      const isGlobalAdmin = req.user!.role === 'global_admin';
+      const isTenantAdmin = req.user!.role === 'tenant_admin';
+      let isScopedTenantAdmin = false;
+      if (isTenantAdmin && assessment.userId) {
+        const assessmentUser = await storage.getUser(assessment.userId);
+        isScopedTenantAdmin = !!assessmentUser && assessmentUser.tenantId === req.user!.tenantId;
+      }
+      if (!isOwner && !isGlobalAdmin && !isScopedTenantAdmin) {
+        return res.status(403).json({ error: "Not authorized to delete this assessment" });
+      }
+      await storage.deleteAssessment(req.params.id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Failed to delete assessment:', error);
+      res.status(500).json({ error: "Failed to delete assessment" });
+    }
+  });
+
   // Get all assessments with user data (admin only)
   app.get("/api/admin/assessments", ensureAdmin, async (req, res) => {
     try {

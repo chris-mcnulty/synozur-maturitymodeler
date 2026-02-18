@@ -65,6 +65,8 @@ export interface IStorage {
   createAssessment(assessment: InsertAssessment): Promise<Assessment>;
   updateAssessment(id: string, assessment: Partial<InsertAssessment>): Promise<Assessment | undefined>;
 
+  deleteAssessment(id: string): Promise<void>;
+
   // Assessment response methods
   getAssessmentResponses(assessmentId: string): Promise<AssessmentResponse[]>;
   createAssessmentResponse(response: InsertAssessmentResponse): Promise<AssessmentResponse>;
@@ -328,6 +330,10 @@ export class DatabaseStorage implements IStorage {
   async updateAssessment(id: string, assessmentData: Partial<InsertAssessment>): Promise<Assessment | undefined> {
     const [assessment] = await db.update(schema.assessments).set(assessmentData).where(eq(schema.assessments.id, id)).returning();
     return assessment;
+  }
+
+  async deleteAssessment(id: string): Promise<void> {
+    await db.delete(schema.assessments).where(eq(schema.assessments.id, id));
   }
 
   // Assessment response methods
