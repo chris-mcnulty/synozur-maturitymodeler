@@ -172,9 +172,21 @@ export async function validateImportData(
     };
   }
   
-  // Validate basic structure
+  const rawData = data as any;
+  if (rawData.formatVersion && rawData.model && rawData.dimensions && rawData.questions) {
+    errors.push("This is a .model definition file, not an assessment data file. To import this model, use the 'Import Model' button in the Models section of the admin console instead.");
+    return {
+      valid: false,
+      errors,
+      warnings,
+      questionMatches: [],
+      assessmentCount: 0,
+      dimensionMappings: {},
+    };
+  }
+
   if (!data.model_info || !data.question_mapping || !data.assessments) {
-    errors.push("Invalid import file structure - missing required fields");
+    errors.push("Invalid import file structure - missing required fields (model_info, question_mapping, assessments)");
   }
   
   if (!Array.isArray(data.question_mapping)) {

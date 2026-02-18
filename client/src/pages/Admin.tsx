@@ -1887,7 +1887,7 @@ export default function Admin() {
   const handleModelImportClick = () => {
     const input = document.createElement('input');
     input.type = 'file';
-    input.accept = '.model';
+    input.accept = '.model,.json';
     input.onchange = async (e) => {
       const file = (e.target as HTMLInputElement).files?.[0];
       if (file) {

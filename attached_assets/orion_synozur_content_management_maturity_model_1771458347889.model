@@ -1,0 +1,1936 @@
+{
+  "formatVersion": "1.0",
+  "exportedAt": "2025-01-15T10:30:00.000Z",
+  "model": {
+    "name": "Synozur Content Management Maturity",
+    "slug": "synozur-content-management-maturity",
+    "description": "This maturity model evaluates how effectively an organization manages its information lifecycle\u2014from leadership vision and people skills to technology, processes, governance, and intelligent automation. It rewards progressive adoption of good practice without asking for unrealistic full autonomy.",
+    "version": "1.0.0",
+    "estimatedTime": "15-20 minutes",
+    "status": "published",
+    "featured": false,
+    "allowAnonymousResults": false,
+    "imageUrl": null,
+    "maturityScale": [
+      {
+        "id": "1",
+        "name": "Awareness",
+        "description": "Content management is inconsistent and mostly reactive. Policies may exist on paper but there is little alignment or investment to support them.",
+        "minScore": 100,
+        "maxScore": 199
+      },
+      {
+        "id": "2",
+        "name": "Developing",
+        "description": "Teams begin to coordinate efforts and adopt common processes. Leadership acknowledges the value of content governance and makes initial investments.",
+        "minScore": 200,
+        "maxScore": 299
+      },
+      {
+        "id": "3",
+        "name": "Established",
+        "description": "The organization follows defined policies and uses standardized technologies. Roles and responsibilities are clear and most staff work within approved processes.",
+        "minScore": 300,
+        "maxScore": 399
+      },
+      {
+        "id": "4",
+        "name": "Optimizing",
+        "description": "Processes are embedded in culture, measured, and continuously improved. Technology and governance are aligned with business outcomes, and teams use analytics to improve adoption and compliance.",
+        "minScore": 400,
+        "maxScore": 449
+      },
+      {
+        "id": "5",
+        "name": "Leading",
+        "description": "The organization is innovative and data-driven. It fosters a culture of accountability and experimentation, leveraging AI responsibly with human oversight to enhance, not replace, high-value work.",
+        "minScore": 450,
+        "maxScore": 500
+      }
+    ],
+    "generalResources": [
+      {
+        "id": "1",
+        "title": "Content Services in Microsoft 365",
+        "description": "Overview of Microsoft 365 features for content management including SharePoint, Purview, and Copilot.",
+        "link": "https://learn.microsoft.com/microsoft-365/content-services/overview"
+      },
+      {
+        "id": "2",
+        "title": "Synozur Best Practices for Document and Records Management",
+        "description": "Guidance on building tailored, human\u2011centric content management programs that balance policy, technology and user adoption.",
+        "link": "https://synozur.com/resources/document-management-best-practices"
+      }
+    ]
+  },
+  "dimensions": [
+    {
+      "key": "leadership-governance",
+      "label": "Leadership & Governance",
+      "description": "How leadership sets vision, invests in, and governs content management across the organization.",
+      "order": 1
+    },
+    {
+      "key": "people-skills",
+      "label": "People & Skills",
+      "description": "How staff are empowered with clear roles, training, and communities of practice to manage content effectively.",
+      "order": 2
+    },
+    {
+      "key": "technology-data",
+      "label": "Technology & Data",
+      "description": "How systems and information architecture support consistent classification, collaboration and discovery.",
+      "order": 3
+    },
+    {
+      "key": "process-adoption",
+      "label": "Process & Adoption",
+      "description": "How well\u2011defined and user\u2011centric your processes are, and how adoption is encouraged and measured.",
+      "order": 4
+    },
+    {
+      "key": "governance-risk-compliance",
+      "label": "Governance, Risk & Compliance",
+      "description": "How policies, risk management and compliance frameworks are implemented and maintained.",
+      "order": 5
+    },
+    {
+      "key": "ai-idp",
+      "label": "AI & Intelligent Document Processing",
+      "description": "How automation and AI are used responsibly to augment classification, extraction and insights across the content lifecycle.",
+      "order": 6
+    }
+  ],
+  "questions": [
+    {
+      "dimensionKey": "leadership-governance",
+      "text": "How comprehensive and current is your enterprise content management strategy?",
+      "type": "multiple_choice",
+      "order": 1,
+      "minValue": null,
+      "maxValue": null,
+      "unit": null,
+      "placeholder": null,
+      "improvementStatement": "Develop a clear and documented strategy aligned to business goals and revisit it regularly to incorporate emerging needs and technologies.",
+      "resourceTitle": "Leadership & Governance Resources",
+      "resourceLink": "https://synozur.com/resources/leadership-governance",
+      "resourceDescription": "Articles and templates to help define strategy, engage executives and coordinate governance.",
+      "answers": [
+        {
+          "text": "We have no formal strategy; teams improvise as needs arise.",
+          "score": 100,
+          "order": 1,
+          "improvementStatement": "Document a basic strategy outlining objectives, scope and responsibilities to build a foundation.",
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Some policies exist but aren\u2019t consistently followed across departments.",
+          "score": 200,
+          "order": 2,
+          "improvementStatement": "Involve cross\u2011functional stakeholders to refine policies, communicate them, and link them to outcomes.",
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "A documented strategy is in place and socialized, though some teams work around it.",
+          "score": 300,
+          "order": 3,
+          "improvementStatement": "Establish accountability for adherence and update the strategy based on feedback and metrics.",
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Strategy is integrated into business planning and regularly reviewed for relevance.",
+          "score": 400,
+          "order": 4,
+          "improvementStatement": "Use metrics and audits to drive updates and demonstrate impact to leadership.",
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Strategy is well\u2011embedded and future\u2011oriented, balancing governance with flexibility.",
+          "score": 500,
+          "order": 5,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        }
+      ]
+    },
+    {
+      "dimensionKey": "leadership-governance",
+      "text": "How engaged are senior leaders in championing content management activities?",
+      "type": "multiple_choice",
+      "order": 2,
+      "minValue": null,
+      "maxValue": null,
+      "unit": null,
+      "placeholder": null,
+      "improvementStatement": "Active leadership support reinforces the importance of good content practices and encourages adoption.",
+      "resourceTitle": "Leadership & Governance Resources",
+      "resourceLink": "https://synozur.com/resources/leadership-governance",
+      "resourceDescription": "Articles and templates to help define strategy, engage executives and coordinate governance.",
+      "answers": [
+        {
+          "text": "Senior leaders are unaware of content management or view it as a technical concern.",
+          "score": 100,
+          "order": 1,
+          "improvementStatement": "Educate leadership on the risks and benefits to cultivate sponsorship.",
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Occasional support occurs when issues arise, but it isn\u2019t a priority.",
+          "score": 200,
+          "order": 2,
+          "improvementStatement": "Present tangible examples of how good governance reduces risk and enables productivity.",
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Leaders support major initiatives but delegate day\u2011to\u2011day responsibility.",
+          "score": 300,
+          "order": 3,
+          "improvementStatement": "Ensure regular reporting on progress so executives stay engaged and allocate resources.",
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Executives actively prioritize and communicate the value of content management.",
+          "score": 400,
+          "order": 4,
+          "improvementStatement": "Invite leaders to celebrate successes and reinforce adoption during town halls and reviews.",
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Leaders champion a culture of continuous improvement, ensuring governance remains aligned with mission.",
+          "score": 500,
+          "order": 5,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        }
+      ]
+    },
+    {
+      "dimensionKey": "leadership-governance",
+      "text": "How predictable are funding and resources for content management efforts?",
+      "type": "multiple_choice",
+      "order": 3,
+      "minValue": null,
+      "maxValue": null,
+      "unit": null,
+      "placeholder": null,
+      "improvementStatement": "Stable funding enables sustained improvement rather than one\u2011off fixes.",
+      "resourceTitle": "Leadership & Governance Resources",
+      "resourceLink": "https://synozur.com/resources/leadership-governance",
+      "resourceDescription": "Articles and templates to help define strategy, engage executives and coordinate governance.",
+      "answers": [
+        {
+          "text": "Funding is ad hoc, based on immediate issues with no dedicated budget.",
+          "score": 100,
+          "order": 1,
+          "improvementStatement": "Commit a baseline budget for foundational governance activities.",
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Funding is project\u2011based; some years resources are available, others not.",
+          "score": 200,
+          "order": 2,
+          "improvementStatement": "Demonstrate ROI to secure ongoing funding and integrate governance into project charters.",
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Basic ongoing funding exists, but major enhancements compete with other initiatives.",
+          "score": 300,
+          "order": 3,
+          "improvementStatement": "Prioritize enhancements based on risk and impact to secure additional funding.",
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Dedicated funds exist for operations and improvements, reviewed annually.",
+          "score": 400,
+          "order": 4,
+          "improvementStatement": "Use data to justify expansions and incorporate funding into multi\u2011year planning.",
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Funding is treated as a strategic investment with multi\u2011year commitments.",
+          "score": 500,
+          "order": 5,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        }
+      ]
+    },
+    {
+      "dimensionKey": "leadership-governance",
+      "text": "To what extent are content\u2011related metrics aligned with organizational objectives?",
+      "type": "multiple_choice",
+      "order": 4,
+      "minValue": null,
+      "maxValue": null,
+      "unit": null,
+      "placeholder": null,
+      "improvementStatement": "Meaningful metrics link content quality and governance to business value.",
+      "resourceTitle": "Leadership & Governance Resources",
+      "resourceLink": "https://synozur.com/resources/leadership-governance",
+      "resourceDescription": "Articles and templates to help define strategy, engage executives and coordinate governance.",
+      "answers": [
+        {
+          "text": "Few metrics exist; success is subjective and rarely measured.",
+          "score": 100,
+          "order": 1,
+          "improvementStatement": "Define simple measures such as volume of disorganized content or search satisfaction.",
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Some operational metrics exist (e.g., storage usage), but they\u2019re not tied to outcomes.",
+          "score": 200,
+          "order": 2,
+          "improvementStatement": "Extend metrics to include risk reduction or productivity improvements.",
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Metrics cover quality, compliance and adoption but aren\u2019t always tied to strategic goals.",
+          "score": 300,
+          "order": 3,
+          "improvementStatement": "Collaborate with business leaders to link metrics to revenue, customer satisfaction or risk mitigation.",
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Metrics are aligned to key outcomes and regularly reviewed with leadership.",
+          "score": 400,
+          "order": 4,
+          "improvementStatement": "Use dashboards to share insights broadly and drive actions.",
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Metrics drive continuous improvement and inform real\u2011time adjustments to governance.",
+          "score": 500,
+          "order": 5,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        }
+      ]
+    },
+    {
+      "dimensionKey": "leadership-governance",
+      "text": "How well do cross\u2011functional teams collaborate on setting and maintaining governance?",
+      "type": "multiple_choice",
+      "order": 5,
+      "minValue": null,
+      "maxValue": null,
+      "unit": null,
+      "placeholder": null,
+      "improvementStatement": "Cross\u2011department collaboration ensures policies are realistic and adopted broadly.",
+      "resourceTitle": "Leadership & Governance Resources",
+      "resourceLink": "https://synozur.com/resources/leadership-governance",
+      "resourceDescription": "Articles and templates to help define strategy, engage executives and coordinate governance.",
+      "answers": [
+        {
+          "text": "Each department makes its own rules and there is little coordination.",
+          "score": 100,
+          "order": 1,
+          "improvementStatement": "Establish a working group with representatives from key departments to harmonize policies.",
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Some collaboration occurs for major initiatives but silos remain.",
+          "score": 200,
+          "order": 2,
+          "improvementStatement": "Organize regular forums to share challenges and exchange best practices.",
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "A governance committee exists but decisions may not reflect all voices.",
+          "score": 300,
+          "order": 3,
+          "improvementStatement": "Ensure representation and transparent decision\u2011making for equitable policies.",
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Cross\u2011functional teams work closely to adapt policies based on organizational needs.",
+          "score": 400,
+          "order": 4,
+          "improvementStatement": "Rotate committee membership to keep perspectives fresh and relevant.",
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Teams collaborate seamlessly and adjust governance quickly to support innovation.",
+          "score": 500,
+          "order": 5,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        }
+      ]
+    },
+    {
+      "dimensionKey": "people-skills",
+      "text": "How clearly defined are roles and responsibilities for managing content?",
+      "type": "multiple_choice",
+      "order": 1,
+      "minValue": null,
+      "maxValue": null,
+      "unit": null,
+      "placeholder": null,
+      "improvementStatement": "Clear accountability ensures content is owned, maintained and retired appropriately.",
+      "resourceTitle": "People & Skills Resources",
+      "resourceLink": "https://synozur.com/resources/people-skills",
+      "resourceDescription": "Tips on defining roles, training and building communities of practice.",
+      "answers": [
+        {
+          "text": "No one is officially responsible; ownership is vague or missing.",
+          "score": 100,
+          "order": 1,
+          "improvementStatement": "Identify content owners and stewards for key repositories.",
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Responsibilities are informally understood but not documented.",
+          "score": 200,
+          "order": 2,
+          "improvementStatement": "Formalize roles and communicate them across teams.",
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Roles are documented for major systems but not consistently implemented.",
+          "score": 300,
+          "order": 3,
+          "improvementStatement": "Provide tools and dashboards so owners can monitor their content.",
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Roles and responsibilities are well defined and enforced across the organization.",
+          "score": 400,
+          "order": 4,
+          "improvementStatement": "Align roles with performance incentives to maintain accountability.",
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "A culture of stewardship is embedded; accountability is proactive and peer reinforced.",
+          "score": 500,
+          "order": 5,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        }
+      ]
+    },
+    {
+      "dimensionKey": "people-skills",
+      "text": "How adequate is training on using content management tools and following policies?",
+      "type": "multiple_choice",
+      "order": 2,
+      "minValue": null,
+      "maxValue": null,
+      "unit": null,
+      "placeholder": null,
+      "improvementStatement": "Continual learning helps staff adopt systems and follow policies effectively.",
+      "resourceTitle": "People & Skills Resources",
+      "resourceLink": "https://synozur.com/resources/people-skills",
+      "resourceDescription": "Tips on defining roles, training and building communities of practice.",
+      "answers": [
+        {
+          "text": "Training is ad hoc or non\u2011existent; users learn by trial and error.",
+          "score": 100,
+          "order": 1,
+          "improvementStatement": "Develop basic training materials on foundational tools and policies.",
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Some onboarding materials exist, but they\u2019re outdated or optional.",
+          "score": 200,
+          "order": 2,
+          "improvementStatement": "Update training regularly and make completion mandatory for new hires.",
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Regular training is offered, but participation varies across teams.",
+          "score": 300,
+          "order": 3,
+          "improvementStatement": "Tailor sessions to different roles and encourage managers to track completion.",
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Training is scheduled, role\u2011based, and includes refresher courses.",
+          "score": 400,
+          "order": 4,
+          "improvementStatement": "Incorporate hands\u2011on exercises and scenario\u2011based learning to make training engaging.",
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Training is continuous, accessible on demand, and embedded in workflow with just\u2011in\u2011time guidance.",
+          "score": 500,
+          "order": 5,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        }
+      ]
+    },
+    {
+      "dimensionKey": "people-skills",
+      "text": "To what extent is there a community or network for sharing best practices?",
+      "type": "multiple_choice",
+      "order": 3,
+      "minValue": null,
+      "maxValue": null,
+      "unit": null,
+      "placeholder": null,
+      "improvementStatement": "Communities of practice promote peer support and continuous learning.",
+      "resourceTitle": "People & Skills Resources",
+      "resourceLink": "https://synozur.com/resources/people-skills",
+      "resourceDescription": "Tips on defining roles, training and building communities of practice.",
+      "answers": [
+        {
+          "text": "There is no formal community; individuals solve issues on their own.",
+          "score": 100,
+          "order": 1,
+          "improvementStatement": "Create sharing channels or forums where staff can ask questions and share solutions.",
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Informal peer support exists but lacks structure or recognition.",
+          "score": 200,
+          "order": 2,
+          "improvementStatement": "Nominate champions to curate tips and encourage participation.",
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "A community exists but lacks consistent participation or recognition from leadership.",
+          "score": 300,
+          "order": 3,
+          "improvementStatement": "Provide recognition or incentives for active contributions and align topics with organizational priorities.",
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Communities are active with regular knowledge\u2011sharing events.",
+          "score": 400,
+          "order": 4,
+          "improvementStatement": "Document and distribute insights from community sessions.",
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "A vibrant learning culture connects practitioners across the organization, with leadership sponsorship.",
+          "score": 500,
+          "order": 5,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        }
+      ]
+    },
+    {
+      "dimensionKey": "people-skills",
+      "text": "How well do employees understand why content governance matters?",
+      "type": "multiple_choice",
+      "order": 4,
+      "minValue": null,
+      "maxValue": null,
+      "unit": null,
+      "placeholder": null,
+      "improvementStatement": "Communicating the \u2018why\u2019 behind governance fosters compliance and ownership.",
+      "resourceTitle": "People & Skills Resources",
+      "resourceLink": "https://synozur.com/resources/people-skills",
+      "resourceDescription": "Tips on defining roles, training and building communities of practice.",
+      "answers": [
+        {
+          "text": "Most employees are unaware of governance policies or view them as burdensome.",
+          "score": 100,
+          "order": 1,
+          "improvementStatement": "Share stories of how poor governance leads to real\u2011world issues (e.g., data breaches, productivity loss).",
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Awareness campaigns have been attempted but yield little engagement.",
+          "score": 200,
+          "order": 2,
+          "improvementStatement": "Pair messaging with tangible benefits like easier search and reduced risk.",
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Employees are aware of policies but often see them as someone else\u2019s responsibility.",
+          "score": 300,
+          "order": 3,
+          "improvementStatement": "Highlight everyone\u2019s role through job aids and role\u2011based training.",
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Staff understand the importance of governance and support compliance efforts.",
+          "score": 400,
+          "order": 4,
+          "improvementStatement": "Share metrics and celebrate improvements to reinforce positive behaviors.",
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Governance is seen as enabling productivity and security; staff actively promote best practices.",
+          "score": 500,
+          "order": 5,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        }
+      ]
+    },
+    {
+      "dimensionKey": "people-skills",
+      "text": "How effective are change management and communication efforts for new tools and policies?",
+      "type": "multiple_choice",
+      "order": 5,
+      "minValue": null,
+      "maxValue": null,
+      "unit": null,
+      "placeholder": null,
+      "improvementStatement": "Effective communication and change management reduce resistance and accelerate adoption.",
+      "resourceTitle": "People & Skills Resources",
+      "resourceLink": "https://synozur.com/resources/people-skills",
+      "resourceDescription": "Tips on defining roles, training and building communities of practice.",
+      "answers": [
+        {
+          "text": "Changes are introduced with little notice or follow\u2011up support.",
+          "score": 100,
+          "order": 1,
+          "improvementStatement": "Plan communications ahead and provide resources for users to adapt.",
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Communications occur but focus on what is changing rather than why.",
+          "score": 200,
+          "order": 2,
+          "improvementStatement": "Explain the benefits and impacts of changes to gain buy\u2011in.",
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "A structured change plan exists but feedback loops are weak.",
+          "score": 300,
+          "order": 3,
+          "improvementStatement": "Collect user feedback and adjust communications accordingly.",
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Change programs include clear messaging, training and feedback, supported by leadership.",
+          "score": 400,
+          "order": 4,
+          "improvementStatement": "Use champions to reinforce messages and capture lessons for future initiatives.",
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Change is managed collaboratively with users, using iterative communications and support mechanisms.",
+          "score": 500,
+          "order": 5,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        }
+      ]
+    },
+    {
+      "dimensionKey": "technology-data",
+      "text": "How standardized and modern are the platforms used for storing and collaborating on content?",
+      "type": "multiple_choice",
+      "order": 1,
+      "minValue": null,
+      "maxValue": null,
+      "unit": null,
+      "placeholder": null,
+      "improvementStatement": "Standardized platforms reduce fragmentation and improve user experience and compliance.",
+      "resourceTitle": "Technology & Data Resources",
+      "resourceLink": "https://synozur.com/resources/technology-data",
+      "resourceDescription": "Guides on platform consolidation, metadata, integration, search, and classification.",
+      "answers": [
+        {
+          "text": "Teams use disparate systems with minimal integration.",
+          "score": 100,
+          "order": 1,
+          "improvementStatement": "Inventory platforms and consolidate where possible onto enterprise solutions like SharePoint or Teams.",
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "A few key systems are common, but shadow IT and file shares still proliferate.",
+          "score": 200,
+          "order": 2,
+          "improvementStatement": "Offer migration assistance and disable legacy systems to encourage consolidation.",
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Most teams use approved platforms, though some specialized systems remain.",
+          "score": 300,
+          "order": 3,
+          "improvementStatement": "Establish integration patterns and single sign\u2011on to maintain coherence across platforms.",
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Standard systems are used enterprise\u2011wide, with documented integration and governance.",
+          "score": 400,
+          "order": 4,
+          "improvementStatement": "Continuously review technology landscape and retire duplication.",
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Unified collaboration platforms support seamless work with strong governance and innovation.",
+          "score": 500,
+          "order": 5,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        }
+      ]
+    },
+    {
+      "dimensionKey": "technology-data",
+      "text": "How mature are your information architecture and metadata practices?",
+      "type": "multiple_choice",
+      "order": 2,
+      "minValue": null,
+      "maxValue": null,
+      "unit": null,
+      "placeholder": null,
+      "improvementStatement": "Consistent metadata and taxonomy make information easier to find, secure and manage.",
+      "resourceTitle": "Technology & Data Resources",
+      "resourceLink": "https://synozur.com/resources/technology-data",
+      "resourceDescription": "Guides on platform consolidation, metadata, integration, search, and classification.",
+      "answers": [
+        {
+          "text": "File names and folder structures are the main way content is organized.",
+          "score": 100,
+          "order": 1,
+          "improvementStatement": "Define simple metadata fields (e.g., department, confidentiality) and educate users on their importance.",
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Basic metadata exists but isn\u2019t consistently applied or governed.",
+          "score": 200,
+          "order": 2,
+          "improvementStatement": "Create mandatory metadata templates and automate assignment where possible.",
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Standard taxonomies and content types are defined for key repositories.",
+          "score": 300,
+          "order": 3,
+          "improvementStatement": "Govern metadata usage with validation rules and regular audits.",
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Metadata and taxonomy are managed centrally and supported by automation tools.",
+          "score": 400,
+          "order": 4,
+          "improvementStatement": "Use machine learning to suggest or apply metadata at scale.",
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Information architecture is adaptive, user\u2011validated and optimized for findability and compliance.",
+          "score": 500,
+          "order": 5,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        }
+      ]
+    },
+    {
+      "dimensionKey": "technology-data",
+      "text": "How well are systems integrated to support consistent content lifecycle management?",
+      "type": "multiple_choice",
+      "order": 3,
+      "minValue": null,
+      "maxValue": null,
+      "unit": null,
+      "placeholder": null,
+      "improvementStatement": "Integration reduces duplication and ensures policies apply across systems.",
+      "resourceTitle": "Technology & Data Resources",
+      "resourceLink": "https://synozur.com/resources/technology-data",
+      "resourceDescription": "Guides on platform consolidation, metadata, integration, search, and classification.",
+      "answers": [
+        {
+          "text": "Systems operate in silos with manual transfers and inconsistent rules.",
+          "score": 100,
+          "order": 1,
+          "improvementStatement": "Identify key systems and prioritize integration to reduce manual effort.",
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Some systems are integrated, but many processes rely on manual workarounds.",
+          "score": 200,
+          "order": 2,
+          "improvementStatement": "Implement connectors or APIs to sync content and enforce policies across systems.",
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Primary systems are integrated, though minor platforms still require manual processes.",
+          "score": 300,
+          "order": 3,
+          "improvementStatement": "Develop standard patterns and governance for new integrations.",
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Most systems exchange metadata and follow the same lifecycle policies.",
+          "score": 400,
+          "order": 4,
+          "improvementStatement": "Continuously monitor integrations to ensure alignment and adjust as needed.",
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Integration is seamless; users experience a consistent lifecycle regardless of system.",
+          "score": 500,
+          "order": 5,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        }
+      ]
+    },
+    {
+      "dimensionKey": "technology-data",
+      "text": "How effective is search and discovery across your content estate?",
+      "type": "multiple_choice",
+      "order": 4,
+      "minValue": null,
+      "maxValue": null,
+      "unit": null,
+      "placeholder": null,
+      "improvementStatement": "Good search reduces time wasted and ensures vital information is available when needed.",
+      "resourceTitle": "Technology & Data Resources",
+      "resourceLink": "https://synozur.com/resources/technology-data",
+      "resourceDescription": "Guides on platform consolidation, metadata, integration, search, and classification.",
+      "answers": [
+        {
+          "text": "Search is unreliable; employees often duplicate work because content is hard to find.",
+          "score": 100,
+          "order": 1,
+          "improvementStatement": "Ensure content is indexed and include training on search best practices.",
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Search works in some systems but not across the enterprise.",
+          "score": 200,
+          "order": 2,
+          "improvementStatement": "Improve indexing, standardize metadata, and encourage tagging to improve results.",
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Enterprise search exists but results can be noisy or incomplete.",
+          "score": 300,
+          "order": 3,
+          "improvementStatement": "Use refiners, synonyms and machine learning to improve relevancy.",
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Search is efficient and returns relevant results, with filters and personalization.",
+          "score": 400,
+          "order": 4,
+          "improvementStatement": "Analyze search analytics to continuously improve relevancy.",
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Search and discovery are intuitive and predictive, surfacing insights proactively.",
+          "score": 500,
+          "order": 5,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        }
+      ]
+    },
+    {
+      "dimensionKey": "technology-data",
+      "text": "How robust are your data quality and classification processes?",
+      "type": "multiple_choice",
+      "order": 5,
+      "minValue": null,
+      "maxValue": null,
+      "unit": null,
+      "placeholder": null,
+      "improvementStatement": "Consistent classification reduces risk and drives effective automation and analytics.",
+      "resourceTitle": "Technology & Data Resources",
+      "resourceLink": "https://synozur.com/resources/technology-data",
+      "resourceDescription": "Guides on platform consolidation, metadata, integration, search, and classification.",
+      "answers": [
+        {
+          "text": "Data quality is poor; classification is inconsistent or non\u2011existent.",
+          "score": 100,
+          "order": 1,
+          "improvementStatement": "Establish policies and basic rules for classifying content.",
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Some classification rules exist, but they\u2019re applied manually and unevenly.",
+          "score": 200,
+          "order": 2,
+          "improvementStatement": "Automate classification for standard file types using built\u2011in tools.",
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Classification covers key sensitive content but lacks fine granularity.",
+          "score": 300,
+          "order": 3,
+          "improvementStatement": "Implement advanced labeling options and train users on their application.",
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Classification is automated, and rules are reviewed regularly with stakeholder input.",
+          "score": 400,
+          "order": 4,
+          "improvementStatement": "Leverage analytics to refine labels and reduce false positives/negatives.",
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Classification is proactive, adaptive and supports advanced analytics and compliance.",
+          "score": 500,
+          "order": 5,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        }
+      ]
+    },
+    {
+      "dimensionKey": "process-adoption",
+      "text": "How well defined are your content lifecycle processes (creation through disposal)?",
+      "type": "multiple_choice",
+      "order": 1,
+      "minValue": null,
+      "maxValue": null,
+      "unit": null,
+      "placeholder": null,
+      "improvementStatement": "Defining clear processes ensures content is managed consistently from creation to retention or disposal.",
+      "resourceTitle": "Process & Adoption Resources",
+      "resourceLink": "https://synozur.com/resources/process-adoption",
+      "resourceDescription": "Guides on mapping lifecycles, driving adoption, managing change and using analytics.",
+      "answers": [
+        {
+          "text": "Processes are ad hoc or undefined; users decide individually.",
+          "score": 100,
+          "order": 1,
+          "improvementStatement": "Map out a standard lifecycle and publish guidelines for everyone.",
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "There are documented processes, but many users do not follow them.",
+          "score": 200,
+          "order": 2,
+          "improvementStatement": "Communicate processes and provide training and reminders within tools.",
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Processes are defined for major repositories but not across the enterprise.",
+          "score": 300,
+          "order": 3,
+          "improvementStatement": "Standardize and streamline processes to cover additional repositories and departments.",
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Processes are standardized and integrated with systems, with occasional audit feedback.",
+          "score": 400,
+          "order": 4,
+          "improvementStatement": "Use analytics to highlight bottlenecks and promote adherence.",
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Content lifecycle processes are integrated, automated where appropriate, and continuously improved.",
+          "score": 500,
+          "order": 5,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        }
+      ]
+    },
+    {
+      "dimensionKey": "process-adoption",
+      "text": "How effectively are end\u2011users adopting content management tools and practices?",
+      "type": "multiple_choice",
+      "order": 2,
+      "minValue": null,
+      "maxValue": null,
+      "unit": null,
+      "placeholder": null,
+      "improvementStatement": "Adoption determines whether your policies and technologies deliver intended benefits.",
+      "resourceTitle": "Process & Adoption Resources",
+      "resourceLink": "https://synozur.com/resources/process-adoption",
+      "resourceDescription": "Guides on mapping lifecycles, driving adoption, managing change and using analytics.",
+      "answers": [
+        {
+          "text": "Few users adopt the tools; old habits persist (e.g., email attachments).",
+          "score": 100,
+          "order": 1,
+          "improvementStatement": "Explain benefits and provide simple use cases through training and communication campaigns.",
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Some teams adopt the tools while others continue using legacy methods.",
+          "score": 200,
+          "order": 2,
+          "improvementStatement": "Show success stories and invest in champions to mentor peers.",
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Adoption is steady in key areas but inconsistent across different roles or regions.",
+          "score": 300,
+          "order": 3,
+          "improvementStatement": "Analyze adoption data to target outreach where need is greatest.",
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Most users embrace tools and practices; adoption is measured and supported.",
+          "score": 400,
+          "order": 4,
+          "improvementStatement": "Continue to refine tools based on feedback and reward positive behaviors.",
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Adoption is widespread and evolving; users routinely provide feedback and help shape future enhancements.",
+          "score": 500,
+          "order": 5,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        }
+      ]
+    },
+    {
+      "dimensionKey": "process-adoption",
+      "text": "How coordinated are change management and project management for content initiatives?",
+      "type": "multiple_choice",
+      "order": 3,
+      "minValue": null,
+      "maxValue": null,
+      "unit": null,
+      "placeholder": null,
+      "improvementStatement": "Coordinated change and project management ensure activities are executed smoothly and align with people\u2019s needs.",
+      "resourceTitle": "Process & Adoption Resources",
+      "resourceLink": "https://synozur.com/resources/process-adoption",
+      "resourceDescription": "Guides on mapping lifecycles, driving adoption, managing change and using analytics.",
+      "answers": [
+        {
+          "text": "Projects lack formal change management; tasks and communication are reactive.",
+          "score": 100,
+          "order": 1,
+          "improvementStatement": "Include change management as a workstream in project plans and identify impacts early.",
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Change activities occur but are not coordinated with the project timeline.",
+          "score": 200,
+          "order": 2,
+          "improvementStatement": "Align communications, training, and go\u2011live support with project milestones.",
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Projects follow a basic change plan, but risk management and stakeholder engagement may be weak.",
+          "score": 300,
+          "order": 3,
+          "improvementStatement": "Use a structured methodology to address stakeholder needs and monitor risks.",
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Change and project management are integrated and include metrics for adoption and performance.",
+          "score": 400,
+          "order": 4,
+          "improvementStatement": "Conduct post\u2011implementation reviews to capture lessons learned.",
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Change management is iterative and agile, enabling continuous delivery and feedback loops.",
+          "score": 500,
+          "order": 5,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        }
+      ]
+    },
+    {
+      "dimensionKey": "process-adoption",
+      "text": "How well are user feedback and analytics leveraged to improve processes?",
+      "type": "multiple_choice",
+      "order": 4,
+      "minValue": null,
+      "maxValue": null,
+      "unit": null,
+      "placeholder": null,
+      "improvementStatement": "Feedback and analytics help you adapt processes to real\u2011world usage and improve satisfaction.",
+      "resourceTitle": "Process & Adoption Resources",
+      "resourceLink": "https://synozur.com/resources/process-adoption",
+      "resourceDescription": "Guides on mapping lifecycles, driving adoption, managing change and using analytics.",
+      "answers": [
+        {
+          "text": "There is little to no feedback collection or analytics on content processes.",
+          "score": 100,
+          "order": 1,
+          "improvementStatement": "Set up simple feedback channels and track basic metrics like adoption and storage growth.",
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Feedback is occasionally collected but rarely used to inform changes.",
+          "score": 200,
+          "order": 2,
+          "improvementStatement": "Incorporate regular surveys and share results with stakeholders.",
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Some analytics are reviewed, but they mainly focus on technical performance (uptime, storage).",
+          "score": 300,
+          "order": 3,
+          "improvementStatement": "Introduce metrics on user satisfaction and process efficiency to better understand impact.",
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Feedback and analytics are analysed regularly to refine processes and support training.",
+          "score": 400,
+          "order": 4,
+          "improvementStatement": "Use dashboards that combine qualitative and quantitative insights for broader visibility.",
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Insight-driven continuous improvement is embedded; analytics proactively identify improvement opportunities.",
+          "score": 500,
+          "order": 5,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        }
+      ]
+    },
+    {
+      "dimensionKey": "process-adoption",
+      "text": "How consistent are communication and knowledge sharing across departments regarding content management?",
+      "type": "multiple_choice",
+      "order": 5,
+      "minValue": null,
+      "maxValue": null,
+      "unit": null,
+      "placeholder": null,
+      "improvementStatement": "Regular communication fosters alignment and reduces duplication of effort.",
+      "resourceTitle": "Process & Adoption Resources",
+      "resourceLink": "https://synozur.com/resources/process-adoption",
+      "resourceDescription": "Guides on mapping lifecycles, driving adoption, managing change and using analytics.",
+      "answers": [
+        {
+          "text": "Departments rarely share updates or lessons learned beyond their own teams.",
+          "score": 100,
+          "order": 1,
+          "improvementStatement": "Establish channels such as newsletters or Teams groups for cross\u2011department sharing.",
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Occasional updates are shared, but it\u2019s inconsistent and informal.",
+          "score": 200,
+          "order": 2,
+          "improvementStatement": "Schedule regular communications and invite input from across the organization.",
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Some departments share knowledge regularly; others remain isolated.",
+          "score": 300,
+          "order": 3,
+          "improvementStatement": "Encourage management to participate in cross\u2011functional forums.",
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Cross\u2011department communication is coordinated and includes best practices and successes.",
+          "score": 400,
+          "order": 4,
+          "improvementStatement": "Use analytics to identify topics that need more attention and highlight them in communications.",
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Knowledge sharing is integrated into daily work through collaborative tools and recognized by leadership.",
+          "score": 500,
+          "order": 5,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        }
+      ]
+    },
+    {
+      "dimensionKey": "governance-risk-compliance",
+      "text": "How complete and current is your content policy framework (classification, retention, privacy)?",
+      "type": "multiple_choice",
+      "order": 1,
+      "minValue": null,
+      "maxValue": null,
+      "unit": null,
+      "placeholder": null,
+      "improvementStatement": "A holistic policy framework reduces legal and operational risk.",
+      "resourceTitle": "Governance, Risk & Compliance Resources",
+      "resourceLink": "https://synozur.com/resources/governance-risk-compliance",
+      "resourceDescription": "Policy templates, retention guides, audit readiness and risk management concepts.",
+      "answers": [
+        {
+          "text": "We lack formal policies or depend on generic guidelines that aren\u2019t enforced.",
+          "score": 100,
+          "order": 1,
+          "improvementStatement": "Define baseline policies for classification, retention, and privacy based on regulatory requirements.",
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Some policies exist but they\u2019re patchy or obsolete.",
+          "score": 200,
+          "order": 2,
+          "improvementStatement": "Review and update policies with legal, security and business stakeholders.",
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Policies are defined for major repositories but not enterprise\u2011wide.",
+          "score": 300,
+          "order": 3,
+          "improvementStatement": "Expand policies to cover all information sources and ensure they\u2019re clear and accessible.",
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Policies are comprehensive, updated regularly, and embedded in systems and processes.",
+          "score": 400,
+          "order": 4,
+          "improvementStatement": "Create policy dashboards and training to ensure understanding and compliance.",
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Policies are proactively managed, embedded in culture, and adapt to new regulations quickly.",
+          "score": 500,
+          "order": 5,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        }
+      ]
+    },
+    {
+      "dimensionKey": "governance-risk-compliance",
+      "text": "How effectively are retention and disposal schedules enforced?",
+      "type": "multiple_choice",
+      "order": 2,
+      "minValue": null,
+      "maxValue": null,
+      "unit": null,
+      "placeholder": null,
+      "improvementStatement": "Retention and disposal protect against data hoarding and regulatory breaches.",
+      "resourceTitle": "Governance, Risk & Compliance Resources",
+      "resourceLink": "https://synozur.com/resources/governance-risk-compliance",
+      "resourceDescription": "Policy templates, retention guides, audit readiness and risk management concepts.",
+      "answers": [
+        {
+          "text": "Retention and disposal are rarely practiced; content is kept indefinitely.",
+          "score": 100,
+          "order": 1,
+          "improvementStatement": "Define schedules based on legal and business requirements and implement manual processes to begin.",
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Some teams follow retention schedules, but enforcement is inconsistent.",
+          "score": 200,
+          "order": 2,
+          "improvementStatement": "Automate retention and disposal where possible and monitor compliance.",
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Retention rules are defined and applied in major systems but manual exceptions occur.",
+          "score": 300,
+          "order": 3,
+          "improvementStatement": "Use automated triggers and approvals to handle exceptions and refine rules.",
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Retention is automated across most systems with periodic audits and reporting.",
+          "score": 400,
+          "order": 4,
+          "improvementStatement": "Periodically review schedules with stakeholders and adjust to new requirements.",
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Retention and disposal are seamlessly enforced across all platforms with full auditability.",
+          "score": 500,
+          "order": 5,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        }
+      ]
+    },
+    {
+      "dimensionKey": "governance-risk-compliance",
+      "text": "How prepared is your organization for audits and e\u2011discovery requests?",
+      "type": "multiple_choice",
+      "order": 3,
+      "minValue": null,
+      "maxValue": null,
+      "unit": null,
+      "placeholder": null,
+      "improvementStatement": "Strong audit readiness reduces disruption and cost during investigations and litigation.",
+      "resourceTitle": "Governance, Risk & Compliance Resources",
+      "resourceLink": "https://synozur.com/resources/governance-risk-compliance",
+      "resourceDescription": "Policy templates, retention guides, audit readiness and risk management concepts.",
+      "answers": [
+        {
+          "text": "We scramble to locate records and seldom know what information we hold.",
+          "score": 100,
+          "order": 1,
+          "improvementStatement": "Inventory key records and implement simple search capabilities.",
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Some content is organized, but finding complete records is time\u2011consuming.",
+          "score": 200,
+          "order": 2,
+          "improvementStatement": "Define retention and classification to ease discovery and create evergreen audit trails.",
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "We can locate most information but may miss items in legacy systems.",
+          "score": 300,
+          "order": 3,
+          "improvementStatement": "Incorporate all systems into your discovery process and include metadata for faster retrieval.",
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Records are easily discoverable, with audit trails and chain of custody documentation.",
+          "score": 400,
+          "order": 4,
+          "improvementStatement": "Run periodic mock audits to ensure readiness and refine search strategies.",
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Audit readiness is near real\u2011time, enabling quick response with accurate and complete data.",
+          "score": 500,
+          "order": 5,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        }
+      ]
+    },
+    {
+      "dimensionKey": "governance-risk-compliance",
+      "text": "How actively do you monitor compliance with policies and remediate issues?",
+      "type": "multiple_choice",
+      "order": 4,
+      "minValue": null,
+      "maxValue": null,
+      "unit": null,
+      "placeholder": null,
+      "improvementStatement": "Monitoring and remediation ensure policies are not just written but lived.",
+      "resourceTitle": "Governance, Risk & Compliance Resources",
+      "resourceLink": "https://synozur.com/resources/governance-risk-compliance",
+      "resourceDescription": "Policy templates, retention guides, audit readiness and risk management concepts.",
+      "answers": [
+        {
+          "text": "We rely on complaints or incidents to uncover non\u2011compliance.",
+          "score": 100,
+          "order": 1,
+          "improvementStatement": "Define basic monitoring activities like periodic audits and spot checks.",
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Monitoring occurs sporadically and is largely manual.",
+          "score": 200,
+          "order": 2,
+          "improvementStatement": "Use built\u2011in compliance tools to automate checks and alert owners to issues.",
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Policy compliance is monitored in key systems; issues are addressed individually.",
+          "score": 300,
+          "order": 3,
+          "improvementStatement": "Develop a process for tracking and trending violations to inform training and process improvements.",
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Monitoring is systematic, with metrics and dashboards shared with leadership.",
+          "score": 400,
+          "order": 4,
+          "improvementStatement": "Use results to prioritize resource allocation and update policies.",
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Compliance is embedded in operations; issues are detected quickly and resolved collaboratively.",
+          "score": 500,
+          "order": 5,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        }
+      ]
+    },
+    {
+      "dimensionKey": "governance-risk-compliance",
+      "text": "How integrated is risk management with your content governance program?",
+      "type": "multiple_choice",
+      "order": 5,
+      "minValue": null,
+      "maxValue": null,
+      "unit": null,
+      "placeholder": null,
+      "improvementStatement": "Linking content governance to enterprise risk management improves resilience and decision making.",
+      "resourceTitle": "Governance, Risk & Compliance Resources",
+      "resourceLink": "https://synozur.com/resources/governance-risk-compliance",
+      "resourceDescription": "Policy templates, retention guides, audit readiness and risk management concepts.",
+      "answers": [
+        {
+          "text": "Content risks (e.g., data breaches, intellectual property loss) are not formally assessed.",
+          "score": 100,
+          "order": 1,
+          "improvementStatement": "Identify and document content\u2011related risks to raise awareness.",
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Risks are assessed occasionally and not linked to governance activities.",
+          "score": 200,
+          "order": 2,
+          "improvementStatement": "Incorporate risk mitigation strategies into policy design and change management.",
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Risk assessments are performed for major projects but not continually.",
+          "score": 300,
+          "order": 3,
+          "improvementStatement": "Schedule regular risk reviews and integrate with audit and compliance monitoring.",
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Risk management is part of governance planning and drives prevention and mitigation actions.",
+          "score": 400,
+          "order": 4,
+          "improvementStatement": "Highlight risk metrics in dashboards and use them to inform decisions.",
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Risk management is proactive and predictive, integrated with analytics and decision making.",
+          "score": 500,
+          "order": 5,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        }
+      ]
+    },
+    {
+      "dimensionKey": "ai-idp",
+      "text": "How mature is your use of automation for document classification and metadata extraction?",
+      "type": "multiple_choice",
+      "order": 1,
+      "minValue": null,
+      "maxValue": null,
+      "unit": null,
+      "placeholder": null,
+      "improvementStatement": "Automating classification reduces manual effort and improves accuracy, but must be governed responsibly.",
+      "resourceTitle": "AI & Intelligent Document Processing Resources",
+      "resourceLink": "https://synozur.com/resources/ai-idp",
+      "resourceDescription": "Guidance on automation, AI adoption and responsible use for document processing.",
+      "answers": [
+        {
+          "text": "We rely solely on manual tagging and classification.",
+          "score": 100,
+          "order": 1,
+          "improvementStatement": "Explore built\u2011in AI or rule\u2011based classification options in your current platforms.",
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Basic rules or regex patterns are used to extract some metadata.",
+          "score": 200,
+          "order": 2,
+          "improvementStatement": "Expand rules and incorporate machine learning for higher accuracy.",
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Machine learning helps classify documents in specific use cases, but coverage is limited.",
+          "score": 300,
+          "order": 3,
+          "improvementStatement": "Scale machine learning models to additional scenarios and monitor performance.",
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Semi\u2011automated classification and extraction are applied broadly, with human review as needed.",
+          "score": 400,
+          "order": 4,
+          "improvementStatement": "Continuously refine models using feedback and audit results to address biases or errors.",
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Automated classification and extraction are pervasive, adaptive, and monitored for quality and fairness.",
+          "score": 500,
+          "order": 5,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        }
+      ]
+    },
+    {
+      "dimensionKey": "ai-idp",
+      "text": "How effectively are AI tools being used to improve search, summarization or insights?",
+      "type": "multiple_choice",
+      "order": 2,
+      "minValue": null,
+      "maxValue": null,
+      "unit": null,
+      "placeholder": null,
+      "improvementStatement": "AI can enhance user experience by making content more discoverable and insightful when guided by clear policies.",
+      "resourceTitle": "AI & Intelligent Document Processing Resources",
+      "resourceLink": "https://synozur.com/resources/ai-idp",
+      "resourceDescription": "Guidance on automation, AI adoption and responsible use for document processing.",
+      "answers": [
+        {
+          "text": "AI isn\u2019t used; users rely on basic keyword search and manual reading.",
+          "score": 100,
+          "order": 1,
+          "improvementStatement": "Pilot AI features like semantic search or document summarization to demonstrate benefits.",
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "AI tools are available but rarely adopted due to trust or usability issues.",
+          "score": 200,
+          "order": 2,
+          "improvementStatement": "Provide training on using AI features and clarify privacy and security considerations.",
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "AI tools are adopted for specific departments (e.g., legal for e\u2011discovery).",
+          "score": 300,
+          "order": 3,
+          "improvementStatement": "Broaden adoption by identifying additional high\u2011value use cases and addressing user concerns.",
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "AI helps tag, summarize and surface key insights for many teams.",
+          "score": 400,
+          "order": 4,
+          "improvementStatement": "Monitor results to ensure they remain accurate and adjust models based on use patterns.",
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "AI\u2011driven insights are part of normal workflows, empowering users with accessible summaries and recommendations.",
+          "score": 500,
+          "order": 5,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        }
+      ]
+    },
+    {
+      "dimensionKey": "ai-idp",
+      "text": "How prepared is your organization to scale AI responsibly?",
+      "type": "multiple_choice",
+      "order": 3,
+      "minValue": null,
+      "maxValue": null,
+      "unit": null,
+      "placeholder": null,
+      "improvementStatement": "Responsible AI adoption requires policies, ethics, and human oversight to manage risk.",
+      "resourceTitle": "AI & Intelligent Document Processing Resources",
+      "resourceLink": "https://synozur.com/resources/ai-idp",
+      "resourceDescription": "Guidance on automation, AI adoption and responsible use for document processing.",
+      "answers": [
+        {
+          "text": "We have no formal policies or considerations for AI; adoption is ad hoc.",
+          "score": 100,
+          "order": 1,
+          "improvementStatement": "Develop guidelines on responsible AI use, referencing industry frameworks and your risk policies.",
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Some considerations exist (e.g., data privacy), but no formal responsible AI framework.",
+          "score": 200,
+          "order": 2,
+          "improvementStatement": "Create an ethics committee and adopt a framework for evaluating AI impact.",
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "A responsible AI framework with policies is documented but not fully applied.",
+          "score": 300,
+          "order": 3,
+          "improvementStatement": "Embed responsible AI reviews into procurement and development processes.",
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Responsible AI practices are implemented, with oversight and incident response procedures.",
+          "score": 400,
+          "order": 4,
+          "improvementStatement": "Train staff and stakeholders on responsible AI and ensure transparency and accountability.",
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Responsible AI is deeply ingrained and includes continuous monitoring, governance and human oversight.",
+          "score": 500,
+          "order": 5,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        }
+      ]
+    },
+    {
+      "dimensionKey": "ai-idp",
+      "text": "How consistently is human oversight incorporated into AI and automation processes?",
+      "type": "multiple_choice",
+      "order": 4,
+      "minValue": null,
+      "maxValue": null,
+      "unit": null,
+      "placeholder": null,
+      "improvementStatement": "Human\u2011in\u2011the\u2011loop is essential for catching edge cases and maintaining trust in automation.",
+      "resourceTitle": "AI & Intelligent Document Processing Resources",
+      "resourceLink": "https://synozur.com/resources/ai-idp",
+      "resourceDescription": "Guidance on automation, AI adoption and responsible use for document processing.",
+      "answers": [
+        {
+          "text": "AI systems operate with little or no human oversight.",
+          "score": 100,
+          "order": 1,
+          "improvementStatement": "Ensure that all automated processes have defined checkpoints for human review.",
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Oversight exists during implementation but not during ongoing operations.",
+          "score": 200,
+          "order": 2,
+          "improvementStatement": "Define roles and responsibilities for ongoing monitoring of automated processes.",
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Humans intervene when issues arise, but there\u2019s no structured oversight.",
+          "score": 300,
+          "order": 3,
+          "improvementStatement": "Implement approval workflows for high\u2011risk decisions and regularly audit AI outputs.",
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Human oversight is part of routine operations, with clear escalation paths.",
+          "score": 400,
+          "order": 4,
+          "improvementStatement": "Use analytics to identify patterns and refine oversight levels.",
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Structured human oversight is designed into each use case, with continuous feedback loops.",
+          "score": 500,
+          "order": 5,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        }
+      ]
+    },
+    {
+      "dimensionKey": "ai-idp",
+      "text": "How advanced is your approach to continuous improvement and innovation in AI and content processes?",
+      "type": "multiple_choice",
+      "order": 5,
+      "minValue": null,
+      "maxValue": null,
+      "unit": null,
+      "placeholder": null,
+      "improvementStatement": "Viewing AI as an evolving capability encourages experimentation, learning and adaptation.",
+      "resourceTitle": "AI & Intelligent Document Processing Resources",
+      "resourceLink": "https://synozur.com/resources/ai-idp",
+      "resourceDescription": "Guidance on automation, AI adoption and responsible use for document processing.",
+      "answers": [
+        {
+          "text": "There is little investment in improving AI or content processes; we maintain status quo.",
+          "score": 100,
+          "order": 1,
+          "improvementStatement": "Allocate time and budget for experimentation and encourage grassroots pilots.",
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Improvements are reactive or occur when problems arise.",
+          "score": 200,
+          "order": 2,
+          "improvementStatement": "Hold retrospectives after projects and implement quick wins to maintain momentum.",
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "We conduct occasional pilots and incorporate what works into production.",
+          "score": 300,
+          "order": 3,
+          "improvementStatement": "Create a backlog of improvement opportunities and prioritize based on impact and feasibility.",
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Continuous improvement is systematic; we run experiments and measure impact.",
+          "score": 400,
+          "order": 4,
+          "improvementStatement": "Engage cross\u2011functional teams to co\u2011design innovations and scale successes.",
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Innovation and learning are embedded in culture; AI and processes evolve through user feedback, analytics and strategic planning.",
+          "score": 500,
+          "order": 5,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        }
+      ]
+    }
+  ]
+}
