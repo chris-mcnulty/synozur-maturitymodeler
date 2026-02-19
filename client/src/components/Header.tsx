@@ -12,6 +12,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import synozurLogo from '@assets/SA-Logo-Horizontal-color_1759930898755.png';
+import { SynozurAppSwitcher } from "./SynozurAppSwitcher";
 
 // Helper function to check if user has admin permissions
 function isAdminUser(user: any): boolean {
@@ -47,7 +48,7 @@ export function Header() {
     <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
         <div className="flex items-center gap-3">
-          {/* Logo with responsive sizing to prevent distortion in portrait mode */}
+          <SynozurAppSwitcher currentApp="orion" variant="light" />
           <a 
             href="https://www.synozur.com" 
             target="_blank" 
