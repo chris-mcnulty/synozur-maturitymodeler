@@ -1,0 +1,39 @@
+Update the existing Synozur Suite app switcher component to match the standardized design across all apps.
+
+The app switcher already exists in this app. Make these specific changes:
+
+1. Brand colors only — remove all individual app colors:
+Replace any per-app color values (like #a855f7, #3b82f6, #c026d3, #f59e0b, #10b981, or similar) with just these two brand colors, alternating across the five apps:
+
+Primary: #810FFB
+Secondary: #E60CB3
+Pattern: 1st app #810FFB, 2nd app #E60CB3, 3rd app #810FFB, 4th app #E60CB3, 5th app #810FFB
+Apply to both the icon background tint and the tagline text color.
+Remove any per-app color property from the app data array.
+2. Add light/dark mode support to the dropdown and trigger button:
+
+Replace any hardcoded dark-only styles with Tailwind dark: variants so the component adapts to the current theme.
+Trigger button: Light mode: text-gray-500 hover:bg-gray-100 hover:text-gray-900. Dark mode: dark:text-gray-400 dark:hover:bg-white/10 dark:hover:text-white.
+Dropdown panel: Light mode: bg-white border-gray-200. Dark mode: dark:bg-gray-950 dark:border-white/10.
+App names: text-gray-900 dark:text-white
+Current badge: bg-gray-200 dark:bg-white/10 text-gray-500 dark:text-gray-400
+App rows hover: hover:bg-gray-50 dark:hover:bg-white/[0.06]
+Current app row: bg-gray-100 dark:bg-white/[0.08] ring-1 ring-gray-200 dark:ring-white/10
+Chevron arrows: text-gray-300 dark:text-gray-600 group-hover:text-gray-500 dark:group-hover:text-gray-400
+Footer border: border-gray-100 dark:border-white/5
+Footer link: text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300
+Suite label: text-gray-400 dark:text-gray-500
+3. Add a forceDark prop (boolean, default false):
+
+When forceDark is true, always use the dark variant styles regardless of system theme (for use on login/landing pages with forced dark backgrounds).
+If the app switcher is currently used on any page with a hardcoded dark background (like a login page), pass forceDark to that instance.
+4. Remove the old variant prop if one exists (like variant="light" or variant="dark"). Replace it with the forceDark prop where needed.
+
+5. Verify these app details match exactly:
+
+Vega — "Company Operating System" — https://vega.synozur.com
+Constellation — "Delivery & Financial Management" — https://scdp.synozur.com
+Nebula — "Innovation & Envisioning" — https://nebula.synozur.com
+Orion — "Transformation & Maturity" — https://orion.synozur.com
+Orbit — "Go-to-Market Intelligence" — https://orbit.synozur.com
+Do not change the SVG icons, component structure, accessibility attributes, or dropdown behavior (click outside/Escape to close). Only update colors and theme responsiveness.
