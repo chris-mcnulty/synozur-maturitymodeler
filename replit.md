@@ -19,7 +19,9 @@ Detailed documentation lives in dedicated files. **Keep these files updated** wh
 
 ## Critical Infrastructure Rules
 
-> **DEV AND PRODUCTION USE COMPLETELY SEPARATE DATABASES.** They do not share any data. Running `npm run db:push` in dev ONLY migrates the dev database — production is unaffected. To query production data, use `executeSql` with `environment: "production"` (read-only SELECT only). Schema migrations must be applied to production separately. **Never query the dev database and assume results reflect production — users, tenants, and all data may differ between environments.**
+> **DEV AND PRODUCTION USE COMPLETELY SEPARATE DATABASES.** They do not share any data. Running `npm run db:push` in dev ONLY migrates the dev database — production is unaffected. To query production data, use `executeSql` with `environment: "production"` (read-only SELECT only). **Never query the dev database and assume results reflect production — users, tenants, and all data may differ between environments.**
+>
+> **HOW PRODUCTION MIGRATIONS WORK:** When the app is published (deployed) on Replit, any structural database changes made in development (added/removed columns, new tables, etc.) are **automatically applied to the production database by Replit during the publish process.** There is NO need for startup migrations or manual SQL — just run `npm run db:push` in dev to capture the schema, then publish. Do NOT add startup migration code to `server/index.ts`.
 
 ## User Preferences
 - Uses SendGrid for email delivery (API key method, not Replit connector)

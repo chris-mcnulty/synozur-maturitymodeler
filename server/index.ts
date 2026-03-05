@@ -3,7 +3,6 @@ import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { initializeJWTService } from "./services/jwt-signing";
 import { startSsoStateCleanup } from "./services/sso-service";
-import { runTenantDirectoryDefaultsMigration } from "./migrations/tenant-directory-defaults";
 
 const app = express();
 app.use(express.json({ limit: '10mb' }));
@@ -40,9 +39,6 @@ app.use((req, res, next) => {
 });
 
 (async () => {
-  // Run schema migrations (idempotent — safe to run on every startup)
-  await runTenantDirectoryDefaultsMigration();
-
   // Initialize JWT signing service for OAuth
   await initializeJWTService();
   
