@@ -17,6 +17,10 @@ Detailed documentation lives in dedicated files. **Keep these files updated** wh
 
 **Important:** Feature details, backlog items, and change history belong in their respective files above -- not duplicated here. This file focuses on technical architecture and coding patterns that agents need for implementation.
 
+## Critical Infrastructure Rules
+
+> **DEV AND PRODUCTION USE COMPLETELY SEPARATE DATABASES.** They do not share any data. Running `npm run db:push` in dev ONLY migrates the dev database — production is unaffected. To query production data, use `executeSql` with `environment: "production"` (read-only SELECT only). Schema migrations must be applied to production separately. **Never query the dev database and assume results reflect production — users, tenants, and all data may differ between environments.**
+
 ## User Preferences
 - Uses SendGrid for email delivery (API key method, not Replit connector)
 - Prefers seeing metrics on home pages when data is available
