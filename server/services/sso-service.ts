@@ -237,7 +237,7 @@ export async function provisionUser(ssoUserInfo: SsoUserInfo): Promise<Provision
         return { user: null, isNewUser: false, isNewTenant: false, error: 'This organization does not allow self-provisioning. Please contact your administrator for an invitation.' };
       }
       
-      const newUser = await createSsoUser(ssoUserInfo, tenant.id);
+      const newUser = await createSsoUser(ssoUserInfo, tenant.id, 'user', tenant);
       
       if (tenant.syncToHubSpot) {
         await syncUserToHubSpot(newUser, tenant);
@@ -254,7 +254,7 @@ export async function provisionUser(ssoUserInfo: SsoUserInfo): Promise<Provision
         primaryColor: null,
         secondaryColor: null,
         allowUserSelfProvisioning: true,
-        syncToHubSpot: true,
+        syncToHubSpot: false, // Opt-in: admin must enable HubSpot sync per tenant
         inviteOnly: false,
         ssoTenantId: ssoUserInfo.ssoTenantId || null, // Store Azure AD tenant ID
       });
@@ -265,7 +265,7 @@ export async function provisionUser(ssoUserInfo: SsoUserInfo): Promise<Provision
         verified: true,
       });
       
-      const newUser = await createSsoUser(ssoUserInfo, newTenant.id, 'tenant_admin');
+      const newUser = await createSsoUser(ssoUserInfo, newTenant.id, 'tenant_admin', newTenant);
       
       if (newTenant.syncToHubSpot) {
         await syncUserToHubSpot(newUser, newTenant);
@@ -281,7 +281,7 @@ export async function provisionUser(ssoUserInfo: SsoUserInfo): Promise<Provision
   }
 }
 
-async function createSsoUser(ssoUserInfo: SsoUserInfo, tenantId: string | null, role: string = 'user'): Promise<any> {
+async function createSsoUser(ssoUserInfo: SsoUserInfo, tenantId: string | null, role: string = 'user', tenant?: any): Promise<any> {
   const username = await generateUniqueUsername(ssoUserInfo.email);
   
   const user = await storage.createUser({
@@ -294,6 +294,11 @@ async function createSsoUser(ssoUserInfo: SsoUserInfo, tenantId: string | null, 
     ssoProvider: 'microsoft',
     ssoProviderId: ssoUserInfo.id,
     tenantId,
+    // Pre-fill profile from tenant directory defaults if available
+    company: tenant?.defaultCompany || null,
+    industry: tenant?.defaultIndustry || null,
+    country: tenant?.defaultCountry || null,
+    companySize: tenant?.defaultCompanySize || null,
   });
   
   return user;

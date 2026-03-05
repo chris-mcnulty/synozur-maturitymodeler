@@ -228,8 +228,13 @@ export const tenants = pgTable("tenants", {
   autoCreateUsers: boolean("auto_create_users").notNull().default(false),
   // SSO Provisioning settings
   allowUserSelfProvisioning: boolean("allow_user_self_provisioning").notNull().default(true), // Allow users to auto-provision via SSO when domain matches
-  syncToHubSpot: boolean("sync_to_hubspot").notNull().default(true), // Sync new accounts to HubSpot
+  syncToHubSpot: boolean("sync_to_hubspot").notNull().default(false), // Sync new accounts to HubSpot (opt-in per tenant)
   inviteOnly: boolean("invite_only").notNull().default(false), // If true, users can only join via explicit invitation (for public domains)
+  // Directory defaults — pre-fill profile fields for new SSO-provisioned users
+  defaultCompany: text("default_company"),
+  defaultIndustry: text("default_industry"),
+  defaultCountry: text("default_country"),
+  defaultCompanySize: text("default_company_size"),
   // Azure AD / Entra ID integration
   ssoTenantId: text("sso_tenant_id"), // Azure AD tenant ID (tid claim) for this organization
   ssoAdminConsentGranted: boolean("sso_admin_consent_granted").notNull().default(false), // Whether org-wide admin consent has been granted

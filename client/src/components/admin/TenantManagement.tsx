@@ -20,6 +20,12 @@ interface Tenant {
   primaryColor: string | null;
   secondaryColor: string | null;
   autoCreateUsers: boolean;
+  allowUserSelfProvisioning: boolean;
+  syncToHubSpot: boolean;
+  defaultCompany: string | null;
+  defaultIndustry: string | null;
+  defaultCountry: string | null;
+  defaultCompanySize: string | null;
   ssoTenantId: string | null;
   ssoAdminConsentGranted: boolean;
   createdAt: string;
@@ -60,6 +66,12 @@ export function TenantManagement() {
     primaryColor: '',
     secondaryColor: '',
     autoCreateUsers: false,
+    allowUserSelfProvisioning: true,
+    syncToHubSpot: false,
+    defaultCompany: '',
+    defaultIndustry: '',
+    defaultCountry: '',
+    defaultCompanySize: '',
     ssoTenantId: '',
   });
 
@@ -283,6 +295,12 @@ Thank you for your help!`;
       primaryColor: '',
       secondaryColor: '',
       autoCreateUsers: false,
+      allowUserSelfProvisioning: true,
+      syncToHubSpot: false,
+      defaultCompany: '',
+      defaultIndustry: '',
+      defaultCountry: '',
+      defaultCompanySize: '',
       ssoTenantId: '',
     });
   };
@@ -310,6 +328,12 @@ Thank you for your help!`;
       primaryColor: tenant.primaryColor || '',
       secondaryColor: tenant.secondaryColor || '',
       autoCreateUsers: tenant.autoCreateUsers,
+      allowUserSelfProvisioning: tenant.allowUserSelfProvisioning ?? true,
+      syncToHubSpot: tenant.syncToHubSpot ?? false,
+      defaultCompany: tenant.defaultCompany || '',
+      defaultIndustry: tenant.defaultIndustry || '',
+      defaultCountry: tenant.defaultCountry || '',
+      defaultCompanySize: tenant.defaultCompanySize || '',
       ssoTenantId: tenant.ssoTenantId || '',
     });
     setIsDialogOpen(true);
@@ -651,6 +675,87 @@ Thank you for your help!`;
                 <Label htmlFor="autoCreateUsers">
                   Auto-create users on first login
                 </Label>
+              </div>
+
+              <div className="border-t pt-4 mt-4 space-y-3">
+                <p className="text-sm font-medium">User Provisioning</p>
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="allowUserSelfProvisioning"
+                    checked={tenantForm.allowUserSelfProvisioning}
+                    onCheckedChange={(checked) =>
+                      setTenantForm({ ...tenantForm, allowUserSelfProvisioning: checked })
+                    }
+                    data-testid="switch-allow-self-provisioning"
+                  />
+                  <div>
+                    <Label htmlFor="allowUserSelfProvisioning">Allow SSO self-provisioning</Label>
+                    <p className="text-xs text-muted-foreground">Users with a matching domain can sign in and auto-create an account</p>
+                  </div>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="syncToHubSpot"
+                    checked={tenantForm.syncToHubSpot}
+                    onCheckedChange={(checked) =>
+                      setTenantForm({ ...tenantForm, syncToHubSpot: checked })
+                    }
+                    data-testid="switch-sync-hubspot"
+                  />
+                  <div>
+                    <Label htmlFor="syncToHubSpot">Sync new users to HubSpot</Label>
+                    <p className="text-xs text-muted-foreground">When off, new accounts from this tenant are not added to HubSpot marketing lists</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="border-t pt-4 mt-4 space-y-3">
+                <div>
+                  <p className="text-sm font-medium">Directory Defaults</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">Pre-fill profile fields for new SSO users from this tenant. Users can update them later.</p>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="defaultCompany">Company Name</Label>
+                    <Input
+                      id="defaultCompany"
+                      value={tenantForm.defaultCompany}
+                      onChange={(e) => setTenantForm({ ...tenantForm, defaultCompany: e.target.value })}
+                      placeholder="Acme Corporation"
+                      data-testid="input-default-company"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="defaultCompanySize">Company Size</Label>
+                    <Input
+                      id="defaultCompanySize"
+                      value={tenantForm.defaultCompanySize}
+                      onChange={(e) => setTenantForm({ ...tenantForm, defaultCompanySize: e.target.value })}
+                      placeholder="201-500"
+                      data-testid="input-default-company-size"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="defaultIndustry">Industry</Label>
+                    <Input
+                      id="defaultIndustry"
+                      value={tenantForm.defaultIndustry}
+                      onChange={(e) => setTenantForm({ ...tenantForm, defaultIndustry: e.target.value })}
+                      placeholder="Technology"
+                      data-testid="input-default-industry"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="defaultCountry">Country</Label>
+                    <Input
+                      id="defaultCountry"
+                      value={tenantForm.defaultCountry}
+                      onChange={(e) => setTenantForm({ ...tenantForm, defaultCountry: e.target.value })}
+                      placeholder="United States"
+                      data-testid="input-default-country"
+                    />
+                  </div>
+                </div>
               </div>
 
               <div className="space-y-2 border-t pt-4 mt-4">
