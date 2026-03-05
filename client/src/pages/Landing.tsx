@@ -1,17 +1,105 @@
 import { useEffect } from "react";
 import { useLocation } from "wouter";
 import { Footer } from "@/components/Footer";
-import { ModelCard } from "@/components/ModelCard";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowRight, Clock, FileText, BarChart3, CheckCircle, Building2 } from "lucide-react";
+import { ArrowRight, Clock, FileText, BarChart3, CheckCircle, Building2, Lock } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { Model, Assessment, Dimension } from "@shared/schema";
 
 type ModelWithQuestionCount = Model & { questionCount: number };
 import heroBackground from '@assets/AI_network_hero_background.png';
+
+function ModelCard({
+  model,
+  onClick,
+  aiModelId,
+  highlightPrivate = false,
+}: {
+  model: ModelWithQuestionCount;
+  onClick: () => void;
+  aiModelId?: string;
+  highlightPrivate?: boolean;
+}) {
+  return (
+    <Card
+      className="group relative overflow-hidden hover-elevate transition-all duration-300 cursor-pointer border-2 hover:border-primary/50 p-0"
+      onClick={onClick}
+      data-testid={`card-model-${model.slug}`}
+    >
+      {model.imageUrl ? (
+        <div className="relative w-full aspect-video overflow-hidden">
+          <img
+            src={model.imageUrl}
+            alt={model.name}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
+        </div>
+      ) : (
+        <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-primary/20 to-transparent rounded-bl-full" />
+      )}
+      <div className="p-6 relative z-10">
+        <div className="flex items-start justify-between mb-4 flex-wrap gap-2">
+          {!model.imageUrl && (
+            <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+              {highlightPrivate ? (
+                <Lock className="h-6 w-6 text-primary" />
+              ) : (
+                <BarChart3 className="h-6 w-6 text-primary" />
+              )}
+            </div>
+          )}
+          <div className="flex flex-col gap-1.5 ml-auto">
+            {model.id === aiModelId && (
+              <Badge className="bg-primary/10 text-primary border-primary/20">Featured</Badge>
+            )}
+            {model.modelClass === 'individual' && (
+              <Badge
+                className="bg-primary/90 text-primary-foreground border-primary-foreground/20"
+                data-testid={`badge-individual-${model.slug}`}
+              >
+                Individual
+              </Badge>
+            )}
+          </div>
+        </div>
+
+        <h3 className="text-lg font-bold mb-2 group-hover:text-primary transition-colors">
+          {model.name}
+        </h3>
+
+        <p className="text-sm text-muted-foreground mb-4 line-clamp-3">
+          {model.description || "Comprehensive assessment to evaluate your organization's maturity level"}
+        </p>
+
+        <div className="flex items-center justify-between flex-wrap gap-2">
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1 text-sm text-muted-foreground">
+              <FileText className="h-4 w-4" />
+              <span>{model.questionCount} questions</span>
+            </div>
+            <div className="flex items-center gap-1 text-sm text-muted-foreground">
+              <Clock className="h-4 w-4" />
+              <span>{model.estimatedTime || '10 mins'}</span>
+            </div>
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="group-hover:text-primary"
+            data-testid={`button-start-${model.slug}`}
+          >
+            Start
+            <ArrowRight className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-1" />
+          </Button>
+        </div>
+      </div>
+    </Card>
+  );
+}
 
 export default function Landing() {
   useEffect(() => {
@@ -21,16 +109,33 @@ export default function Landing() {
       body: JSON.stringify({ page: 'homepage', referrer: document.referrer }),
     }).catch(() => {});
   }, []);
+
   const [, setLocation] = useLocation();
-  
+
   const { data: models = [], isLoading } = useQuery<ModelWithQuestionCount[]>({
     queryKey: ['/api/models'],
   });
 
-  // Separate featured and regular models
+  const { data: currentUser } = useQuery<{ id: string; tenantId?: string | null } | null>({
+    queryKey: ['/api/user'],
+    retry: false,
+  });
+
+  const { data: userTenant } = useQuery<{ id: string; name: string } | null>({
+    queryKey: ['/api/user/tenant'],
+    enabled: !!currentUser?.tenantId,
+    retry: false,
+  });
+
+  // Separate models into three groups
   const featuredModels = models.filter(m => m.featured);
-  const regularModels = models.filter(m => !m.featured);
-  const featuredModel = featuredModels[0]; // Get first featured model
+  const featuredModel = featuredModels[0];
+
+  // Private models visible to this user — shown in their own org section
+  const tenantPrivateModels = models.filter(m => m.visibility === 'private');
+
+  // Regular public/individual models (non-featured, non-private)
+  const regularModels = models.filter(m => !m.featured && m.visibility !== 'private');
 
   // Fetch dimensions for featured model
   const { data: featuredDimensions = [] } = useQuery<Dimension[]>({
@@ -50,9 +155,7 @@ export default function Landing() {
     queryFn: async () => {
       try {
         const response = await fetch('/api/settings/heroModel');
-        if (response.ok) {
-          return await response.json();
-        }
+        if (response.ok) return await response.json();
         return null;
       } catch {
         return null;
@@ -66,19 +169,16 @@ export default function Landing() {
       const selectedModel = models.find(m => m.id === heroModelSetting.value);
       if (selectedModel) return selectedModel;
     }
-    // Default to AI model if no selection or model not found
     return models.find(m => m.slug === 'digital-transformation' || m.slug.includes('ai')) || models[0];
   };
 
   const aiModel = getHeroModel();
 
-  // Create assessment for the main AI model
+  // Create assessment for the main model
   const createAssessment = useMutation({
     mutationFn: async () => {
       if (!aiModel) throw new Error("No model available");
-      const response = await apiRequest('POST', '/api/assessments', {
-        modelId: aiModel.id,
-      });
+      const response = await apiRequest('POST', '/api/assessments', { modelId: aiModel.id });
       const assessment = await response.json();
       return assessment as Assessment;
     },
@@ -88,20 +188,23 @@ export default function Landing() {
     },
   });
 
+  const tenantName = userTenant?.name;
+  const showTenantSection = tenantPrivateModels.length > 0 && !!tenantName;
+
   return (
     <div className="min-h-screen flex flex-col">
       <main className="flex-1">
-        {/* Hero Section - Matching prototype */}
+        {/* Hero Section */}
         <section className="relative min-h-[600px] flex items-center bg-gray-900 overflow-hidden">
           <div className="absolute inset-0">
-            <img 
+            <img
               src={heroBackground}
               alt="AI Network Background"
               className="w-full h-full object-cover opacity-60"
             />
             <div className="absolute inset-0 bg-gradient-to-b from-black/40 to-black/60" />
           </div>
-          
+
           <div className="container relative z-10 mx-auto px-4 py-20 text-center">
             <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold mb-4 leading-[1.15] text-white md:bg-gradient-to-r md:from-blue-400 md:via-purple-400 md:to-pink-400 md:bg-clip-text md:text-transparent">
               Orion
@@ -110,14 +213,14 @@ export default function Landing() {
               Digital Transformation Maturity Models
             </h2>
             <p className="text-xl md:text-2xl text-white/90 max-w-4xl mx-auto mb-8">
-              Take Synozur's comprehensive assessments to identify where your organization stands on your transformation journey. 
+              Take Synozur's comprehensive assessments to identify where your organization stands on your transformation journey.
               Receive a precise Maturity Score and personalized recommendations to advance your capabilities.
             </p>
             <p className="text-lg text-white/80 max-w-3xl mx-auto">
               Orion is still in beta.{' '}
-              <a 
-                href="https://www.synozur.com/join" 
-                target="_blank" 
+              <a
+                href="https://www.synozur.com/join"
+                target="_blank"
                 rel="noopener noreferrer"
                 className="underline hover:text-white transition-colors"
               >
@@ -136,7 +239,7 @@ export default function Landing() {
                 <Badge className="mb-6 px-4 py-1 text-sm bg-primary/10 text-primary border-primary/20">
                   Featured Assessment
                 </Badge>
-                
+
                 <div className="text-center mb-12">
                   <h2 className="text-4xl md:text-5xl font-bold mb-4 text-white md:bg-gradient-to-r md:from-blue-400 md:via-purple-400 md:to-pink-400 md:bg-clip-text md:text-transparent">
                     {featuredModel.name}
@@ -145,15 +248,14 @@ export default function Landing() {
                     {featuredModel.description}
                   </p>
                 </div>
-                
+
                 <div className="grid lg:grid-cols-2 gap-12 items-center">
-                  {/* Left: Image and Key Info */}
                   <div className="relative group">
-                    <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-accent/20 rounded-2xl blur-2xl group-hover:blur-3xl transition-all"></div>
+                    <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-accent/20 rounded-2xl blur-2xl group-hover:blur-3xl transition-all" />
                     <Card className="relative overflow-hidden border-2 border-primary/20 hover-elevate">
                       {featuredModel.imageUrl ? (
-                        <img 
-                          src={featuredModel.imageUrl} 
+                        <img
+                          src={featuredModel.imageUrl}
                           alt={featuredModel.name}
                           className="w-full h-80 object-cover"
                         />
@@ -177,7 +279,6 @@ export default function Landing() {
                     </Card>
                   </div>
 
-                  {/* Right: Details */}
                   <div>
                     {featuredDimensions.length > 0 && (
                       <div className="mb-6">
@@ -195,7 +296,7 @@ export default function Landing() {
                       </div>
                     )}
 
-                    <Button 
+                    <Button
                       size="lg"
                       className="w-full sm:w-auto px-8"
                       onClick={() => setLocation(`/${featuredModel.slug}`)}
@@ -211,11 +312,57 @@ export default function Landing() {
           </section>
         )}
 
-        {/* All Available Models - Graphically Interesting Display */}
+        {/* Tenant Private Models Section — only shown when user has org-private models */}
+        {showTenantSection && (
+          <section
+            className="py-16 bg-gradient-to-br from-accent/5 via-background to-primary/5 border-y border-accent/10"
+            data-testid="section-tenant-featured"
+          >
+            <div className="container mx-auto px-4">
+              <div className="max-w-7xl mx-auto">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-md bg-accent/10 flex items-center justify-center">
+                      <Building2 className="h-4 w-4 text-accent-foreground/70" />
+                    </div>
+                    <Badge
+                      variant="outline"
+                      className="px-3 py-1 text-sm border-accent/30 text-accent-foreground/80"
+                      data-testid="badge-tenant-featured-label"
+                    >
+                      Exclusive to {tenantName}
+                    </Badge>
+                  </div>
+                </div>
+
+                <h2 className="text-3xl md:text-4xl font-bold mb-2">
+                  Featured for {tenantName}
+                </h2>
+                <p className="text-muted-foreground mb-10 max-w-2xl">
+                  These assessments have been privately configured for your organization. They are only accessible to members of {tenantName}.
+                </p>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                  {tenantPrivateModels.map((model) => (
+                    <ModelCard
+                      key={model.id}
+                      model={model}
+                      onClick={() => setLocation(`/${model.slug}`)}
+                      aiModelId={aiModel?.id}
+                      highlightPrivate
+                    />
+                  ))}
+                </div>
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* All Available Models */}
         <section className="py-20 bg-gradient-to-br from-background via-primary/5 to-background relative overflow-hidden">
           <div className="absolute inset-0">
-            <div className="absolute top-20 left-20 w-72 h-72 bg-primary/10 rounded-full blur-3xl"></div>
-            <div className="absolute bottom-20 right-20 w-96 h-96 bg-accent/10 rounded-full blur-3xl"></div>
+            <div className="absolute top-20 left-20 w-72 h-72 bg-primary/10 rounded-full blur-3xl" />
+            <div className="absolute bottom-20 right-20 w-96 h-96 bg-accent/10 rounded-full blur-3xl" />
           </div>
           <div className="container mx-auto px-4 relative z-10">
             <div className="text-center mb-16">
@@ -230,7 +377,7 @@ export default function Landing() {
                 Each model provides tailored insights for your transformation journey.
               </p>
             </div>
-            
+
             {isLoading ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 max-w-7xl mx-auto">
                 {[...Array(4)].map((_, i) => (
@@ -241,92 +388,17 @@ export default function Landing() {
               <Card className="max-w-2xl mx-auto p-12 text-center">
                 <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                 <h3 className="text-xl font-semibold mb-2">No Models Available</h3>
-                <p className="text-muted-foreground">
-                  Check back soon for our maturity assessment models.
-                </p>
+                <p className="text-muted-foreground">Check back soon for our maturity assessment models.</p>
               </Card>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 max-w-7xl mx-auto">
-                {regularModels.map((model, index) => (
-                  <Card 
+                {regularModels.map((model) => (
+                  <ModelCard
                     key={model.id}
-                    className="group relative overflow-hidden hover-elevate transition-all duration-300 cursor-pointer border-2 hover:border-primary/50 p-0"
+                    model={model}
                     onClick={() => setLocation(`/${model.slug}`)}
-                    data-testid={`card-model-${model.slug}`}
-                  >
-                    {model.imageUrl ? (
-                      <div className="relative w-full aspect-video overflow-hidden">
-                        <img 
-                          src={model.imageUrl} 
-                          alt={model.name}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
-                      </div>
-                    ) : (
-                      <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-primary/20 to-transparent rounded-bl-full"></div>
-                    )}
-                    <div className="p-6 relative z-10">
-                      <div className="flex items-start justify-between mb-4">
-                        {!model.imageUrl && (
-                          <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-                            <BarChart3 className="h-6 w-6 text-primary" />
-                          </div>
-                        )}
-                        <div className="flex flex-col gap-2">
-                          {model.id === aiModel?.id && (
-                            <Badge className="bg-primary/10 text-primary border-primary/20">
-                              Featured
-                            </Badge>
-                          )}
-                          {model.modelClass === 'individual' && (
-                            <Badge 
-                              className="bg-primary/90 text-primary-foreground border-primary-foreground/20"
-                              data-testid={`badge-individual-${model.slug}`}
-                            >
-                              Individual
-                            </Badge>
-                          )}
-                          {model.visibility === 'private' && (
-                            <Badge variant="secondary" className="text-xs" data-testid={`badge-private-${model.slug}`}>
-                              <Building2 className="h-3 w-3 mr-1" />
-                              Tenant Private
-                            </Badge>
-                          )}
-                        </div>
-                      </div>
-                      
-                      <h3 className="text-lg font-bold mb-2 group-hover:text-primary transition-colors">
-                        {model.name}
-                      </h3>
-                      
-                      <p className="text-sm text-muted-foreground mb-4 line-clamp-3">
-                        {model.description || 'Comprehensive assessment to evaluate your organization\'s maturity level'}
-                      </p>
-                      
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                            <FileText className="h-4 w-4" />
-                            <span>{model.questionCount} questions</span>
-                          </div>
-                          <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                            <Clock className="h-4 w-4" />
-                            <span>{model.estimatedTime || '10 mins'}</span>
-                          </div>
-                        </div>
-                        <Button 
-                          variant="ghost" 
-                          size="sm"
-                          className="group-hover:text-primary"
-                          data-testid={`button-start-${model.slug}`}
-                        >
-                          Start
-                          <ArrowRight className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-1" />
-                        </Button>
-                      </div>
-                    </div>
-                  </Card>
+                    aiModelId={aiModel?.id}
+                  />
                 ))}
               </div>
             )}
@@ -336,15 +408,13 @@ export default function Landing() {
         {/* CTA Section */}
         <section className="py-20 bg-primary text-white">
           <div className="container mx-auto px-4 text-center">
-            <h2 className="text-4xl md:text-5xl font-bold mb-6">
-              Feeling Immature?
-            </h2>
+            <h2 className="text-4xl md:text-5xl font-bold mb-6">Feeling Immature?</h2>
             <p className="text-xl text-white/90 mb-8 max-w-3xl mx-auto">
               Join leading organizations that are using Synozur's assessment to accelerate their transformation journey
             </p>
             <div className="flex flex-wrap gap-4 justify-center">
-              <Button 
-                size="lg" 
+              <Button
+                size="lg"
                 className="bg-white text-primary hover:bg-white/90 px-8 py-6 text-lg"
                 onClick={() => createAssessment.mutate()}
                 disabled={createAssessment.isPending || !aiModel}
@@ -353,9 +423,9 @@ export default function Landing() {
                 Start Your Assessment
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
-              <Button 
-                size="lg" 
-                variant="outline" 
+              <Button
+                size="lg"
+                variant="outline"
                 className="bg-transparent text-white border-white hover:bg-white/10 px-8 py-6 text-lg"
                 onClick={() => window.open('https://www.synozur.com', '_blank')}
                 data-testid="button-visit-synozur"
@@ -363,14 +433,14 @@ export default function Landing() {
                 Visit Synozur.com
               </Button>
             </div>
-            
+
             {regularModels.length > 0 && (
               <div className="mt-12 pt-8 border-t border-white/20">
                 <p className="text-white/80 mb-4">
                   Can't find the assessment you're looking for?
                 </p>
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   className="bg-transparent text-white border-white hover:bg-white/10"
                   onClick={() => window.open('https://www.synozur.com/contact', '_blank')}
                   data-testid="button-request-custom"
