@@ -167,6 +167,33 @@ export default function Auth() {
 
             <TabsContent value="login">
               <form name="orion-login" onSubmit={handleLogin} className="space-y-4">
+                {ssoStatus?.microsoft && (
+                  <>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-full"
+                      onClick={() => {
+                        const returnUrl = redirectPath || '/';
+                        window.location.href = `/auth/sso/microsoft?returnUrl=${encodeURIComponent(returnUrl)}`;
+                      }}
+                      data-testid="button-sso-microsoft"
+                    >
+                      <MicrosoftIcon className="mr-2 h-4 w-4" />
+                      Sign in with Microsoft (SSO)
+                    </Button>
+                    <div className="relative">
+                      <div className="absolute inset-0 flex items-center">
+                        <span className="w-full border-t" />
+                      </div>
+                      <div className="relative flex justify-center text-xs uppercase">
+                        <span className="bg-card px-2 text-muted-foreground">
+                          Or sign in with email
+                        </span>
+                      </div>
+                    </div>
+                  </>
+                )}
                 <div className="space-y-2">
                   <Label htmlFor="login-username">Username</Label>
                   <Input
@@ -217,20 +244,13 @@ export default function Auth() {
                     "Login"
                   )}
                 </Button>
-                
+              </form>
+            </TabsContent>
+
+            <TabsContent value="register">
+              <form name="orion-signup" onSubmit={handleRegister} className="space-y-4">
                 {ssoStatus?.microsoft && (
                   <>
-                    <div className="relative my-4">
-                      <div className="absolute inset-0 flex items-center">
-                        <span className="w-full border-t" />
-                      </div>
-                      <div className="relative flex justify-center text-xs uppercase">
-                        <span className="bg-card px-2 text-muted-foreground">
-                          Or continue with
-                        </span>
-                      </div>
-                    </div>
-                    
                     <Button
                       type="button"
                       variant="outline"
@@ -239,18 +259,23 @@ export default function Auth() {
                         const returnUrl = redirectPath || '/';
                         window.location.href = `/auth/sso/microsoft?returnUrl=${encodeURIComponent(returnUrl)}`;
                       }}
-                      data-testid="button-sso-microsoft"
+                      data-testid="button-sso-microsoft-register"
                     >
                       <MicrosoftIcon className="mr-2 h-4 w-4" />
-                      Sign in with Microsoft
+                      Sign up with Microsoft (SSO)
                     </Button>
+                    <div className="relative">
+                      <div className="absolute inset-0 flex items-center">
+                        <span className="w-full border-t" />
+                      </div>
+                      <div className="relative flex justify-center text-xs uppercase">
+                        <span className="bg-card px-2 text-muted-foreground">
+                          Or sign up with email
+                        </span>
+                      </div>
+                    </div>
                   </>
                 )}
-              </form>
-            </TabsContent>
-
-            <TabsContent value="register">
-              <form name="orion-signup" onSubmit={handleRegister} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="name">Full Name <span className="text-destructive">*</span></Label>
                   <Input
@@ -402,35 +427,6 @@ export default function Auth() {
                     "Sign Up"
                   )}
                 </Button>
-                
-                {ssoStatus?.microsoft && (
-                  <>
-                    <div className="relative my-4">
-                      <div className="absolute inset-0 flex items-center">
-                        <span className="w-full border-t" />
-                      </div>
-                      <div className="relative flex justify-center text-xs uppercase">
-                        <span className="bg-card px-2 text-muted-foreground">
-                          Or sign up with
-                        </span>
-                      </div>
-                    </div>
-                    
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="w-full"
-                      onClick={() => {
-                        const returnUrl = redirectPath || '/';
-                        window.location.href = `/auth/sso/microsoft?returnUrl=${encodeURIComponent(returnUrl)}`;
-                      }}
-                      data-testid="button-sso-microsoft-register"
-                    >
-                      <MicrosoftIcon className="mr-2 h-4 w-4" />
-                      Sign up with Microsoft
-                    </Button>
-                  </>
-                )}
                 
                 <p className="text-xs text-center text-muted-foreground mt-4">
                   By signing up, you agree to our{" "}
