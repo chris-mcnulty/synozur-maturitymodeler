@@ -22,6 +22,7 @@ interface Tenant {
   autoCreateUsers: boolean;
   allowUserSelfProvisioning: boolean;
   syncToHubSpot: boolean;
+  collectProfileData: boolean;
   defaultCompany: string | null;
   defaultIndustry: string | null;
   defaultCountry: string | null;
@@ -68,6 +69,7 @@ export function TenantManagement() {
     autoCreateUsers: false,
     allowUserSelfProvisioning: true,
     syncToHubSpot: false,
+    collectProfileData: true,
     defaultCompany: '',
     defaultIndustry: '',
     defaultCountry: '',
@@ -297,6 +299,7 @@ Thank you for your help!`;
       autoCreateUsers: false,
       allowUserSelfProvisioning: true,
       syncToHubSpot: false,
+      collectProfileData: true,
       defaultCompany: '',
       defaultIndustry: '',
       defaultCountry: '',
@@ -330,6 +333,7 @@ Thank you for your help!`;
       autoCreateUsers: tenant.autoCreateUsers,
       allowUserSelfProvisioning: tenant.allowUserSelfProvisioning ?? true,
       syncToHubSpot: tenant.syncToHubSpot ?? false,
+      collectProfileData: tenant.collectProfileData ?? true,
       defaultCompany: tenant.defaultCompany || '',
       defaultIndustry: tenant.defaultIndustry || '',
       defaultCountry: tenant.defaultCountry || '',
@@ -705,6 +709,20 @@ Thank you for your help!`;
                   <div>
                     <Label htmlFor="syncToHubSpot">Sync new users to HubSpot</Label>
                     <p className="text-xs text-muted-foreground">When off, new accounts from this tenant are not added to HubSpot marketing lists</p>
+                  </div>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="collectProfileData"
+                    checked={tenantForm.collectProfileData}
+                    onCheckedChange={(checked) =>
+                      setTenantForm({ ...tenantForm, collectProfileData: checked })
+                    }
+                    data-testid="switch-collect-profile-data"
+                  />
+                  <div>
+                    <Label htmlFor="collectProfileData">Collect full profile from new users</Label>
+                    <p className="text-xs text-muted-foreground">When off, tenant directory defaults are applied automatically and new users only need to provide their job title</p>
                   </div>
                 </div>
               </div>

@@ -307,7 +307,7 @@ export function setupAuth(app: Express) {
         }
         
         // Check if user needs to complete their profile (new SSO users)
-        if (result.isNewUser || !isProfileComplete(result.user)) {
+        if (result.isNewUser || !isProfileComplete(result.user, result.tenant)) {
           // Redirect to profile completion with the original destination
           const returnTo = encodeURIComponent(redirectUrl || '/');
           return res.redirect(`/complete-profile?returnTo=${returnTo}`);

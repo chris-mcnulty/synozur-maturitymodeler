@@ -318,7 +318,12 @@ async function generateUniqueUsername(email: string): Promise<string> {
 }
 
 // Check if user profile has all required fields completed
-export function isProfileComplete(user: any): boolean {
+export function isProfileComplete(user: any, tenant?: any): boolean {
+  // When tenant has turned off full profile collection, only job title is required
+  // (company/industry/country/companySize are pre-filled from tenant directory defaults)
+  if (tenant?.collectProfileData === false) {
+    return !!(user.jobTitle && user.jobTitle.trim());
+  }
   const requiredFields = ['company', 'companySize', 'jobTitle', 'industry', 'country'];
   return requiredFields.every(field => user[field] && user[field].trim() !== '');
 }

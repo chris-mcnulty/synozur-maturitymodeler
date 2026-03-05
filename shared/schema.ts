@@ -229,6 +229,7 @@ export const tenants = pgTable("tenants", {
   // SSO Provisioning settings
   allowUserSelfProvisioning: boolean("allow_user_self_provisioning").notNull().default(true), // Allow users to auto-provision via SSO when domain matches
   syncToHubSpot: boolean("sync_to_hubspot").notNull().default(false), // Sync new accounts to HubSpot (opt-in per tenant)
+  collectProfileData: boolean("collect_profile_data").notNull().default(true), // Prompt new SSO users for profile info; if false, tenant defaults are applied and only job title is collected
   inviteOnly: boolean("invite_only").notNull().default(false), // If true, users can only join via explicit invitation (for public domains)
   // Directory defaults — pre-fill profile fields for new SSO-provisioned users
   defaultCompany: text("default_company"),
