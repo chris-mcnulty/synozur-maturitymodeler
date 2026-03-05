@@ -337,6 +337,7 @@ export function setupAuth(app: Express) {
   });
 
   // Generate admin consent URL for IT administrators (public - generates generic URL)
+  // Accepts optional ?ssoTenantId= query param (used by admin to generate for any tenant)
   app.get("/api/auth/sso/admin-consent", async (req, res) => {
     try {
       const { generateAdminConsentUrl, isSsoConfigured } = await import('./services/sso-service.js');
@@ -345,9 +346,11 @@ export function setupAuth(app: Express) {
         return res.status(400).json({ error: 'Microsoft SSO is not configured' });
       }
       
-      // For authenticated users, use their tenant's Azure AD ID if available
-      let azureTenantId: string | undefined;
-      if (req.isAuthenticated() && req.user?.tenantId) {
+      // Query param takes precedence (admin generating for a specific tenant)
+      let azureTenantId: string | undefined = req.query.ssoTenantId as string | undefined;
+      
+      // Fall back to authenticated user's own tenant
+      if (!azureTenantId && req.isAuthenticated() && req.user?.tenantId) {
         const tenant = await storage.getTenant(req.user.tenantId);
         azureTenantId = tenant?.ssoTenantId || undefined;
       }

@@ -52,6 +52,8 @@ export function AccessRequestsSection({ accessRequests, onRefresh, currentUserId
   const [denyReason, setDenyReason] = useState("");
   const [emailDialogOpen, setEmailDialogOpen] = useState(false);
   const [emailTarget, setEmailTarget] = useState<AccessRequest | null>(null);
+  const [emailConsentUrl, setEmailConsentUrl] = useState<string>("");
+  const [emailConsentLoading, setEmailConsentLoading] = useState(false);
   const [emailCopied, setEmailCopied] = useState(false);
 
   const filtered = statusFilter === "all"
@@ -98,15 +100,28 @@ export function AccessRequestsSection({ accessRequests, onRefresh, currentUserId
     denyMutation.mutate({ id: denyTarget.id, reason: denyReason });
   };
 
-  const generateConsentUrl = (req: AccessRequest): string | null => {
-    const clientId = import.meta.env.VITE_AZURE_CLIENT_ID;
-    if (!clientId && !req.ssoTenantId) return null;
-    const tenantId = req.ssoTenantId || "common";
-    return `https://login.microsoftonline.com/${tenantId}/adminconsent?client_id=${clientId || "[CLIENT_ID]"}`;
+  const handleEmailOpen = async (req: AccessRequest) => {
+    setEmailCopied(false);
+    setEmailConsentUrl("");
+    setEmailConsentLoading(true);
+    setEmailTarget(req);
+    setEmailDialogOpen(true);
+    try {
+      const qs = req.ssoTenantId ? `?ssoTenantId=${encodeURIComponent(req.ssoTenantId)}` : "";
+      const res = await fetch(`/api/auth/sso/admin-consent${qs}`);
+      if (res.ok) {
+        const data = await res.json();
+        setEmailConsentUrl(data.consentUrl ?? "[ADMIN CONSENT URL — contact orion@synozur.com]");
+      } else {
+        setEmailConsentUrl("[ADMIN CONSENT URL — contact orion@synozur.com]");
+      }
+    } catch {
+      setEmailConsentUrl("[ADMIN CONSENT URL — contact orion@synozur.com]");
+    }
+    setEmailConsentLoading(false);
   };
 
-  const generateEmailText = (req: AccessRequest): string => {
-    const consentUrl = generateConsentUrl(req) ?? "[ADMIN CONSENT URL — contact orion@synozur.com]";
+  const generateEmailText = (req: AccessRequest, consentUrl: string): string => {
     const modelUrl = `${window.location.origin}/${req.modelId}`;
 
     return `Subject: Action Required — Approve Microsoft SSO for Orion Maturity Assessment
@@ -160,16 +175,10 @@ ${req.requestorName}
 ${req.organizationName}`;
   };
 
-  const handleEmailOpen = (req: AccessRequest) => {
-    setEmailTarget(req);
-    setEmailCopied(false);
-    setEmailDialogOpen(true);
-  };
-
   const handleCopyEmail = async () => {
     if (!emailTarget) return;
     try {
-      await navigator.clipboard.writeText(generateEmailText(emailTarget));
+      await navigator.clipboard.writeText(generateEmailText(emailTarget, emailConsentUrl));
       setEmailCopied(true);
       setTimeout(() => setEmailCopied(false), 2500);
       toast({ title: "Email copied", description: "Paste it into your email client to send." });
@@ -379,14 +388,22 @@ ${req.organizationName}`;
             </CardDescription>
           </DialogHeader>
           <div className="flex-1 overflow-y-auto">
-            <pre className="text-xs bg-muted rounded-md p-4 whitespace-pre-wrap font-mono leading-relaxed">
-              {emailTarget ? generateEmailText(emailTarget) : ""}
-            </pre>
+            {emailConsentLoading ? (
+              <div className="flex items-center justify-center py-12 text-muted-foreground text-sm gap-2">
+                <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                Generating consent URL...
+              </div>
+            ) : (
+              <pre className="text-xs bg-muted rounded-md p-4 whitespace-pre-wrap font-mono leading-relaxed">
+                {emailTarget ? generateEmailText(emailTarget, emailConsentUrl) : ""}
+              </pre>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setEmailDialogOpen(false)}>Close</Button>
             <Button
               className="gap-2"
+              disabled={emailConsentLoading}
               onClick={handleCopyEmail}
               data-testid="button-copy-email-template"
             >

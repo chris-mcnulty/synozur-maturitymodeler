@@ -1,0 +1,43 @@
+Subject: Action Required — Approve Microsoft SSO Access for Orion Maturity Assessment
+
+Hi [IT Administrator's Name],
+
+I'm reaching out to request your help enabling Microsoft single sign-on (SSO) for our team's access to Orion, a private maturity assessment platform from Synozur.
+
+—— WHAT IS ORION? ——
+
+Orion is Synozur's AI-powered Transformation & Maturity Assessment Platform. It enables organizations to measure and improve their transformation capabilities across key dimensions, with AI-generated roadmaps tailored to each result.
+
+Our organization — Narrative Strategies — has been granted access to a private Orion workspace. To enable seamless, password-free sign-in for everyone using their existing Microsoft 365 accounts, we need a one-time admin consent approval from you.
+
+—— WHAT YOU NEED TO DO ——
+
+This is a one-time action that takes under 2 minutes:
+
+1. Open the link below in your browser
+   (Requires Global Administrator or Application Administrator role in Azure / Entra ID)
+
+2. Review the permissions — Orion only requests the minimum necessary, read-only permissions:
+   • Sign in and read user profile (openid, profile)
+   • View user email address (email)
+   • Read basic user information (User.Read)
+   No sensitive data, write access, mailbox access, or any other permissions are requested.
+
+3. Click "Accept" to grant consent for your entire organization
+
+—— ADMIN CONSENT LINK ——
+
+https://login.microsoftonline.com/0fc6ac5c-d5e5-4855-b3b2-e8d80ca7884e/adminconsent?client_id=[YOUR_CLIENT_ID]
+
+—— AFTER YOU GRANT CONSENT ——
+
+Once you've approved, users in our organization can sign in to Orion by clicking "Sign in with Microsoft" on the assessment page. This applies to all users with @narrativestrategies.com email addresses. You're welcome to verify it works by trying to sign in yourself.
+
+—— QUESTIONS? ——
+
+If you have any questions about Orion, what it's used for, or the permissions being requested, the Orion team is happy to help:
+
+  Email: orion@synozur.com
+  Website: https://www.synozur.com
+
+Thank you for your help!

@@ -75,19 +75,34 @@ export function TenantManagement() {
   });
 
   const [emailDialogTenant, setEmailDialogTenant] = useState<Tenant | null>(null);
+  const [emailConsentUrl, setEmailConsentUrl] = useState<string>("");
+  const [emailConsentLoading, setEmailConsentLoading] = useState(false);
   const [emailCopied, setEmailCopied] = useState(false);
 
-  const generateConsentEmail = (tenant: Tenant): string => {
-    const clientId = import.meta.env.VITE_AZURE_CLIENT_ID;
-    const tenantIdForUrl = tenant.ssoTenantId || "common";
-    const consentUrl = clientId
-      ? `https://login.microsoftonline.com/${tenantIdForUrl}/adminconsent?client_id=${clientId}`
-      : tenant.ssoTenantId
-        ? `https://login.microsoftonline.com/${tenant.ssoTenantId}/adminconsent?client_id=[YOUR_CLIENT_ID]`
-        : "[ADMIN CONSENT URL — contact orion@synozur.com]";
+  const fetchConsentUrl = async (ssoTenantId: string | null): Promise<string> => {
+    try {
+      const qs = ssoTenantId ? `?ssoTenantId=${encodeURIComponent(ssoTenantId)}` : "";
+      const res = await fetch(`/api/auth/sso/admin-consent${qs}`);
+      if (!res.ok) return "[ADMIN CONSENT URL — contact orion@synozur.com]";
+      const data = await res.json();
+      return data.consentUrl ?? "[ADMIN CONSENT URL — contact orion@synozur.com]";
+    } catch {
+      return "[ADMIN CONSENT URL — contact orion@synozur.com]";
+    }
+  };
 
+  const openEmailDialog = async (tenant: Tenant) => {
+    setEmailCopied(false);
+    setEmailConsentUrl("");
+    setEmailConsentLoading(true);
+    setEmailDialogTenant(tenant);
+    const url = await fetchConsentUrl(tenant.ssoTenantId);
+    setEmailConsentUrl(url);
+    setEmailConsentLoading(false);
+  };
+
+  const buildEmailText = (tenant: Tenant, consentUrl: string): string => {
     const primaryDomain = tenant.domains?.[0]?.domain;
-
     return `Subject: Action Required — Approve Microsoft SSO Access for Orion Maturity Assessment
 
 Hi [IT Administrator's Name],
@@ -121,7 +136,7 @@ ${consentUrl}
 
 —— AFTER YOU GRANT CONSENT ——
 
-Once you've approved, users in our organization can sign in to Orion by clicking "Sign in with Microsoft" on the assessment page.${primaryDomain ? ` This applies to all users with @${primaryDomain} email addresses.` : ''} You're welcome to verify it works by trying to sign in yourself.
+Once you've approved, users in our organization can sign in to Orion by clicking "Sign in with Microsoft" on the assessment page.${primaryDomain ? ` This applies to all users with @${primaryDomain} email addresses.` : ""} You're welcome to verify it works by trying to sign in yourself.
 
 —— QUESTIONS? ——
 
@@ -133,9 +148,10 @@ If you have any questions about Orion, what it's used for, or the permissions be
 Thank you for your help!`;
   };
 
-  const handleCopyConsentEmail = async (tenant: Tenant) => {
+  const handleCopyConsentEmail = async () => {
+    if (!emailDialogTenant) return;
     try {
-      await navigator.clipboard.writeText(generateConsentEmail(tenant));
+      await navigator.clipboard.writeText(buildEmailText(emailDialogTenant, emailConsentUrl));
       setEmailCopied(true);
       setTimeout(() => setEmailCopied(false), 2500);
       toast({ title: "Email copied", description: "Paste it into your email client to send to the IT admin." });
@@ -485,7 +501,7 @@ Thank you for your help!`;
                         variant="outline"
                         size="sm"
                         className="gap-1.5"
-                        onClick={() => { setEmailCopied(false); setEmailDialogTenant(tenant); }}
+                        onClick={() => openEmailDialog(tenant)}
                         data-testid={`button-consent-email-${tenant.id}`}
                         title="Generate IT admin consent email"
                       >
@@ -834,15 +850,23 @@ Thank you for your help!`;
             </DialogDescription>
           </DialogHeader>
           <div className="flex-1 overflow-y-auto min-h-0">
-            <pre className="text-xs bg-muted rounded-md p-4 whitespace-pre-wrap font-mono leading-relaxed">
-              {emailDialogTenant ? generateConsentEmail(emailDialogTenant) : ""}
-            </pre>
+            {emailConsentLoading ? (
+              <div className="flex items-center justify-center py-12 text-muted-foreground text-sm gap-2">
+                <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                Generating consent URL...
+              </div>
+            ) : (
+              <pre className="text-xs bg-muted rounded-md p-4 whitespace-pre-wrap font-mono leading-relaxed">
+                {emailDialogTenant ? buildEmailText(emailDialogTenant, emailConsentUrl) : ""}
+              </pre>
+            )}
           </div>
           <DialogFooter className="flex-shrink-0">
             <Button variant="outline" onClick={() => setEmailDialogTenant(null)}>Close</Button>
             <Button
               className="gap-2"
-              onClick={() => emailDialogTenant && handleCopyConsentEmail(emailDialogTenant)}
+              disabled={emailConsentLoading}
+              onClick={handleCopyConsentEmail}
               data-testid="button-copy-consent-email"
             >
               {emailCopied ? <CheckCircle2 className="w-4 h-4" /> : <Mail className="w-4 h-4" />}
