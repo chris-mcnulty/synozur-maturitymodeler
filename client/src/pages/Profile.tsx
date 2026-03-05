@@ -12,9 +12,10 @@ import { useAuth } from "@/hooks/use-auth";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect, useMemo } from "react";
-import { CheckCircle2, AlertCircle, Mail, Lock, Trash2, TrendingUp, TrendingDown, Minus, BarChart3 } from "lucide-react";
+import { CheckCircle2, AlertCircle, Mail, Lock, Trash2, TrendingUp, TrendingDown, Minus, BarChart3, Shield, ShieldCheck, Copy } from "lucide-react";
 import type { User } from "@shared/schema";
 import { JOB_ROLES, INDUSTRIES, COUNTRIES } from "@/lib/constants";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import {
   AlertDialog,
@@ -51,6 +52,84 @@ export default function Profile() {
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [selectedModelFilter, setSelectedModelFilter] = useState<string>('all');
   const [deleteTarget, setDeleteTarget] = useState<AssessmentHistoryItem | null>(null);
+  const [ssoDialogOpen, setSsoDialogOpen] = useState(false);
+  const [ssoConsentUrl, setSsoConsentUrl] = useState('');
+  const [ssoConsentLoading, setSsoConsentLoading] = useState(false);
+  const [ssoEmailCopied, setSsoEmailCopied] = useState(false);
+
+  const openSsoDialog = async () => {
+    setSsoEmailCopied(false);
+    setSsoConsentUrl('');
+    setSsoConsentLoading(true);
+    setSsoDialogOpen(true);
+    try {
+      const ssoTenantId = (tenant as any)?.ssoTenantId;
+      const qs = ssoTenantId ? `?ssoTenantId=${encodeURIComponent(ssoTenantId)}` : '';
+      const res = await fetch(`/api/auth/sso/admin-consent${qs}`);
+      const data = await res.json();
+      setSsoConsentUrl(data.consentUrl ?? '');
+    } catch {
+      setSsoConsentUrl('');
+    }
+    setSsoConsentLoading(false);
+  };
+
+  const buildSsoEmailText = () => {
+    const orgName = (tenant as any)?.name || user?.company || 'our organization';
+    const consentLink = ssoConsentUrl || '[ADMIN CONSENT URL — contact orion@synozur.com]';
+    return `Subject: Action Required — Approve Microsoft SSO Access for Orion
+
+Hi [IT Administrator's Name],
+
+I'm reaching out to request your help enabling Microsoft single sign-on (SSO) for our team's access to Orion, Synozur's AI-powered Transformation & Maturity Assessment Platform.
+
+—— WHAT IS ORION? ——
+
+Orion enables organizations to measure and improve their transformation capabilities with AI-generated roadmaps tailored to each assessment result. Our organization — ${orgName} — uses Orion for maturity assessments.
+
+To enable seamless, password-free sign-in for everyone using their existing Microsoft 365 accounts, we need a one-time admin consent approval from you.
+
+—— WHAT YOU NEED TO DO ——
+
+This is a one-time action that takes under 2 minutes:
+
+1. Open the link below in your browser
+   (Requires Global Administrator or Application Administrator role in Azure / Entra ID)
+
+2. Review the permissions — Orion only requests minimum, read-only permissions:
+   • Sign in and read user profile (openid, profile)
+   • View user email address (email)
+   • Read basic user information (User.Read)
+   No sensitive data, write access, mailbox access, or any other permissions are requested.
+
+3. Click "Accept" to grant consent for your entire organization
+
+—— ADMIN CONSENT LINK ——
+
+${consentLink}
+
+—— AFTER YOU GRANT CONSENT ——
+
+Once approved, everyone in our organization can sign in to Orion by clicking "Sign in with Microsoft" on the login page.
+
+—— QUESTIONS? ——
+
+  Email: orion@synozur.com
+  Website: https://www.synozur.com
+
+Thank you!`;
+  };
+
+  const handleCopySsoEmail = async () => {
+    try {
+      await navigator.clipboard.writeText(buildSsoEmailText());
+      setSsoEmailCopied(true);
+      setTimeout(() => setSsoEmailCopied(false), 2500);
+      toast({ title: "Email copied", description: "Paste it into your email client to send to your IT admin." });
+    } catch {
+      toast({ title: "Could not copy", variant: "destructive" });
+    }
+  };
   const [profileForm, setProfileForm] = useState({
     email: '',
     name: '',
@@ -387,6 +466,38 @@ export default function Profile() {
                       <p className="text-xs text-muted-foreground mt-1">
                         Your account is associated with this tenant organization
                       </p>
+                    </div>
+                  )}
+                  {user.tenantId && (
+                    <div>
+                      <Label className="flex items-center gap-1.5">
+                        <Shield className="h-3.5 w-3.5" />
+                        Microsoft SSO
+                      </Label>
+                      <div className="mt-2">
+                        {(tenant as any)?.ssoAdminConsentGranted ? (
+                          <div className="flex items-center gap-2 text-sm text-green-600 dark:text-green-400" data-testid="sso-status-active">
+                            <ShieldCheck className="h-4 w-4" />
+                            <span>Active — your organization can sign in with Microsoft</span>
+                          </div>
+                        ) : (
+                          <div className="space-y-2">
+                            <p className="text-xs text-muted-foreground">
+                              Not yet configured. Forward the setup email to your IT administrator to enable password-free Microsoft sign-in for your team.
+                            </p>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={openSsoDialog}
+                              data-testid="button-setup-sso"
+                              className="gap-2 w-full"
+                            >
+                              <Mail className="h-3.5 w-3.5" />
+                              Get IT admin setup email
+                            </Button>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   )}
                   <div>
@@ -786,6 +897,46 @@ export default function Profile() {
         </div>
       </main>
       <Footer />
+
+      {/* SSO Setup Dialog */}
+      <Dialog open={ssoDialogOpen} onOpenChange={setSsoDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[80vh] flex flex-col gap-4">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Shield className="h-5 w-5" />
+              Microsoft SSO Setup Email
+            </DialogTitle>
+            <DialogDescription>
+              Copy this email and send it to your IT administrator to enable Microsoft single sign-on for your organization.
+              Replace <code className="text-xs bg-muted px-1 py-0.5 rounded">[IT Administrator's Name]</code> before sending.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex-1 overflow-y-auto">
+            {ssoConsentLoading ? (
+              <div className="flex items-center justify-center py-12 text-muted-foreground text-sm gap-2">
+                <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                Generating consent URL...
+              </div>
+            ) : (
+              <pre className="text-xs bg-muted rounded-md p-4 whitespace-pre-wrap font-mono leading-relaxed">
+                {buildSsoEmailText()}
+              </pre>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSsoDialogOpen(false)}>Close</Button>
+            <Button
+              className="gap-2"
+              disabled={ssoConsentLoading}
+              onClick={handleCopySsoEmail}
+              data-testid="button-copy-sso-email"
+            >
+              {ssoEmailCopied ? <CheckCircle2 className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+              {ssoEmailCopied ? "Copied!" : "Copy email"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
         <AlertDialogContent>
