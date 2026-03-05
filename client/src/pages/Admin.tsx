@@ -13,7 +13,7 @@ import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Download, Plus, Edit, Trash, FileSpreadsheet, Eye, EyeOff, BarChart3, Settings, FileDown, FileUp, ListOrdered, Users, Star, Upload, X, Sparkles, CheckCircle2, XCircle, Database, FileText, Brain, BookOpen, ClipboardList, Home, Building2, ChevronDown, Shield, Tag, Activity, Copy, Archive, ArchiveRestore } from "lucide-react";
+import { Download, Plus, Edit, Trash, FileSpreadsheet, Eye, EyeOff, BarChart3, Settings, FileDown, FileUp, ListOrdered, Users, Star, Upload, X, Sparkles, CheckCircle2, XCircle, Database, FileText, Brain, BookOpen, ClipboardList, Home, Building2, ChevronDown, Shield, Tag, Activity, Copy, Archive, ArchiveRestore, KeyRound, Clock, ExternalLink, Building } from "lucide-react";
 import type { Model, Result, Assessment, Dimension, Question, Answer, User, AssessmentTag } from "@shared/schema";
 import { USER_ROLES, type UserRole } from "@shared/constants";
 import { useAuth } from "@/hooks/use-auth";
@@ -31,6 +31,7 @@ import { ImportExportPanel } from "@/components/admin/ImportExportPanel";
 import { ModelBuilder } from "@/components/admin/ModelBuilder";
 import { TagManagement } from "@/components/admin/TagManagement";
 import { TrafficDashboard } from "@/components/admin/TrafficDashboard";
+import { AccessRequestsSection } from "@/components/admin/AccessRequestsSection";
 import { AssessmentTagSelector } from "@/components/admin/AssessmentTagSelector";
 import {
   Sidebar,
@@ -77,6 +78,11 @@ function isAdminUser(user: User | null | undefined): boolean {
   const normalizedRole = normalizeRole(user.role);
   return normalizedRole === USER_ROLES.GLOBAL_ADMIN || 
          normalizedRole === USER_ROLES.TENANT_ADMIN;
+}
+
+function isGlobalAdminUser(user: User | null | undefined): boolean {
+  if (!user) return false;
+  return normalizeRole(user.role) === USER_ROLES.GLOBAL_ADMIN;
 }
 
 // Helper function to check if user can manage models
@@ -766,6 +772,18 @@ export default function Admin() {
   const { data: pendingReviews = [] } = useQuery<any[]>({
     queryKey: ['/api/admin/ai/pending-reviews'],
     enabled: canManageModels(currentUser),
+  });
+
+  // Fetch pending access requests count
+  const { data: pendingAccessCount } = useQuery<{ count: number }>({
+    queryKey: ['/api/admin/access-requests/count'],
+    enabled: isGlobalAdminUser(currentUser),
+  });
+
+  // Fetch all access requests for the access requests section
+  const { data: accessRequests = [], refetch: refetchAccessRequests } = useQuery<any[]>({
+    queryKey: ['/api/admin/access-requests'],
+    enabled: activeSection === 'access-requests' && isGlobalAdminUser(currentUser),
   });
 
   // Fetch AI cache statistics
@@ -2463,6 +2481,22 @@ export default function Admin() {
                       >
                         <Shield className="h-4 w-4" />
                         <span className="group-data-[collapsible=icon]:hidden">OAuth Apps</span>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                    <SidebarMenuItem>
+                      <SidebarMenuButton 
+                        onClick={() => setActiveSection('access-requests')}
+                        isActive={activeSection === 'access-requests'}
+                        data-testid="tab-access-requests"
+                        tooltip="Access Requests"
+                      >
+                        <KeyRound className="h-4 w-4" />
+                        <span className="group-data-[collapsible=icon]:hidden">Access Requests</span>
+                        {(pendingAccessCount?.count ?? 0) > 0 && (
+                          <Badge variant="secondary" className="ml-auto" data-testid="badge-pending-access-requests">
+                            {pendingAccessCount!.count}
+                          </Badge>
+                        )}
                       </SidebarMenuButton>
                     </SidebarMenuItem>
                   </SidebarMenu>
@@ -4391,6 +4425,14 @@ export default function Admin() {
               {activeSection === 'tenants' && <TenantManagement />}
 
               {activeSection === 'oauth-applications' && <OAuthApplications />}
+
+              {activeSection === 'access-requests' && (
+                <AccessRequestsSection
+                  accessRequests={accessRequests}
+                  onRefresh={refetchAccessRequests}
+                  currentUserId={currentUser?.id ?? ''}
+                />
+              )}
             </div>
 
             {/* Footer Stats */}

@@ -11,30 +11,45 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { Model, Dimension, Assessment, User } from "@shared/schema";
 import openingGraphic from '@assets/generated_images/Opening_graphic_AI_transformation_bf033f89.png';
+import { PrivateAccessGate } from "@/components/PrivateAccessGate";
 
 export default function ModelHome() {
   const [, params] = useRoute("/:modelSlug");
   const [, setLocation] = useLocation();
   const modelSlug = params?.modelSlug || "";
   const [isArchived, setIsArchived] = useState(false);
+  const [isPrivateGated, setIsPrivateGated] = useState(false);
+  const [privateModelInfo, setPrivateModelInfo] = useState<{ name?: string; description?: string } | null>(null);
 
   // Fetch model data from API based on modelSlug
   const { data: model, isLoading, error } = useQuery<Model & { dimensions: Dimension[] }>({
     queryKey: ['/api/models', modelSlug],
     enabled: !!modelSlug,
     retry: (failureCount, error: any) => {
-      // Don't retry on archived models
       if (error?.message?.includes('model_archived')) return false;
+      if (error?.message?.includes('model_private_access_required')) return false;
       return failureCount < 3;
     },
   });
 
-  // Check if model is archived from error response
+  // Check error type from response
   useEffect(() => {
     if (error) {
       const errorMessage = (error as any)?.message || '';
       if (errorMessage.includes('model_archived')) {
         setIsArchived(true);
+      } else if (errorMessage.includes('model_private_access_required')) {
+        setIsPrivateGated(true);
+        // Parse model info from the JSON body embedded in the error message
+        try {
+          const jsonStart = errorMessage.indexOf('{');
+          if (jsonStart !== -1) {
+            const parsed = JSON.parse(errorMessage.slice(jsonStart));
+            if (parsed?.model) {
+              setPrivateModelInfo({ name: parsed.model.name, description: parsed.model.description });
+            }
+          }
+        } catch {}
       }
     }
   }, [error]);
@@ -121,6 +136,25 @@ export default function ModelHome() {
               </div>
             </Card>
           </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
+  // Show private model access gate
+  if (isPrivateGated) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Helmet>
+          <title>{privateModelInfo?.name ? `${privateModelInfo.name} - Access Required` : "Access Required"} | Orion</title>
+        </Helmet>
+        <main className="flex-1 container mx-auto px-4">
+          <PrivateAccessGate
+            modelSlug={modelSlug}
+            modelNameFallback={privateModelInfo?.name}
+            modelDescFallback={privateModelInfo?.description}
+          />
         </main>
         <Footer />
       </div>

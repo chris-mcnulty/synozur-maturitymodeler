@@ -118,6 +118,16 @@ export interface IStorage {
   getSsoAuthState(state: string): Promise<schema.SsoAuthState | undefined>;
   deleteSsoAuthState(state: string): Promise<void>;
   cleanupExpiredSsoAuthStates(): Promise<number>;
+
+  // Model Access Request methods
+  createModelAccessRequest(req: schema.InsertModelAccessRequest): Promise<schema.ModelAccessRequest>;
+  getModelAccessRequest(id: string): Promise<schema.ModelAccessRequest | undefined>;
+  getModelAccessRequestsByModel(modelId: string, status?: string): Promise<schema.ModelAccessRequest[]>;
+  getModelAccessRequestByEmail(modelId: string, email: string): Promise<schema.ModelAccessRequest | undefined>;
+  getModelAccessRequestsByTenant(tenantId: string): Promise<schema.ModelAccessRequest[]>;
+  getAllModelAccessRequests(status?: string): Promise<(schema.ModelAccessRequest & { modelName: string })[]>;
+  updateModelAccessRequest(id: string, data: Partial<schema.ModelAccessRequest>): Promise<schema.ModelAccessRequest | undefined>;
+  countPendingAccessRequests(): Promise<number>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -616,6 +626,96 @@ export class DatabaseStorage implements IStorage {
       .where(sql`${schema.ssoAuthStates.expiresAt} < NOW()`)
       .returning();
     return result.length;
+  }
+
+  // Model Access Request methods
+  async createModelAccessRequest(reqData: schema.InsertModelAccessRequest): Promise<schema.ModelAccessRequest> {
+    const [created] = await db.insert(schema.modelAccessRequests)
+      .values(reqData)
+      .returning();
+    return created;
+  }
+
+  async getModelAccessRequest(id: string): Promise<schema.ModelAccessRequest | undefined> {
+    const [req] = await db.select()
+      .from(schema.modelAccessRequests)
+      .where(eq(schema.modelAccessRequests.id, id))
+      .limit(1);
+    return req;
+  }
+
+  async getModelAccessRequestsByModel(modelId: string, status?: string): Promise<schema.ModelAccessRequest[]> {
+    const conditions = [eq(schema.modelAccessRequests.modelId, modelId)];
+    if (status) {
+      conditions.push(eq(schema.modelAccessRequests.status, status));
+    }
+    return db.select()
+      .from(schema.modelAccessRequests)
+      .where(and(...conditions))
+      .orderBy(desc(schema.modelAccessRequests.requestedAt));
+  }
+
+  async getModelAccessRequestByEmail(modelId: string, email: string): Promise<schema.ModelAccessRequest | undefined> {
+    const [req] = await db.select()
+      .from(schema.modelAccessRequests)
+      .where(and(
+        eq(schema.modelAccessRequests.modelId, modelId),
+        eq(schema.modelAccessRequests.requestorEmail, email.toLowerCase())
+      ))
+      .orderBy(desc(schema.modelAccessRequests.requestedAt))
+      .limit(1);
+    return req;
+  }
+
+  async getModelAccessRequestsByTenant(tenantId: string): Promise<schema.ModelAccessRequest[]> {
+    return db.select()
+      .from(schema.modelAccessRequests)
+      .where(eq(schema.modelAccessRequests.tenantId, tenantId))
+      .orderBy(desc(schema.modelAccessRequests.requestedAt));
+  }
+
+  async getAllModelAccessRequests(status?: string): Promise<(schema.ModelAccessRequest & { modelName: string })[]> {
+    const conditions = status ? [eq(schema.modelAccessRequests.status, status)] : [];
+    const rows = await db
+      .select({
+        id: schema.modelAccessRequests.id,
+        modelId: schema.modelAccessRequests.modelId,
+        requestorName: schema.modelAccessRequests.requestorName,
+        requestorEmail: schema.modelAccessRequests.requestorEmail,
+        organizationName: schema.modelAccessRequests.organizationName,
+        organizationDomain: schema.modelAccessRequests.organizationDomain,
+        tenantId: schema.modelAccessRequests.tenantId,
+        ssoTenantId: schema.modelAccessRequests.ssoTenantId,
+        adminConsentGranted: schema.modelAccessRequests.adminConsentGranted,
+        message: schema.modelAccessRequests.message,
+        status: schema.modelAccessRequests.status,
+        requestedAt: schema.modelAccessRequests.requestedAt,
+        reviewedAt: schema.modelAccessRequests.reviewedAt,
+        reviewedBy: schema.modelAccessRequests.reviewedBy,
+        denialReason: schema.modelAccessRequests.denialReason,
+        modelName: schema.models.name,
+      })
+      .from(schema.modelAccessRequests)
+      .leftJoin(schema.models, eq(schema.modelAccessRequests.modelId, schema.models.id))
+      .where(conditions.length > 0 ? and(...conditions) : undefined)
+      .orderBy(desc(schema.modelAccessRequests.requestedAt));
+    return rows.map(r => ({ ...r, modelName: r.modelName ?? 'Unknown Model' }));
+  }
+
+  async updateModelAccessRequest(id: string, data: Partial<schema.ModelAccessRequest>): Promise<schema.ModelAccessRequest | undefined> {
+    const [updated] = await db.update(schema.modelAccessRequests)
+      .set(data)
+      .where(eq(schema.modelAccessRequests.id, id))
+      .returning();
+    return updated;
+  }
+
+  async countPendingAccessRequests(): Promise<number> {
+    const [{ count }] = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(schema.modelAccessRequests)
+      .where(eq(schema.modelAccessRequests.status, 'pending'));
+    return count;
   }
 }
 

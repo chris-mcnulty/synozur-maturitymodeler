@@ -891,6 +891,43 @@ export type InsertAssessmentTag = z.infer<typeof insertAssessmentTagSchema>;
 export type AssessmentTagAssignment = typeof assessmentTagAssignments.$inferSelect;
 export type InsertAssessmentTagAssignment = z.infer<typeof insertAssessmentTagAssignmentSchema>;
 
+// Model access requests - for customers to request access to private models
+export const modelAccessRequests = pgTable("model_access_requests", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  modelId: varchar("model_id").notNull().references(() => models.id, { onDelete: "cascade" }),
+  // Requestor info (filled from profile or manually entered)
+  requestorName: text("requestor_name").notNull(),
+  requestorEmail: text("requestor_email").notNull(),
+  organizationName: text("organization_name").notNull(),
+  organizationDomain: text("organization_domain"), // extracted from email
+  // Linked tenant/SSO info if available at request time
+  tenantId: varchar("tenant_id").references(() => tenants.id, { onDelete: "set null" }),
+  ssoTenantId: text("sso_tenant_id"), // Azure AD tenant ID if available
+  adminConsentGranted: boolean("admin_consent_granted").notNull().default(false),
+  // Optional message from requestor
+  message: text("message"),
+  // Status lifecycle
+  status: text("status").notNull().default("pending"), // 'pending' | 'approved' | 'denied'
+  requestedAt: timestamp("requested_at").defaultNow().notNull(),
+  reviewedAt: timestamp("reviewed_at"),
+  reviewedBy: varchar("reviewed_by").references(() => users.id, { onDelete: "set null" }),
+  denialReason: text("denial_reason"),
+}, (table) => ({
+  modelIdx: index("idx_access_requests_model").on(table.modelId),
+  tenantIdx: index("idx_access_requests_tenant").on(table.tenantId),
+  statusIdx: index("idx_access_requests_status").on(table.status),
+  emailIdx: index("idx_access_requests_email").on(table.requestorEmail),
+}));
+
+export const insertModelAccessRequestSchema = createInsertSchema(modelAccessRequests).omit({
+  id: true,
+  requestedAt: true,
+  reviewedAt: true,
+});
+
+export type ModelAccessRequest = typeof modelAccessRequests.$inferSelect;
+export type InsertModelAccessRequest = z.infer<typeof insertModelAccessRequestSchema>;
+
 // Traffic visits table for analytics
 export const trafficVisits = pgTable("traffic_visits", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),

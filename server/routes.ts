@@ -19,6 +19,7 @@ import { promisify } from "util";
 import bcrypt from "bcryptjs";
 import tenantRoutes from "./tenant-routes";
 import oauthRoutes from "./oauth-routes";
+import { generateAdminConsentUrl, isSsoConfigured, extractDomain } from "./services/sso-service";
 
 const scryptAsync = promisify(scrypt);
 
@@ -1355,7 +1356,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Check visibility/tenant access
       if (!(await canAccessModel(req.user, model))) {
-        return res.status(404).json({ error: "Model not found" }); // 404 to hide existence
+        // For private models, return a specific error so the frontend can show the access gate
+        if (model.visibility === 'private') {
+          return res.status(403).json({
+            error: "model_private_access_required",
+            message: "Access to this model requires approval.",
+            model: {
+              id: model.id,
+              name: model.name,
+              slug: model.slug,
+              description: model.description,
+              estimatedTime: model.estimatedTime,
+            },
+          });
+        }
+        return res.status(404).json({ error: "Model not found" });
       }
 
       // Only admins and modelers can access draft/archived models
@@ -1378,6 +1393,230 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ ...model, dimensions });
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch model" });
+    }
+  });
+
+  // Get access status for a private model (works even if user can't access)
+  app.get("/api/models/:slug/access-status", async (req, res) => {
+    try {
+      const model = await storage.getModelBySlug(req.params.slug);
+      if (!model) {
+        return res.status(404).json({ error: "Model not found" });
+      }
+
+      const user = req.user;
+      const canAccess = await canAccessModel(user, model);
+      const ssoEnabled = isSsoConfigured();
+
+      let adminConsentGranted = false;
+      let adminConsentUrl: string | null = null;
+      let requestStatus: 'none' | 'pending' | 'approved' | 'denied' = 'none';
+      let existingRequest: schema.ModelAccessRequest | undefined;
+
+      if (user?.tenantId) {
+        const tenant = await storage.getTenant(user.tenantId);
+        adminConsentGranted = tenant?.ssoAdminConsentGranted ?? false;
+        if (ssoEnabled && tenant?.ssoTenantId) {
+          try {
+            const info = generateAdminConsentUrl(tenant.ssoTenantId);
+            adminConsentUrl = info.consentUrl;
+          } catch {}
+        } else if (ssoEnabled) {
+          try {
+            const info = generateAdminConsentUrl();
+            adminConsentUrl = info.consentUrl;
+          } catch {}
+        }
+        existingRequest = await storage.getModelAccessRequestByEmail(model.id, user.email ?? '');
+      } else if (user?.email) {
+        existingRequest = await storage.getModelAccessRequestByEmail(model.id, user.email);
+      }
+
+      if (existingRequest) {
+        requestStatus = existingRequest.status as 'pending' | 'approved' | 'denied';
+      }
+
+      if (ssoEnabled && !adminConsentUrl) {
+        try {
+          const info = generateAdminConsentUrl();
+          adminConsentUrl = info.consentUrl;
+        } catch {}
+      }
+
+      res.json({
+        canAccess,
+        requestStatus,
+        adminConsentGranted,
+        adminConsentUrl,
+        ssoConfigured: ssoEnabled,
+        model: {
+          id: model.id,
+          name: model.name,
+          slug: model.slug,
+          description: model.description,
+          estimatedTime: model.estimatedTime,
+          visibility: model.visibility,
+        },
+        existingRequest: existingRequest ? {
+          id: existingRequest.id,
+          status: existingRequest.status,
+          requestedAt: existingRequest.requestedAt,
+          denialReason: existingRequest.denialReason,
+        } : null,
+      });
+    } catch (error) {
+      console.error('Error fetching access status:', error);
+      res.status(500).json({ error: "Failed to fetch access status" });
+    }
+  });
+
+  // Submit a model access request
+  app.post("/api/models/:slug/request-access", async (req, res) => {
+    try {
+      const model = await storage.getModelBySlug(req.params.slug);
+      if (!model) {
+        return res.status(404).json({ error: "Model not found" });
+      }
+      if (model.visibility !== 'private') {
+        return res.status(400).json({ error: "This model does not require an access request" });
+      }
+
+      const { requestorName, requestorEmail, organizationName, message } = req.body;
+      if (!requestorName || !requestorEmail || !organizationName) {
+        return res.status(400).json({ error: "Name, email, and organization are required" });
+      }
+
+      const email = requestorEmail.toLowerCase().trim();
+      const existing = await storage.getModelAccessRequestByEmail(model.id, email);
+      if (existing && existing.status === 'pending') {
+        return res.status(409).json({ error: "An access request is already pending for this email", requestId: existing.id });
+      }
+
+      const user = req.user;
+      let tenantId: string | null = user?.tenantId ?? null;
+      let ssoTenantId: string | null = null;
+      let adminConsentGranted = false;
+
+      if (tenantId) {
+        const tenant = await storage.getTenant(tenantId);
+        ssoTenantId = tenant?.ssoTenantId ?? null;
+        adminConsentGranted = tenant?.ssoAdminConsentGranted ?? false;
+      }
+
+      const domain = extractDomain(email);
+      const accessRequest = await storage.createModelAccessRequest({
+        modelId: model.id,
+        requestorName: requestorName.trim(),
+        requestorEmail: email,
+        organizationName: organizationName.trim(),
+        organizationDomain: domain || null,
+        tenantId,
+        ssoTenantId,
+        adminConsentGranted,
+        message: message?.trim() || null,
+        status: 'pending',
+        reviewedBy: null,
+        denialReason: null,
+      });
+
+      res.status(201).json({ success: true, requestId: accessRequest.id });
+    } catch (error) {
+      console.error('Error creating access request:', error);
+      res.status(500).json({ error: "Failed to submit access request" });
+    }
+  });
+
+  // Admin: list all access requests
+  app.get("/api/admin/access-requests", ensureGlobalAdmin, async (req, res) => {
+    try {
+      const { status, modelId } = req.query;
+      const requests = await storage.getAllModelAccessRequests(
+        typeof status === 'string' ? status : undefined
+      );
+      const filtered = modelId ? requests.filter(r => r.modelId === modelId) : requests;
+      res.json(filtered);
+    } catch (error) {
+      console.error('Error fetching access requests:', error);
+      res.status(500).json({ error: "Failed to fetch access requests" });
+    }
+  });
+
+  // Admin: approve an access request (adds tenant to model_tenants)
+  app.patch("/api/admin/access-requests/:id/approve", ensureGlobalAdmin, async (req, res) => {
+    try {
+      const accessReq = await storage.getModelAccessRequest(req.params.id);
+      if (!accessReq) {
+        return res.status(404).json({ error: "Access request not found" });
+      }
+      if (accessReq.status !== 'pending') {
+        return res.status(400).json({ error: "Request is not pending" });
+      }
+
+      let tenantId = accessReq.tenantId;
+
+      // If request has a tenant, add it to model_tenants
+      if (tenantId) {
+        const existing = await db.select()
+          .from(schema.modelTenants)
+          .where(and(
+            eq(schema.modelTenants.modelId, accessReq.modelId),
+            eq(schema.modelTenants.tenantId, tenantId)
+          ))
+          .limit(1);
+
+        if (existing.length === 0) {
+          await db.insert(schema.modelTenants).values({
+            modelId: accessReq.modelId,
+            tenantId,
+          });
+        }
+      }
+
+      const updated = await storage.updateModelAccessRequest(accessReq.id, {
+        status: 'approved',
+        reviewedAt: new Date(),
+        reviewedBy: req.user!.id,
+      });
+
+      res.json({ success: true, request: updated });
+    } catch (error) {
+      console.error('Error approving access request:', error);
+      res.status(500).json({ error: "Failed to approve access request" });
+    }
+  });
+
+  // Admin: deny an access request
+  app.patch("/api/admin/access-requests/:id/deny", ensureGlobalAdmin, async (req, res) => {
+    try {
+      const accessReq = await storage.getModelAccessRequest(req.params.id);
+      if (!accessReq) {
+        return res.status(404).json({ error: "Access request not found" });
+      }
+      if (accessReq.status !== 'pending') {
+        return res.status(400).json({ error: "Request is not pending" });
+      }
+
+      const updated = await storage.updateModelAccessRequest(accessReq.id, {
+        status: 'denied',
+        reviewedAt: new Date(),
+        reviewedBy: req.user!.id,
+        denialReason: req.body.reason?.trim() || null,
+      });
+
+      res.json({ success: true, request: updated });
+    } catch (error) {
+      console.error('Error denying access request:', error);
+      res.status(500).json({ error: "Failed to deny access request" });
+    }
+  });
+
+  // Admin: get count of pending access requests (for badge)
+  app.get("/api/admin/access-requests/count", ensureGlobalAdmin, async (req, res) => {
+    try {
+      const count = await storage.countPendingAccessRequests();
+      res.json({ count });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to count pending requests" });
     }
   });
 
