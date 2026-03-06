@@ -74,6 +74,22 @@ const SYNOZUR_APPS = [
     ),
   },
   {
+    id: "zenith",
+    name: "Zenith",
+    tagline: "M365 AI Content Governance",
+    description: "AI-powered content governance, compliance, and lifecycle management for Microsoft 365.",
+    url: "https://zenith.synozur.com",
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" className="w-6 h-6">
+        <path d="M12 2L4 8V16L12 22L20 16V8L12 2Z" stroke="currentColor" strokeWidth="1.2" fill="currentColor" fillOpacity="0.1" />
+        <path d="M12 2V22" stroke="currentColor" strokeWidth="0.8" opacity="0.3" />
+        <path d="M4 8L20 16" stroke="currentColor" strokeWidth="0.8" opacity="0.3" />
+        <path d="M20 8L4 16" stroke="currentColor" strokeWidth="0.8" opacity="0.3" />
+        <circle cx="12" cy="12" r="2.5" fill="currentColor" fillOpacity="0.5" />
+      </svg>
+    ),
+  },
+  {
     id: "orbit",
     name: "Orbit",
     tagline: "Go-to-Market Intelligence",
@@ -95,7 +111,7 @@ function getAppColor(index: number): string {
 }
 
 interface SynozurAppSwitcherProps {
-  currentApp?: "vega" | "constellation" | "nebula" | "orion" | "orbit";
+  currentApp?: "vega" | "constellation" | "nebula" | "orion" | "zenith" | "orbit";
   forceDark?: boolean;
 }
 
