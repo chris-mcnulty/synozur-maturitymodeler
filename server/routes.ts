@@ -4277,6 +4277,125 @@ Respond in JSON format:
     }
   });
 
+  // Assessment review — returns fully-resolved Q&A for admin/modeler review
+  app.get("/api/admin/assessments/:id/review", ensureAdminOrModeler, async (req, res) => {
+    try {
+      const assessment = await storage.getAssessment(req.params.id);
+      if (!assessment) {
+        return res.status(404).json({ error: "Assessment not found" });
+      }
+
+      const [responses, model, dimensions, result] = await Promise.all([
+        storage.getAssessmentResponses(assessment.id),
+        storage.getModel(assessment.modelId),
+        storage.getDimensionsByModelId(assessment.modelId),
+        storage.getResult(assessment.id),
+      ]);
+
+      // Resolve all questions in parallel
+      const resolvedQuestions = await Promise.all(
+        responses.map(async (r) => {
+          const question = await storage.getQuestion(r.questionId);
+          if (!question) return null;
+
+          // Resolve answer text based on question type
+          let answerText = '';
+          let answerScore: number | null = null;
+
+          if (r.booleanValue !== null && r.booleanValue !== undefined) {
+            answerText = r.booleanValue ? 'Yes' : 'No';
+          } else if (r.numericValue !== null && r.numericValue !== undefined) {
+            answerText = `${r.numericValue}${question.unit ? ' ' + question.unit : ''}`;
+            answerScore = r.numericValue;
+          } else if (r.textValue) {
+            answerText = r.textValue;
+          } else if (r.answerIds && r.answerIds.length > 0) {
+            // Multi-select: resolve each answer ID
+            const answerTexts = await Promise.all(
+              r.answerIds.map(async (aid) => {
+                const answers = await storage.getAnswersByQuestionId(r.questionId);
+                return answers.find((a) => a.id === aid)?.text || aid;
+              })
+            );
+            answerText = answerTexts.join('; ');
+          } else if (r.answerId) {
+            const answers = await storage.getAnswersByQuestionId(r.questionId);
+            const matched = answers.find((a) => a.id === r.answerId);
+            answerText = matched?.text || r.answerId;
+            answerScore = matched?.score ?? null;
+          }
+
+          return {
+            questionId: question.id,
+            dimensionId: question.dimensionId,
+            order: question.order,
+            questionText: question.text,
+            questionType: question.type,
+            answerText,
+            answerScore,
+            respondedAt: r.createdAt,
+          };
+        })
+      );
+
+      // Filter nulls and group by dimension
+      const validQuestions = resolvedQuestions.filter(Boolean) as NonNullable<typeof resolvedQuestions[number]>[];
+      const dimensionMap = new Map(dimensions.map((d) => [d.id, d]));
+
+      // Build dimension groups
+      const grouped: Record<string, { dimensionName: string; order: number; questions: typeof validQuestions }> = {};
+      const noDimKey = '__none__';
+
+      for (const q of validQuestions) {
+        const key = q.dimensionId || noDimKey;
+        if (!grouped[key]) {
+          const dim = q.dimensionId ? dimensionMap.get(q.dimensionId) : null;
+          grouped[key] = {
+            dimensionName: dim?.name || 'General',
+            order: dim?.order ?? 999,
+            questions: [],
+          };
+        }
+        grouped[key].questions.push(q);
+      }
+
+      // Sort questions within each dimension by order
+      for (const group of Object.values(grouped)) {
+        group.questions.sort((a, b) => a.order - b.order);
+      }
+
+      const dimensionGroups = Object.values(grouped).sort((a, b) => a.order - b.order);
+
+      res.json({
+        assessment: {
+          id: assessment.id,
+          modelName: model?.name || 'Unknown Model',
+          status: assessment.status,
+          startedAt: assessment.startedAt,
+          completedAt: assessment.completedAt,
+          isProxy: assessment.isProxy,
+          subject: assessment.isProxy
+            ? {
+                name: assessment.proxyName,
+                company: assessment.proxyCompany,
+                jobTitle: assessment.proxyJobTitle,
+                industry: assessment.proxyIndustry,
+                country: assessment.proxyCountry,
+              }
+            : null,
+        },
+        result: result
+          ? { overallScore: result.overallScore, label: result.label }
+          : null,
+        dimensionGroups,
+        totalQuestions: validQuestions.length,
+      });
+    } catch (error) {
+      console.error('Assessment review error:', error);
+      res.status(500).json({ error: "Failed to load assessment review" });
+    }
+  });
+
   // Send PDF via email
   app.post('/api/send-pdf-email', ensureAuthenticated, async (req, res) => {
     try {

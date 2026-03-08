@@ -33,6 +33,7 @@ import { TagManagement } from "@/components/admin/TagManagement";
 import { TrafficDashboard } from "@/components/admin/TrafficDashboard";
 import { AccessRequestsSection } from "@/components/admin/AccessRequestsSection";
 import { AssessmentTagSelector } from "@/components/admin/AssessmentTagSelector";
+import { AssessmentReviewDialog } from "@/components/admin/AssessmentReviewDialog";
 import {
   Sidebar,
   SidebarContent,
@@ -677,6 +678,7 @@ export default function Admin() {
   const [resultsModelFilter, setResultsModelFilter] = useState<string>('all'); // Model filter
   const [resultsProxyFilter, setResultsProxyFilter] = useState<string>('all'); // Proxy filter
   const [resultsTagFilter, setResultsTagFilter] = useState<string>('all'); // Tag filter
+  const [reviewAssessmentId, setReviewAssessmentId] = useState<string | null>(null);
   
   // Fetch all tags for filtering
   const { data: allTags = [] } = useQuery<AssessmentTag[]>({
@@ -3945,14 +3947,24 @@ export default function Admin() {
                                   </Badge>
                                 </TableCell>
                                 <TableCell className="text-right">
-                                  <Button 
-                                    variant="ghost" 
-                                    size="sm"
-                                    onClick={() => window.open(`/results/${result.assessmentId}`, '_blank')}
-                                    data-testid={`button-view-result-${result.assessmentId}`}
-                                  >
-                                    View
-                                  </Button>
+                                  <div className="flex items-center justify-end gap-1">
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => setReviewAssessmentId(result.assessmentId)}
+                                      data-testid={`button-review-result-${result.assessmentId}`}
+                                    >
+                                      Review
+                                    </Button>
+                                    <Button 
+                                      variant="ghost" 
+                                      size="sm"
+                                      onClick={() => window.open(`/results/${result.assessmentId}`, '_blank')}
+                                      data-testid={`button-view-result-${result.assessmentId}`}
+                                    >
+                                      View
+                                    </Button>
+                                  </div>
                                 </TableCell>
                               </TableRow>
                             ))
@@ -6593,6 +6605,11 @@ ${insightsData.recommendations.map((r, i) => `${i + 1}. ${r}`).join('\n')}
             description: "Model data has been imported successfully.",
           });
         }}
+      />
+
+      <AssessmentReviewDialog
+        assessmentId={reviewAssessmentId}
+        onClose={() => setReviewAssessmentId(null)}
       />
 
     </SidebarProvider>
