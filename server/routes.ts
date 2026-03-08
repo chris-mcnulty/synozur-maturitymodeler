@@ -4277,6 +4277,29 @@ Respond in JSON format:
     }
   });
 
+  // TEMPORARY: Backdate Andrew Fimka's proxy assessment to Oct 29 2025 (global admin only)
+  app.post("/api/admin/temp/backdate-assessment", ensureGlobalAdmin, async (req, res) => {
+    const TARGET_ID = "08466dac-a8a2-4aa4-bd7e-34eed451a7a6";
+    try {
+      const { db } = await import("./db.js");
+      const { assessments, assessmentResponses } = await import("../shared/schema.js");
+      const { eq } = await import("drizzle-orm");
+      await db.update(assessments)
+        .set({
+          startedAt: new Date('2025-10-29T19:03:29.593Z'),
+          completedAt: new Date('2025-10-29T19:06:37.336Z'),
+        })
+        .where(eq(assessments.id, TARGET_ID));
+      await db.update(assessmentResponses)
+        .set({ createdAt: new Date('2025-10-29T19:03:29.000Z') })
+        .where(eq(assessmentResponses.assessmentId, TARGET_ID));
+      const updated = await storage.getAssessment(TARGET_ID);
+      res.json({ success: true, startedAt: updated?.startedAt, completedAt: updated?.completedAt });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // Assessment review — returns fully-resolved Q&A for admin/modeler review
   app.get("/api/admin/assessments/:id/review", ensureAdminOrModeler, async (req, res) => {
     try {
