@@ -2354,7 +2354,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Calculate scores
       let totalScore = 0;
+      let totalMaxPossible = 0;
       const dimensionScores: Record<string, number[]> = {};
+      const dimensionMaxScores: Record<string, number[]> = {};
       let questionCount = 0;
 
       for (const response of responses) {
@@ -2362,22 +2364,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (!question) continue;
 
         let score = 0;
+        let maxPossible = 0;
         
         if (question.type === 'numeric' && response.numericValue !== undefined && response.numericValue !== null) {
           const minValue = question.minValue || 0;
           const maxValue = question.maxValue || 100;
           const numericValue = response.numericValue;
+          const range = maxValue - minValue;
           
           if (use100PointScale) {
-            // For 100-point scale, scale numeric value to 0-4 range (or configured max)
-            const normalizedValue = (numericValue - minValue) / (maxValue - minValue);
+            const normalizedValue = range > 0 ? (numericValue - minValue) / range : 0;
             score = Math.round(normalizedValue * 4);
             score = Math.max(0, Math.min(4, score));
+            maxPossible = 4;
           } else {
-            // For 100-500 scale, scale the value to that range
-            const normalizedValue = (numericValue - minValue) / (maxValue - minValue);
+            const normalizedValue = range > 0 ? (numericValue - minValue) / range : 0;
             score = Math.round(normalizedValue * 400 + 100);
             score = Math.max(100, Math.min(500, score));
+            maxPossible = 500;
           }
         } else if (question.type === 'multi_select') {
           const answers = await storage.getAnswersByQuestionId(question.id);
@@ -2386,26 +2390,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           if (totalOptions > 0) {
             if (use100PointScale) {
-              // For 100-point scale, proportional to 0-4 range
               score = Math.round((selectedCount / totalOptions) * 4);
               score = Math.max(0, Math.min(4, score));
+              maxPossible = 4;
             } else {
-              // For 100-500 scale
               score = Math.round((selectedCount / totalOptions) * 400 + 100);
               score = Math.max(100, Math.min(500, score));
+              maxPossible = 500;
             }
           } else {
             score = use100PointScale ? 0 : 100;
+            maxPossible = use100PointScale ? 4 : 500;
           }
         } else {
-          // For multiple choice questions, use the answer's score directly
           const answers = await storage.getAnswersByQuestionId(question.id);
           const answer = answers.find(a => a.id === response.answerId);
           if (!answer) continue;
           score = answer.score;
+          maxPossible = Math.max(...answers.map(a => a.score), 1);
         }
 
         totalScore += score;
+        totalMaxPossible += maxPossible;
         questionCount++;
 
         if (question.dimensionId) {
@@ -2413,31 +2419,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (dimension) {
             if (!dimensionScores[dimension.key]) {
               dimensionScores[dimension.key] = [];
+              dimensionMaxScores[dimension.key] = [];
             }
             dimensionScores[dimension.key].push(score);
+            dimensionMaxScores[dimension.key].push(maxPossible);
           }
         }
       }
 
-      // Calculate dimension scores
+      // Calculate dimension scores as percentage of max possible, scaled to maturity scale
       const dimensionAverages: Record<string, number> = {};
       for (const [key, scores] of Object.entries(dimensionScores)) {
-        if (useSumScoring) {
-          // Sum mode: add up dimension scores (for models with 0-4 answer scores)
-          dimensionAverages[key] = Math.round(scores.reduce((a, b) => a + b, 0));
+        const dimTotal = scores.reduce((a, b) => a + b, 0);
+        const dimMax = dimensionMaxScores[key].reduce((a, b) => a + b, 0);
+        if (use100PointScale) {
+          dimensionAverages[key] = dimMax > 0 ? Math.round((dimTotal / dimMax) * maxMaturityScore) : 0;
         } else {
-          // Average mode (default): average dimension scores
-          dimensionAverages[key] = Math.round(scores.reduce((a, b) => a + b, 0) / scores.length);
+          dimensionAverages[key] = questionCount > 0 ? Math.round(dimTotal / scores.length) : 0;
         }
       }
 
-      // Calculate overall score
+      // Calculate overall score as percentage of max possible, scaled to maturity scale
       let overallScore;
-      if (useSumScoring) {
-        // Sum mode: add all scores (for models with 0-4 answer scores)
-        overallScore = Math.round(totalScore);
+      if (use100PointScale) {
+        overallScore = totalMaxPossible > 0 ? Math.round((totalScore / totalMaxPossible) * maxMaturityScore) : 0;
       } else {
-        // Average mode (default): average all scores
         overallScore = questionCount > 0 ? Math.round(totalScore / questionCount) : 0;
       }
 
