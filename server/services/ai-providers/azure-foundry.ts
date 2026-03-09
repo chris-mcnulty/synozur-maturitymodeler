@@ -1,5 +1,3 @@
-import ModelClient, { isUnexpected } from '@azure-rest/ai-inference';
-import { AzureKeyCredential } from '@azure/core-auth';
 import type { AIProvider, AICallOptions, ModelInfo } from './types';
 
 const SHORT_SYSTEM = 'You are an expert maturity assessment consultant. CRITICAL RULES: ALL responses must be MAXIMUM 30 words (2 lines). Be specific, actionable, and concise. NEVER generate URLs or links - these will be added manually. Focus on clear improvement actions only.';
@@ -17,9 +15,19 @@ export class AzureFoundryProvider implements AIProvider {
   ];
 
   private readonly maxRetries = 3;
+  private readonly apiVersion = '2024-10-21';
 
-  private get endpoint(): string {
-    return process.env.AZURE_AI_FOUNDRY_ENDPOINT || '';
+  private get baseUrl(): string {
+    let raw = (process.env.AZURE_AI_FOUNDRY_ENDPOINT || '').trim();
+    if (raw && !raw.startsWith('http')) {
+      raw = 'https://' + raw;
+    }
+    try {
+      const url = new URL(raw);
+      return url.origin;
+    } catch {
+      return raw.replace(/\/+$/, '');
+    }
   }
 
   private get apiKey(): string {
@@ -44,27 +52,35 @@ export class AzureFoundryProvider implements AIProvider {
     const modelName = options.modelOverride || this.defaultModel;
 
     let lastError: Error | null = null;
-    const client = ModelClient(this.endpoint, new AzureKeyCredential(this.apiKey));
+    const url = `${this.baseUrl}/openai/deployments/${modelName}/chat/completions?api-version=${this.apiVersion}`;
 
     for (let attempt = 1; attempt <= this.maxRetries; attempt++) {
       try {
-        const response = await client.path('/chat/completions').post({
-          body: {
-            model: modelName,
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'api-key': this.apiKey,
+          },
+          body: JSON.stringify({
             messages: [
               { role: 'system', content: effectiveSystem },
               { role: 'user', content: prompt },
             ],
-            max_tokens: options.maxTokens ?? 8192,
+            ...(modelName.startsWith('gpt-5') || modelName.startsWith('o1') || modelName.startsWith('o3')
+              ? { max_completion_tokens: options.maxTokens ?? 8192 }
+              : { max_tokens: options.maxTokens ?? 8192 }),
             temperature: options.temperature ?? 1.0,
-          },
+          }),
         });
 
-        if (isUnexpected(response)) {
-          throw new Error(`Azure AI Foundry error: ${response.body.error?.message ?? 'Unknown error'}`);
+        if (!response.ok) {
+          const errorBody = await response.json().catch(() => ({ error: { message: `HTTP ${response.status}` } }));
+          throw new Error(`Azure AI Foundry error: ${errorBody.error?.message ?? `HTTP ${response.status}`}`);
         }
 
-        const text = response.body.choices[0]?.message?.content;
+        const data = await response.json() as any;
+        const text = data.choices?.[0]?.message?.content;
         if (!text) {
           throw new Error('Empty response from Azure AI Foundry');
         }
