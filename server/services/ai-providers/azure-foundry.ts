@@ -21,7 +21,7 @@ export class AzureFoundryProvider implements AIProvider {
   }
 
   private get modelName(): string {
-    return process.env.AZURE_AI_FOUNDRY_MODEL || 'gpt-4.5-preview';
+    return process.env.AZURE_AI_FOUNDRY_MODEL || 'gpt-5.4';
   }
 
   isAvailable(): boolean {
