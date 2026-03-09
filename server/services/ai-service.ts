@@ -837,27 +837,37 @@ Return ONLY the rewritten answer text (20 words maximum, no preamble).`;
     }
   }
 
-  // Core AI call — routes through the provider registry (Azure AI Foundry first, Anthropic fallback)
+  // Core AI call — uses the admin-configured provider/model, falls back down the chain on failure
   private async callProvider(prompt: string, enforceShortResponse: boolean = true): Promise<string> {
-    const options: AICallOptions = { systemPrompt: '', enforceShortResponse };
-    const chain = providerRegistry.getFallbackChain();
+    const baseOptions: AICallOptions = { systemPrompt: '', enforceShortResponse };
 
-    if (chain.length === 0) {
-      throw new Error('No AI provider is configured. Set AZURE_AI_FOUNDRY_ENDPOINT + AZURE_AI_FOUNDRY_API_KEY or AI_INTEGRATIONS_ANTHROPIC_API_KEY.');
+    // Read active config from DB (provider + model chosen in Admin Settings)
+    const config = await providerRegistry.getActiveConfig();
+    const primary = providerRegistry.get(config.providerId);
+
+    if (primary?.isAvailable()) {
+      try {
+        console.log(`[AIService] calling ${primary.displayName} / ${config.modelId || 'default'}`);
+        return await primary.call(prompt, { ...baseOptions, modelOverride: config.modelId || undefined });
+      } catch (error: any) {
+        console.error(`[AIService] primary provider ${primary.id} failed, trying fallback:`, error?.message);
+      }
     }
 
+    // Fallback chain — skip the already-attempted primary
+    const fallbacks = providerRegistry.getFallbackChain().filter(p => p.id !== config.providerId);
     let lastError: Error | null = null;
-    for (const provider of chain) {
+    for (const provider of fallbacks) {
       try {
-        console.log(`[AIService] calling provider: ${provider.displayName}`);
-        return await provider.call(prompt, options);
+        console.log(`[AIService] fallback: ${provider.displayName}`);
+        return await provider.call(prompt, baseOptions);
       } catch (error: any) {
-        console.error(`[AIService] provider ${provider.id} failed:`, error?.message);
+        console.error(`[AIService] fallback ${provider.id} failed:`, error?.message);
         lastError = error;
       }
     }
 
-    throw new Error(`All AI providers failed. Last error: ${lastError?.message}`);
+    throw new Error(`All AI providers failed. Last: ${lastError?.message ?? 'no available provider'}`);
   }
 
   // Build recommendation prompt

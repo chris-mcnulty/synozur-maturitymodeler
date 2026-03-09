@@ -1,6 +1,6 @@
 import ModelClient, { isUnexpected } from '@azure-rest/ai-inference';
 import { AzureKeyCredential } from '@azure/core-auth';
-import type { AIProvider, AICallOptions } from './types';
+import type { AIProvider, AICallOptions, ModelInfo } from './types';
 
 const SHORT_SYSTEM = 'You are an expert maturity assessment consultant. CRITICAL RULES: ALL responses must be MAXIMUM 30 words (2 lines). Be specific, actionable, and concise. NEVER generate URLs or links - these will be added manually. Focus on clear improvement actions only.';
 
@@ -9,6 +9,12 @@ const LONG_SYSTEM = "You are an expert transformation consultant from The Synozu
 export class AzureFoundryProvider implements AIProvider {
   readonly id = 'azure-foundry';
   readonly displayName = 'Azure AI Foundry';
+
+  readonly knownModels: ModelInfo[] = [
+    { id: 'gpt-5.4', displayName: 'GPT-5.4' },
+    { id: 'gpt-5.2', displayName: 'GPT-5.2' },
+    { id: 'gpt-4o', displayName: 'GPT-4o' },
+  ];
 
   private readonly maxRetries = 3;
 
@@ -20,7 +26,7 @@ export class AzureFoundryProvider implements AIProvider {
     return process.env.AZURE_AI_FOUNDRY_API_KEY || '';
   }
 
-  private get modelName(): string {
+  private get defaultModel(): string {
     return process.env.AZURE_AI_FOUNDRY_MODEL || 'gpt-5.4';
   }
 
@@ -35,6 +41,7 @@ export class AzureFoundryProvider implements AIProvider {
 
     const systemMessage = options.enforceShortResponse === false ? LONG_SYSTEM : SHORT_SYSTEM;
     const effectiveSystem = options.systemPrompt || systemMessage;
+    const modelName = options.modelOverride || this.defaultModel;
 
     let lastError: Error | null = null;
     const client = ModelClient(this.endpoint, new AzureKeyCredential(this.apiKey));
@@ -43,7 +50,7 @@ export class AzureFoundryProvider implements AIProvider {
       try {
         const response = await client.path('/chat/completions').post({
           body: {
-            model: this.modelName,
+            model: modelName,
             messages: [
               { role: 'system', content: effectiveSystem },
               { role: 'user', content: prompt },
@@ -65,8 +72,8 @@ export class AzureFoundryProvider implements AIProvider {
       } catch (error: any) {
         lastError = error;
         console.error(`[AzureFoundryProvider] attempt ${attempt} failed:`, {
+          model: modelName,
           message: error?.message,
-          status: error?.status,
         });
         if (attempt < this.maxRetries) {
           await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt) * 1000));

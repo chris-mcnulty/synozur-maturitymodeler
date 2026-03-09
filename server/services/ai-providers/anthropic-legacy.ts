@@ -1,5 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk';
-import type { AIProvider, AICallOptions } from './types';
+import type { AIProvider, AICallOptions, ModelInfo } from './types';
 
 const SHORT_SYSTEM = 'You are an expert maturity assessment consultant. CRITICAL RULES: ALL responses must be MAXIMUM 30 words (2 lines). Be specific, actionable, and concise. NEVER generate URLs or links - these will be added manually. Focus on clear improvement actions only.';
 
@@ -7,14 +7,17 @@ const LONG_SYSTEM = "You are an expert transformation consultant from The Synozu
 
 export class AnthropicLegacyProvider implements AIProvider {
   readonly id = 'anthropic';
-  readonly displayName = 'Anthropic Claude (Replit)';
+  readonly displayName = 'Anthropic (Replit)';
+
+  readonly knownModels: ModelInfo[] = [
+    { id: 'claude-sonnet-4-5', displayName: 'Claude Sonnet 4.5' },
+  ];
 
   private client = new Anthropic({
     apiKey: process.env.AI_INTEGRATIONS_ANTHROPIC_API_KEY || '',
     baseURL: process.env.AI_INTEGRATIONS_ANTHROPIC_BASE_URL,
   });
 
-  private readonly model = 'claude-sonnet-4-5';
   private readonly maxRetries = 3;
 
   isAvailable(): boolean {
@@ -23,12 +26,13 @@ export class AnthropicLegacyProvider implements AIProvider {
 
   async call(prompt: string, options: AICallOptions): Promise<string> {
     const systemMessage = options.enforceShortResponse === false ? LONG_SYSTEM : SHORT_SYSTEM;
+    const modelId = options.modelOverride || 'claude-sonnet-4-5';
     let lastError: Error | null = null;
 
     for (let attempt = 1; attempt <= this.maxRetries; attempt++) {
       try {
         const completion = await this.client.messages.create({
-          model: this.model,
+          model: modelId,
           max_tokens: options.maxTokens ?? 8192,
           system: options.systemPrompt || systemMessage,
           messages: [{ role: 'user', content: prompt }],
@@ -42,7 +46,6 @@ export class AnthropicLegacyProvider implements AIProvider {
       } catch (error: any) {
         lastError = error;
         console.error(`[AnthropicLegacyProvider] attempt ${attempt} failed:`, {
-          type: error?.type,
           message: error?.message,
           status: error?.status,
         });

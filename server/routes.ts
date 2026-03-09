@@ -12,6 +12,7 @@ import { setupAuth, ensureAuthenticated, ensureAdmin, ensureAdminOrModeler, ensu
 import { canManageUsers, canAssignRole, checkIsGlobalAdmin, getAccessibleTenantIds, canAccessModel, hasAdminAccess } from "./permissions";
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
 import { aiService } from "./services/ai-service";
+import { providerRegistry } from "./services/ai-providers/registry";
 import { validateImportData, executeImport, type ImportExportData } from "./services/import-service";
 import { z } from "zod";
 import { scrypt, randomBytes, createHash, timingSafeEqual } from "crypto";
@@ -3667,6 +3668,17 @@ Respond in JSON format:
       res.json(setting);
     } catch (error) {
       res.status(500).json({ error: "Failed to update setting" });
+    }
+  });
+
+  // AI Provider routes
+  app.get("/api/ai/providers", ensureAdmin, async (req, res) => {
+    try {
+      const providers = providerRegistry.getAllProvidersInfo();
+      const active = await providerRegistry.getActiveConfig();
+      res.json({ providers, active });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch AI providers" });
     }
   });
 

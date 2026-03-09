@@ -432,6 +432,8 @@ export default function Admin() {
   const [editingQuestion, setEditingQuestion] = useState<Question | null>(null);
   const [editingDimension, setEditingDimension] = useState<Dimension | null>(null);
   const [heroModelId, setHeroModelId] = useState<string>('');
+  const [aiProviderId, setAiProviderId] = useState<string>('');
+  const [aiModelId, setAiModelId] = useState<string>('');
   const [showArchivedModels, setShowArchivedModels] = useState(false);
   const [modelForm, setModelForm] = useState({
     name: '',
@@ -650,6 +652,20 @@ export default function Admin() {
       return fetch(`/api/answers/${editingQuestion.id}`).then(r => r.json());
     },
     enabled: !!editingQuestion?.id && isAnswerDialogOpen,
+  });
+
+  // Fetch AI providers config
+  const { data: aiProvidersData } = useQuery<{
+    providers: { id: string; displayName: string; isAvailable: boolean; models: { id: string; displayName: string }[] }[];
+    active: { providerId: string; modelId: string };
+  }>({
+    queryKey: ['/api/ai/providers'],
+    queryFn: async () => {
+      const response = await fetch('/api/ai/providers');
+      if (!response.ok) throw new Error('Failed to fetch AI providers');
+      return response.json();
+    },
+    staleTime: 30000,
   });
 
   // Fetch hero model setting
@@ -1187,6 +1203,24 @@ export default function Admin() {
         description: "Failed to save settings.",
         variant: "destructive",
       });
+    },
+  });
+
+  // Save AI provider + model setting
+  const saveAiConfig = useMutation({
+    mutationFn: async ({ providerId, modelId }: { providerId: string; modelId: string }) => {
+      await apiRequest('/api/settings/aiProvider', 'POST', { value: providerId });
+      await apiRequest('/api/settings/aiModel', 'POST', { value: modelId });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/ai/providers'] });
+      toast({
+        title: "AI provider saved",
+        description: `Now using ${aiProvidersData?.providers.find(p => p.id === aiProviderId)?.displayName ?? aiProviderId} / ${aiModelId}.`,
+      });
+    },
+    onError: () => {
+      toast({ title: "Error", description: "Failed to save AI provider settings.", variant: "destructive" });
     },
   });
 
@@ -5007,8 +5041,14 @@ ${insightsData.recommendations.map((r, i) => `${i + 1}. ${r}`).join('\n')}
       </Dialog>
 
       {/* Settings Dialog */}
-      <Dialog open={isSettingsDialogOpen} onOpenChange={setIsSettingsDialogOpen}>
-        <DialogContent className="max-w-md">
+      <Dialog open={isSettingsDialogOpen} onOpenChange={(open) => {
+        setIsSettingsDialogOpen(open);
+        if (open && aiProvidersData) {
+          setAiProviderId(aiProvidersData.active.providerId);
+          setAiModelId(aiProvidersData.active.modelId);
+        }
+      }}>
+        <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>Admin Settings</DialogTitle>
             <DialogDescription>
@@ -5016,17 +5056,96 @@ ${insightsData.recommendations.map((r, i) => `${i + 1}. ${r}`).join('\n')}
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="heroModel">Hero Model (Landing Page)</Label>
-              <p className="text-sm text-muted-foreground mb-2">
-                Select which model to feature on the landing page
+          <div className="space-y-6">
+            {/* AI Provider Section */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <Brain className="h-4 w-4 text-muted-foreground" />
+                <p className="text-sm font-medium">AI Provider</p>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Select which provider and model powers all AI-generated summaries, roadmaps, and insights.
+              </p>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="aiProvider" className="text-xs">Provider</Label>
+                  <Select
+                    value={aiProviderId}
+                    onValueChange={(val) => {
+                      setAiProviderId(val);
+                      const provider = aiProvidersData?.providers.find(p => p.id === val);
+                      setAiModelId(provider?.models[0]?.id ?? '');
+                    }}
+                  >
+                    <SelectTrigger id="aiProvider" data-testid="select-ai-provider">
+                      <SelectValue placeholder="Select provider…" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {aiProvidersData?.providers.map(p => (
+                        <SelectItem key={p.id} value={p.id}>
+                          <div className="flex items-center gap-2">
+                            {p.isAvailable
+                              ? <CheckCircle2 className="h-3.5 w-3.5 text-green-500 shrink-0" />
+                              : <XCircle className="h-3.5 w-3.5 text-destructive shrink-0" />
+                            }
+                            {p.displayName}
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="aiModel" className="text-xs">Model</Label>
+                  <Select
+                    value={aiModelId}
+                    onValueChange={setAiModelId}
+                    disabled={!aiProviderId}
+                  >
+                    <SelectTrigger id="aiModel" data-testid="select-ai-model">
+                      <SelectValue placeholder="Select model…" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {aiProvidersData?.providers
+                        .find(p => p.id === aiProviderId)
+                        ?.models.map(m => (
+                          <SelectItem key={m.id} value={m.id}>{m.displayName}</SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="flex justify-end">
+                <Button
+                  size="sm"
+                  onClick={() => saveAiConfig.mutate({ providerId: aiProviderId, modelId: aiModelId })}
+                  disabled={saveAiConfig.isPending || !aiProviderId || !aiModelId}
+                  data-testid="button-save-ai-config"
+                >
+                  {saveAiConfig.isPending ? 'Saving…' : 'Apply'}
+                </Button>
+              </div>
+            </div>
+
+            <div className="border-t" />
+
+            {/* Hero Model Section */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <Star className="h-4 w-4 text-muted-foreground" />
+                <p className="text-sm font-medium">Hero Model (Landing Page)</p>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Select which model to feature on the landing page.
               </p>
               <select
                 id="heroModel"
                 value={heroModelId}
                 onChange={(e) => setHeroModelId(e.target.value)}
-                className="w-full h-9 px-3 rounded-md border border-input bg-background"
+                className="w-full h-9 px-3 rounded-md border border-input bg-background text-sm"
                 data-testid="select-hero-model"
               >
                 <option value="">Auto-detect (AI Model)</option>
@@ -5041,14 +5160,14 @@ ${insightsData.recommendations.map((r, i) => `${i + 1}. ${r}`).join('\n')}
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsSettingsDialogOpen(false)}>
-              Cancel
+              Close
             </Button>
-            <Button 
+            <Button
               onClick={() => saveHeroModelSetting.mutate(heroModelId)}
               disabled={saveHeroModelSetting.isPending}
               data-testid="button-save-settings"
             >
-              {saveHeroModelSetting.isPending ? 'Saving...' : 'Save Settings'}
+              {saveHeroModelSetting.isPending ? 'Saving…' : 'Save Hero Model'}
             </Button>
           </DialogFooter>
         </DialogContent>
