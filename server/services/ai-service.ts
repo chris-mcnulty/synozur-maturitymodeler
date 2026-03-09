@@ -1,4 +1,3 @@
-import Anthropic from '@anthropic-ai/sdk';
 import { z } from 'zod';
 import crypto from 'crypto';
 import { eq, and, gt, or, isNull } from 'drizzle-orm';
@@ -7,12 +6,8 @@ import { db } from '../db';
 import * as schema from '@shared/schema';
 import { aiGeneratedContent, knowledgeDocuments } from '@shared/schema';
 import { DocumentExtractionService } from './document-extraction';
-
-// Initialize Anthropic client with Replit AI Integrations
-const anthropic = new Anthropic({
-  apiKey: process.env.AI_INTEGRATIONS_ANTHROPIC_API_KEY || '',
-  baseURL: process.env.AI_INTEGRATIONS_ANTHROPIC_BASE_URL,
-});
+import { providerRegistry } from './ai-providers/registry';
+import type { AICallOptions } from './ai-providers/types';
 
 // AI Playbook grounding for AI Maturity Assessment model
 // REMOVED: Baked-in grounding content - now using only user-uploaded knowledge base documents
@@ -203,9 +198,6 @@ const resourceSuggestionSchema = z.object({
 });
 
 class AIService {
-  private readonly model = 'claude-sonnet-4-5'; // Using Replit AI Integrations Claude Sonnet 4.5
-  private readonly maxRetries = 3;
-  private readonly timeout = 30000; // 30 seconds
   private readonly cacheExpirationDays = 90; // Cache AI summaries for 90 days
 
   // Generate cache key from context
@@ -487,7 +479,7 @@ Inspiring close about finding their North Star and how Synozur's expertise can h
 
 CRITICAL: Write smooth, flowing paragraphs. Do NOT include labels like "Paragraph 1", "Paragraph 2", etc. in your output. Use section headings only where natural (e.g., "Your key strengths:", "Priority growth areas:"). ${userContext ? `Personalize deeply for ${userContext.jobTitle} perspective in ${userContext.industry}.` : 'Maintain strategic focus.'} Draw insights from the knowledge base to provide specific, actionable guidance.`;
 
-      const completion = await this.callOpenAI(prompt, undefined, false); // Bypass word limit for comprehensive summary
+      const completion = await this.callProvider(prompt, false); // Bypass word limit for comprehensive summary
       
       if (!completion) {
         throw new Error('Failed to generate maturity summary');
@@ -673,7 +665,7 @@ ${topRecs.map(r => `## ${r.title}\n[explanation paragraph...]`).join('\n\n')}
 
 FINAL REMINDER: Each section heading MUST start with "## " followed by the EXACT title (e.g., "## ${topRecs[0]?.title || 'Build Strategy'}"). NEVER use generic placeholders like "Third priority action".`;
 
-      const completion = await this.callOpenAI(prompt, undefined, false); // Bypass word limit for comprehensive roadmap
+      const completion = await this.callProvider(prompt, false); // Bypass word limit for comprehensive roadmap
       
       if (!completion) {
         throw new Error('Failed to generate recommendations summary');
@@ -732,7 +724,7 @@ STRICT RULES:
 
 Return ONLY the rewritten answer text (20 words maximum, no preamble).`;
 
-      const completion = await this.callOpenAI(prompt);
+      const completion = await this.callProvider(prompt);
       
       if (!completion) {
         throw new Error('Failed to rewrite answer');
@@ -751,7 +743,7 @@ Return ONLY the rewritten answer text (20 words maximum, no preamble).`;
       // If outputFormat is 'json', we need to provide a basic schema
       const responseFormat = options?.outputFormat === 'json' ? z.object({}).passthrough() : undefined;
       
-      const completion = await this.callOpenAI(prompt, responseFormat);
+      const completion = await this.callProvider(prompt);
 
       // If JSON format was requested, parse and return the object
       if (options?.outputFormat === 'json') {
@@ -775,7 +767,7 @@ Return ONLY the rewritten answer text (20 words maximum, no preamble).`;
     try {
       const prompt = this.buildRecommendationPrompt(context);
       
-      const completion = await this.callOpenAI(prompt, recommendationSchema);
+      const completion = await this.callProvider(prompt);
       
       if (!completion) {
         return this.getFallbackRecommendations(context);
@@ -799,7 +791,7 @@ Return ONLY the rewritten answer text (20 words maximum, no preamble).`;
     try {
       const prompt = this.buildInterpretationPrompt(request);
       
-      const completion = await this.callOpenAI(prompt, interpretationSchema);
+      const completion = await this.callProvider(prompt);
       
       if (!completion) {
         return null;
@@ -826,7 +818,7 @@ Return ONLY the rewritten answer text (20 words maximum, no preamble).`;
     try {
       const prompt = this.buildResourcePrompt(topic, context);
       
-      const completion = await this.callOpenAI(prompt, resourceSuggestionSchema);
+      const completion = await this.callProvider(prompt);
       
       if (!completion) {
         return [];
@@ -845,60 +837,27 @@ Return ONLY the rewritten answer text (20 words maximum, no preamble).`;
     }
   }
 
-  // Core Anthropic API call with retry logic
-  private async callOpenAI(prompt: string, responseFormat?: z.ZodSchema, enforceShortResponse: boolean = true): Promise<string> {
+  // Core AI call — routes through the provider registry (Azure AI Foundry first, Anthropic fallback)
+  private async callProvider(prompt: string, enforceShortResponse: boolean = true): Promise<string> {
+    const options: AICallOptions = { systemPrompt: '', enforceShortResponse };
+    const chain = providerRegistry.getFallbackChain();
+
+    if (chain.length === 0) {
+      throw new Error('No AI provider is configured. Set AZURE_AI_FOUNDRY_ENDPOINT + AZURE_AI_FOUNDRY_API_KEY or AI_INTEGRATIONS_ANTHROPIC_API_KEY.');
+    }
+
     let lastError: Error | null = null;
-    
-    for (let attempt = 1; attempt <= this.maxRetries; attempt++) {
+    for (const provider of chain) {
       try {
-        // For comprehensive summaries and roadmaps, use a different system message
-        const systemMessage = enforceShortResponse
-          ? 'You are an expert maturity assessment consultant. CRITICAL RULES: ALL responses must be MAXIMUM 30 words (2 lines). Be specific, actionable, and concise. NEVER generate URLs or links - these will be added manually. Focus on clear improvement actions only.'
-          : 'You are an expert transformation consultant from The Synozur Alliance LLC. Provide comprehensive, insightful analysis that helps organizations find their North Star. Be detailed, strategic, and empathetic. NEVER generate URLs or links - these will be added manually.\n\nCRITICAL CONTENT RESTRICTIONS:\n- Write for business leaders, NOT technical implementers\n- Use strategic language, NOT technical jargon\n- ABSOLUTELY FORBIDDEN unless model explicitly mentions GTM/Go-to-Market: GTM terminology, ISV, SI, Microsoft partner programs, Power Platform, Power Automate, connectors, APIs, technical implementation details, partner ecosystems\n- If knowledge base contains technical/GTM content that is irrelevant to the current model, completely ignore it\n- Focus exclusively on strategic business transformation appropriate for the user\'s role and industry';
-
-        const completion = await anthropic.messages.create({
-          model: this.model,
-          max_tokens: 8192,
-          system: systemMessage,
-          messages: [
-            {
-              role: 'user',
-              content: prompt
-            }
-          ]
-        });
-
-        const content = completion.content[0];
-        if (!content || content.type !== 'text') {
-          throw new Error('Empty or invalid response from AI API');
-        }
-        
-        return content.text;
+        console.log(`[AIService] calling provider: ${provider.displayName}`);
+        return await provider.call(prompt, options);
       } catch (error: any) {
+        console.error(`[AIService] provider ${provider.id} failed:`, error?.message);
         lastError = error;
-        
-        // Extract meaningful error message from Anthropic error
-        const errorMessage = error?.message || error?.error?.message || 'Unknown error';
-        const errorType = error?.type || error?.error?.type || 'api_error';
-        
-        console.error(`Anthropic API attempt ${attempt} failed:`, {
-          type: errorType,
-          message: errorMessage,
-          status: error?.status,
-        });
-        
-        if (attempt < this.maxRetries) {
-          // Exponential backoff
-          await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt) * 1000));
-        }
       }
     }
 
-    // Throw the actual error with details instead of returning null
-    const errorMessage = (lastError as any)?.message || (lastError as any)?.error?.message || 'Unknown AI API error';
-    const fullError = new Error(`AI generation failed after ${this.maxRetries} attempts: ${errorMessage}`);
-    console.error('All OpenAI API attempts failed:', lastError);
-    throw fullError;
+    throw new Error(`All AI providers failed. Last error: ${lastError?.message}`);
   }
 
   // Build recommendation prompt
@@ -1246,7 +1205,7 @@ ABSOLUTE RULES FOR YOUR RESPONSE:
 - Focus 100% on what the maturity scores tell us about ${capabilitiesContext}
 - ${isIndividual ? 'Use individual-centric language throughout (participants, individuals, people) - NOT organizational language' : 'Reference organizations appropriately'}`;
 
-      const response = await this.callOpenAI(prompt, undefined, false);
+      const response = await this.callProvider(prompt, false);
       
       // Parse JSON response
       const jsonMatch = response.match(/\{[\s\S]*\}/);
