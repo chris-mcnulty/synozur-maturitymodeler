@@ -8,6 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { INDUSTRIES, COUNTRIES, COMPANY_SIZES } from "@/lib/constants";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -745,33 +747,51 @@ Thank you for your help!`;
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="defaultCompanySize">Company Size</Label>
-                    <Input
-                      id="defaultCompanySize"
-                      value={tenantForm.defaultCompanySize}
-                      onChange={(e) => setTenantForm({ ...tenantForm, defaultCompanySize: e.target.value })}
-                      placeholder="201-500"
-                      data-testid="input-default-company-size"
-                    />
+                    <Select
+                      value={tenantForm.defaultCompanySize || ''}
+                      onValueChange={(value) => setTenantForm({ ...tenantForm, defaultCompanySize: value })}
+                    >
+                      <SelectTrigger id="defaultCompanySize" data-testid="select-default-company-size">
+                        <SelectValue placeholder="Select size…" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {COMPANY_SIZES.map((s) => (
+                          <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="defaultIndustry">Industry</Label>
-                    <Input
-                      id="defaultIndustry"
-                      value={tenantForm.defaultIndustry}
-                      onChange={(e) => setTenantForm({ ...tenantForm, defaultIndustry: e.target.value })}
-                      placeholder="Technology"
-                      data-testid="input-default-industry"
-                    />
+                    <Select
+                      value={tenantForm.defaultIndustry || ''}
+                      onValueChange={(value) => setTenantForm({ ...tenantForm, defaultIndustry: value })}
+                    >
+                      <SelectTrigger id="defaultIndustry" data-testid="select-default-industry">
+                        <SelectValue placeholder="Select industry…" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {INDUSTRIES.map((ind) => (
+                          <SelectItem key={ind} value={ind}>{ind}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="defaultCountry">Country</Label>
-                    <Input
-                      id="defaultCountry"
-                      value={tenantForm.defaultCountry}
-                      onChange={(e) => setTenantForm({ ...tenantForm, defaultCountry: e.target.value })}
-                      placeholder="United States"
-                      data-testid="input-default-country"
-                    />
+                    <Select
+                      value={tenantForm.defaultCountry || ''}
+                      onValueChange={(value) => setTenantForm({ ...tenantForm, defaultCountry: value })}
+                    >
+                      <SelectTrigger id="defaultCountry" data-testid="select-default-country">
+                        <SelectValue placeholder="Select country…" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {COUNTRIES.map((c) => (
+                          <SelectItem key={c} value={c}>{c}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
               </div>
