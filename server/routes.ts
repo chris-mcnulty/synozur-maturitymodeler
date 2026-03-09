@@ -2568,7 +2568,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (assessment.userId) {
         await storage.createAiUsageLog({
           userId: assessment.userId,
-          modelName: 'gpt-5-mini-2025-08-07',
+          modelName: (await providerRegistry.getActiveConfig()).modelId || 'unknown',
           operation: 'recommendation',
           estimatedCost: 5 // Rough estimate: 5 cents per recommendation generation
         });
@@ -2754,7 +2754,7 @@ Respond in JSON format:
       // Log usage
       await storage.createAiUsageLog({
         userId: req.user!.id,
-        modelName: 'gpt-5-mini-2025-08-07',
+        modelName: (await providerRegistry.getActiveConfig()).modelId || 'unknown',
         operation: 'generate-interpretation',
         estimatedCost: 3
       });
@@ -2828,7 +2828,7 @@ Respond in JSON format:
       // Log usage
       await storage.createAiUsageLog({
         userId: req.user!.id,
-        modelName: 'gpt-5-mini-2025-08-07',
+        modelName: (await providerRegistry.getActiveConfig()).modelId || 'unknown',
         operation: 'generate-resources',
         estimatedCost: 4
       });
@@ -2895,7 +2895,7 @@ Respond in JSON format:
       // Log usage
       await storage.createAiUsageLog({
         userId: req.user!.id,
-        modelName: 'gpt-5-mini',
+        modelName: (await providerRegistry.getActiveConfig()).modelId || 'unknown',
         operation: 'generate-improvement',
         estimatedCost: 2
       });
@@ -2944,7 +2944,7 @@ Respond in JSON format:
       // Log usage
       await storage.createAiUsageLog({
         userId: req.user!.id,
-        modelName: 'gpt-5-mini',
+        modelName: (await providerRegistry.getActiveConfig()).modelId || 'unknown',
         operation: 'rewrite-answer',
         estimatedCost: 1
       });
@@ -3002,7 +3002,7 @@ Respond in JSON format:
           // Log usage for each rewrite
           await storage.createAiUsageLog({
             userId: req.user!.id,
-            modelName: 'gpt-5-mini',
+            modelName: (await providerRegistry.getActiveConfig()).modelId || 'unknown',
             operation: 'rewrite-answer',
             estimatedCost: 1
           });
@@ -3343,7 +3343,7 @@ Respond in JSON format:
       if (req.user) {
         await storage.createAiUsageLog({
           userId: req.user.id,
-          modelName: 'gpt-5-mini',
+          modelName: (await providerRegistry.getActiveConfig()).modelId || 'unknown',
           operation: 'generate-maturity-summary',
           estimatedCost: 3
         });
@@ -3411,7 +3411,7 @@ Respond in JSON format:
       if (req.user) {
         await storage.createAiUsageLog({
           userId: req.user.id,
-          modelName: 'gpt-5-mini',
+          modelName: (await providerRegistry.getActiveConfig()).modelId || 'unknown',
           operation: 'generate-recommendations-summary',
           estimatedCost: 2
         });
@@ -3613,7 +3613,7 @@ Respond in JSON format:
       // Log AI usage
       await storage.createAiUsageLog({
         userId: req.user!.id,
-        modelName: 'claude-sonnet-4-5',
+        modelName: (await providerRegistry.getActiveConfig()).modelId || 'unknown',
         operation: 'generate-assessment-insights',
         estimatedCost: 5 // Higher cost for aggregate analysis
       });
