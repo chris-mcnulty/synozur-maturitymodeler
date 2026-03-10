@@ -19,6 +19,7 @@ export function Footer() {
             <ul className="space-y-2">
               <li><Link href="/" className="text-sm text-muted-foreground hover:text-primary transition-colors" data-testid="link-footer-home">Home</Link></li>
               <li><Link href="/me" className="text-sm text-muted-foreground hover:text-primary transition-colors" data-testid="link-footer-results">My Results</Link></li>
+              <li><a href="https://www.synozur.com/terms" target="_blank" rel="noopener noreferrer" className="text-sm text-muted-foreground hover:text-primary transition-colors" data-testid="link-footer-terms">Terms</a></li>
               <li><Link href="/admin" className="text-sm text-muted-foreground hover:text-primary transition-colors" data-testid="link-footer-admin">Admin</Link></li>
             </ul>
           </div>
@@ -29,7 +30,6 @@ export function Footer() {
               <li><a href="https://www.synozur.com/applications/orion#:~:text=and%20people%2Dcentric.-,User%20Guide,-Orion%20is%20a" target="_blank" rel="noopener noreferrer" className="text-sm text-muted-foreground hover:text-primary transition-colors" data-testid="link-footer-user-guide">User Guide</a></li>
               <li><a href="https://www.synozur.com/privacy" target="_blank" rel="noopener noreferrer" className="text-sm text-muted-foreground hover:text-primary transition-colors" data-testid="link-footer-privacy">Privacy Policy</a></li>
               <li><a href="https://www.synozur.com" target="_blank" rel="noopener noreferrer" className="text-sm text-muted-foreground hover:text-primary transition-colors" data-testid="link-footer-website">Synozur.com</a></li>
-              <li><a href="https://www.synozur.com/terms" target="_blank" rel="noopener noreferrer" className="text-sm text-muted-foreground hover:text-primary transition-colors" data-testid="link-footer-terms">Terms</a></li>
             </ul>
           </div>
         </div>
