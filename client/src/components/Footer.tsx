@@ -36,7 +36,7 @@ export function Footer() {
         <div className="border-t pt-8">
           <h4 className="font-semibold mb-4">Legal</h4>
           <p className="text-xs text-muted-foreground mb-2">
-            © 2025 The Synozur Alliance, LLC. All rights reserved.
+            © 2026 The Synozur Alliance, LLC. All rights reserved.
           </p>
           <p className="text-xs text-muted-foreground mb-3">
             "Synozur" and "The Synozur Alliance" are trademarks of The Synozur Alliance, LLC.
