@@ -4,7 +4,8 @@ import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowRight, Clock, FileText, BarChart3, CheckCircle, Building2, Lock } from "lucide-react";
+import { ArrowRight, Clock, FileText, BarChart3, CheckCircle, Building2, Lock, Sparkles } from "lucide-react";
+import { SiMicrosoft } from "react-icons/si";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { Model, Assessment, Dimension } from "@shared/schema";
@@ -216,7 +217,7 @@ export default function Landing() {
               Take Synozur's comprehensive assessments to identify where your organization stands on your transformation journey.
               Receive a precise Maturity Score and personalized recommendations to advance your capabilities.
             </p>
-            <p className="text-lg text-white/80 max-w-3xl mx-auto">
+            <p className="text-lg text-white/80 max-w-3xl mx-auto mb-8">
               Orion is still in beta.{' '}
               <a
                 href="https://www.synozur.com/join"
@@ -228,6 +229,21 @@ export default function Landing() {
               </a>
               {' '}for news and updates on new features and models.
             </p>
+
+            <div className="flex items-center justify-center gap-3 flex-wrap" data-testid="text-powered-by">
+              <div className="flex items-center gap-2 px-4 py-2 rounded-md bg-white/10 backdrop-blur-sm border border-white/20">
+                <SiMicrosoft className="h-4 w-4 text-white/90" />
+                <span className="text-sm text-white/80">
+                  Built on <span className="font-semibold text-white/95">Microsoft Azure AI Foundry</span>
+                </span>
+              </div>
+              <div className="flex items-center gap-2 px-4 py-2 rounded-md bg-white/10 backdrop-blur-sm border border-white/20">
+                <Sparkles className="h-4 w-4 text-white/90" />
+                <span className="text-sm text-white/80">
+                  Featuring <span className="font-semibold text-white/95">GPT-5.4</span> & <span className="font-semibold text-white/95">Claude Opus 4.6</span>
+                </span>
+              </div>
+            </div>
           </div>
         </section>
 
