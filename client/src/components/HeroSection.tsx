@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Sparkles } from "lucide-react";
+import { SiMicrosoft } from "react-icons/si";
 import heroImage from '@assets/generated_images/Hero_image_with_team_collaboration_c8f0445f.png';
 
 export function HeroSection() {
@@ -40,6 +41,21 @@ export function HeroSection() {
             >
               Learn More
             </Button>
+          </div>
+
+          <div className="mt-8 flex items-center gap-3" data-testid="text-powered-by">
+            <div className="flex items-center gap-2 px-4 py-2 rounded-md bg-white/10 backdrop-blur-sm border border-white/20">
+              <SiMicrosoft className="h-4 w-4 text-white/90" />
+              <span className="text-sm text-white/80">
+                Built on <span className="font-semibold text-white/95">Microsoft Azure AI Foundry</span>
+              </span>
+            </div>
+            <div className="flex items-center gap-2 px-4 py-2 rounded-md bg-white/10 backdrop-blur-sm border border-white/20">
+              <Sparkles className="h-4 w-4 text-white/90" />
+              <span className="text-sm text-white/80">
+                Featuring <span className="font-semibold text-white/95">GPT-5.4</span> & <span className="font-semibold text-white/95">Claude Opus 4.6</span>
+              </span>
+            </div>
           </div>
         </div>
       </div>
