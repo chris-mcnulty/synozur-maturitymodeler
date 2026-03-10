@@ -3613,6 +3613,7 @@ export default function Admin() {
                           <TableHead>Verified</TableHead>
                           <TableHead>Name</TableHead>
                           <TableHead>Company</TableHead>
+                          <TableHead>Job Title</TableHead>
                           <TableHead>Tenant</TableHead>
                           <TableHead>Role</TableHead>
                           <TableHead>Created</TableHead>
@@ -3638,6 +3639,7 @@ export default function Admin() {
                             </TableCell>
                             <TableCell>{user.name || '-'}</TableCell>
                             <TableCell>{user.company || '-'}</TableCell>
+                            <TableCell>{user.jobTitle || '-'}</TableCell>
                             <TableCell>
                               <button
                                 onClick={() => {
