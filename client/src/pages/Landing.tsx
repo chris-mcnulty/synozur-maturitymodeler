@@ -4,7 +4,7 @@ import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowRight, Clock, FileText, BarChart3, CheckCircle, Building2, Lock, Sparkles, Cloud } from "lucide-react";
+import { ArrowRight, Clock, FileText, BarChart3, CheckCircle, Building2, Lock, Sparkles } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { Model, Assessment, Dimension } from "@shared/schema";
@@ -231,7 +231,7 @@ export default function Landing() {
 
             <div className="flex items-center justify-center gap-3 flex-wrap" data-testid="text-powered-by">
               <div className="flex items-center gap-2 px-4 py-2 rounded-md bg-white/10 backdrop-blur-sm border border-white/20">
-                <Cloud className="h-4 w-4 text-white/90" />
+                <svg className="h-4 w-4" viewBox="0 0 16 16" fill="currentColor" opacity="0.9"><rect x="0" y="0" width="7" height="7" /><rect x="9" y="0" width="7" height="7" /><rect x="0" y="9" width="7" height="7" /><rect x="9" y="9" width="7" height="7" /></svg>
                 <span className="text-sm text-white/80">
                   Built on <span className="font-semibold text-white/95">Microsoft Azure AI Foundry</span>
                 </span>
