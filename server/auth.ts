@@ -363,7 +363,8 @@ export function setupAuth(app: Express) {
         azureTenantId = tenant?.ssoTenantId || undefined;
       }
       
-      const consentInfo = generateAdminConsentUrl(azureTenantId);
+      const baseUrl = `${req.protocol}://${req.get('host')}`;
+      const consentInfo = generateAdminConsentUrl(azureTenantId, baseUrl);
       res.json(consentInfo);
     } catch (error: any) {
       res.status(500).json({ error: error.message || 'Failed to generate admin consent URL' });

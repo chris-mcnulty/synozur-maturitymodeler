@@ -1414,17 +1414,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let requestStatus: 'none' | 'pending' | 'approved' | 'denied' = 'none';
       let existingRequest: schema.ModelAccessRequest | undefined;
 
+      const baseUrl = `${req.protocol}://${req.get('host')}`;
       if (user?.tenantId) {
         const tenant = await storage.getTenant(user.tenantId);
         adminConsentGranted = tenant?.ssoAdminConsentGranted ?? false;
         if (ssoEnabled && tenant?.ssoTenantId) {
           try {
-            const info = generateAdminConsentUrl(tenant.ssoTenantId);
+            const info = generateAdminConsentUrl(tenant.ssoTenantId, baseUrl);
             adminConsentUrl = info.consentUrl;
           } catch {}
         } else if (ssoEnabled) {
           try {
-            const info = generateAdminConsentUrl();
+            const info = generateAdminConsentUrl(undefined, baseUrl);
             adminConsentUrl = info.consentUrl;
           } catch {}
         }
@@ -1439,7 +1440,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       if (ssoEnabled && !adminConsentUrl) {
         try {
-          const info = generateAdminConsentUrl();
+          const info = generateAdminConsentUrl(undefined, baseUrl);
           adminConsentUrl = info.consentUrl;
         } catch {}
       }

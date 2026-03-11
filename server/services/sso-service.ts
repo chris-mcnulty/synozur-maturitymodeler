@@ -349,7 +349,7 @@ export interface AdminConsentInfo {
   instructions: string;
 }
 
-export function generateAdminConsentUrl(azureTenantId?: string): AdminConsentInfo {
+export function generateAdminConsentUrl(azureTenantId?: string, baseUrl?: string): AdminConsentInfo {
   if (!process.env.AZURE_CLIENT_ID) {
     throw new Error('Azure SSO is not configured');
   }
@@ -357,7 +357,8 @@ export function generateAdminConsentUrl(azureTenantId?: string): AdminConsentInf
   // Use 'common' for multi-tenant apps, or specific tenant ID if provided
   const tenantIdOrCommon = azureTenantId || 'common';
   
-  const consentUrl = `https://login.microsoftonline.com/${tenantIdOrCommon}/adminconsent?client_id=${process.env.AZURE_CLIENT_ID}`;
+  const redirectUri = baseUrl ? `${baseUrl}/auth/sso/callback` : undefined;
+  const consentUrl = `https://login.microsoftonline.com/${tenantIdOrCommon}/adminconsent?client_id=${process.env.AZURE_CLIENT_ID}${redirectUri ? `&redirect_uri=${encodeURIComponent(redirectUri)}` : ''}`;
   
   return {
     consentUrl,
