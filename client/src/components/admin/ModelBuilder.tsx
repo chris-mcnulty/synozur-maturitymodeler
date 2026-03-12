@@ -214,6 +214,8 @@ export function ModelBuilder({
   const [localName, setLocalName] = useState(model.name);
   const [localSlug, setLocalSlug] = useState(model.slug);
   const [localDescription, setLocalDescription] = useState(model.description || "");
+  const [localVersion, setLocalVersion] = useState(model.version || "");
+  const [localEstimatedTime, setLocalEstimatedTime] = useState(model.estimatedTime || "");
   const [localResources, setLocalResources] = useState(model.generalResources || []);
   const [localMaturityScale, setLocalMaturityScale] = useState(model.maturityScale || []);
   const [localTenantIds, setLocalTenantIds] = useState<string[]>(assignedTenantIds);
@@ -222,27 +224,32 @@ export function ModelBuilder({
   const nameDebounceRef = useRef<NodeJS.Timeout>();
   const descriptionDebounceRef = useRef<NodeJS.Timeout>();
   const slugDebounceRef = useRef<NodeJS.Timeout>();
+  const versionDebounceRef = useRef<NodeJS.Timeout>();
+  const estimatedTimeDebounceRef = useRef<NodeJS.Timeout>();
   const resourcesDebounceRef = useRef<NodeJS.Timeout>();
   const maturityScaleDebounceRef = useRef<NodeJS.Timeout>();
 
-  // Sync local state when model prop changes
+  // Sync local state only when switching to a different model
   useEffect(() => {
     setLocalName(model.name);
     setLocalSlug(model.slug);
     setLocalDescription(model.description || "");
+    setLocalVersion(model.version || "");
+    setLocalEstimatedTime(model.estimatedTime || "");
     setLocalResources(model.generalResources || []);
     setLocalMaturityScale(model.maturityScale || []);
     setLocalTenantIds(assignedTenantIds);
     
-    // Cleanup: clear pending debounce timers when model changes
     return () => {
       if (nameDebounceRef.current) clearTimeout(nameDebounceRef.current);
       if (descriptionDebounceRef.current) clearTimeout(descriptionDebounceRef.current);
       if (slugDebounceRef.current) clearTimeout(slugDebounceRef.current);
+      if (versionDebounceRef.current) clearTimeout(versionDebounceRef.current);
+      if (estimatedTimeDebounceRef.current) clearTimeout(estimatedTimeDebounceRef.current);
       if (resourcesDebounceRef.current) clearTimeout(resourcesDebounceRef.current);
       if (maturityScaleDebounceRef.current) clearTimeout(maturityScaleDebounceRef.current);
     };
-  }, [model.id, model.name, model.slug, model.description, model.generalResources, model.maturityScale, assignedTenantIds]); // Re-run when model or its fields change
+  }, [model.id]); // Only re-sync when switching to a different model
 
   // Debounced update handlers
   const handleNameChange = (value: string) => {
@@ -267,6 +274,18 @@ export function ModelBuilder({
     setLocalResources(newResources);
     if (resourcesDebounceRef.current) clearTimeout(resourcesDebounceRef.current);
     resourcesDebounceRef.current = setTimeout(() => onUpdateModel({ generalResources: newResources }), 500);
+  };
+
+  const handleVersionChange = (value: string) => {
+    setLocalVersion(value);
+    if (versionDebounceRef.current) clearTimeout(versionDebounceRef.current);
+    versionDebounceRef.current = setTimeout(() => onUpdateModel({ version: value }), 500);
+  };
+
+  const handleEstimatedTimeChange = (value: string) => {
+    setLocalEstimatedTime(value);
+    if (estimatedTimeDebounceRef.current) clearTimeout(estimatedTimeDebounceRef.current);
+    estimatedTimeDebounceRef.current = setTimeout(() => onUpdateModel({ estimatedTime: value }), 500);
   };
 
   const handleMaturityScaleChange = (newScale: Array<{ id: string; name: string; description: string; minScore: number; maxScore: number }>) => {
@@ -563,8 +582,8 @@ export function ModelBuilder({
                   <Label htmlFor="model-version">Version</Label>
                   <Input
                     id="model-version"
-                    value={model.version || ""}
-                    onChange={(e) => onUpdateModel({ version: e.target.value })}
+                    value={localVersion}
+                    onChange={(e) => handleVersionChange(e.target.value)}
                     placeholder="1.0.0"
                     data-testid="input-model-version"
                   />
@@ -573,8 +592,8 @@ export function ModelBuilder({
                   <Label htmlFor="model-time">Estimated Time</Label>
                   <Input
                     id="model-time"
-                    value={model.estimatedTime || ""}
-                    onChange={(e) => onUpdateModel({ estimatedTime: e.target.value })}
+                    value={localEstimatedTime}
+                    onChange={(e) => handleEstimatedTimeChange(e.target.value)}
                     placeholder="15-20 minutes"
                     data-testid="input-model-time"
                   />
