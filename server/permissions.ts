@@ -175,11 +175,18 @@ export function hasAdminAccess(user: User): boolean {
  */
 export async function canAccessModel(
   user: User | null | undefined,
-  model: { id?: string; visibility?: string | null; ownerTenantId?: string | null }
+  model: { id?: string; visibility?: string | null; ownerTenantId?: string | null; modelClass?: string | null }
 ): Promise<boolean> {
   // Global admins can access everything
   if (user && isGlobalAdmin(user.role)) {
     return true;
+  }
+
+  // Organizational models are only visible to admins/modelers, not regular users
+  if (model.modelClass === 'organizational') {
+    if (!user) return false;
+    const isAdminOrModeler = isGlobalAdmin(user.role) || isTenantAdmin(user.role) || user.role === 'tenant_modeler';
+    if (!isAdminOrModeler) return false;
   }
 
   // Public models (or models with no visibility set) are accessible to everyone
