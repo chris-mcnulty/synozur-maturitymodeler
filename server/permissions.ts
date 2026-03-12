@@ -182,13 +182,6 @@ export async function canAccessModel(
     return true;
   }
 
-  // Organizational models are only visible to admins/modelers, not regular users
-  if (model.modelClass === 'organizational') {
-    if (!user) return false;
-    const isAdminOrModeler = isGlobalAdmin(user.role) || isTenantAdmin(user.role) || user.role === 'tenant_modeler';
-    if (!isAdminOrModeler) return false;
-  }
-
   // Public models (or models with no visibility set) are accessible to everyone
   if (!model.visibility || model.visibility === 'public') {
     return true;
@@ -199,6 +192,13 @@ export async function canAccessModel(
     // User must be authenticated and have a tenant assigned
     if (!user || !user.tenantId) {
       return false;
+    }
+
+    // Private organizational models are only visible to admins/modelers within the tenant,
+    // not regular users — org assessments are run by admins, not end users
+    if (model.modelClass === 'organizational') {
+      const isAdminOrModeler = isTenantAdmin(user.role) || user.role === 'tenant_modeler';
+      if (!isAdminOrModeler) return false;
     }
 
     // Check if user's tenant has access via junction table
