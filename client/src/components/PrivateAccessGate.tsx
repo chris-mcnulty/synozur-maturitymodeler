@@ -219,124 +219,268 @@ export function PrivateAccessGate({ modelSlug, modelNameFallback, modelDescFallb
           )}
         </div>
 
-        {ssoConfigured && (
-          <ConsentStep
-            adminConsentGranted={adminConsentGranted}
-            adminConsentUrl={adminConsentUrl}
-            modelName={model.name}
-            onCopy={handleCopyConsent}
-            copied={consentCopied}
-          />
-        )}
+        {ssoConfigured && adminConsentGranted ? (
+          <>
+            <Card className="border-primary/30" data-testid="card-sso-signin">
+              <CardContent className="py-8">
+                <div className="text-center space-y-4">
+                  <div className="flex justify-center">
+                    <div className="w-10 h-10 rounded-full bg-green-500/10 flex items-center justify-center">
+                      <CheckCircle2 className="w-5 h-5 text-green-500" />
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium mb-1">Your organization has approved Orion</p>
+                    <p className="text-xs text-muted-foreground">
+                      Sign in with your Microsoft work account to access this assessment.
+                    </p>
+                  </div>
+                  <Button
+                    size="lg"
+                    className="gap-2"
+                    onClick={() => {
+                      window.location.href = `/auth/sso/microsoft?returnUrl=${encodeURIComponent('/' + model.slug)}`;
+                    }}
+                    data-testid="button-sso-signin-private"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 23 23" className="flex-shrink-0">
+                      <rect x="1" y="1" width="10" height="10" fill="#f25022"/>
+                      <rect x="12" y="1" width="10" height="10" fill="#7fba00"/>
+                      <rect x="1" y="12" width="10" height="10" fill="#00a4ef"/>
+                      <rect x="12" y="12" width="10" height="10" fill="#ffb900"/>
+                    </svg>
+                    Sign in with Microsoft
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
 
-        {ssoConfigured && adminConsentGranted && (
-          <Card data-testid="card-sso-signin">
-            <CardContent className="py-6">
-              <div className="text-center space-y-3">
-                <p className="text-sm text-muted-foreground">
-                  Your organization has approved Orion. Sign in with your work account to get started.
-                </p>
-                <Button
-                  className="gap-2"
-                  onClick={() => {
-                    window.location.href = `/auth/sso/microsoft?returnUrl=${encodeURIComponent('/' + model.slug)}`;
-                  }}
-                  data-testid="button-sso-signin-private"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 23 23" className="flex-shrink-0">
-                    <rect x="1" y="1" width="10" height="10" fill="#f25022"/>
-                    <rect x="12" y="1" width="10" height="10" fill="#7fba00"/>
-                    <rect x="1" y="12" width="10" height="10" fill="#00a4ef"/>
-                    <rect x="12" y="12" width="10" height="10" fill="#ffb900"/>
-                  </svg>
-                  Sign in with Microsoft
-                </Button>
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <Separator />
               </div>
-            </CardContent>
-          </Card>
-        )}
-
-        <Card data-testid="card-request-access-form">
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              {ssoConfigured && <StepBadge number={adminConsentGranted ? 2 : 2} />}
-              <div>
-                <CardTitle className="text-base">{adminConsentGranted ? "Or Request Access Manually" : "Request Access"}</CardTitle>
-                <CardDescription className="text-xs mt-0.5">
-                  {adminConsentGranted
-                    ? "If you can't use Microsoft sign-in, fill in your details below."
-                    : "Fill in your details and we'll review your request promptly."}
-                </CardDescription>
+              <div className="relative flex justify-center text-xs">
+                <span className="bg-background px-3 text-muted-foreground">
+                  Don't have a Microsoft work account?
+                </span>
               </div>
             </div>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div className="space-y-1.5">
-                  <Label htmlFor="req-name">Full name</Label>
-                  <Input
-                    id="req-name"
-                    placeholder="Jane Smith"
-                    value={form.name || defaultName}
-                    onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-                    onFocus={prefillForm}
-                    required
-                    data-testid="input-requestor-name"
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="req-email">Work email</Label>
-                  <Input
-                    id="req-email"
-                    type="email"
-                    placeholder="jane@company.com"
-                    value={form.email || defaultEmail}
-                    onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
-                    onFocus={prefillForm}
-                    required
-                    data-testid="input-requestor-email"
-                  />
-                </div>
+
+            <details className="group" data-testid="details-request-access-fallback">
+              <summary className="flex items-center justify-center gap-2 cursor-pointer text-sm text-muted-foreground hover:text-foreground transition-colors py-2 list-none [&::-webkit-details-marker]:hidden">
+                <ArrowRight className="w-3.5 h-3.5 transition-transform group-open:rotate-90" />
+                Request access manually instead
+              </summary>
+              <Card className="mt-3" data-testid="card-request-access-form">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm">Request Access</CardTitle>
+                  <CardDescription className="text-xs">
+                    Fill in your details and we'll review your request.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <form onSubmit={handleSubmit} className="space-y-4">
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                      <div className="space-y-1.5">
+                        <Label htmlFor="req-name">Full name</Label>
+                        <Input
+                          id="req-name"
+                          placeholder="Jane Smith"
+                          value={form.name || defaultName}
+                          onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+                          onFocus={prefillForm}
+                          required
+                          data-testid="input-requestor-name"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label htmlFor="req-email">Work email</Label>
+                        <Input
+                          id="req-email"
+                          type="email"
+                          placeholder="jane@company.com"
+                          value={form.email || defaultEmail}
+                          onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
+                          onFocus={prefillForm}
+                          required
+                          data-testid="input-requestor-email"
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="req-org">Organization</Label>
+                      <Input
+                        id="req-org"
+                        placeholder="Acme Corp"
+                        value={form.organization || defaultOrg}
+                        onChange={e => setForm(f => ({ ...f, organization: e.target.value }))}
+                        onFocus={prefillForm}
+                        required
+                        data-testid="input-requestor-org"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="req-message">
+                        Message <span className="text-muted-foreground font-normal">(optional)</span>
+                      </Label>
+                      <Textarea
+                        id="req-message"
+                        placeholder="Why are you interested in this assessment?"
+                        value={form.message}
+                        onChange={e => setForm(f => ({ ...f, message: e.target.value }))}
+                        rows={3}
+                        data-testid="textarea-requestor-message"
+                      />
+                    </div>
+                    <Button
+                      type="submit"
+                      variant="outline"
+                      className="w-full gap-2"
+                      disabled={requestMutation.isPending}
+                      data-testid="button-submit-access-request"
+                    >
+                      {requestMutation.isPending ? "Submitting..." : (
+                        <>Request Access <ArrowRight className="w-4 h-4" /></>
+                      )}
+                    </Button>
+                  </form>
+                </CardContent>
+              </Card>
+            </details>
+          </>
+        ) : (
+          <>
+            {ssoConfigured && (
+              <ConsentStep
+                adminConsentGranted={adminConsentGranted}
+                adminConsentUrl={adminConsentUrl}
+                modelName={model.name}
+                onCopy={handleCopyConsent}
+                copied={consentCopied}
+              />
+            )}
+
+            {ssoConfigured && (
+              <Card className="border-primary/30" data-testid="card-sso-signin-preconsent">
+                <CardContent className="py-6">
+                  <div className="text-center space-y-3">
+                    <p className="text-sm text-muted-foreground">
+                      Already have access? Sign in with your Microsoft work account.
+                    </p>
+                    <Button
+                      className="gap-2"
+                      onClick={() => {
+                        window.location.href = `/auth/sso/microsoft?returnUrl=${encodeURIComponent('/' + model.slug)}`;
+                      }}
+                      data-testid="button-sso-signin-private-preconsent"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 23 23" className="flex-shrink-0">
+                        <rect x="1" y="1" width="10" height="10" fill="#f25022"/>
+                        <rect x="12" y="1" width="10" height="10" fill="#7fba00"/>
+                        <rect x="1" y="12" width="10" height="10" fill="#00a4ef"/>
+                        <rect x="12" y="12" width="10" height="10" fill="#ffb900"/>
+                      </svg>
+                      Sign in with Microsoft
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <Separator />
               </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="req-org">Organization</Label>
-                <Input
-                  id="req-org"
-                  placeholder="Acme Corp"
-                  value={form.organization || defaultOrg}
-                  onChange={e => setForm(f => ({ ...f, organization: e.target.value }))}
-                  onFocus={prefillForm}
-                  required
-                  data-testid="input-requestor-org"
-                />
+              <div className="relative flex justify-center text-xs">
+                <span className="bg-background px-3 text-muted-foreground">
+                  {ssoConfigured ? "Don't have a Microsoft work account?" : "or"}
+                </span>
               </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="req-message">
-                  Message <span className="text-muted-foreground font-normal">(optional)</span>
-                </Label>
-                <Textarea
-                  id="req-message"
-                  placeholder="Why are you interested in this assessment?"
-                  value={form.message}
-                  onChange={e => setForm(f => ({ ...f, message: e.target.value }))}
-                  rows={3}
-                  data-testid="textarea-requestor-message"
-                />
-              </div>
-              <Button
-                type="submit"
-                className="w-full gap-2"
-                disabled={requestMutation.isPending}
-                data-testid="button-submit-access-request"
-              >
-                {requestMutation.isPending ? "Submitting..." : (
-                  <>Request Access <ArrowRight className="w-4 h-4" /></>
-                )}
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
+            </div>
+
+            <details className="group" data-testid="details-request-access-fallback">
+              <summary className="flex items-center justify-center gap-2 cursor-pointer text-sm text-muted-foreground hover:text-foreground transition-colors py-2 list-none [&::-webkit-details-marker]:hidden">
+                <ArrowRight className="w-3.5 h-3.5 transition-transform group-open:rotate-90" />
+                Request access manually instead
+              </summary>
+              <Card className="mt-3" data-testid="card-request-access-form">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm">Request Access</CardTitle>
+                  <CardDescription className="text-xs">
+                    Fill in your details and we'll review your request.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <form onSubmit={handleSubmit} className="space-y-4">
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                      <div className="space-y-1.5">
+                        <Label htmlFor="req-name">Full name</Label>
+                        <Input
+                          id="req-name"
+                          placeholder="Jane Smith"
+                          value={form.name || defaultName}
+                          onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+                          onFocus={prefillForm}
+                          required
+                          data-testid="input-requestor-name"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label htmlFor="req-email">Work email</Label>
+                        <Input
+                          id="req-email"
+                          type="email"
+                          placeholder="jane@company.com"
+                          value={form.email || defaultEmail}
+                          onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
+                          onFocus={prefillForm}
+                          required
+                          data-testid="input-requestor-email"
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="req-org">Organization</Label>
+                      <Input
+                        id="req-org"
+                        placeholder="Acme Corp"
+                        value={form.organization || defaultOrg}
+                        onChange={e => setForm(f => ({ ...f, organization: e.target.value }))}
+                        onFocus={prefillForm}
+                        required
+                        data-testid="input-requestor-org"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="req-message">
+                        Message <span className="text-muted-foreground font-normal">(optional)</span>
+                      </Label>
+                      <Textarea
+                        id="req-message"
+                        placeholder="Why are you interested in this assessment?"
+                        value={form.message}
+                        onChange={e => setForm(f => ({ ...f, message: e.target.value }))}
+                        rows={3}
+                        data-testid="textarea-requestor-message"
+                      />
+                    </div>
+                    <Button
+                      type="submit"
+                      variant="outline"
+                      className="w-full gap-2"
+                      disabled={requestMutation.isPending}
+                      data-testid="button-submit-access-request"
+                    >
+                      {requestMutation.isPending ? "Submitting..." : (
+                        <>Request Access <ArrowRight className="w-4 h-4" /></>
+                      )}
+                    </Button>
+                  </form>
+                </CardContent>
+              </Card>
+            </details>
+          </>
+        )}
       </div>
     </div>
   );
