@@ -249,7 +249,12 @@ export function ModelBuilder({
       if (resourcesDebounceRef.current) clearTimeout(resourcesDebounceRef.current);
       if (maturityScaleDebounceRef.current) clearTimeout(maturityScaleDebounceRef.current);
     };
-  }, [model.id]); // Only re-sync when switching to a different model
+  }, [model.id]); // Only re-sync text fields when switching to a different model
+
+  // Sync tenant IDs separately — these come from an async query and need to update when loaded
+  useEffect(() => {
+    setLocalTenantIds(assignedTenantIds);
+  }, [assignedTenantIds.join(',')]); // Re-sync when the actual assignments change
 
   // Debounced update handlers
   const handleNameChange = (value: string) => {
