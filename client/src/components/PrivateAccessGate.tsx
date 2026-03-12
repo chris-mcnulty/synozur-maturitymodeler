@@ -229,14 +229,43 @@ export function PrivateAccessGate({ modelSlug, modelNameFallback, modelDescFallb
           />
         )}
 
+        {ssoConfigured && adminConsentGranted && (
+          <Card data-testid="card-sso-signin">
+            <CardContent className="py-6">
+              <div className="text-center space-y-3">
+                <p className="text-sm text-muted-foreground">
+                  Your organization has approved Orion. Sign in with your work account to get started.
+                </p>
+                <Button
+                  className="gap-2"
+                  onClick={() => {
+                    window.location.href = `/auth/sso/microsoft?returnUrl=${encodeURIComponent('/' + model.slug)}`;
+                  }}
+                  data-testid="button-sso-signin-private"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 23 23" className="flex-shrink-0">
+                    <rect x="1" y="1" width="10" height="10" fill="#f25022"/>
+                    <rect x="12" y="1" width="10" height="10" fill="#7fba00"/>
+                    <rect x="1" y="12" width="10" height="10" fill="#00a4ef"/>
+                    <rect x="12" y="12" width="10" height="10" fill="#ffb900"/>
+                  </svg>
+                  Sign in with Microsoft
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         <Card data-testid="card-request-access-form">
           <CardHeader>
             <div className="flex items-center gap-2">
-              {ssoConfigured && <StepBadge number={2} />}
+              {ssoConfigured && <StepBadge number={adminConsentGranted ? 2 : 2} />}
               <div>
-                <CardTitle className="text-base">Request Access</CardTitle>
+                <CardTitle className="text-base">{adminConsentGranted ? "Or Request Access Manually" : "Request Access"}</CardTitle>
                 <CardDescription className="text-xs mt-0.5">
-                  Fill in your details and we'll review your request promptly.
+                  {adminConsentGranted
+                    ? "If you can't use Microsoft sign-in, fill in your details below."
+                    : "Fill in your details and we'll review your request promptly."}
                 </CardDescription>
               </div>
             </div>
