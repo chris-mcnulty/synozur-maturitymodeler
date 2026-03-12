@@ -60,6 +60,7 @@ export default function Auth() {
   const redirectPath = queryParams.get('redirect');
   const claimAssessmentId = queryParams.get('claimAssessment');
   const ssoError = queryParams.get('error');
+  const ssoConsent = queryParams.get('ssoConsent');
 
   // Display SSO error if present
   useEffect(() => {
@@ -69,10 +70,20 @@ export default function Auth() {
         description: decodeURIComponent(ssoError),
         variant: "destructive",
       });
-      // Clean up the URL
       window.history.replaceState({}, '', '/auth');
     }
   }, [ssoError, toast]);
+
+  // Display admin consent success
+  useEffect(() => {
+    if (ssoConsent === 'granted') {
+      toast({
+        title: "Microsoft admin consent granted",
+        description: "Your organization's SSO consent has been approved. Users can now sign in with Microsoft.",
+      });
+      window.history.replaceState({}, '', '/auth');
+    }
+  }, [ssoConsent, toast]);
 
   // Redirect if already logged in
   useEffect(() => {

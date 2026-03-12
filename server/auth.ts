@@ -279,15 +279,38 @@ export function setupAuth(app: Express) {
     try {
       const { handleCallback, provisionUser, isProfileComplete } = await import('./services/sso-service.js');
       
-      const { code, state, error: authError, error_description } = req.query;
+      const { code, state, error: authError, error_description, admin_consent, tenant } = req.query;
       
+      // Handle admin consent callback — Azure redirects here after IT admin approves org consent
+      // Parameters: admin_consent=True&tenant=<azure-tenant-id>  (no code/state)
+      if (admin_consent !== undefined) {
+        if (String(admin_consent).toLowerCase() === 'true' && tenant) {
+          // Auto-mark the matching Orion tenant as having granted admin consent
+          try {
+            const orionTenant = await storage.getTenantBySsoTenantId(tenant as string);
+            if (orionTenant) {
+              await storage.updateTenant(orionTenant.id, { ssoAdminConsentGranted: true });
+              console.log(`[SSO] Admin consent granted for Azure tenant ${tenant} → Orion tenant "${orionTenant.name}"`);
+            } else {
+              console.warn(`[SSO] Admin consent received for unknown Azure tenant ${tenant}`);
+            }
+          } catch (err) {
+            console.error('[SSO] Failed to auto-mark consent granted:', err);
+          }
+          return res.redirect('/auth?ssoConsent=granted');
+        } else {
+          // Admin declined consent
+          return res.redirect('/auth?error=Admin+consent+was+declined');
+        }
+      }
+
       if (authError) {
         console.error('SSO auth error:', authError, error_description);
-        return res.redirect(`/login?error=${encodeURIComponent(error_description as string || 'SSO authentication failed')}`);
+        return res.redirect(`/auth?error=${encodeURIComponent(error_description as string || 'SSO authentication failed')}`);
       }
       
       if (!code || !state) {
-        return res.redirect('/login?error=Invalid+SSO+response');
+        return res.redirect('/auth?error=Invalid+SSO+response');
       }
       
       const redirectUri = `${req.protocol}://${req.get('host')}/auth/sso/callback`;
@@ -311,7 +334,7 @@ export function setupAuth(app: Express) {
       req.login(result.user, (err: any) => {
         if (err) {
           console.error('SSO login session error:', err);
-          return res.redirect('/login?error=Session+creation+failed');
+          return res.redirect('/auth?error=Session+creation+failed');
         }
         
         // Check if user needs to complete their profile (new SSO users)
@@ -328,7 +351,7 @@ export function setupAuth(app: Express) {
     } catch (error: any) {
       console.error('SSO callback error:', error);
       const errorMessage = error.message || 'SSO authentication failed';
-      res.redirect(`/login?error=${encodeURIComponent(errorMessage)}`);
+      res.redirect(`/auth?error=${encodeURIComponent(errorMessage)}`);
     }
   });
 
