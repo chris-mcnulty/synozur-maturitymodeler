@@ -1430,8 +1430,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
           } catch {}
         }
         existingRequest = await storage.getModelAccessRequestByEmail(model.id, user.email ?? '');
-      } else if (user?.email) {
-        existingRequest = await storage.getModelAccessRequestByEmail(model.id, user.email);
+      } else {
+        // For unauthenticated users on private models, check if any assigned tenant
+        // has already granted admin consent — if so, they just need to sign in
+        if (model.visibility === 'private' && model.id) {
+          const tenantAssignments = await db
+            .select({ tenantId: schema.modelTenants.tenantId })
+            .from(schema.modelTenants)
+            .where(eq(schema.modelTenants.modelId, model.id));
+          
+          for (const assignment of tenantAssignments) {
+            const assignedTenant = await storage.getTenant(assignment.tenantId);
+            if (assignedTenant?.ssoAdminConsentGranted) {
+              adminConsentGranted = true;
+              break;
+            }
+          }
+        }
+
+        if (user?.email) {
+          existingRequest = await storage.getModelAccessRequestByEmail(model.id, user.email);
+        }
       }
 
       if (existingRequest) {
