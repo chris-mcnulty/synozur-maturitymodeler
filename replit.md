@@ -40,6 +40,7 @@ The application features a modern fullstack architecture with a dark-mode-first 
 -   **Model Management**: CSV-driven import/export plus .model JSON format. ModelBuilder component with Overview, Structure, Resources, and Maturity Scale tabs. Model archiving preserves data while hiding from default views.
 -   **AI Integration**: Multi-provider registry pattern (`server/services/ai-providers/`). Primary: Azure AI Foundry (`@azure-rest/ai-inference`) supporting GPT-5.4, GPT-5.2, GPT-4o. Fallback: Anthropic Claude Sonnet 4.5 via Replit AI Integrations. Active provider + model are DB-backed settings (`aiProvider`, `aiModel`) switchable from Admin Settings dialog. 90-day caching and content review workflow unchanged.
 -   **Multi-Tenant Architecture**: ~60% complete. Tenant-private model visibility, OAuth client management, and SSO provisioning done. Branding and domain mapping remaining. See `PRODUCT_BACKLOG.md` for full status.
+-   **In-App Support System**: Full-stack support ticket system with CRUD, replies, admin management console (Support tab in Admin sidebar), AI help chatbot (SSE streaming from user guide), What's New modal (AI-summarized changelog on login), Microsoft Planner integration (auto-sync tickets to tenant-configured plans). Public /help and /changelog pages render USER_GUIDE.md and CHANGELOG.md. Header help menu dropdown. Email notifications via SendGrid on ticket create/close. Schema tables: `supportTickets`, `supportTicketReplies`, `supportTicketPlannerSync`. Routes: `server/routes-support.ts`. Frontend: `UserGuide.tsx`, `Changelog.tsx`, `Support.tsx`, `WhatsNewModal.tsx`, `HelpChatPanel.tsx`, `SupportManagement.tsx`.
 
 ## Technical Debt
 - **ExecAI/Copilot import format**: One-off simple format (`modelName`, `options`, `routing`) added for compatibility. Consider deprecating once models are migrated to standard Orion format.
@@ -76,6 +77,7 @@ Consumer domains (gmail.com, yahoo.com, outlook.com, hotmail.com, icloud.com, et
 -   **SendGrid**: Email delivery service.
 -   **Azure AI Foundry**: Primary AI provider (`AZURE_AI_FOUNDRY_ENDPOINT`, `AZURE_AI_FOUNDRY_API_KEY`). Models: GPT-5.4 (default), GPT-5.2, GPT-4o.
 -   **Anthropic Claude Sonnet 4.5**: Fallback AI provider via Replit AI Integrations.
+-   **Microsoft Graph / Planner**: Optional ticket-to-task sync (`PLANNER_TENANT_ID`, `PLANNER_CLIENT_ID`, `PLANNER_CLIENT_SECRET`). Uses `@azure/msal-node` for app-only auth.
 -   **HubSpot**: Website tracking (Account ID: 49076134).
 -   **jsPDF**: PDF report generation library.
 -   **Uppy**: Frontend file uploader.

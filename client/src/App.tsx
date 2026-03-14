@@ -8,6 +8,7 @@ import { ThemeProvider } from "@/components/ThemeProvider";
 import { AuthProvider } from "@/hooks/use-auth";
 import { ProtectedRoute } from "@/lib/protected-route";
 import { Header } from "@/components/Header";
+import { WhatsNewModal } from "@/components/WhatsNewModal";
 import Landing from "@/pages/Landing";
 import ModelHome from "@/pages/ModelHome";
 import Assessment from "@/pages/Assessment";
@@ -20,6 +21,9 @@ import ResetPassword from "@/pages/ResetPassword";
 import VerifyEmail from "@/pages/VerifyEmail";
 import OAuthConsent from "@/pages/oauth-consent";
 import CompleteProfile from "@/pages/CompleteProfile";
+import UserGuide from "@/pages/UserGuide";
+import Changelog from "@/pages/Changelog";
+import Support from "@/pages/Support";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -37,6 +41,9 @@ function Router() {
         <Route path="/verify-email" component={VerifyEmail} />
         <Route path="/oauth/consent" component={OAuthConsent} />
         <Route path="/complete-profile" component={CompleteProfile} />
+        <Route path="/help" component={UserGuide} />
+        <Route path="/changelog" component={Changelog} />
+        <ProtectedRoute path="/support" component={Support} />
         <Route path="/assessment/:assessmentId" component={Assessment} />
         <Route path="/results/:assessmentId" component={Results} />
         <ProtectedRoute path="/me" component={Profile} />
@@ -44,6 +51,7 @@ function Router() {
         <Route path="/:modelSlug" component={ModelHome} />
         <Route component={NotFound} />
       </Switch>
+      <WhatsNewModal />
     </>
   );
 }

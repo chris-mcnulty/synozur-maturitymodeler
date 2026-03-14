@@ -128,6 +128,25 @@ export interface IStorage {
   getAllModelAccessRequests(status?: string): Promise<(schema.ModelAccessRequest & { modelName: string })[]>;
   updateModelAccessRequest(id: string, data: Partial<schema.ModelAccessRequest>): Promise<schema.ModelAccessRequest | undefined>;
   countPendingAccessRequests(): Promise<number>;
+
+  // Support Ticket methods
+  createSupportTicket(ticket: schema.InsertSupportTicket & { ticketNumber: number }): Promise<schema.SupportTicket>;
+  getSupportTicket(id: string): Promise<schema.SupportTicket | undefined>;
+  getSupportTicketsByUser(userId: string): Promise<schema.SupportTicket[]>;
+  getSupportTicketsByTenant(tenantId: string): Promise<schema.SupportTicket[]>;
+  getAllSupportTickets(): Promise<schema.SupportTicket[]>;
+  updateSupportTicket(id: string, data: Partial<schema.SupportTicket>): Promise<schema.SupportTicket | undefined>;
+  getNextTicketNumber(): Promise<number>;
+
+  // Support Ticket Reply methods
+  createSupportTicketReply(reply: schema.InsertSupportTicketReply): Promise<schema.SupportTicketReply>;
+  getSupportTicketReplies(ticketId: string): Promise<schema.SupportTicketReply[]>;
+
+  // Support Ticket Planner Sync methods
+  createSupportTicketPlannerSync(sync: schema.InsertSupportTicketPlannerSync): Promise<schema.SupportTicketPlannerSync>;
+  getSupportTicketPlannerSync(ticketId: string): Promise<schema.SupportTicketPlannerSync | undefined>;
+  getUnsyncedTickets(tenantId: string): Promise<schema.SupportTicket[]>;
+  updateSupportTicketPlannerSync(id: string, data: Partial<schema.SupportTicketPlannerSync>): Promise<schema.SupportTicketPlannerSync | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -716,6 +735,73 @@ export class DatabaseStorage implements IStorage {
       .from(schema.modelAccessRequests)
       .where(eq(schema.modelAccessRequests.status, 'pending'));
     return count;
+  }
+
+  async createSupportTicket(ticket: schema.InsertSupportTicket & { ticketNumber: number }): Promise<schema.SupportTicket> {
+    const [created] = await db.insert(schema.supportTickets).values(ticket).returning();
+    return created;
+  }
+
+  async getSupportTicket(id: string): Promise<schema.SupportTicket | undefined> {
+    const [ticket] = await db.select().from(schema.supportTickets).where(eq(schema.supportTickets.id, id)).limit(1);
+    return ticket;
+  }
+
+  async getSupportTicketsByUser(userId: string): Promise<schema.SupportTicket[]> {
+    return db.select().from(schema.supportTickets).where(eq(schema.supportTickets.userId, userId)).orderBy(desc(schema.supportTickets.createdAt));
+  }
+
+  async getSupportTicketsByTenant(tenantId: string): Promise<schema.SupportTicket[]> {
+    return db.select().from(schema.supportTickets).where(eq(schema.supportTickets.tenantId, tenantId)).orderBy(desc(schema.supportTickets.createdAt));
+  }
+
+  async getAllSupportTickets(): Promise<schema.SupportTicket[]> {
+    return db.select().from(schema.supportTickets).orderBy(desc(schema.supportTickets.createdAt));
+  }
+
+  async updateSupportTicket(id: string, data: Partial<schema.SupportTicket>): Promise<schema.SupportTicket | undefined> {
+    const [updated] = await db.update(schema.supportTickets).set({ ...data, updatedAt: new Date() }).where(eq(schema.supportTickets.id, id)).returning();
+    return updated;
+  }
+
+  async getNextTicketNumber(): Promise<number> {
+    const [result] = await db.select({ max: sql<number>`COALESCE(MAX(ticket_number), 0)` }).from(schema.supportTickets);
+    return (result?.max || 0) + 1;
+  }
+
+  async createSupportTicketReply(reply: schema.InsertSupportTicketReply): Promise<schema.SupportTicketReply> {
+    const [created] = await db.insert(schema.supportTicketReplies).values(reply).returning();
+    return created;
+  }
+
+  async getSupportTicketReplies(ticketId: string): Promise<schema.SupportTicketReply[]> {
+    return db.select().from(schema.supportTicketReplies).where(eq(schema.supportTicketReplies.ticketId, ticketId)).orderBy(schema.supportTicketReplies.createdAt);
+  }
+
+  async createSupportTicketPlannerSync(sync: schema.InsertSupportTicketPlannerSync): Promise<schema.SupportTicketPlannerSync> {
+    const [created] = await db.insert(schema.supportTicketPlannerSync).values(sync).returning();
+    return created;
+  }
+
+  async getSupportTicketPlannerSync(ticketId: string): Promise<schema.SupportTicketPlannerSync | undefined> {
+    const [sync] = await db.select().from(schema.supportTicketPlannerSync).where(eq(schema.supportTicketPlannerSync.ticketId, ticketId)).limit(1);
+    return sync;
+  }
+
+  async getUnsyncedTickets(tenantId: string): Promise<schema.SupportTicket[]> {
+    const syncedTicketIds = db.select({ ticketId: schema.supportTicketPlannerSync.ticketId }).from(schema.supportTicketPlannerSync).where(eq(schema.supportTicketPlannerSync.tenantId, tenantId));
+    return db.select().from(schema.supportTickets)
+      .where(and(
+        eq(schema.supportTickets.tenantId, tenantId),
+        sql`${schema.supportTickets.id} NOT IN (${syncedTicketIds})`,
+        sql`${schema.supportTickets.status} IN ('open', 'in_progress')`
+      ))
+      .orderBy(schema.supportTickets.createdAt);
+  }
+
+  async updateSupportTicketPlannerSync(id: string, data: Partial<schema.SupportTicketPlannerSync>): Promise<schema.SupportTicketPlannerSync | undefined> {
+    const [updated] = await db.update(schema.supportTicketPlannerSync).set(data).where(eq(schema.supportTicketPlannerSync.id, id)).returning();
+    return updated;
   }
 }
 

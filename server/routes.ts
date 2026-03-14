@@ -20,6 +20,7 @@ import { promisify } from "util";
 import bcrypt from "bcryptjs";
 import tenantRoutes from "./tenant-routes";
 import oauthRoutes from "./oauth-routes";
+import supportRoutes from "./routes-support";
 import { generateAdminConsentUrl, isSsoConfigured, extractDomain } from "./services/sso-service";
 
 const scryptAsync = promisify(scrypt);
@@ -57,6 +58,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Register multi-tenant routes (Phase 1 - behind testing/staging wall)
   app.use(tenantRoutes);
+
+  // Register support and documentation routes
+  app.use(supportRoutes);
 
   // Serve email header image
   app.get('/email-header.jpg', (req, res) => {

@@ -13,7 +13,7 @@ import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Download, Plus, Edit, Trash, FileSpreadsheet, Eye, EyeOff, BarChart3, Settings, FileDown, FileUp, ListOrdered, Users, Star, Upload, X, Sparkles, CheckCircle2, XCircle, Database, FileText, Brain, BookOpen, ClipboardList, Home, Building2, ChevronDown, Shield, Tag, Activity, Copy, Archive, ArchiveRestore, KeyRound, Clock, ExternalLink, Building } from "lucide-react";
+import { Download, Plus, Edit, Trash, FileSpreadsheet, Eye, EyeOff, BarChart3, Settings, FileDown, FileUp, ListOrdered, Users, Star, Upload, X, Sparkles, CheckCircle2, XCircle, Database, FileText, Brain, BookOpen, ClipboardList, Home, Building2, ChevronDown, Shield, Tag, Activity, Copy, Archive, ArchiveRestore, KeyRound, Clock, ExternalLink, Building, Ticket } from "lucide-react";
 import type { Model, Result, Assessment, Dimension, Question, Answer, User, AssessmentTag } from "@shared/schema";
 import { USER_ROLES, type UserRole } from "@shared/constants";
 import { useAuth } from "@/hooks/use-auth";
@@ -34,6 +34,9 @@ import { TrafficDashboard } from "@/components/admin/TrafficDashboard";
 import { AccessRequestsSection } from "@/components/admin/AccessRequestsSection";
 import { AssessmentTagSelector } from "@/components/admin/AssessmentTagSelector";
 import { AssessmentReviewDialog } from "@/components/admin/AssessmentReviewDialog";
+import { SupportManagement } from "@/components/admin/SupportManagement";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import {
   Sidebar,
   SidebarContent,
@@ -414,6 +417,50 @@ function BenchmarksByModel() {
           </Card>
         </div>
       )}
+    </div>
+  );
+}
+
+function AdminGuideSection() {
+  const { data: content, isLoading, isError } = useQuery<string>({
+    queryKey: ["/api/admin-guide"],
+    queryFn: async () => {
+      const res = await fetch("/api/admin-guide");
+      if (!res.ok) throw new Error("Failed to load admin guide");
+      const data = await res.json();
+      return data.content || "";
+    },
+  });
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center py-12">
+        <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" />
+      </div>
+    );
+  }
+
+  if (isError || !content) {
+    return (
+      <Card>
+        <CardContent className="py-12 text-center">
+          <p className="text-destructive mb-2">Failed to load admin guide.</p>
+          <p className="text-sm text-muted-foreground">Please try refreshing the page.</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <div className="space-y-4" data-testid="section-admin-guide">
+      <h2 className="text-xl font-semibold flex items-center gap-2">
+        <BookOpen className="h-5 w-5" /> Admin Guide
+      </h2>
+      <Card>
+        <CardContent className="p-6 prose dark:prose-invert max-w-none">
+          <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
+        </CardContent>
+      </Card>
     </div>
   );
 }
@@ -2501,6 +2548,28 @@ export default function Admin() {
                         )}
                       </SidebarMenuButton>
                     </SidebarMenuItem>
+                    <SidebarMenuItem>
+                      <SidebarMenuButton 
+                        onClick={() => setActiveSection('support')}
+                        isActive={activeSection === 'support'}
+                        data-testid="tab-support"
+                        tooltip="Support Tickets"
+                      >
+                        <Ticket className="h-4 w-4" />
+                        <span className="group-data-[collapsible=icon]:hidden">Support</span>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                    <SidebarMenuItem>
+                      <SidebarMenuButton 
+                        onClick={() => setActiveSection('admin-guide')}
+                        isActive={activeSection === 'admin-guide'}
+                        data-testid="tab-admin-guide"
+                        tooltip="Admin Guide"
+                      >
+                        <BookOpen className="h-4 w-4" />
+                        <span className="group-data-[collapsible=icon]:hidden">Admin Guide</span>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
                   </SidebarMenu>
                 </SidebarGroupContent>
               </SidebarGroup>
@@ -4447,6 +4516,10 @@ export default function Admin() {
                   currentUserId={currentUser?.id ?? ''}
                 />
               )}
+
+              {activeSection === 'support' && <SupportManagement />}
+
+              {activeSection === 'admin-guide' && <AdminGuideSection />}
             </div>
 
             {/* Footer Stats */}

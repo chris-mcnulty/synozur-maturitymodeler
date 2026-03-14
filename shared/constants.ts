@@ -75,3 +75,23 @@ export function getAssignableRoles(currentRole: string): UserRole[] {
   // Other roles cannot assign roles
   return [];
 }
+
+export const TICKET_CATEGORY_LABELS: Record<string, string> = {
+  bug: 'Bug Report',
+  feature_request: 'Feature Request',
+  question: 'Question',
+  feedback: 'Feedback',
+};
+
+export const TICKET_PRIORITY_LABELS: Record<string, string> = {
+  low: 'Low',
+  medium: 'Medium',
+  high: 'High',
+};
+
+export const TICKET_STATUS_LABELS: Record<string, string> = {
+  open: 'Open',
+  in_progress: 'In Progress',
+  resolved: 'Resolved',
+  closed: 'Closed',
+};

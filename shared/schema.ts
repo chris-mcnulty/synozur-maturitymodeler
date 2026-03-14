@@ -24,6 +24,7 @@ export const users = pgTable("users", {
   ssoProviderId: text("sso_provider_id"), // The provider's unique user ID (e.g., Azure AD oid)
   // Multi-tenant fields (nullable for backward compatibility)
   tenantId: varchar("tenant_id"),
+  lastDismissedChangelogVersion: text("last_dismissed_changelog_version"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 }, (table) => ({
   tenantIdx: index("idx_users_tenant").on(table.tenantId),
@@ -239,6 +240,14 @@ export const tenants = pgTable("tenants", {
   // Azure AD / Entra ID integration
   ssoTenantId: text("sso_tenant_id"), // Azure AD tenant ID (tid claim) for this organization
   ssoAdminConsentGranted: boolean("sso_admin_consent_granted").notNull().default(false), // Whether org-wide admin consent has been granted
+  showChangelogOnLogin: boolean("show_changelog_on_login").notNull().default(true),
+  supportPlannerEnabled: boolean("support_planner_enabled").notNull().default(false),
+  supportPlannerPlanId: text("support_planner_plan_id"),
+  supportPlannerPlanTitle: text("support_planner_plan_title"),
+  supportPlannerPlanWebUrl: text("support_planner_plan_web_url"),
+  supportPlannerGroupId: text("support_planner_group_id"),
+  supportPlannerGroupName: text("support_planner_group_name"),
+  supportPlannerBucketName: text("support_planner_bucket_name"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 }, (table) => ({
@@ -977,3 +986,97 @@ export const insertSsoAuthStateSchema = createInsertSchema(ssoAuthStates).omit({
 
 export type SsoAuthState = typeof ssoAuthStates.$inferSelect;
 export type InsertSsoAuthState = z.infer<typeof insertSsoAuthStateSchema>;
+
+// ========== SUPPORT TICKET SYSTEM ==========
+
+export const TICKET_CATEGORIES = ['bug', 'feature_request', 'question', 'feedback'] as const;
+export const TICKET_PRIORITIES = ['low', 'medium', 'high'] as const;
+export const TICKET_STATUSES = ['open', 'in_progress', 'resolved', 'closed'] as const;
+
+export type TicketCategory = typeof TICKET_CATEGORIES[number];
+export type TicketPriority = typeof TICKET_PRIORITIES[number];
+export type TicketStatus = typeof TICKET_STATUSES[number];
+
+export const supportTickets = pgTable("support_tickets", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  ticketNumber: integer("ticket_number").notNull(),
+  tenantId: varchar("tenant_id"),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  category: text("category").notNull().$type<TicketCategory>(),
+  subject: text("subject").notNull(),
+  description: text("description").notNull(),
+  priority: text("priority").notNull().$type<TicketPriority>().default('medium'),
+  status: text("status").notNull().$type<TicketStatus>().default('open'),
+  assignedTo: varchar("assigned_to").references(() => users.id, { onDelete: "set null" }),
+  metadata: json("metadata").$type<Record<string, any>>(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  resolvedAt: timestamp("resolved_at"),
+  resolvedBy: varchar("resolved_by").references(() => users.id, { onDelete: "set null" }),
+}, (table) => ({
+  tenantIdx: index("idx_support_tickets_tenant").on(table.tenantId),
+  userIdx: index("idx_support_tickets_user").on(table.userId),
+  statusIdx: index("idx_support_tickets_status").on(table.status),
+  ticketNumberIdx: index("idx_support_tickets_number").on(table.ticketNumber),
+}));
+
+export const supportTicketReplies = pgTable("support_ticket_replies", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  ticketId: varchar("ticket_id").notNull().references(() => supportTickets.id, { onDelete: "cascade" }),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  message: text("message").notNull(),
+  isInternal: boolean("is_internal").notNull().default(false),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  ticketIdx: index("idx_support_replies_ticket").on(table.ticketId),
+  userIdx: index("idx_support_replies_user").on(table.userId),
+}));
+
+export const supportTicketPlannerSync = pgTable("support_ticket_planner_sync", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  ticketId: varchar("ticket_id").notNull().references(() => supportTickets.id, { onDelete: "cascade" }),
+  tenantId: varchar("tenant_id").notNull(),
+  planId: text("plan_id").notNull(),
+  taskId: text("task_id").notNull(),
+  taskTitle: text("task_title").notNull(),
+  bucketId: text("bucket_id"),
+  bucketName: text("bucket_name"),
+  syncStatus: text("sync_status").notNull().default('synced'),
+  syncError: text("sync_error"),
+  remoteEtag: text("remote_etag"),
+  lastSyncedAt: timestamp("last_synced_at").defaultNow().notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  ticketIdx: index("idx_planner_sync_ticket").on(table.ticketId),
+  tenantIdx: index("idx_planner_sync_tenant").on(table.tenantId),
+  taskIdx: index("idx_planner_sync_task").on(table.taskId),
+}));
+
+export const insertSupportTicketSchema = createInsertSchema(supportTickets).omit({
+  id: true,
+  ticketNumber: true,
+  createdAt: true,
+  updatedAt: true,
+  resolvedAt: true,
+  resolvedBy: true,
+});
+
+export const insertSupportTicketReplySchema = createInsertSchema(supportTicketReplies).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertSupportTicketPlannerSyncSchema = createInsertSchema(supportTicketPlannerSync).omit({
+  id: true,
+  createdAt: true,
+  lastSyncedAt: true,
+});
+
+export type SupportTicket = typeof supportTickets.$inferSelect;
+export type InsertSupportTicket = z.infer<typeof insertSupportTicketSchema>;
+
+export type SupportTicketReply = typeof supportTicketReplies.$inferSelect;
+export type InsertSupportTicketReply = z.infer<typeof insertSupportTicketReplySchema>;
+
+export type SupportTicketPlannerSync = typeof supportTicketPlannerSync.$inferSelect;
+export type InsertSupportTicketPlannerSync = z.infer<typeof insertSupportTicketPlannerSyncSchema>;
