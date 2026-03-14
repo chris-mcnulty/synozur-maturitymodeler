@@ -717,6 +717,37 @@ export default function Admin() {
     },
   });
 
+  const [showWhatsNew, setShowWhatsNew] = useState(false);
+  const { data: showWhatsNewSetting } = useQuery({
+    queryKey: ['/api/settings/showWhatsNew'],
+    queryFn: async () => {
+      try {
+        const response = await fetch('/api/settings/showWhatsNew');
+        if (response.ok) {
+          const setting = await response.json();
+          setShowWhatsNew(setting.value === true);
+          return setting;
+        }
+        return null;
+      } catch {
+        return null;
+      }
+    },
+  });
+
+  const saveShowWhatsNew = useMutation({
+    mutationFn: async (enabled: boolean) => {
+      return apiRequest('/api/settings/showWhatsNew', 'POST', { value: enabled });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/settings/showWhatsNew'] });
+      toast({
+        title: "Settings saved",
+        description: `"What's New" modal ${showWhatsNew ? 'enabled' : 'disabled'}.`,
+      });
+    },
+  });
+
   // Results filters state - local state for inputs
   // Default to no date filter (show all results) to avoid confusion when data is older
   const [resultsStartDateInput, setResultsStartDateInput] = useState('');
@@ -5117,6 +5148,33 @@ ${insightsData.recommendations.map((r, i) => `${i + 1}. ${r}`).join('\n')}
                   </option>
                 ))}
               </select>
+            </div>
+
+            <div className="border-t pt-4 space-y-3">
+              <div className="flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-muted-foreground" />
+                <p className="text-sm font-medium">What's New Modal</p>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                When enabled, logged-in users see a "What's New" summary after platform updates. Off by default. Never shown to anonymous visitors.
+              </p>
+              <div className="flex items-center justify-between">
+                <label htmlFor="showWhatsNew" className="text-sm">Show "What's New" on login</label>
+                <button
+                  id="showWhatsNew"
+                  role="switch"
+                  aria-checked={showWhatsNew}
+                  onClick={() => {
+                    const newVal = !showWhatsNew;
+                    setShowWhatsNew(newVal);
+                    saveShowWhatsNew.mutate(newVal);
+                  }}
+                  className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${showWhatsNew ? 'bg-primary' : 'bg-muted'}`}
+                  data-testid="toggle-show-whats-new"
+                >
+                  <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${showWhatsNew ? 'translate-x-4' : 'translate-x-0.5'}`} />
+                </button>
+              </div>
             </div>
           </div>
 

@@ -83,6 +83,11 @@ router.get('/api/admin-guide', ensureAuthenticated, ensureAnyAdmin, (_req, res) 
 
 router.get('/api/changelog/whats-new', ensureAuthenticated, async (req, res) => {
   try {
+    const systemSetting = await storage.getSetting('showWhatsNew');
+    if (!systemSetting || systemSetting.value !== true) {
+      return res.json({ showModal: false, version: currentChangelogVersion });
+    }
+
     const user = req.user!;
     const userCreatedAt = new Date(user.createdAt);
     const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
