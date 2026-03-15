@@ -42,9 +42,6 @@ interface PlannerPlan {
 
 interface SupportIntegrations {
   supportPlannerEnabled: boolean;
-  supportPlannerTenantId: string;
-  supportPlannerClientId: string;
-  supportPlannerHasClientSecret: boolean;
   supportPlannerPlanId: string | null;
   supportPlannerPlanTitle: string | null;
   supportPlannerPlanWebUrl: string | null;
@@ -52,6 +49,14 @@ interface SupportIntegrations {
   supportPlannerGroupName: string | null;
   supportPlannerBucketName: string | null;
   showChangelogOnLogin: boolean;
+  ssoTenantId: string | null;
+  ssoAdminConsentGranted: boolean;
+}
+
+interface PlannerStatusExtended extends PlannerStatusResponse {
+  needsConsent?: boolean;
+  ssoTenantId?: string;
+  adminConsentGranted?: boolean;
 }
 
 function getStatusColor(status: string) {
@@ -150,10 +155,6 @@ function TenantSupportSettings({ tenantId }: { tenantId: string }) {
 function PlannerSettings({ tenantId }: { tenantId: string }) {
   const { toast } = useToast();
   const [selectedGroupId, setSelectedGroupId] = useState<string>("");
-  const [localTenantId, setLocalTenantId] = useState("");
-  const [localClientId, setLocalClientId] = useState("");
-  const [localClientSecret, setLocalClientSecret] = useState("");
-  const [credsInitialized, setCredsInitialized] = useState(false);
 
   const { data: integrations, isLoading: intLoading } = useQuery<SupportIntegrations>({
     queryKey: ["/api/tenants", tenantId, "support-integrations"],
@@ -165,14 +166,7 @@ function PlannerSettings({ tenantId }: { tenantId: string }) {
     enabled: !!tenantId,
   });
 
-  if (integrations && !credsInitialized) {
-    setLocalTenantId(integrations.supportPlannerTenantId || "");
-    setLocalClientId(integrations.supportPlannerClientId || "");
-    setLocalClientSecret("");
-    setCredsInitialized(true);
-  }
-
-  const { data: plannerStatus, refetch: refetchStatus } = useQuery<PlannerStatusResponse>({
+  const { data: plannerStatus, refetch: refetchStatus } = useQuery<PlannerStatusExtended>({
     queryKey: ["/api/planner/status", tenantId],
     queryFn: async () => {
       const res = await fetch(`/api/planner/status?tenantId=${tenantId}`);
@@ -233,18 +227,6 @@ function PlannerSettings({ tenantId }: { tenantId: string }) {
     return <div className="animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full mx-auto" />;
   }
 
-  const handleSaveCredentials = () => {
-    const updates: Record<string, any> = {
-      supportPlannerTenantId: localTenantId || "",
-      supportPlannerClientId: localClientId || "",
-    };
-    if (localClientSecret) {
-      updates.supportPlannerClientSecret = localClientSecret;
-    }
-    updateMutation.mutate(updates);
-    setLocalClientSecret("");
-  };
-
   const handleSelectPlan = (plan: PlannerPlan) => {
     const group = groups.find(g => g.id === selectedGroupId);
     updateMutation.mutate({
@@ -256,7 +238,7 @@ function PlannerSettings({ tenantId }: { tenantId: string }) {
     });
   };
 
-  const hasPerTenantCreds = !!(integrations?.supportPlannerTenantId && integrations?.supportPlannerClientId && integrations?.supportPlannerHasClientSecret);
+  const noSsoTenant = !integrations?.ssoTenantId;
 
   return (
     <Card>
@@ -266,72 +248,43 @@ function PlannerSettings({ tenantId }: { tenantId: string }) {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="space-y-3">
-          <p className="text-sm font-medium">Entra ID App Registration</p>
-          <p className="text-xs text-muted-foreground">
-            Each tenant can connect their own Azure AD app registration for Planner access. The app needs <code>Tasks.ReadWrite.All</code> and <code>Group.Read.All</code> application permissions with admin consent.
-            {!hasPerTenantCreds && " Falls back to global credentials if not set."}
-          </p>
-          <div className="space-y-2">
-            <div>
-              <label className="text-xs text-muted-foreground block mb-1">Azure AD Tenant ID</label>
-              <Input
-                value={localTenantId}
-                onChange={(e) => setLocalTenantId(e.target.value)}
-                placeholder="e.g. 0fc6ac5c-d5e5-4855-b3b2-e8d80ca7884e"
-                data-testid="input-planner-tenant-id"
-              />
-            </div>
-            <div>
-              <label className="text-xs text-muted-foreground block mb-1">Application (Client) ID</label>
-              <Input
-                value={localClientId}
-                onChange={(e) => setLocalClientId(e.target.value)}
-                placeholder="e.g. 12345678-abcd-efgh-ijkl-123456789012"
-                data-testid="input-planner-client-id"
-              />
-            </div>
-            <div>
-              <label className="text-xs text-muted-foreground block mb-1">
-                Client Secret {integrations?.supportPlannerHasClientSecret && <span className="text-green-600">(saved)</span>}
-              </label>
-              <Input
-                type="password"
-                value={localClientSecret}
-                onChange={(e) => setLocalClientSecret(e.target.value)}
-                placeholder={integrations?.supportPlannerHasClientSecret ? "Leave blank to keep existing" : "Enter client secret"}
-                data-testid="input-planner-client-secret"
-              />
-            </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleSaveCredentials}
-              disabled={updateMutation.isPending || (!localTenantId && !localClientId)}
-              className="gap-2"
-              data-testid="button-save-planner-credentials"
-            >
-              Save Credentials
-            </Button>
+        <p className="text-xs text-muted-foreground">
+          Planner integration uses the same Entra ID app registration as SSO. When an organization grants admin consent, both SSO and Planner permissions are included automatically.
+        </p>
+
+        {noSsoTenant && (
+          <div className="bg-muted/50 rounded-md p-3 text-sm space-y-1">
+            <p className="font-medium">No Azure AD association</p>
+            <p className="text-xs text-muted-foreground">
+              This tenant has no Azure AD tenant ID. A user from this organization must sign in via SSO first to establish the connection, or an admin must grant consent.
+            </p>
           </div>
-        </div>
+        )}
 
-        <div className="border-t pt-4" />
-
-        {!plannerStatus?.configured && (
-          <p className="text-sm text-muted-foreground">
-            Enter per-tenant Entra ID credentials above, or set global PLANNER_TENANT_ID, PLANNER_CLIENT_ID, and PLANNER_CLIENT_SECRET environment variables.
-          </p>
+        {!noSsoTenant && !plannerStatus?.configured && (
+          <div className="bg-muted/50 rounded-md p-3 text-sm space-y-1">
+            <p className="font-medium">SSO app not configured</p>
+            <p className="text-xs text-muted-foreground">
+              The AZURE_CLIENT_ID and AZURE_CLIENT_SECRET environment variables must be set for Planner integration to work.
+            </p>
+          </div>
         )}
 
         {plannerStatus?.configured && !plannerStatus?.connected && (
-          <p className="text-sm text-destructive">
-            Planner is configured but connection failed: {plannerStatus.message}
-          </p>
+          <div className="space-y-2">
+            <p className="text-sm text-destructive">
+              Connection failed: {plannerStatus.message}
+            </p>
+            {!integrations?.ssoAdminConsentGranted && (
+              <p className="text-xs text-muted-foreground">
+                This may mean admin consent has not been granted for Planner permissions (Tasks.ReadWrite.All, Group.Read.All). Use the admin consent flow in the SSO settings to grant these permissions.
+              </p>
+            )}
+          </div>
         )}
 
-        {plannerStatus?.configured && (
-          <div className="flex items-center gap-2">
+        {!noSsoTenant && plannerStatus?.configured && (
+          <div className="flex items-center gap-2 flex-wrap">
             <Button
               variant="outline"
               size="sm"
@@ -345,7 +298,9 @@ function PlannerSettings({ tenantId }: { tenantId: string }) {
             <Badge variant={plannerStatus?.connected ? "default" : "destructive"} className="text-xs">
               {plannerStatus?.connected ? "Connected" : "Disconnected"}
             </Badge>
-            {hasPerTenantCreds && <Badge variant="outline" className="text-xs">Per-Tenant Credentials</Badge>}
+            {integrations?.ssoAdminConsentGranted && (
+              <Badge variant="outline" className="text-xs">Admin Consent Granted</Badge>
+            )}
           </div>
         )}
 

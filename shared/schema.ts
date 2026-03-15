@@ -242,9 +242,6 @@ export const tenants = pgTable("tenants", {
   ssoAdminConsentGranted: boolean("sso_admin_consent_granted").notNull().default(false), // Whether org-wide admin consent has been granted
   showChangelogOnLogin: boolean("show_changelog_on_login").notNull().default(true),
   supportPlannerEnabled: boolean("support_planner_enabled").notNull().default(false),
-  supportPlannerTenantId: text("support_planner_tenant_id"),
-  supportPlannerClientId: text("support_planner_client_id"),
-  supportPlannerClientSecret: text("support_planner_client_secret"),
   supportPlannerPlanId: text("support_planner_plan_id"),
   supportPlannerPlanTitle: text("support_planner_plan_title"),
   supportPlannerPlanWebUrl: text("support_planner_plan_web_url"),

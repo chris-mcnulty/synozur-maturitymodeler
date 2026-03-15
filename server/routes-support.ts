@@ -9,7 +9,7 @@ import * as schema from "@shared/schema";
 import { ensureAuthenticated, ensureAnyAdmin, ensureGlobalAdmin } from "./auth";
 import { checkIsGlobalAdmin } from "./permissions";
 import { providerRegistry } from "./services/ai-providers/registry";
-import { plannerService, resolvePlannerCredentials } from "./services/planner-service";
+import { plannerService } from "./services/planner-service";
 import { z } from "zod";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -435,7 +435,7 @@ ${guideContent.substring(0, 15000)}`;
   }
 });
 
-async function resolveTenantForPlanner(req: Request): Promise<schema.Tenant | null> {
+async function resolveAuthorizedTenant(req: Request): Promise<schema.Tenant | null> {
   const user = req.user!;
   const tenantId = req.query.tenantId as string | undefined;
   if (!tenantId) return null;
@@ -455,13 +455,25 @@ router.get('/api/planner/status', ensureAuthenticated, ensureAnyAdmin, async (re
         return res.status(403).json({ error: 'Access denied' });
       }
     }
-    const tenantConfig = await resolveTenantForPlanner(req);
-    const configured = plannerService.isConfigured(tenantConfig);
-    if (!configured) {
-      return res.json({ configured: false, connected: false });
+    const tenant = await resolveAuthorizedTenant(req);
+    const ssoTenantId = tenant?.ssoTenantId;
+    const canConnect = plannerService.canConnect(ssoTenantId);
+    if (!canConnect) {
+      return res.json({
+        configured: false,
+        connected: false,
+        needsConsent: !ssoTenantId,
+        message: !ssoTenantId ? 'Tenant has no Azure AD association. Users must sign in via SSO first.' : 'Azure SSO app not configured.',
+      });
     }
-    const result = await plannerService.testConnection(tenantConfig);
-    res.json({ configured: true, connected: result.success, message: result.message });
+    const result = await plannerService.testConnection(ssoTenantId);
+    res.json({
+      configured: true,
+      connected: result.success,
+      message: result.message,
+      ssoTenantId,
+      adminConsentGranted: tenant?.ssoAdminConsentGranted || false,
+    });
   } catch (error) {
     res.json({ configured: false, connected: false });
   }
@@ -476,8 +488,11 @@ router.get('/api/planner/groups', ensureAuthenticated, ensureAnyAdmin, async (re
         return res.status(403).json({ error: 'Access denied' });
       }
     }
-    const tenantConfig = await resolveTenantForPlanner(req);
-    const groups = await plannerService.listMyGroups(tenantConfig);
+    const tenant = await resolveAuthorizedTenant(req);
+    if (!tenant?.ssoTenantId) {
+      return res.status(400).json({ error: 'Tenant has no Azure AD association' });
+    }
+    const groups = await plannerService.listMyGroups(tenant.ssoTenantId);
     res.json(groups);
   } catch (error: any) {
     res.status(500).json({ error: error.message || 'Failed to fetch groups' });
@@ -493,8 +508,11 @@ router.get('/api/planner/groups/:groupId/plans', ensureAuthenticated, ensureAnyA
         return res.status(403).json({ error: 'Access denied' });
       }
     }
-    const tenantConfig = await resolveTenantForPlanner(req);
-    const plans = await plannerService.getPlansForGroup(req.params.groupId, tenantConfig);
+    const tenant = await resolveAuthorizedTenant(req);
+    if (!tenant?.ssoTenantId) {
+      return res.status(400).json({ error: 'Tenant has no Azure AD association' });
+    }
+    const plans = await plannerService.getPlansForGroup(req.params.groupId, tenant.ssoTenantId);
     res.json(plans);
   } catch (error: any) {
     res.status(500).json({ error: error.message || 'Failed to fetch plans' });
@@ -515,9 +533,6 @@ router.get('/api/tenants/:tenantId/support-integrations', ensureAuthenticated, e
 
     res.json({
       supportPlannerEnabled: tenant.supportPlannerEnabled,
-      supportPlannerTenantId: tenant.supportPlannerTenantId || '',
-      supportPlannerClientId: tenant.supportPlannerClientId || '',
-      supportPlannerHasClientSecret: !!tenant.supportPlannerClientSecret,
       supportPlannerPlanId: tenant.supportPlannerPlanId,
       supportPlannerPlanTitle: tenant.supportPlannerPlanTitle,
       supportPlannerPlanWebUrl: tenant.supportPlannerPlanWebUrl,
@@ -525,6 +540,8 @@ router.get('/api/tenants/:tenantId/support-integrations', ensureAuthenticated, e
       supportPlannerGroupName: tenant.supportPlannerGroupName,
       supportPlannerBucketName: tenant.supportPlannerBucketName || 'Support Tickets',
       showChangelogOnLogin: tenant.showChangelogOnLogin ?? true,
+      ssoTenantId: tenant.ssoTenantId || null,
+      ssoAdminConsentGranted: tenant.ssoAdminConsentGranted,
     });
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch integrations' });
@@ -542,9 +559,6 @@ router.patch('/api/tenants/:tenantId/support-integrations', ensureAuthenticated,
 
     const {
       supportPlannerEnabled,
-      supportPlannerTenantId,
-      supportPlannerClientId,
-      supportPlannerClientSecret,
       supportPlannerPlanId,
       supportPlannerPlanTitle,
       supportPlannerPlanWebUrl,
@@ -556,9 +570,6 @@ router.patch('/api/tenants/:tenantId/support-integrations', ensureAuthenticated,
 
     const updates: Partial<schema.Tenant> = {};
     if (supportPlannerEnabled !== undefined) updates.supportPlannerEnabled = supportPlannerEnabled;
-    if (supportPlannerTenantId !== undefined) updates.supportPlannerTenantId = supportPlannerTenantId || null;
-    if (supportPlannerClientId !== undefined) updates.supportPlannerClientId = supportPlannerClientId || null;
-    if (supportPlannerClientSecret !== undefined) updates.supportPlannerClientSecret = supportPlannerClientSecret || null;
     if (supportPlannerPlanId !== undefined) updates.supportPlannerPlanId = supportPlannerPlanId;
     if (supportPlannerPlanTitle !== undefined) updates.supportPlannerPlanTitle = supportPlannerPlanTitle;
     if (supportPlannerPlanWebUrl !== undefined) updates.supportPlannerPlanWebUrl = supportPlannerPlanWebUrl;
@@ -571,9 +582,6 @@ router.patch('/api/tenants/:tenantId/support-integrations', ensureAuthenticated,
     if (!updated) return res.status(404).json({ error: 'Tenant not found' });
     res.json({
       supportPlannerEnabled: updated.supportPlannerEnabled,
-      supportPlannerTenantId: updated.supportPlannerTenantId || '',
-      supportPlannerClientId: updated.supportPlannerClientId || '',
-      supportPlannerHasClientSecret: !!updated.supportPlannerClientSecret,
       supportPlannerPlanId: updated.supportPlannerPlanId,
       supportPlannerPlanTitle: updated.supportPlannerPlanTitle,
       supportPlannerPlanWebUrl: updated.supportPlannerPlanWebUrl,
@@ -581,6 +589,8 @@ router.patch('/api/tenants/:tenantId/support-integrations', ensureAuthenticated,
       supportPlannerGroupName: updated.supportPlannerGroupName,
       supportPlannerBucketName: updated.supportPlannerBucketName || 'Support Tickets',
       showChangelogOnLogin: updated.showChangelogOnLogin ?? true,
+      ssoTenantId: updated.ssoTenantId || null,
+      ssoAdminConsentGranted: updated.ssoAdminConsentGranted,
     });
   } catch (error) {
     res.status(500).json({ error: 'Failed to update integrations' });
@@ -776,22 +786,23 @@ async function syncTicketToPlanner(ticket: schema.SupportTicket, user: schema.Us
 }
 
 async function syncTicketToPlannerInternal(ticket: schema.SupportTicket, user: schema.User | undefined, tenant: schema.Tenant) {
-  if (!tenant.supportPlannerEnabled || !tenant.supportPlannerPlanId || !plannerService.isConfigured(tenant)) return;
+  if (!tenant.supportPlannerEnabled || !tenant.supportPlannerPlanId || !tenant.ssoTenantId || !plannerService.canConnect(tenant.ssoTenantId)) return;
 
+  const tid = tenant.ssoTenantId;
   try {
     const bucketName = tenant.supportPlannerBucketName || 'Support Tickets';
-    const bucket = await plannerService.getOrCreateBucket(tenant.supportPlannerPlanId, bucketName, tenant);
+    const bucket = await plannerService.getOrCreateBucket(tenant.supportPlannerPlanId, bucketName, tid);
     const taskTitle = `[#${ticket.ticketNumber}] ${ticket.subject}`;
 
     const task = await plannerService.createTask({
       planId: tenant.supportPlannerPlanId,
       bucketId: bucket.id,
       title: taskTitle,
-    }, tenant);
+    }, tid);
 
-    const details = await plannerService.getTaskDetails(task.id, tenant);
+    const details = await plannerService.getTaskDetails(task.id, tid);
     const description = `Priority: ${ticket.priority}\nCategory: ${ticket.category}\nSubmitted by: ${user?.name || user?.username || 'Unknown'}\nTenant: ${tenant.name}`;
-    await plannerService.updateTaskDetails(task.id, details['@odata.etag']!, description, tenant);
+    await plannerService.updateTaskDetails(task.id, details['@odata.etag']!, description, tid);
 
     await storage.createSupportTicketPlannerSync({
       ticketId: ticket.id,
@@ -825,15 +836,16 @@ async function markPlannerTaskComplete(ticket: schema.SupportTicket) {
   const syncRecord = await storage.getSupportTicketPlannerSync(ticket.id);
   if (!syncRecord || syncRecord.syncStatus !== 'synced' || syncRecord.taskId === 'sync-failed') return;
 
-  let tenantConfig = null;
+  let ssoTenantId: string | null = null;
   if (ticket.tenantId) {
     const tenant = await storage.getTenant(ticket.tenantId);
-    if (tenant) tenantConfig = tenant;
+    if (tenant?.ssoTenantId) ssoTenantId = tenant.ssoTenantId;
   }
+  if (!ssoTenantId) return;
 
   try {
-    const task = await plannerService.getTaskWithDetails(syncRecord.taskId, tenantConfig);
-    await plannerService.updateTask(syncRecord.taskId, task['@odata.etag']!, { percentComplete: 100 }, tenantConfig);
+    const task = await plannerService.getTaskWithDetails(syncRecord.taskId, ssoTenantId);
+    await plannerService.updateTask(syncRecord.taskId, task['@odata.etag']!, { percentComplete: 100 }, ssoTenantId);
 
     await storage.updateSupportTicketPlannerSync(syncRecord.id, {
       syncStatus: 'completed',

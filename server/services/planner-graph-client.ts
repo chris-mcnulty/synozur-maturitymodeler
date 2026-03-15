@@ -1,28 +1,25 @@
 import { ConfidentialClientApplication } from '@azure/msal-node';
 
-export interface PlannerCredentials {
-  tenantId: string;
-  clientId: string;
-  clientSecret: string;
-}
-
 const msalCache = new Map<string, { instance: ConfidentialClientApplication; secretHash: string }>();
 
 function hashSecret(secret: string): string {
   return secret.slice(0, 4) + ':' + secret.length;
 }
 
-function getMsalInstance(creds: PlannerCredentials): ConfidentialClientApplication {
-  const cacheKey = `${creds.tenantId}:${creds.clientId}`;
-  const currentHash = hashSecret(creds.clientSecret);
+function getMsalInstance(azureTenantId: string): ConfidentialClientApplication {
+  const clientId = process.env.AZURE_CLIENT_ID!;
+  const clientSecret = process.env.AZURE_CLIENT_SECRET!;
+
+  const cacheKey = `${azureTenantId}:${clientId}`;
+  const currentHash = hashSecret(clientSecret);
   const cached = msalCache.get(cacheKey);
   if (cached && cached.secretHash === currentHash) return cached.instance;
 
   const instance = new ConfidentialClientApplication({
     auth: {
-      clientId: creds.clientId,
-      authority: `https://login.microsoftonline.com/${creds.tenantId}`,
-      clientSecret: creds.clientSecret,
+      clientId,
+      authority: `https://login.microsoftonline.com/${azureTenantId}`,
+      clientSecret,
     },
   });
 
@@ -30,8 +27,8 @@ function getMsalInstance(creds: PlannerCredentials): ConfidentialClientApplicati
   return instance;
 }
 
-async function getAccessToken(creds: PlannerCredentials): Promise<string> {
-  const msal = getMsalInstance(creds);
+async function getAccessToken(azureTenantId: string): Promise<string> {
+  const msal = getMsalInstance(azureTenantId);
   const result = await msal.acquireTokenByClientCredential({
     scopes: ['https://graph.microsoft.com/.default'],
   });
@@ -43,8 +40,8 @@ async function getAccessToken(creds: PlannerCredentials): Promise<string> {
   return result.accessToken;
 }
 
-export async function graphFetch(url: string, creds: PlannerCredentials, options: RequestInit = {}): Promise<any> {
-  const token = await getAccessToken(creds);
+export async function graphFetch(url: string, azureTenantId: string, options: RequestInit = {}): Promise<any> {
+  const token = await getAccessToken(azureTenantId);
 
   const response = await fetch(`https://graph.microsoft.com/v1.0${url}`, {
     ...options,
@@ -69,16 +66,6 @@ export async function graphFetch(url: string, creds: PlannerCredentials, options
   return null;
 }
 
-export function getGlobalCredentials(): PlannerCredentials | null {
-  const tenantId = process.env.PLANNER_TENANT_ID;
-  const clientId = process.env.PLANNER_CLIENT_ID;
-  const clientSecret = process.env.PLANNER_CLIENT_SECRET;
-
-  if (!tenantId || !clientId || !clientSecret) return null;
-
-  return { tenantId, clientId, clientSecret };
-}
-
-export function isPlannerConfigured(): boolean {
-  return !!getGlobalCredentials();
+export function isSsoAppConfigured(): boolean {
+  return !!(process.env.AZURE_CLIENT_ID && process.env.AZURE_CLIENT_SECRET);
 }

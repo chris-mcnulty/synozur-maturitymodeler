@@ -367,17 +367,21 @@ export function generateAdminConsentUrl(azureTenantId?: string, baseUrl?: string
       'Sign in and read user profile (openid, profile)',
       'View user email address (email)',
       'Read basic user information (User.Read)',
+      'Read and write Planner tasks (Tasks.ReadWrite.All) — for support ticket sync',
+      'Read groups (Group.Read.All) — to list available Planner plans',
     ],
     instructions: `
-To enable seamless sign-in for your organization:
+To enable seamless sign-in and support integrations for your organization:
 
 1. Open the Admin Consent URL below (requires Azure AD Global Administrator or Application Administrator role)
 2. Review the permissions requested by Orion
 3. Click "Accept" to grant consent for all users in your organization
 
-Once granted, users in your organization can sign in without seeing individual consent prompts.
+Once granted:
+- Users in your organization can sign in without seeing individual consent prompts
+- Support ticket sync to Microsoft Planner can be enabled for your tenant
 
-Note: These are minimal, read-only permissions that allow Orion to authenticate users and read their basic profile information. No sensitive data access is requested.
+Note: User-level permissions (openid, profile, email, User.Read) are delegated and minimal. Planner permissions (Tasks.ReadWrite.All, Group.Read.All) are application-level and only used when a tenant admin explicitly enables Planner integration.
     `.trim(),
   };
 }
