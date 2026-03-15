@@ -9,8 +9,7 @@ import * as schema from "@shared/schema";
 import { ensureAuthenticated, ensureAnyAdmin, ensureGlobalAdmin } from "./auth";
 import { checkIsGlobalAdmin } from "./permissions";
 import { providerRegistry } from "./services/ai-providers/registry";
-import { plannerService } from "./services/planner-service";
-import { isPlannerConfigured } from "./services/planner-graph-client";
+import { plannerService, resolvePlannerCredentials } from "./services/planner-service";
 import { z } from "zod";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -436,22 +435,49 @@ ${guideContent.substring(0, 15000)}`;
   }
 });
 
-router.get('/api/planner/status', ensureAuthenticated, ensureAnyAdmin, async (_req, res) => {
+async function resolveTenantForPlanner(req: Request): Promise<schema.Tenant | null> {
+  const user = req.user!;
+  const tenantId = req.query.tenantId as string | undefined;
+  if (!tenantId) return null;
+  if (!checkIsGlobalAdmin(user) && user.tenantId !== tenantId) {
+    return null;
+  }
+  const tenant = await storage.getTenant(tenantId);
+  return tenant || null;
+}
+
+router.get('/api/planner/status', ensureAuthenticated, ensureAnyAdmin, async (req, res) => {
   try {
-    const configured = isPlannerConfigured();
+    const tenantId = req.query.tenantId as string | undefined;
+    if (tenantId) {
+      const user = req.user!;
+      if (!checkIsGlobalAdmin(user) && user.tenantId !== tenantId) {
+        return res.status(403).json({ error: 'Access denied' });
+      }
+    }
+    const tenantConfig = await resolveTenantForPlanner(req);
+    const configured = plannerService.isConfigured(tenantConfig);
     if (!configured) {
       return res.json({ configured: false, connected: false });
     }
-    const result = await plannerService.testConnection();
+    const result = await plannerService.testConnection(tenantConfig);
     res.json({ configured: true, connected: result.success, message: result.message });
   } catch (error) {
     res.json({ configured: false, connected: false });
   }
 });
 
-router.get('/api/planner/groups', ensureAuthenticated, ensureAnyAdmin, async (_req, res) => {
+router.get('/api/planner/groups', ensureAuthenticated, ensureAnyAdmin, async (req, res) => {
   try {
-    const groups = await plannerService.listMyGroups();
+    const tenantId = req.query.tenantId as string | undefined;
+    if (tenantId) {
+      const user = req.user!;
+      if (!checkIsGlobalAdmin(user) && user.tenantId !== tenantId) {
+        return res.status(403).json({ error: 'Access denied' });
+      }
+    }
+    const tenantConfig = await resolveTenantForPlanner(req);
+    const groups = await plannerService.listMyGroups(tenantConfig);
     res.json(groups);
   } catch (error: any) {
     res.status(500).json({ error: error.message || 'Failed to fetch groups' });
@@ -460,7 +486,15 @@ router.get('/api/planner/groups', ensureAuthenticated, ensureAnyAdmin, async (_r
 
 router.get('/api/planner/groups/:groupId/plans', ensureAuthenticated, ensureAnyAdmin, async (req, res) => {
   try {
-    const plans = await plannerService.getPlansForGroup(req.params.groupId);
+    const tenantId = req.query.tenantId as string | undefined;
+    if (tenantId) {
+      const user = req.user!;
+      if (!checkIsGlobalAdmin(user) && user.tenantId !== tenantId) {
+        return res.status(403).json({ error: 'Access denied' });
+      }
+    }
+    const tenantConfig = await resolveTenantForPlanner(req);
+    const plans = await plannerService.getPlansForGroup(req.params.groupId, tenantConfig);
     res.json(plans);
   } catch (error: any) {
     res.status(500).json({ error: error.message || 'Failed to fetch plans' });
@@ -481,6 +515,9 @@ router.get('/api/tenants/:tenantId/support-integrations', ensureAuthenticated, e
 
     res.json({
       supportPlannerEnabled: tenant.supportPlannerEnabled,
+      supportPlannerTenantId: tenant.supportPlannerTenantId || '',
+      supportPlannerClientId: tenant.supportPlannerClientId || '',
+      supportPlannerHasClientSecret: !!tenant.supportPlannerClientSecret,
       supportPlannerPlanId: tenant.supportPlannerPlanId,
       supportPlannerPlanTitle: tenant.supportPlannerPlanTitle,
       supportPlannerPlanWebUrl: tenant.supportPlannerPlanWebUrl,
@@ -505,6 +542,9 @@ router.patch('/api/tenants/:tenantId/support-integrations', ensureAuthenticated,
 
     const {
       supportPlannerEnabled,
+      supportPlannerTenantId,
+      supportPlannerClientId,
+      supportPlannerClientSecret,
       supportPlannerPlanId,
       supportPlannerPlanTitle,
       supportPlannerPlanWebUrl,
@@ -516,6 +556,9 @@ router.patch('/api/tenants/:tenantId/support-integrations', ensureAuthenticated,
 
     const updates: Partial<schema.Tenant> = {};
     if (supportPlannerEnabled !== undefined) updates.supportPlannerEnabled = supportPlannerEnabled;
+    if (supportPlannerTenantId !== undefined) updates.supportPlannerTenantId = supportPlannerTenantId || null;
+    if (supportPlannerClientId !== undefined) updates.supportPlannerClientId = supportPlannerClientId || null;
+    if (supportPlannerClientSecret !== undefined) updates.supportPlannerClientSecret = supportPlannerClientSecret || null;
     if (supportPlannerPlanId !== undefined) updates.supportPlannerPlanId = supportPlannerPlanId;
     if (supportPlannerPlanTitle !== undefined) updates.supportPlannerPlanTitle = supportPlannerPlanTitle;
     if (supportPlannerPlanWebUrl !== undefined) updates.supportPlannerPlanWebUrl = supportPlannerPlanWebUrl;
@@ -525,7 +568,20 @@ router.patch('/api/tenants/:tenantId/support-integrations', ensureAuthenticated,
     if (showChangelogOnLogin !== undefined) updates.showChangelogOnLogin = showChangelogOnLogin;
 
     const updated = await storage.updateTenant(tenantId, updates);
-    res.json(updated);
+    if (!updated) return res.status(404).json({ error: 'Tenant not found' });
+    res.json({
+      supportPlannerEnabled: updated.supportPlannerEnabled,
+      supportPlannerTenantId: updated.supportPlannerTenantId || '',
+      supportPlannerClientId: updated.supportPlannerClientId || '',
+      supportPlannerHasClientSecret: !!updated.supportPlannerClientSecret,
+      supportPlannerPlanId: updated.supportPlannerPlanId,
+      supportPlannerPlanTitle: updated.supportPlannerPlanTitle,
+      supportPlannerPlanWebUrl: updated.supportPlannerPlanWebUrl,
+      supportPlannerGroupId: updated.supportPlannerGroupId,
+      supportPlannerGroupName: updated.supportPlannerGroupName,
+      supportPlannerBucketName: updated.supportPlannerBucketName || 'Support Tickets',
+      showChangelogOnLogin: updated.showChangelogOnLogin ?? true,
+    });
   } catch (error) {
     res.status(500).json({ error: 'Failed to update integrations' });
   }
@@ -720,22 +776,22 @@ async function syncTicketToPlanner(ticket: schema.SupportTicket, user: schema.Us
 }
 
 async function syncTicketToPlannerInternal(ticket: schema.SupportTicket, user: schema.User | undefined, tenant: schema.Tenant) {
-  if (!tenant.supportPlannerEnabled || !tenant.supportPlannerPlanId || !isPlannerConfigured()) return;
+  if (!tenant.supportPlannerEnabled || !tenant.supportPlannerPlanId || !plannerService.isConfigured(tenant)) return;
 
   try {
     const bucketName = tenant.supportPlannerBucketName || 'Support Tickets';
-    const bucket = await plannerService.getOrCreateBucket(tenant.supportPlannerPlanId, bucketName);
+    const bucket = await plannerService.getOrCreateBucket(tenant.supportPlannerPlanId, bucketName, tenant);
     const taskTitle = `[#${ticket.ticketNumber}] ${ticket.subject}`;
 
     const task = await plannerService.createTask({
       planId: tenant.supportPlannerPlanId,
       bucketId: bucket.id,
       title: taskTitle,
-    });
+    }, tenant);
 
-    const details = await plannerService.getTaskDetails(task.id);
+    const details = await plannerService.getTaskDetails(task.id, tenant);
     const description = `Priority: ${ticket.priority}\nCategory: ${ticket.category}\nSubmitted by: ${user?.name || user?.username || 'Unknown'}\nTenant: ${tenant.name}`;
-    await plannerService.updateTaskDetails(task.id, details['@odata.etag']!, description);
+    await plannerService.updateTaskDetails(task.id, details['@odata.etag']!, description, tenant);
 
     await storage.createSupportTicketPlannerSync({
       ticketId: ticket.id,
@@ -769,9 +825,15 @@ async function markPlannerTaskComplete(ticket: schema.SupportTicket) {
   const syncRecord = await storage.getSupportTicketPlannerSync(ticket.id);
   if (!syncRecord || syncRecord.syncStatus !== 'synced' || syncRecord.taskId === 'sync-failed') return;
 
+  let tenantConfig = null;
+  if (ticket.tenantId) {
+    const tenant = await storage.getTenant(ticket.tenantId);
+    if (tenant) tenantConfig = tenant;
+  }
+
   try {
-    const task = await plannerService.getTaskWithDetails(syncRecord.taskId);
-    await plannerService.updateTask(syncRecord.taskId, task['@odata.etag']!, { percentComplete: 100 });
+    const task = await plannerService.getTaskWithDetails(syncRecord.taskId, tenantConfig);
+    await plannerService.updateTask(syncRecord.taskId, task['@odata.etag']!, { percentComplete: 100 }, tenantConfig);
 
     await storage.updateSupportTicketPlannerSync(syncRecord.id, {
       syncStatus: 'completed',

@@ -42,6 +42,9 @@ interface PlannerPlan {
 
 interface SupportIntegrations {
   supportPlannerEnabled: boolean;
+  supportPlannerTenantId: string;
+  supportPlannerClientId: string;
+  supportPlannerHasClientSecret: boolean;
   supportPlannerPlanId: string | null;
   supportPlannerPlanTitle: string | null;
   supportPlannerPlanWebUrl: string | null;
@@ -147,10 +150,10 @@ function TenantSupportSettings({ tenantId }: { tenantId: string }) {
 function PlannerSettings({ tenantId }: { tenantId: string }) {
   const { toast } = useToast();
   const [selectedGroupId, setSelectedGroupId] = useState<string>("");
-
-  const { data: plannerStatus } = useQuery<PlannerStatusResponse>({
-    queryKey: ["/api/planner/status"],
-  });
+  const [localTenantId, setLocalTenantId] = useState("");
+  const [localClientId, setLocalClientId] = useState("");
+  const [localClientSecret, setLocalClientSecret] = useState("");
+  const [credsInitialized, setCredsInitialized] = useState(false);
 
   const { data: integrations, isLoading: intLoading } = useQuery<SupportIntegrations>({
     queryKey: ["/api/tenants", tenantId, "support-integrations"],
@@ -162,15 +165,37 @@ function PlannerSettings({ tenantId }: { tenantId: string }) {
     enabled: !!tenantId,
   });
 
+  if (integrations && !credsInitialized) {
+    setLocalTenantId(integrations.supportPlannerTenantId || "");
+    setLocalClientId(integrations.supportPlannerClientId || "");
+    setLocalClientSecret("");
+    setCredsInitialized(true);
+  }
+
+  const { data: plannerStatus, refetch: refetchStatus } = useQuery<PlannerStatusResponse>({
+    queryKey: ["/api/planner/status", tenantId],
+    queryFn: async () => {
+      const res = await fetch(`/api/planner/status?tenantId=${tenantId}`);
+      if (!res.ok) throw new Error("Failed to check status");
+      return res.json();
+    },
+    enabled: !!tenantId,
+  });
+
   const { data: groups = [] } = useQuery<PlannerGroup[]>({
-    queryKey: ["/api/planner/groups"],
+    queryKey: ["/api/planner/groups", tenantId],
+    queryFn: async () => {
+      const res = await fetch(`/api/planner/groups?tenantId=${tenantId}`);
+      if (!res.ok) throw new Error("Failed to load groups");
+      return res.json();
+    },
     enabled: plannerStatus?.connected === true,
   });
 
   const { data: plans = [] } = useQuery<PlannerPlan[]>({
-    queryKey: ["/api/planner/groups", selectedGroupId, "plans"],
+    queryKey: ["/api/planner/groups", selectedGroupId, "plans", tenantId],
     queryFn: async () => {
-      const res = await fetch(`/api/planner/groups/${selectedGroupId}/plans`);
+      const res = await fetch(`/api/planner/groups/${selectedGroupId}/plans?tenantId=${tenantId}`);
       if (!res.ok) throw new Error("Failed to load plans");
       return res.json();
     },
@@ -178,11 +203,13 @@ function PlannerSettings({ tenantId }: { tenantId: string }) {
   });
 
   const updateMutation = useMutation({
-    mutationFn: async (updates: Partial<SupportIntegrations>) => {
+    mutationFn: async (updates: Record<string, any>) => {
       return await apiRequest(`/api/tenants/${tenantId}/support-integrations`, "PATCH", updates);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/tenants", tenantId, "support-integrations"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/planner/status", tenantId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/planner/groups", tenantId] });
       toast({ title: "Planner settings updated" });
     },
     onError: () => {
@@ -206,6 +233,18 @@ function PlannerSettings({ tenantId }: { tenantId: string }) {
     return <div className="animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full mx-auto" />;
   }
 
+  const handleSaveCredentials = () => {
+    const updates: Record<string, any> = {
+      supportPlannerTenantId: localTenantId || "",
+      supportPlannerClientId: localClientId || "",
+    };
+    if (localClientSecret) {
+      updates.supportPlannerClientSecret = localClientSecret;
+    }
+    updateMutation.mutate(updates);
+    setLocalClientSecret("");
+  };
+
   const handleSelectPlan = (plan: PlannerPlan) => {
     const group = groups.find(g => g.id === selectedGroupId);
     updateMutation.mutate({
@@ -217,6 +256,8 @@ function PlannerSettings({ tenantId }: { tenantId: string }) {
     });
   };
 
+  const hasPerTenantCreds = !!(integrations?.supportPlannerTenantId && integrations?.supportPlannerClientId && integrations?.supportPlannerHasClientSecret);
+
   return (
     <Card>
       <CardHeader>
@@ -225,9 +266,61 @@ function PlannerSettings({ tenantId }: { tenantId: string }) {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
+        <div className="space-y-3">
+          <p className="text-sm font-medium">Entra ID App Registration</p>
+          <p className="text-xs text-muted-foreground">
+            Each tenant can connect their own Azure AD app registration for Planner access. The app needs <code>Tasks.ReadWrite.All</code> and <code>Group.Read.All</code> application permissions with admin consent.
+            {!hasPerTenantCreds && " Falls back to global credentials if not set."}
+          </p>
+          <div className="space-y-2">
+            <div>
+              <label className="text-xs text-muted-foreground block mb-1">Azure AD Tenant ID</label>
+              <Input
+                value={localTenantId}
+                onChange={(e) => setLocalTenantId(e.target.value)}
+                placeholder="e.g. 0fc6ac5c-d5e5-4855-b3b2-e8d80ca7884e"
+                data-testid="input-planner-tenant-id"
+              />
+            </div>
+            <div>
+              <label className="text-xs text-muted-foreground block mb-1">Application (Client) ID</label>
+              <Input
+                value={localClientId}
+                onChange={(e) => setLocalClientId(e.target.value)}
+                placeholder="e.g. 12345678-abcd-efgh-ijkl-123456789012"
+                data-testid="input-planner-client-id"
+              />
+            </div>
+            <div>
+              <label className="text-xs text-muted-foreground block mb-1">
+                Client Secret {integrations?.supportPlannerHasClientSecret && <span className="text-green-600">(saved)</span>}
+              </label>
+              <Input
+                type="password"
+                value={localClientSecret}
+                onChange={(e) => setLocalClientSecret(e.target.value)}
+                placeholder={integrations?.supportPlannerHasClientSecret ? "Leave blank to keep existing" : "Enter client secret"}
+                data-testid="input-planner-client-secret"
+              />
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleSaveCredentials}
+              disabled={updateMutation.isPending || (!localTenantId && !localClientId)}
+              className="gap-2"
+              data-testid="button-save-planner-credentials"
+            >
+              Save Credentials
+            </Button>
+          </div>
+        </div>
+
+        <div className="border-t pt-4" />
+
         {!plannerStatus?.configured && (
           <p className="text-sm text-muted-foreground">
-            Planner integration requires PLANNER_TENANT_ID, PLANNER_CLIENT_ID, and PLANNER_CLIENT_SECRET environment variables to be configured.
+            Enter per-tenant Entra ID credentials above, or set global PLANNER_TENANT_ID, PLANNER_CLIENT_ID, and PLANNER_CLIENT_SECRET environment variables.
           </p>
         )}
 
@@ -242,7 +335,7 @@ function PlannerSettings({ tenantId }: { tenantId: string }) {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => queryClient.invalidateQueries({ queryKey: ["/api/planner/status"] })}
+              onClick={() => refetchStatus()}
               className="gap-2"
               data-testid="button-test-planner-connection"
             >
@@ -252,6 +345,7 @@ function PlannerSettings({ tenantId }: { tenantId: string }) {
             <Badge variant={plannerStatus?.connected ? "default" : "destructive"} className="text-xs">
               {plannerStatus?.connected ? "Connected" : "Disconnected"}
             </Badge>
+            {hasPerTenantCreds && <Badge variant="outline" className="text-xs">Per-Tenant Credentials</Badge>}
           </div>
         )}
 
@@ -438,7 +532,7 @@ export function SupportManagement() {
         {effectiveTenantId ? (
           <>
             <TenantSupportSettings tenantId={effectiveTenantId} />
-            <PlannerSettings tenantId={effectiveTenantId} />
+            <PlannerSettings key={effectiveTenantId} tenantId={effectiveTenantId} />
           </>
         ) : (
           <Card>

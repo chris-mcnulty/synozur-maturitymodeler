@@ -1,31 +1,37 @@
 import { ConfidentialClientApplication } from '@azure/msal-node';
 
-let msalInstance: ConfidentialClientApplication | null = null;
+export interface PlannerCredentials {
+  tenantId: string;
+  clientId: string;
+  clientSecret: string;
+}
 
-function getMsalInstance(): ConfidentialClientApplication {
-  if (msalInstance) return msalInstance;
+const msalCache = new Map<string, { instance: ConfidentialClientApplication; secretHash: string }>();
 
-  const tenantId = process.env.PLANNER_TENANT_ID;
-  const clientId = process.env.PLANNER_CLIENT_ID;
-  const clientSecret = process.env.PLANNER_CLIENT_SECRET;
+function hashSecret(secret: string): string {
+  return secret.slice(0, 4) + ':' + secret.length;
+}
 
-  if (!tenantId || !clientId || !clientSecret) {
-    throw new Error('Planner credentials not configured: PLANNER_TENANT_ID, PLANNER_CLIENT_ID, PLANNER_CLIENT_SECRET required');
-  }
+function getMsalInstance(creds: PlannerCredentials): ConfidentialClientApplication {
+  const cacheKey = `${creds.tenantId}:${creds.clientId}`;
+  const currentHash = hashSecret(creds.clientSecret);
+  const cached = msalCache.get(cacheKey);
+  if (cached && cached.secretHash === currentHash) return cached.instance;
 
-  msalInstance = new ConfidentialClientApplication({
+  const instance = new ConfidentialClientApplication({
     auth: {
-      clientId,
-      authority: `https://login.microsoftonline.com/${tenantId}`,
-      clientSecret,
+      clientId: creds.clientId,
+      authority: `https://login.microsoftonline.com/${creds.tenantId}`,
+      clientSecret: creds.clientSecret,
     },
   });
 
-  return msalInstance;
+  msalCache.set(cacheKey, { instance, secretHash: currentHash });
+  return instance;
 }
 
-async function getAccessToken(): Promise<string> {
-  const msal = getMsalInstance();
+async function getAccessToken(creds: PlannerCredentials): Promise<string> {
+  const msal = getMsalInstance(creds);
   const result = await msal.acquireTokenByClientCredential({
     scopes: ['https://graph.microsoft.com/.default'],
   });
@@ -37,8 +43,8 @@ async function getAccessToken(): Promise<string> {
   return result.accessToken;
 }
 
-export async function graphFetch(url: string, options: RequestInit = {}): Promise<any> {
-  const token = await getAccessToken();
+export async function graphFetch(url: string, creds: PlannerCredentials, options: RequestInit = {}): Promise<any> {
+  const token = await getAccessToken(creds);
 
   const response = await fetch(`https://graph.microsoft.com/v1.0${url}`, {
     ...options,
@@ -63,6 +69,16 @@ export async function graphFetch(url: string, options: RequestInit = {}): Promis
   return null;
 }
 
+export function getGlobalCredentials(): PlannerCredentials | null {
+  const tenantId = process.env.PLANNER_TENANT_ID;
+  const clientId = process.env.PLANNER_CLIENT_ID;
+  const clientSecret = process.env.PLANNER_CLIENT_SECRET;
+
+  if (!tenantId || !clientId || !clientSecret) return null;
+
+  return { tenantId, clientId, clientSecret };
+}
+
 export function isPlannerConfigured(): boolean {
-  return !!(process.env.PLANNER_TENANT_ID && process.env.PLANNER_CLIENT_ID && process.env.PLANNER_CLIENT_SECRET);
+  return !!getGlobalCredentials();
 }

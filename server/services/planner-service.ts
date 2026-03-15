@@ -1,4 +1,4 @@
-import { graphFetch, isPlannerConfigured } from './planner-graph-client';
+import { graphFetch, getGlobalCredentials, type PlannerCredentials } from './planner-graph-client';
 
 export interface PlannerGroup {
   id: string;
@@ -33,33 +33,59 @@ export interface PlannerTaskDetails {
   '@odata.etag'?: string;
 }
 
+export interface TenantPlannerConfig {
+  supportPlannerTenantId?: string | null;
+  supportPlannerClientId?: string | null;
+  supportPlannerClientSecret?: string | null;
+}
+
+export function resolvePlannerCredentials(tenant?: TenantPlannerConfig | null): PlannerCredentials | null {
+  if (tenant?.supportPlannerTenantId && tenant?.supportPlannerClientId && tenant?.supportPlannerClientSecret) {
+    return {
+      tenantId: tenant.supportPlannerTenantId,
+      clientId: tenant.supportPlannerClientId,
+      clientSecret: tenant.supportPlannerClientSecret,
+    };
+  }
+  return getGlobalCredentials();
+}
+
 class PlannerService {
-  isAppConfigured(): boolean {
-    return isPlannerConfigured();
+  isConfigured(tenant?: TenantPlannerConfig | null): boolean {
+    return !!resolvePlannerCredentials(tenant);
   }
 
-  async testConnection(): Promise<{ success: boolean; message: string }> {
+  private requireCreds(tenant?: TenantPlannerConfig | null): PlannerCredentials {
+    const creds = resolvePlannerCredentials(tenant);
+    if (!creds) throw new Error('Planner credentials not configured');
+    return creds;
+  }
+
+  async testConnection(tenant?: TenantPlannerConfig | null): Promise<{ success: boolean; message: string }> {
     try {
-      if (!this.isAppConfigured()) {
-        return { success: false, message: 'Planner credentials not configured' };
+      const creds = resolvePlannerCredentials(tenant);
+      if (!creds) {
+        return { success: false, message: 'Planner credentials not configured. Set per-tenant credentials or global PLANNER_TENANT_ID, PLANNER_CLIENT_ID, PLANNER_CLIENT_SECRET.' };
       }
-      await graphFetch('/groups?$top=1&$select=id');
+      await graphFetch('/groups?$top=1&$select=id', creds);
       return { success: true, message: 'Connection successful' };
     } catch (error: any) {
       return { success: false, message: error.message || 'Connection failed' };
     }
   }
 
-  async listMyGroups(): Promise<PlannerGroup[]> {
-    const result = await graphFetch('/groups?$select=id,displayName&$top=100');
+  async listMyGroups(tenant?: TenantPlannerConfig | null): Promise<PlannerGroup[]> {
+    const creds = this.requireCreds(tenant);
+    const result = await graphFetch('/groups?$select=id,displayName&$top=100', creds);
     return (result?.value || []).map((g: any) => ({
       id: g.id,
       displayName: g.displayName,
     }));
   }
 
-  async getPlansForGroup(groupId: string): Promise<PlannerPlan[]> {
-    const result = await graphFetch(`/groups/${groupId}/planner/plans?$select=id,title,owner`);
+  async getPlansForGroup(groupId: string, tenant?: TenantPlannerConfig | null): Promise<PlannerPlan[]> {
+    const creds = this.requireCreds(tenant);
+    const result = await graphFetch(`/groups/${groupId}/planner/plans?$select=id,title,owner`, creds);
     return (result?.value || []).map((p: any) => ({
       id: p.id,
       title: p.title,
@@ -68,8 +94,9 @@ class PlannerService {
     }));
   }
 
-  async getOrCreateBucket(planId: string, bucketName: string): Promise<PlannerBucket> {
-    const result = await graphFetch(`/planner/plans/${planId}/buckets`);
+  async getOrCreateBucket(planId: string, bucketName: string, tenant?: TenantPlannerConfig | null): Promise<PlannerBucket> {
+    const creds = this.requireCreds(tenant);
+    const result = await graphFetch(`/planner/plans/${planId}/buckets`, creds);
     const buckets = result?.value || [];
 
     const existing = buckets.find((b: any) => b.name === bucketName);
@@ -77,7 +104,7 @@ class PlannerService {
       return { id: existing.id, name: existing.name, planId: existing.planId };
     }
 
-    const created = await graphFetch('/planner/buckets', {
+    const created = await graphFetch('/planner/buckets', creds, {
       method: 'POST',
       body: JSON.stringify({ name: bucketName, planId, orderHint: ' !' }),
     });
@@ -85,8 +112,9 @@ class PlannerService {
     return { id: created.id, name: created.name, planId: created.planId };
   }
 
-  async createTask(options: { planId: string; bucketId: string; title: string }): Promise<PlannerTask> {
-    const task = await graphFetch('/planner/tasks', {
+  async createTask(options: { planId: string; bucketId: string; title: string }, tenant?: TenantPlannerConfig | null): Promise<PlannerTask> {
+    const creds = this.requireCreds(tenant);
+    const task = await graphFetch('/planner/tasks', creds, {
       method: 'POST',
       body: JSON.stringify({
         planId: options.planId,
@@ -105,8 +133,9 @@ class PlannerService {
     };
   }
 
-  async getTaskDetails(taskId: string): Promise<PlannerTaskDetails> {
-    const details = await graphFetch(`/planner/tasks/${taskId}/details`);
+  async getTaskDetails(taskId: string, tenant?: TenantPlannerConfig | null): Promise<PlannerTaskDetails> {
+    const creds = this.requireCreds(tenant);
+    const details = await graphFetch(`/planner/tasks/${taskId}/details`, creds);
     return {
       id: details.id,
       description: details.description || '',
@@ -114,18 +143,20 @@ class PlannerService {
     };
   }
 
-  async updateTaskDetails(taskId: string, etag: string, description: string): Promise<void> {
-    await graphFetch(`/planner/tasks/${taskId}/details`, {
+  async updateTaskDetails(taskId: string, etag: string, description: string, tenant?: TenantPlannerConfig | null): Promise<void> {
+    const creds = this.requireCreds(tenant);
+    await graphFetch(`/planner/tasks/${taskId}/details`, creds, {
       method: 'PATCH',
       headers: { 'If-Match': etag },
       body: JSON.stringify({ description }),
     });
   }
 
-  async getTaskWithDetails(taskId: string): Promise<PlannerTask & { description: string }> {
+  async getTaskWithDetails(taskId: string, tenant?: TenantPlannerConfig | null): Promise<PlannerTask & { description: string }> {
+    const creds = this.requireCreds(tenant);
     const [task, details] = await Promise.all([
-      graphFetch(`/planner/tasks/${taskId}`),
-      this.getTaskDetails(taskId),
+      graphFetch(`/planner/tasks/${taskId}`, creds),
+      this.getTaskDetails(taskId, tenant),
     ]);
 
     return {
@@ -139,8 +170,9 @@ class PlannerService {
     };
   }
 
-  async updateTask(taskId: string, etag: string, updates: Partial<{ title: string; percentComplete: number }>): Promise<void> {
-    await graphFetch(`/planner/tasks/${taskId}`, {
+  async updateTask(taskId: string, etag: string, updates: Partial<{ title: string; percentComplete: number }>, tenant?: TenantPlannerConfig | null): Promise<void> {
+    const creds = this.requireCreds(tenant);
+    await graphFetch(`/planner/tasks/${taskId}`, creds, {
       method: 'PATCH',
       headers: { 'If-Match': etag },
       body: JSON.stringify(updates),
