@@ -145,7 +145,7 @@ export interface IStorage {
   // Support Ticket Planner Sync methods
   createSupportTicketPlannerSync(sync: schema.InsertSupportTicketPlannerSync): Promise<schema.SupportTicketPlannerSync>;
   getSupportTicketPlannerSync(ticketId: string): Promise<schema.SupportTicketPlannerSync | undefined>;
-  getUnsyncedTickets(tenantId: string): Promise<schema.SupportTicket[]>;
+  getUnsyncedTickets(tenantId?: string): Promise<schema.SupportTicket[]>;
   updateSupportTicketPlannerSync(id: string, data: Partial<schema.SupportTicketPlannerSync>): Promise<schema.SupportTicketPlannerSync | undefined>;
 }
 
@@ -788,14 +788,19 @@ export class DatabaseStorage implements IStorage {
     return sync;
   }
 
-  async getUnsyncedTickets(tenantId: string): Promise<schema.SupportTicket[]> {
-    const syncedTicketIds = db.select({ ticketId: schema.supportTicketPlannerSync.ticketId }).from(schema.supportTicketPlannerSync).where(eq(schema.supportTicketPlannerSync.tenantId, tenantId));
+  async getUnsyncedTickets(tenantId?: string): Promise<schema.SupportTicket[]> {
+    const conditions = [];
+    if (tenantId) {
+      const syncedTicketIds = db.select({ ticketId: schema.supportTicketPlannerSync.ticketId }).from(schema.supportTicketPlannerSync).where(eq(schema.supportTicketPlannerSync.tenantId, tenantId));
+      conditions.push(eq(schema.supportTickets.tenantId, tenantId));
+      conditions.push(sql`${schema.supportTickets.id} NOT IN (${syncedTicketIds})`);
+    } else {
+      const allSyncedTicketIds = db.select({ ticketId: schema.supportTicketPlannerSync.ticketId }).from(schema.supportTicketPlannerSync);
+      conditions.push(sql`${schema.supportTickets.id} NOT IN (${allSyncedTicketIds})`);
+    }
+    conditions.push(sql`${schema.supportTickets.status} IN ('open', 'in_progress')`);
     return db.select().from(schema.supportTickets)
-      .where(and(
-        eq(schema.supportTickets.tenantId, tenantId),
-        sql`${schema.supportTickets.id} NOT IN (${syncedTicketIds})`,
-        sql`${schema.supportTickets.status} IN ('open', 'in_progress')`
-      ))
+      .where(and(...conditions))
       .orderBy(schema.supportTickets.createdAt);
   }
 

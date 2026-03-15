@@ -27,6 +27,7 @@ interface PlannerStatusResponse {
   configured: boolean;
   connected: boolean;
   message?: string;
+  ssoTenantId?: string;
 }
 
 interface PlannerGroup {
@@ -40,23 +41,21 @@ interface PlannerPlan {
   webUrl?: string;
 }
 
+interface PlannerConfig {
+  enabled: boolean;
+  ssoTenantId: string | null;
+  planId: string | null;
+  planTitle: string | null;
+  planWebUrl: string | null;
+  groupId: string | null;
+  groupName: string | null;
+  bucketName: string;
+}
+
 interface SupportIntegrations {
-  supportPlannerEnabled: boolean;
-  supportPlannerPlanId: string | null;
-  supportPlannerPlanTitle: string | null;
-  supportPlannerPlanWebUrl: string | null;
-  supportPlannerGroupId: string | null;
-  supportPlannerGroupName: string | null;
-  supportPlannerBucketName: string | null;
   showChangelogOnLogin: boolean;
   ssoTenantId: string | null;
   ssoAdminConsentGranted: boolean;
-}
-
-interface PlannerStatusExtended extends PlannerStatusResponse {
-  needsConsent?: boolean;
-  ssoTenantId?: string;
-  adminConsentGranted?: boolean;
 }
 
 function getStatusColor(status: string) {
@@ -152,34 +151,34 @@ function TenantSupportSettings({ tenantId }: { tenantId: string }) {
   );
 }
 
-function PlannerSettings({ tenantId }: { tenantId: string }) {
+function PlannerSettings() {
   const { toast } = useToast();
   const [selectedGroupId, setSelectedGroupId] = useState<string>("");
+  const [ssoTenantIdInput, setSsoTenantIdInput] = useState<string>("");
 
-  const { data: integrations, isLoading: intLoading } = useQuery<SupportIntegrations>({
-    queryKey: ["/api/tenants", tenantId, "support-integrations"],
+  const { data: config, isLoading: configLoading } = useQuery<PlannerConfig>({
+    queryKey: ["/api/planner/config"],
     queryFn: async () => {
-      const res = await fetch(`/api/tenants/${tenantId}/support-integrations`);
-      if (!res.ok) throw new Error("Failed to load integrations");
+      const res = await fetch("/api/planner/config");
+      if (!res.ok) throw new Error("Failed to load config");
       return res.json();
     },
-    enabled: !!tenantId,
   });
 
-  const { data: plannerStatus, refetch: refetchStatus } = useQuery<PlannerStatusExtended>({
-    queryKey: ["/api/planner/status", tenantId],
+  const { data: plannerStatus, refetch: refetchStatus } = useQuery<PlannerStatusResponse>({
+    queryKey: ["/api/planner/status"],
     queryFn: async () => {
-      const res = await fetch(`/api/planner/status?tenantId=${tenantId}`);
+      const res = await fetch("/api/planner/status");
       if (!res.ok) throw new Error("Failed to check status");
       return res.json();
     },
-    enabled: !!tenantId,
+    enabled: !!config?.ssoTenantId,
   });
 
   const { data: groups = [] } = useQuery<PlannerGroup[]>({
-    queryKey: ["/api/planner/groups", tenantId],
+    queryKey: ["/api/planner/groups"],
     queryFn: async () => {
-      const res = await fetch(`/api/planner/groups?tenantId=${tenantId}`);
+      const res = await fetch("/api/planner/groups");
       if (!res.ok) throw new Error("Failed to load groups");
       return res.json();
     },
@@ -187,9 +186,9 @@ function PlannerSettings({ tenantId }: { tenantId: string }) {
   });
 
   const { data: plans = [] } = useQuery<PlannerPlan[]>({
-    queryKey: ["/api/planner/groups", selectedGroupId, "plans", tenantId],
+    queryKey: ["/api/planner/groups", selectedGroupId, "plans"],
     queryFn: async () => {
-      const res = await fetch(`/api/planner/groups/${selectedGroupId}/plans?tenantId=${tenantId}`);
+      const res = await fetch(`/api/planner/groups/${selectedGroupId}/plans`);
       if (!res.ok) throw new Error("Failed to load plans");
       return res.json();
     },
@@ -198,12 +197,12 @@ function PlannerSettings({ tenantId }: { tenantId: string }) {
 
   const updateMutation = useMutation({
     mutationFn: async (updates: Record<string, any>) => {
-      return await apiRequest(`/api/tenants/${tenantId}/support-integrations`, "PATCH", updates);
+      return await apiRequest("/api/planner/config", "PATCH", updates);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/tenants", tenantId, "support-integrations"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/planner/status", tenantId] });
-      queryClient.invalidateQueries({ queryKey: ["/api/planner/groups", tenantId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/planner/config"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/planner/status"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/planner/groups"] });
       toast({ title: "Planner settings updated" });
     },
     onError: () => {
@@ -213,7 +212,7 @@ function PlannerSettings({ tenantId }: { tenantId: string }) {
 
   const syncMutation = useMutation({
     mutationFn: async () => {
-      return await apiRequest(`/api/tenants/${tenantId}/support-integrations/sync-existing`, "POST");
+      return await apiRequest("/api/planner/sync-existing", "POST");
     },
     onSuccess: (data: { synced: number; failed: number; total: number }) => {
       toast({ title: "Sync complete", description: `${data.synced} synced, ${data.failed} failed of ${data.total} total.` });
@@ -223,22 +222,26 @@ function PlannerSettings({ tenantId }: { tenantId: string }) {
     },
   });
 
-  if (intLoading) {
+  if (configLoading) {
     return <div className="animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full mx-auto" />;
   }
 
   const handleSelectPlan = (plan: PlannerPlan) => {
     const group = groups.find(g => g.id === selectedGroupId);
     updateMutation.mutate({
-      supportPlannerPlanId: plan.id,
-      supportPlannerPlanTitle: plan.title,
-      supportPlannerPlanWebUrl: plan.webUrl || null,
-      supportPlannerGroupId: selectedGroupId,
-      supportPlannerGroupName: group?.displayName || null,
+      planId: plan.id,
+      planTitle: plan.title,
+      planWebUrl: plan.webUrl || null,
+      groupId: selectedGroupId,
+      groupName: group?.displayName || null,
     });
   };
 
-  const noSsoTenant = !integrations?.ssoTenantId;
+  const handleSaveSsoTenantId = () => {
+    if (ssoTenantIdInput.trim()) {
+      updateMutation.mutate({ ssoTenantId: ssoTenantIdInput.trim() });
+    }
+  };
 
   return (
     <Card>
@@ -249,19 +252,32 @@ function PlannerSettings({ tenantId }: { tenantId: string }) {
       </CardHeader>
       <CardContent className="space-y-4">
         <p className="text-xs text-muted-foreground">
-          Planner integration uses the same Entra ID app registration as SSO. When an organization grants admin consent, both SSO and Planner permissions are included automatically.
+          All support tickets sync to a single Synozur Planner board. Configure the Synozur Azure AD tenant ID and select the target plan below.
         </p>
 
-        {noSsoTenant && (
-          <div className="bg-muted/50 rounded-md p-3 text-sm space-y-1">
-            <p className="font-medium">No Azure AD association</p>
-            <p className="text-xs text-muted-foreground">
-              This tenant has no Azure AD tenant ID. A user from this organization must sign in via SSO first to establish the connection, or an admin must grant consent.
-            </p>
+        {!config?.ssoTenantId && (
+          <div className="space-y-2">
+            <label className="text-sm font-medium block">Synozur Azure AD Tenant ID</label>
+            <p className="text-xs text-muted-foreground">Enter the Azure AD tenant ID (GUID) for the Synozur organization. This is used to authenticate with Microsoft Planner.</p>
+            <div className="flex items-center gap-2">
+              <Input
+                value={ssoTenantIdInput}
+                onChange={(e) => setSsoTenantIdInput(e.target.value)}
+                placeholder="e.g. 12345678-abcd-1234-abcd-1234567890ab"
+                data-testid="input-planner-sso-tenant-id"
+              />
+              <Button size="sm" onClick={handleSaveSsoTenantId} disabled={!ssoTenantIdInput.trim()} data-testid="button-save-sso-tenant-id">Save</Button>
+            </div>
           </div>
         )}
 
-        {!noSsoTenant && !plannerStatus?.configured && (
+        {config?.ssoTenantId && (
+          <div className="bg-muted/50 rounded-md p-3 text-sm">
+            <span className="font-medium">Azure AD Tenant:</span> {config.ssoTenantId}
+          </div>
+        )}
+
+        {config?.ssoTenantId && !plannerStatus?.configured && (
           <div className="bg-muted/50 rounded-md p-3 text-sm space-y-1">
             <p className="font-medium">SSO app not configured</p>
             <p className="text-xs text-muted-foreground">
@@ -275,15 +291,13 @@ function PlannerSettings({ tenantId }: { tenantId: string }) {
             <p className="text-sm text-destructive">
               Connection failed: {plannerStatus.message}
             </p>
-            {!integrations?.ssoAdminConsentGranted && (
-              <p className="text-xs text-muted-foreground">
-                This may mean admin consent has not been granted for Planner permissions (Tasks.ReadWrite.All, Group.Read.All). Use the admin consent flow in the SSO settings to grant these permissions.
-              </p>
-            )}
+            <p className="text-xs text-muted-foreground">
+              This may mean admin consent has not been granted for Planner permissions (Tasks.ReadWrite.All, Group.Read.All). Grant admin consent for the Synozur Azure AD tenant.
+            </p>
           </div>
         )}
 
-        {!noSsoTenant && plannerStatus?.configured && (
+        {config?.ssoTenantId && plannerStatus?.configured && (
           <div className="flex items-center gap-2 flex-wrap">
             <Button
               variant="outline"
@@ -298,9 +312,6 @@ function PlannerSettings({ tenantId }: { tenantId: string }) {
             <Badge variant={plannerStatus?.connected ? "default" : "destructive"} className="text-xs">
               {plannerStatus?.connected ? "Connected" : "Disconnected"}
             </Badge>
-            {integrations?.ssoAdminConsentGranted && (
-              <Badge variant="outline" className="text-xs">Admin Consent Granted</Badge>
-            )}
           </div>
         )}
 
@@ -309,22 +320,22 @@ function PlannerSettings({ tenantId }: { tenantId: string }) {
             <div className="flex items-center justify-between gap-4">
               <div>
                 <p className="text-sm font-medium">Enable Planner Sync</p>
-                <p className="text-xs text-muted-foreground">Automatically create Planner tasks for new support tickets</p>
+                <p className="text-xs text-muted-foreground">Automatically create Planner tasks for all new support tickets</p>
               </div>
               <Switch
-                checked={integrations?.supportPlannerEnabled || false}
-                onCheckedChange={(checked) => updateMutation.mutate({ supportPlannerEnabled: checked })}
+                checked={config?.enabled || false}
+                onCheckedChange={(checked) => updateMutation.mutate({ enabled: checked })}
                 data-testid="switch-planner-enabled"
               />
             </div>
 
-            {integrations?.supportPlannerPlanId && (
+            {config?.planId && (
               <div className="bg-muted/50 rounded-md p-3 text-sm space-y-1">
-                <p><span className="font-medium">Group:</span> {integrations.supportPlannerGroupName}</p>
-                <p><span className="font-medium">Plan:</span> {integrations.supportPlannerPlanTitle}</p>
-                <p><span className="font-medium">Bucket:</span> {integrations.supportPlannerBucketName || "Support Tickets"}</p>
-                {integrations.supportPlannerPlanWebUrl && (
-                  <a href={integrations.supportPlannerPlanWebUrl} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline text-xs flex items-center gap-1">
+                <p><span className="font-medium">Group:</span> {config.groupName}</p>
+                <p><span className="font-medium">Plan:</span> {config.planTitle}</p>
+                <p><span className="font-medium">Bucket:</span> {config.bucketName || "Support Tickets"}</p>
+                {config.planWebUrl && (
+                  <a href={config.planWebUrl} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline text-xs flex items-center gap-1">
                     <ExternalLink className="h-3 w-3" /> Open in Planner
                   </a>
                 )}
@@ -350,7 +361,7 @@ function PlannerSettings({ tenantId }: { tenantId: string }) {
                   {plans.map((p) => (
                     <Button
                       key={p.id}
-                      variant={integrations?.supportPlannerPlanId === p.id ? "default" : "outline"}
+                      variant={config?.planId === p.id ? "default" : "outline"}
                       size="sm"
                       className="w-full justify-start"
                       onClick={() => handleSelectPlan(p)}
@@ -364,11 +375,11 @@ function PlannerSettings({ tenantId }: { tenantId: string }) {
             )}
 
             <BucketNameInput
-              value={integrations?.supportPlannerBucketName || "Support Tickets"}
-              onSave={(val) => updateMutation.mutate({ supportPlannerBucketName: val })}
+              value={config?.bucketName || "Support Tickets"}
+              onSave={(val) => updateMutation.mutate({ bucketName: val })}
             />
 
-            {integrations?.supportPlannerEnabled && integrations?.supportPlannerPlanId && (
+            {config?.enabled && config?.planId && (
               <Button
                 variant="outline"
                 size="sm"
@@ -470,31 +481,28 @@ export function SupportManagement() {
           <ArrowLeft className="h-4 w-4" /> Back to Tickets
         </Button>
 
-        {isGlobalAdmin && tenants.length > 0 && (
-          <div className="mb-4">
-            <label className="text-sm font-medium mb-1 block">Manage Integrations for Tenant</label>
-            <Select value={effectiveTenantId || ""} onValueChange={setSettingsTenantId}>
-              <SelectTrigger className="w-72" data-testid="select-settings-tenant"><SelectValue placeholder="Select a tenant..." /></SelectTrigger>
-              <SelectContent>
-                {tenants.map((t) => (
-                  <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        )}
+        {isGlobalAdmin && <PlannerSettings />}
 
-        {effectiveTenantId ? (
+        {(isGlobalAdmin || user?.tenantId) && (
           <>
-            <TenantSupportSettings tenantId={effectiveTenantId} />
-            <PlannerSettings key={effectiveTenantId} tenantId={effectiveTenantId} />
+            {isGlobalAdmin && tenants.length > 0 && (
+              <div className="mb-4">
+                <label className="text-sm font-medium mb-1 block">Tenant Changelog Settings</label>
+                <Select value={effectiveTenantId || ""} onValueChange={setSettingsTenantId}>
+                  <SelectTrigger className="w-72" data-testid="select-settings-tenant"><SelectValue placeholder="Select a tenant..." /></SelectTrigger>
+                  <SelectContent>
+                    {tenants.map((t) => (
+                      <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            {effectiveTenantId && (
+              <TenantSupportSettings tenantId={effectiveTenantId} />
+            )}
           </>
-        ) : (
-          <Card>
-            <CardContent className="py-8 text-center text-muted-foreground">
-              Please select a tenant to manage its support integration settings.
-            </CardContent>
-          </Card>
         )}
       </div>
     );
@@ -603,8 +611,8 @@ export function SupportManagement() {
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <h2 className="text-xl font-semibold">Support Tickets</h2>
         {(user?.tenantId || isGlobalAdmin) && (
-          <Button variant="outline" size="sm" onClick={() => setShowSettings(true)} className="gap-2" data-testid="button-planner-settings">
-            <Settings className="h-4 w-4" /> Planner Settings
+          <Button variant="outline" size="sm" onClick={() => setShowSettings(true)} className="gap-2" data-testid="button-support-settings">
+            <Settings className="h-4 w-4" /> Settings
           </Button>
         )}
       </div>

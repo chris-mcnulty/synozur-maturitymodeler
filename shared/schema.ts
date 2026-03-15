@@ -241,13 +241,6 @@ export const tenants = pgTable("tenants", {
   ssoTenantId: text("sso_tenant_id"), // Azure AD tenant ID (tid claim) for this organization
   ssoAdminConsentGranted: boolean("sso_admin_consent_granted").notNull().default(false), // Whether org-wide admin consent has been granted
   showChangelogOnLogin: boolean("show_changelog_on_login").notNull().default(true),
-  supportPlannerEnabled: boolean("support_planner_enabled").notNull().default(false),
-  supportPlannerPlanId: text("support_planner_plan_id"),
-  supportPlannerPlanTitle: text("support_planner_plan_title"),
-  supportPlannerPlanWebUrl: text("support_planner_plan_web_url"),
-  supportPlannerGroupId: text("support_planner_group_id"),
-  supportPlannerGroupName: text("support_planner_group_name"),
-  supportPlannerBucketName: text("support_planner_bucket_name"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 }, (table) => ({
