@@ -324,6 +324,12 @@ router.post('/api/support/tickets/:id/replies', ensureAuthenticated, async (req,
       isInternal: internalFlag,
     });
 
+    if (!internalFlag && user.id !== ticket.userId) {
+      sendReplyNotificationEmail(ticket, user, message.trim(), req).catch(err =>
+        console.error('[Support] Failed to send reply notification:', err)
+      );
+    }
+
     res.json(reply);
   } catch (error) {
     console.error('[Support] Create reply error:', error);
@@ -708,8 +714,15 @@ async function sendInternalNotification(user: schema.User, ticket: schema.Suppor
     const { client: sgMail, fromEmail } = await getUncachableSendGridClient();
     const baseUrl = `${req.protocol}://${req.get('host')}`;
 
-    const globalAdmins = (await storage.getAllUsers()).filter(u => u.role === 'global_admin' && u.email);
-    if (globalAdmins.length === 0) return;
+    const allUsers = await storage.getAllUsers();
+    const globalAdmins = allUsers.filter(u => u.role === 'global_admin' && u.email);
+
+    const tenantAdmins = ticket.tenantId
+      ? allUsers.filter(u => u.role === 'tenant_admin' && u.tenantId === ticket.tenantId && u.email && u.id !== user.id)
+      : [];
+
+    const recipients = [...globalAdmins, ...tenantAdmins];
+    if (recipients.length === 0) return;
 
     let tenantName = 'N/A';
     if (ticket.tenantId) {
@@ -717,9 +730,9 @@ async function sendInternalNotification(user: schema.User, ticket: schema.Suppor
       tenantName = tenant?.name || 'Unknown';
     }
 
-    for (const admin of globalAdmins) {
+    for (const recipient of recipients) {
       await sgMail.send({
-        to: admin.email!,
+        to: recipient.email!,
         from: fromEmail,
         subject: `[Orion Support] New Ticket #${ticket.ticketNumber}: ${escapeHtml(ticket.subject)}`,
         html: `
@@ -775,6 +788,43 @@ async function sendTicketClosedEmail(ticket: schema.SupportTicket, newStatus: st
     });
   } catch (error) {
     console.error('[Support Email] Closure email failed:', error);
+  }
+}
+
+async function sendReplyNotificationEmail(ticket: schema.SupportTicket, replier: schema.User, replyMessage: string, req: Request) {
+  try {
+    const ticketUser = await storage.getUser(ticket.userId);
+    if (!ticketUser?.email) return;
+
+    const { getUncachableSendGridClient } = await import('./sendgrid.js');
+    const { client: sgMail, fromEmail } = await getUncachableSendGridClient();
+    const baseUrl = `${req.protocol}://${req.get('host')}`;
+
+    const replierName = replier.name || replier.username || 'Support Team';
+    const truncatedMessage = replyMessage.length > 500 ? replyMessage.substring(0, 500) + '...' : replyMessage;
+
+    await sgMail.send({
+      to: ticketUser.email,
+      from: fromEmail,
+      subject: `New Reply on Ticket #${ticket.ticketNumber}: ${escapeHtml(ticket.subject)}`,
+      html: `
+        <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #810FFB;">New Reply on Your Ticket</h2>
+          <p>Hi ${escapeHtml(ticketUser.name || ticketUser.username)},</p>
+          <p>${escapeHtml(replierName)} has replied to your support ticket.</p>
+          <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+            <tr><td style="padding: 8px; font-weight: bold;">Ticket</td><td style="padding: 8px;">#${ticket.ticketNumber}</td></tr>
+            <tr><td style="padding: 8px; font-weight: bold;">Subject</td><td style="padding: 8px;">${escapeHtml(ticket.subject)}</td></tr>
+          </table>
+          <p><strong>Reply:</strong></p>
+          <p style="background: #f5f5f5; padding: 12px; border-radius: 4px;">${escapeHtml(truncatedMessage)}</p>
+          <p>View the full conversation at <a href="${baseUrl}/support">Orion Support</a>.</p>
+          <p style="color: #666; font-size: 14px;">- The Synozur Team</p>
+        </div>
+      `,
+    });
+  } catch (error) {
+    console.error('[Support Email] Reply notification failed:', error);
   }
 }
 
