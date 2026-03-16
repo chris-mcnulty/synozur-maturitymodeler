@@ -1822,6 +1822,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/user/assessment-history", ensureAuthenticated, async (req, res) => {
     try {
       const userId = req.user!.id;
+      console.log('[assessment-history] Fetching for user:', userId);
       const historyData = await db
         .select({
           assessmentId: schema.assessments.id,
@@ -1866,6 +1867,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         };
       });
 
+      console.log('[assessment-history] Returning', formatted.length, 'items for user', userId);
       res.json(formatted);
     } catch (error) {
       console.error('Failed to fetch user assessment history:', error);
