@@ -451,9 +451,8 @@ interface PlannerConfig {
 }
 
 async function getPlannerConfig(): Promise<PlannerConfig> {
-  const [enabled, ssoTenantId, planId, planTitle, planWebUrl, groupId, groupName, bucketName] = await Promise.all([
+  const [enabled, planId, planTitle, planWebUrl, groupId, groupName, bucketName] = await Promise.all([
     storage.getSetting('plannerEnabled'),
-    storage.getSetting('plannerSsoTenantId'),
     storage.getSetting('plannerPlanId'),
     storage.getSetting('plannerPlanTitle'),
     storage.getSetting('plannerPlanWebUrl'),
@@ -464,7 +463,7 @@ async function getPlannerConfig(): Promise<PlannerConfig> {
   const str = (v: any): string | null => (typeof v === 'string' && v) ? v : null;
   return {
     enabled: enabled?.value === true || enabled?.value === 'true',
-    ssoTenantId: str(ssoTenantId?.value),
+    ssoTenantId: process.env.AZURE_TENANT_ID || null,
     planId: str(planId?.value),
     planTitle: str(planTitle?.value),
     planWebUrl: str(planWebUrl?.value),
@@ -485,9 +484,8 @@ router.get('/api/planner/config', ensureAuthenticated, ensureGlobalAdmin, async 
 
 router.patch('/api/planner/config', ensureAuthenticated, ensureGlobalAdmin, async (req, res) => {
   try {
-    const { enabled, ssoTenantId, planId, planTitle, planWebUrl, groupId, groupName, bucketName } = req.body;
+    const { enabled, planId, planTitle, planWebUrl, groupId, groupName, bucketName } = req.body;
     if (enabled !== undefined) await storage.setSetting('plannerEnabled', enabled);
-    if (ssoTenantId !== undefined) await storage.setSetting('plannerSsoTenantId', ssoTenantId);
     if (planId !== undefined) await storage.setSetting('plannerPlanId', planId);
     if (planTitle !== undefined) await storage.setSetting('plannerPlanTitle', planTitle);
     if (planWebUrl !== undefined) await storage.setSetting('plannerPlanWebUrl', planWebUrl);
@@ -508,7 +506,7 @@ router.get('/api/planner/status', ensureAuthenticated, ensureGlobalAdmin, async 
       return res.json({
         configured: false,
         connected: false,
-        message: 'No Azure AD tenant ID configured for Planner. Set the Synozur Azure AD tenant ID first.',
+        message: 'AZURE_TENANT_ID environment variable is not set.',
       });
     }
     const canConnect = plannerService.canConnect(config.ssoTenantId);
@@ -535,7 +533,7 @@ router.get('/api/planner/groups', ensureAuthenticated, ensureGlobalAdmin, async 
   try {
     const config = await getPlannerConfig();
     if (!config.ssoTenantId) {
-      return res.status(400).json({ error: 'No Azure AD tenant ID configured for Planner' });
+      return res.status(400).json({ error: 'AZURE_TENANT_ID environment variable is not set' });
     }
     const groups = await plannerService.listMyGroups(config.ssoTenantId);
     res.json(groups);
@@ -548,7 +546,7 @@ router.get('/api/planner/groups/:groupId/plans', ensureAuthenticated, ensureGlob
   try {
     const config = await getPlannerConfig();
     if (!config.ssoTenantId) {
-      return res.status(400).json({ error: 'No Azure AD tenant ID configured for Planner' });
+      return res.status(400).json({ error: 'AZURE_TENANT_ID environment variable is not set' });
     }
     const plans = await plannerService.getPlansForGroup(req.params.groupId, config.ssoTenantId);
     res.json(plans);

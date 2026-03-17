@@ -27,7 +27,6 @@ interface PlannerStatusResponse {
   configured: boolean;
   connected: boolean;
   message?: string;
-  ssoTenantId?: string;
 }
 
 interface PlannerGroup {
@@ -43,7 +42,6 @@ interface PlannerPlan {
 
 interface PlannerConfig {
   enabled: boolean;
-  ssoTenantId: string | null;
   planId: string | null;
   planTitle: string | null;
   planWebUrl: string | null;
@@ -154,7 +152,6 @@ function TenantSupportSettings({ tenantId }: { tenantId: string }) {
 function PlannerSettings() {
   const { toast } = useToast();
   const [selectedGroupId, setSelectedGroupId] = useState<string>("");
-  const [ssoTenantIdInput, setSsoTenantIdInput] = useState<string>("");
 
   const { data: config, isLoading: configLoading } = useQuery<PlannerConfig>({
     queryKey: ["/api/planner/config"],
@@ -172,7 +169,7 @@ function PlannerSettings() {
       if (!res.ok) throw new Error("Failed to check status");
       return res.json();
     },
-    enabled: !!config?.ssoTenantId,
+    enabled: !!config,
   });
 
   const { data: groups = [] } = useQuery<PlannerGroup[]>({
@@ -237,12 +234,6 @@ function PlannerSettings() {
     });
   };
 
-  const handleSaveSsoTenantId = () => {
-    if (ssoTenantIdInput.trim()) {
-      updateMutation.mutate({ ssoTenantId: ssoTenantIdInput.trim() });
-    }
-  };
-
   return (
     <Card>
       <CardHeader>
@@ -252,37 +243,13 @@ function PlannerSettings() {
       </CardHeader>
       <CardContent className="space-y-4">
         <p className="text-xs text-muted-foreground">
-          All support tickets sync to a single Synozur Planner board. Configure the Synozur Azure AD tenant ID and select the target plan below.
+          All support tickets sync to a single Synozur Planner board. Select the target group and plan below.
         </p>
 
-        {!config?.ssoTenantId && (
-          <div className="space-y-2">
-            <label className="text-sm font-medium block">Synozur Azure AD Tenant ID</label>
-            <p className="text-xs text-muted-foreground">Enter the Azure AD tenant ID (GUID) for the Synozur organization. This is used to authenticate with Microsoft Planner.</p>
-            <div className="flex items-center gap-2">
-              <Input
-                value={ssoTenantIdInput}
-                onChange={(e) => setSsoTenantIdInput(e.target.value)}
-                placeholder="e.g. 12345678-abcd-1234-abcd-1234567890ab"
-                data-testid="input-planner-sso-tenant-id"
-              />
-              <Button size="sm" onClick={handleSaveSsoTenantId} disabled={!ssoTenantIdInput.trim()} data-testid="button-save-sso-tenant-id">Save</Button>
-            </div>
-          </div>
-        )}
-
-        {config?.ssoTenantId && (
-          <div className="bg-muted/50 rounded-md p-3 text-sm">
-            <span className="font-medium">Azure AD Tenant:</span> {config.ssoTenantId}
-          </div>
-        )}
-
-        {config?.ssoTenantId && !plannerStatus?.configured && (
+        {!plannerStatus?.configured && !plannerStatus?.connected && plannerStatus?.message && (
           <div className="bg-muted/50 rounded-md p-3 text-sm space-y-1">
-            <p className="font-medium">SSO app not configured</p>
-            <p className="text-xs text-muted-foreground">
-              The AZURE_CLIENT_ID and AZURE_CLIENT_SECRET environment variables must be set for Planner integration to work.
-            </p>
+            <p className="font-medium">Not configured</p>
+            <p className="text-xs text-muted-foreground">{plannerStatus.message}</p>
           </div>
         )}
 
@@ -292,12 +259,12 @@ function PlannerSettings() {
               Connection failed: {plannerStatus.message}
             </p>
             <p className="text-xs text-muted-foreground">
-              This may mean admin consent has not been granted for Planner permissions (Tasks.ReadWrite.All, Group.Read.All). Grant admin consent for the Synozur Azure AD tenant.
+              This may mean admin consent has not been granted for Planner permissions (Tasks.ReadWrite.All, Group.Read.All).
             </p>
           </div>
         )}
 
-        {config?.ssoTenantId && plannerStatus?.configured && (
+        {plannerStatus?.configured && (
           <div className="flex items-center gap-2 flex-wrap">
             <Button
               variant="outline"
