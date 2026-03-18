@@ -274,7 +274,6 @@ export function ModelCreationWizard({
   };
 
   const handleSaveAsDraft = () => {
-    const m = questions.length > 0 ? {} : {};
     toast({ title: "Saved as draft", description: `"${name}" is saved. You can continue editing it anytime.` });
     // Find and return the model
     queryClient.invalidateQueries({ queryKey: ["/api/admin/models"] });
