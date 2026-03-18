@@ -505,9 +505,10 @@ export default function Auth() {
         <div className="max-w-lg">
           <div className="mb-8">
             <img 
-              src={synozurLogo} 
-              alt="Synozur Logo" 
-              className="w-32 h-32 object-contain mb-4"
+              src={orionLogo} 
+              alt="Orion - Transformation AI" 
+              className="h-16 w-auto object-contain mb-4"
+              data-testid="img-auth-orion-logo"
             />
           </div>
           <h2 className="text-4xl font-bold mb-6">
