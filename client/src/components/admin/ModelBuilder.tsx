@@ -14,7 +14,8 @@ import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMe
 import { Plus, Edit, Trash, GripVertical, ChevronRight, Upload, X, ChevronDown, Copy, Check, Link, QrCode } from "lucide-react";
 import { ObjectUploader } from "@/components/ObjectUploader";
 import { QRCodeSVG } from "qrcode.react";
-import type { Model, Dimension, Question, Answer } from "@shared/schema";
+import { UnifiedQuestionEditor } from "@/components/admin/UnifiedQuestionEditor";
+import type { Model, Dimension, Question } from "@shared/schema";
 
 interface Tenant {
   id: string;
@@ -25,7 +26,6 @@ interface ModelBuilderProps {
   model: Model;
   dimensions: Dimension[];
   questions: Question[];
-  answers: Answer[];
   availableTenants: Tenant[];
   assignedTenantIds: string[];
   onUpdateModel: (updates: Partial<Model>) => void;
@@ -34,9 +34,8 @@ interface ModelBuilderProps {
   onEditDimension: (dimension: Dimension) => void;
   onDeleteDimension: (dimensionId: string) => void;
   onAddQuestion: (dimensionId?: string) => void;
-  onEditQuestion: (question: Question) => void;
+  onUpdateQuestion: (id: string, updates: Partial<Question>) => void;
   onDeleteQuestion: (questionId: string) => void;
-  onManageAnswers: (question: Question) => void;
   onGetUploadParameters: () => Promise<{ method: 'PUT'; url: string }>;
   onUploadComplete: (result: any) => void;
   onRemoveImage: () => void;
@@ -191,7 +190,6 @@ export function ModelBuilder({
   model,
   dimensions,
   questions,
-  answers,
   availableTenants,
   assignedTenantIds,
   onUpdateModel,
@@ -200,9 +198,8 @@ export function ModelBuilder({
   onEditDimension,
   onDeleteDimension,
   onAddQuestion,
-  onEditQuestion,
+  onUpdateQuestion,
   onDeleteQuestion,
-  onManageAnswers,
   onGetUploadParameters,
   onUploadComplete,
   onRemoveImage,
@@ -303,13 +300,6 @@ export function ModelBuilder({
   const getQuestionsForDimension = (dimensionId: string) => {
     return questions
       .filter((q) => q.dimensionId === dimensionId)
-      .sort((a, b) => a.order - b.order);
-  };
-
-  // Get answers for a specific question
-  const getAnswersForQuestion = (questionId: string) => {
-    return answers
-      .filter((a) => a.questionId === questionId)
       .sort((a, b) => a.order - b.order);
   };
 
@@ -706,87 +696,16 @@ export function ModelBuilder({
                           </div>
                         ) : (
                           <div className="space-y-2">
-                            {dimensionQuestions.map((question, qIndex) => {
-                              const questionAnswers = getAnswersForQuestion(question.id);
-                              
-                              return (
-                                <Card
-                                  key={question.id}
-                                  className="p-4"
-                                  data-testid={`question-card-${question.id}`}
-                                >
-                                  <div className="flex items-start gap-3">
-                                    <GripVertical className="h-4 w-4 text-muted-foreground mt-1" />
-                                    <div className="flex-1 space-y-3">
-                                      <div className="flex items-start justify-between gap-2">
-                                        <div className="flex-1">
-                                          <div className="flex items-center gap-2">
-                                            <span className="text-xs font-medium text-muted-foreground">
-                                              Q{qIndex + 1}
-                                            </span>
-                                            <span className="font-medium">{question.text}</span>
-                                          </div>
-                                          {question.placeholder && (
-                                            <p className="text-sm text-muted-foreground mt-1">
-                                              Placeholder: {question.placeholder}
-                                            </p>
-                                          )}
-                                        </div>
-                                        <Badge variant="outline" className="flex-shrink-0">
-                                          {questionAnswers.length} answers
-                                        </Badge>
-                                      </div>
-
-                                      {questionAnswers.length > 0 && (
-                                        <div className="space-y-1 pl-4 border-l-2">
-                                          {questionAnswers.map((answer) => (
-                                            <div
-                                              key={answer.id}
-                                              className="flex items-center gap-2 text-sm"
-                                            >
-                                              <ChevronRight className="h-3 w-3 text-muted-foreground" />
-                                              <span className="flex-1">{answer.text}</span>
-                                              <span className="text-xs text-muted-foreground">
-                                                {answer.score} pts
-                                              </span>
-                                            </div>
-                                          ))}
-                                        </div>
-                                      )}
-
-                                      <div className="flex gap-2">
-                                        <Button
-                                          variant="ghost"
-                                          size="sm"
-                                          onClick={() => onEditQuestion(question)}
-                                          data-testid={`button-edit-question-${question.id}`}
-                                        >
-                                          <Edit className="mr-2 h-3 w-3" />
-                                          Edit
-                                        </Button>
-                                        <Button
-                                          variant="ghost"
-                                          size="sm"
-                                          onClick={() => onManageAnswers(question)}
-                                          data-testid={`button-manage-answers-${question.id}`}
-                                        >
-                                          Manage Answers
-                                        </Button>
-                                        <Button
-                                          variant="ghost"
-                                          size="sm"
-                                          onClick={() => onDeleteQuestion(question.id)}
-                                          data-testid={`button-delete-question-${question.id}`}
-                                          aria-label="Delete question"
-                                        >
-                                          <Trash className="h-3 w-3" />
-                                        </Button>
-                                      </div>
-                                    </div>
-                                  </div>
-                                </Card>
-                              );
-                            })}
+                            {dimensionQuestions.map((question, qIndex) => (
+                              <UnifiedQuestionEditor
+                                key={question.id}
+                                question={question}
+                                dimensions={dimensions}
+                                onUpdateQuestion={onUpdateQuestion}
+                                onDeleteQuestion={onDeleteQuestion}
+                                questionIndex={qIndex}
+                              />
+                            ))}
                           </div>
                         )}
                       </div>
@@ -815,70 +734,16 @@ export function ModelBuilder({
                   </AccordionTrigger>
                   <AccordionContent className="px-4 pb-4">
                     <div className="space-y-2 pt-2">
-                      {getUngroupedQuestions().map((question, qIndex) => {
-                        const questionAnswers = getAnswersForQuestion(question.id);
-                        
-                        return (
-                          <Card
-                            key={question.id}
-                            className="p-4"
-                            data-testid={`question-card-${question.id}`}
-                          >
-                            <div className="flex items-start gap-3">
-                              <GripVertical className="h-4 w-4 text-muted-foreground mt-1" />
-                              <div className="flex-1 space-y-3">
-                                <div className="flex items-start justify-between gap-2">
-                                  <div className="flex-1">
-                                    <div className="flex items-center gap-2">
-                                      <span className="text-xs font-medium text-muted-foreground">
-                                        Q{qIndex + 1}
-                                      </span>
-                                      <span className="font-medium">{question.text}</span>
-                                    </div>
-                                    {question.placeholder && (
-                                      <p className="text-sm text-muted-foreground mt-1">
-                                        Placeholder: {question.placeholder}
-                                      </p>
-                                    )}
-                                  </div>
-                                  <Badge variant="outline" className="flex-shrink-0">
-                                    {questionAnswers.length} answers
-                                  </Badge>
-                                </div>
-
-                                <div className="flex gap-2">
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => onEditQuestion(question)}
-                                    data-testid={`button-edit-question-${question.id}`}
-                                  >
-                                    <Edit className="mr-2 h-3 w-3" />
-                                    Edit
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => onManageAnswers(question)}
-                                    data-testid={`button-manage-answers-${question.id}`}
-                                  >
-                                    Manage Answers
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => onDeleteQuestion(question.id)}
-                                    data-testid={`button-delete-question-${question.id}`}
-                                    aria-label="Delete question"
-                                  >
-                                    <Trash className="h-3 w-3" />
-                                  </Button>
-                                </div>
-                              </div>
-                            </div>
-                          </Card>
-                        );
-                      })}
+                      {getUngroupedQuestions().map((question, qIndex) => (
+                        <UnifiedQuestionEditor
+                          key={question.id}
+                          question={question}
+                          dimensions={dimensions}
+                          onUpdateQuestion={onUpdateQuestion}
+                          onDeleteQuestion={onDeleteQuestion}
+                          questionIndex={qIndex}
+                        />
+                      ))}
                     </div>
                   </AccordionContent>
                 </AccordionItem>

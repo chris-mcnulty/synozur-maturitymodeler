@@ -29,6 +29,7 @@ import { TenantManagement } from "@/components/admin/TenantManagement";
 import { OAuthApplications } from "@/components/admin/OAuthApplications";
 import { ImportExportPanel } from "@/components/admin/ImportExportPanel";
 import { ModelBuilder } from "@/components/admin/ModelBuilder";
+import { ModelCreationWizard } from "@/components/admin/ModelCreationWizard";
 import { TagManagement } from "@/components/admin/TagManagement";
 import { TrafficDashboard } from "@/components/admin/TrafficDashboard";
 import { AccessRequestsSection } from "@/components/admin/AccessRequestsSection";
@@ -472,6 +473,7 @@ export default function Admin() {
   const [editingModel, setEditingModel] = useState<Model | null>(null);
   const [isModelDialogOpen, setIsModelDialogOpen] = useState(false);
   const [isSettingsDialogOpen, setIsSettingsDialogOpen] = useState(false);
+  const [isWizardOpen, setIsWizardOpen] = useState(false);
   const [isQuestionDialogOpen, setIsQuestionDialogOpen] = useState(false);
   const [isDimensionDialogOpen, setIsDimensionDialogOpen] = useState(false);
   const [isAnswerDialogOpen, setIsAnswerDialogOpen] = useState(false);
@@ -787,6 +789,16 @@ export default function Admin() {
     }, 500);
     return () => clearTimeout(timer);
   }, [resultsStartDateInput]);
+
+  // Handle navigation events from Bulk Tools (and other child components)
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const section = (e as CustomEvent).detail as string;
+      if (section) setActiveSection(section);
+    };
+    window.addEventListener("admin:navigate", handler);
+    return () => window.removeEventListener("admin:navigate", handler);
+  }, []);
   
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -2340,7 +2352,7 @@ export default function Admin() {
                 <SidebarGroupContent>
                   <SidebarMenu>
                     <SidebarMenuItem>
-                      <SidebarMenuButton 
+                      <SidebarMenuButton
                         onClick={() => setActiveSection('models')}
                         isActive={activeSection === 'models'}
                         data-testid="tab-models"
@@ -2348,28 +2360,6 @@ export default function Admin() {
                       >
                         <Home className="h-4 w-4" />
                         <span className="group-data-[collapsible=icon]:hidden">All Models</span>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                    <SidebarMenuItem>
-                      <SidebarMenuButton 
-                        onClick={() => setActiveSection('dimensions')}
-                        isActive={activeSection === 'dimensions'}
-                        data-testid="tab-dimensions"
-                        tooltip="Dimensions"
-                      >
-                        <BarChart3 className="h-4 w-4" />
-                        <span className="group-data-[collapsible=icon]:hidden">Dimensions</span>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                    <SidebarMenuItem>
-                      <SidebarMenuButton 
-                        onClick={() => setActiveSection('questions')}
-                        isActive={activeSection === 'questions'}
-                        data-testid="tab-questions"
-                        tooltip="Questions"
-                      >
-                        <FileText className="h-4 w-4" />
-                        <span className="group-data-[collapsible=icon]:hidden">Questions</span>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
                   </SidebarMenu>
@@ -2455,14 +2445,14 @@ export default function Admin() {
               <SidebarGroupContent>
                 <SidebarMenu>
                   <SidebarMenuItem>
-                    <SidebarMenuButton 
+                    <SidebarMenuButton
                       onClick={() => setActiveSection('content')}
                       isActive={activeSection === 'content'}
                       data-testid="tab-content"
-                      tooltip="Content"
+                      tooltip="Bulk Tools"
                     >
                       <BookOpen className="h-4 w-4" />
-                      <span className="group-data-[collapsible=icon]:hidden">Content</span>
+                      <span className="group-data-[collapsible=icon]:hidden">Bulk Tools</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                   <SidebarMenuItem>
@@ -2670,15 +2660,12 @@ export default function Admin() {
                         <Upload className="mr-2 h-4 w-4" />
                         Import Model
                       </Button>
-                      <Button 
-                        onClick={() => {
-                          resetModelForm();
-                          setIsModelDialogOpen(true);
-                        }}
-                        data-testid="button-create-model"
+                      <Button
+                        onClick={() => setIsWizardOpen(true)}
+                        data-testid="button-create-model-wizard"
                       >
                         <Plus className="mr-2 h-4 w-4" />
-                        Create Model
+                        New Model
                       </Button>
                     </div>
                   </div>
@@ -2930,7 +2917,6 @@ export default function Admin() {
                     model={editingModel}
                     dimensions={dimensions.filter(d => d.modelId === editingModel.id)}
                     questions={questions.filter(q => q.modelId === editingModel.id)}
-                    answers={answers}
                     availableTenants={availableTenants}
                     assignedTenantIds={modelTenantAssignments.map(mt => mt.tenantId)}
                     onUpdateTenantAssignments={async (tenantIds) => {
@@ -3031,39 +3017,20 @@ export default function Admin() {
                       deleteDimension.mutate(dimensionId);
                     }}
                     onAddQuestion={(dimensionId) => {
-                      resetQuestionForm();
-                      setQuestionForm(prev => ({
-                        ...prev,
+                      // Directly create a new question instead of opening a (now-removed) dialog
+                      // Use the same mutation flow that is used elsewhere in the admin UI.
+                      // We provide minimal placeholder content so admins can immediately edit it.
+                      (createQuestion as any)?.mutate?.({
                         modelId: editingModel.id,
-                        dimensionId: dimensionId || '',
-                      }));
-                      setIsQuestionDialogOpen(true);
+                        dimensionId: dimensionId || "",
+                        text: "New question",
+                      } as any);
                     }}
-                    onEditQuestion={(question) => {
-                      setEditingQuestion(question);
-                      setQuestionForm({
-                        modelId: question.modelId,
-                        text: question.text,
-                        type: question.type as 'text' | 'multiple_choice' | 'multi_select' | 'numeric' | 'true_false',
-                        dimensionId: question.dimensionId || '',
-                        order: question.order,
-                        minValue: question.minValue || 0,
-                        maxValue: question.maxValue || 100,
-                        unit: question.unit || '',
-                        placeholder: question.placeholder || '',
-                        improvementStatement: question.improvementStatement || '',
-                        resourceLink: question.resourceLink || '',
-                        resourceTitle: question.resourceTitle || '',
-                        resourceDescription: question.resourceDescription || '',
-                      });
-                      setIsQuestionDialogOpen(true);
+                    onUpdateQuestion={(id, updates) => {
+                      updateQuestion.mutate({ ...updates, id } as any);
                     }}
                     onDeleteQuestion={(questionId) => {
                       deleteQuestion.mutate(questionId);
-                    }}
-                    onManageAnswers={(question) => {
-                      setEditingQuestion(question);
-                      setIsAnswerDialogOpen(true);
                     }}
                     onGetUploadParameters={handleGetUploadParameters}
                     onUploadComplete={handleUploadComplete}
@@ -3257,393 +3224,6 @@ export default function Admin() {
               </Card>
               )}
 
-              {activeSection === 'dimensions' && (
-              <Card className="p-6">
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center">
-                    <h2 className="text-xl font-bold">Dimension Management</h2>
-                  </div>
-                  
-                  <div className="flex items-center gap-4">
-                    <Label htmlFor="dimension-model-select">Select Model:</Label>
-                    <Select value={selectedModelId} onValueChange={setSelectedModelId}>
-                      <SelectTrigger id="dimension-model-select" className="w-64" data-testid="select-model-for-dimensions">
-                        <SelectValue placeholder="Choose a model" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {models.map((model) => (
-                          <SelectItem key={model.id} value={model.id}>
-                            {model.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    {selectedModelId && (
-                      <Button
-                        onClick={() => setIsDimensionDialogOpen(true)}
-                        data-testid="button-add-dimension"
-                      >
-                        <Plus className="mr-2 h-4 w-4" />
-                        Add Dimension
-                      </Button>
-                    )}
-                  </div>
-
-                  {selectedModelId ? (
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Label</TableHead>
-                          <TableHead>Key</TableHead>
-                          <TableHead>Description</TableHead>
-                          <TableHead>Order</TableHead>
-                          <TableHead className="text-right">Actions</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {dimensions.length === 0 ? (
-                          <TableRow>
-                            <TableCell colSpan={5} className="text-center">No dimensions found</TableCell>
-                          </TableRow>
-                        ) : (
-                          dimensions.map((dimension) => (
-                            <TableRow key={dimension.id}>
-                              <TableCell>{dimension.label}</TableCell>
-                              <TableCell>{dimension.key}</TableCell>
-                              <TableCell>{dimension.description}</TableCell>
-                              <TableCell>{dimension.order}</TableCell>
-                              <TableCell className="text-right">
-                                <div className="flex justify-end gap-2">
-                                  <AiAssistant
-                                    type="resources"
-                                    context={{
-                                      modelId: selectedModelId,
-                                      modelName: models.find(m => m.id === selectedModelId)?.name,
-                                      dimensionId: dimension.id,
-                                      dimensionLabel: dimension.label,
-                                    }}
-                                    onGenerated={(content) => {
-                                      toast({
-                                        title: "Resources Generated",
-                                        description: `Generated ${content.resources?.length || 0} resources for ${dimension.label}`,
-                                      });
-                                    }}
-                                    trigger={
-                                      <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        title="Generate resources with AI"
-                                        data-testid={`button-generate-resources-${dimension.id}`}
-                                      >
-                                        <FileSpreadsheet className="h-4 w-4" />
-                                      </Button>
-                                    }
-                                  />
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => {
-                                      setEditingDimension(dimension);
-                                      setDimensionForm({
-                                        label: dimension.label,
-                                        key: dimension.key,
-                                        description: dimension.description || '',
-                                        order: dimension.order
-                                      });
-                                      setIsDimensionDialogOpen(true);
-                                    }}
-                                    data-testid={`edit-dimension-${dimension.id}`}
-                                  >
-                                    <Edit className="h-4 w-4" />
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => {
-                                      if (confirm('Are you sure you want to delete this dimension?')) {
-                                        deleteDimension.mutate(dimension.id);
-                                      }
-                                    }}
-                                    data-testid={`delete-dimension-${dimension.id}`}
-                                  >
-                                    <Trash className="h-4 w-4" />
-                                  </Button>
-                                </div>
-                              </TableCell>
-                            </TableRow>
-                          ))
-                        )}
-                      </TableBody>
-                    </Table>
-                  ) : (
-                    <div className="text-center text-muted-foreground py-8">
-                      Select a model to manage its dimensions
-                    </div>
-                  )}
-                </div>
-              </Card>
-              )}
-
-              {activeSection === 'questions' && (
-              <Card className="p-6">
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center">
-                    <h2 className="text-xl font-bold">Question Management</h2>
-                  </div>
-                  
-                  <div className="flex items-center gap-4">
-                    <Label htmlFor="model-select">Select Model:</Label>
-                    <Select value={selectedModelId} onValueChange={setSelectedModelId}>
-                      <SelectTrigger id="model-select" className="w-64" data-testid="select-model-for-questions">
-                        <SelectValue placeholder="Choose a model" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {models.map((model) => (
-                          <SelectItem key={model.id} value={model.id}>
-                            {model.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    {selectedModelId && (
-                      <Button
-                        onClick={() => {
-                          resetQuestionForm();
-                          setIsQuestionDialogOpen(true);
-                        }}
-                        data-testid="button-add-question"
-                      >
-                        <Plus className="mr-2 h-4 w-4" />
-                        Add Question
-                      </Button>
-                    )}
-                  </div>
-
-                  {selectedModelId ? (
-                    <div className="space-y-6">
-                      {questionsLoading ? (
-                        <div className="text-center py-4">Loading questions...</div>
-                      ) : questions.length === 0 ? (
-                        <div className="text-center py-4">No questions found</div>
-                      ) : (
-                        // Group questions by dimension
-                        dimensions.sort((a, b) => a.order - b.order).map((dimension) => {
-                          const dimensionQuestions = questions
-                            .filter(q => q.dimensionId === dimension.id)
-                            .sort((a, b) => a.order - b.order);
-                          
-                          if (dimensionQuestions.length === 0) return null;
-                          
-                          return (
-                            <div key={dimension.id} className="space-y-2">
-                              <h3 className="text-lg font-semibold text-purple-600 dark:text-purple-400">
-                                {dimension.label}
-                              </h3>
-                              {dimension.description && (
-                                <p className="text-sm text-muted-foreground mb-2">{dimension.description}</p>
-                              )}
-                              <Table>
-                                <TableHeader>
-                                  <TableRow>
-                                    <TableHead className="w-8">#</TableHead>
-                                    <TableHead>Question</TableHead>
-                                    <TableHead>Type</TableHead>
-                                    <TableHead className="text-right">Actions</TableHead>
-                                  </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                  {dimensionQuestions.map((question, index) => (
-                                    <TableRow key={question.id} data-testid={`question-row-${question.id}`}>
-                                      <TableCell className="font-medium">{index + 1}</TableCell>
-                                      <TableCell className="font-medium">{question.text}</TableCell>
-                                      <TableCell>
-                                        <Badge variant={
-                                          question.type === 'numeric' ? 'secondary' : 
-                                          question.type === 'true_false' ? 'outline' :
-                                          question.type === 'text' ? 'secondary' :
-                                          question.type === 'multi_select' ? 'default' :
-                                          'default'
-                                        }>
-                                          {question.type === 'numeric' ? 'Numeric' : 
-                                           question.type === 'true_false' ? 'True/False' :
-                                           question.type === 'text' ? 'Text Input' :
-                                           question.type === 'multi_select' ? 'Multi-Select' :
-                                           'Multiple Choice'}
-                                        </Badge>
-                                      </TableCell>
-                                      <TableCell className="text-right">
-                                        <div className="flex justify-end gap-2">
-                                          {(question.type === 'multiple_choice' || question.type === 'multi_select') && (
-                                            <Button
-                                              variant="ghost"
-                                              size="icon"
-                                              onClick={() => {
-                                                setEditingQuestion(question);
-                                                setIsAnswerDialogOpen(true);
-                                              }}
-                                              data-testid={`manage-answers-${question.id}`}
-                                              title="Manage answer options"
-                                            >
-                                              <ListOrdered className="h-4 w-4" />
-                                            </Button>
-                                          )}
-                                          <Button
-                                            variant="ghost"
-                                            size="icon"
-                                            onClick={() => {
-                                              setEditingQuestion(question);
-                                              setQuestionForm({
-                                                modelId: question.modelId,
-                                                dimensionId: question.dimensionId ?? '',
-                                                text: question.text,
-                                                type: question.type as 'multiple_choice' | 'numeric' | 'true_false' | 'text',
-                                                order: question.order,
-                                                minValue: question.minValue ?? 1,
-                                                maxValue: question.maxValue ?? 10,
-                                                unit: question.unit ?? '',
-                                                placeholder: question.placeholder ?? '',
-                                                improvementStatement: question.improvementStatement ?? '',
-                                                resourceTitle: question.resourceTitle ?? '',
-                                                resourceLink: question.resourceLink ?? '',
-                                                resourceDescription: question.resourceDescription ?? ''
-                                              });
-                                              setIsQuestionDialogOpen(true);
-                                            }}
-                                            data-testid={`edit-question-${question.id}`}
-                                          >
-                                            <Edit className="h-4 w-4" />
-                                          </Button>
-                                          <Button
-                                            variant="ghost"
-                                            size="icon"
-                                            onClick={() => deleteQuestion.mutate(question.id)}
-                                            data-testid={`delete-question-${question.id}`}
-                                          >
-                                            <Trash className="h-4 w-4" />
-                                          </Button>
-                                        </div>
-                                      </TableCell>
-                                    </TableRow>
-                                  ))}
-                                </TableBody>
-                              </Table>
-                            </div>
-                          );
-                        })
-                      )}
-                      
-                      {/* Questions without dimensions */}
-                      {!questionsLoading && questions.length > 0 && (
-                        (() => {
-                          const orphanQuestions = questions
-                            .filter(q => !q.dimensionId || !dimensions.find(d => d.id === q.dimensionId))
-                            .sort((a, b) => a.order - b.order);
-                          
-                          if (orphanQuestions.length === 0) return null;
-                          
-                          return (
-                            <div className="space-y-2">
-                              <h3 className="text-lg font-semibold text-gray-600 dark:text-gray-400">
-                                Uncategorized Questions
-                              </h3>
-                              <Table>
-                                <TableHeader>
-                                  <TableRow>
-                                    <TableHead className="w-8">#</TableHead>
-                                    <TableHead>Question</TableHead>
-                                    <TableHead>Type</TableHead>
-                                    <TableHead className="text-right">Actions</TableHead>
-                                  </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                  {orphanQuestions.map((question, index) => (
-                                    <TableRow key={question.id} data-testid={`question-row-${question.id}`}>
-                                      <TableCell className="font-medium">{index + 1}</TableCell>
-                                      <TableCell className="font-medium">{question.text}</TableCell>
-                                      <TableCell>
-                                        <Badge variant={
-                                          question.type === 'numeric' ? 'secondary' : 
-                                          question.type === 'true_false' ? 'outline' :
-                                          question.type === 'text' ? 'secondary' :
-                                          question.type === 'multi_select' ? 'default' :
-                                          'default'
-                                        }>
-                                          {question.type === 'numeric' ? 'Numeric' : 
-                                           question.type === 'true_false' ? 'True/False' :
-                                           question.type === 'text' ? 'Text Input' :
-                                           question.type === 'multi_select' ? 'Multi-Select' :
-                                           'Multiple Choice'}
-                                        </Badge>
-                                      </TableCell>
-                                      <TableCell className="text-right">
-                                        <div className="flex justify-end gap-2">
-                                          {(question.type === 'multiple_choice' || question.type === 'multi_select') && (
-                                            <Button
-                                              variant="ghost"
-                                              size="icon"
-                                              onClick={() => {
-                                                setEditingQuestion(question);
-                                                setIsAnswerDialogOpen(true);
-                                              }}
-                                              data-testid={`manage-answers-${question.id}`}
-                                              title="Manage answer options"
-                                            >
-                                              <ListOrdered className="h-4 w-4" />
-                                            </Button>
-                                          )}
-                                          <Button
-                                            variant="ghost"
-                                            size="icon"
-                                            onClick={() => {
-                                              setEditingQuestion(question);
-                                              setQuestionForm({
-                                                modelId: question.modelId,
-                                                dimensionId: question.dimensionId ?? '',
-                                                text: question.text,
-                                                type: question.type as 'multiple_choice' | 'numeric' | 'true_false' | 'text',
-                                                order: question.order,
-                                                minValue: question.minValue ?? 1,
-                                                maxValue: question.maxValue ?? 10,
-                                                unit: question.unit ?? '',
-                                                placeholder: question.placeholder ?? '',
-                                                improvementStatement: question.improvementStatement ?? '',
-                                                resourceTitle: question.resourceTitle ?? '',
-                                                resourceLink: question.resourceLink ?? '',
-                                                resourceDescription: question.resourceDescription ?? ''
-                                              });
-                                              setIsQuestionDialogOpen(true);
-                                            }}
-                                            data-testid={`edit-question-${question.id}`}
-                                          >
-                                            <Edit className="h-4 w-4" />
-                                          </Button>
-                                          <Button
-                                            variant="ghost"
-                                            size="icon"
-                                            onClick={() => deleteQuestion.mutate(question.id)}
-                                            data-testid={`delete-question-${question.id}`}
-                                          >
-                                            <Trash className="h-4 w-4" />
-                                          </Button>
-                                        </div>
-                                      </TableCell>
-                                    </TableRow>
-                                  ))}
-                                </TableBody>
-                              </Table>
-                            </div>
-                          );
-                        })()
-                      )}
-                    </div>
-                  ) : (
-                    <div className="text-center py-8 text-muted-foreground">
-                      Select a model to manage its questions
-                    </div>
-                  )}
-                </div>
-              </Card>
-              )}
 
               {activeSection === 'users' && (
               <Card className="p-6">
@@ -5281,549 +4861,18 @@ ${insightsData.recommendations.map((r, i) => `${i + 1}. ${r}`).join('\n')}
         </DialogContent>
       </Dialog>
 
-      <Dialog open={isQuestionDialogOpen} onOpenChange={setIsQuestionDialogOpen}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>{editingQuestion ? 'Edit Question' : 'Create Question'}</DialogTitle>
-            <DialogDescription>
-              Add or edit a question for the selected model
-            </DialogDescription>
-          </DialogHeader>
 
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="question-text">Question Text</Label>
-              <Textarea
-                id="question-text"
-                value={questionForm.text}
-                onChange={(e) => setQuestionForm({ ...questionForm, text: e.target.value })}
-                placeholder="Enter your question..."
-                rows={2}
-                data-testid="input-question-text"
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="question-type">Question Type</Label>
-              <Select
-                value={questionForm.type}
-                onValueChange={(value: 'multiple_choice' | 'numeric' | 'true_false' | 'text') => {
-                  setQuestionForm({ ...questionForm, type: value });
-                }}
-              >
-                <SelectTrigger id="question-type" data-testid="select-question-type">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="multiple_choice">Multiple Choice</SelectItem>
-                  <SelectItem value="multi_select">Multi-Select</SelectItem>
-                  <SelectItem value="numeric">Numeric</SelectItem>
-                  <SelectItem value="true_false">True/False</SelectItem>
-                  <SelectItem value="text">Text Input</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            {questionForm.type === 'numeric' && (
-              <div className="grid grid-cols-3 gap-4">
-                <div>
-                  <Label htmlFor="min-value">Min Value</Label>
-                  <Input
-                    id="min-value"
-                    type="number"
-                    value={questionForm.minValue}
-                    onChange={(e) => setQuestionForm({ ...questionForm, minValue: Number(e.target.value) })}
-                    data-testid="input-min-value"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="max-value">Max Value</Label>
-                  <Input
-                    id="max-value"
-                    type="number"
-                    value={questionForm.maxValue}
-                    onChange={(e) => setQuestionForm({ ...questionForm, maxValue: Number(e.target.value) })}
-                    data-testid="input-max-value"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="unit">Unit</Label>
-                  <Input
-                    id="unit"
-                    value={questionForm.unit}
-                    onChange={(e) => setQuestionForm({ ...questionForm, unit: e.target.value })}
-                    placeholder="e.g., points, %"
-                    data-testid="input-unit"
-                  />
-                </div>
-              </div>
-            )}
-
-            {questionForm.type === 'text' && (
-              <div>
-                <Label htmlFor="placeholder">Placeholder Text (Optional)</Label>
-                <Input
-                  id="placeholder"
-                  value={questionForm.placeholder}
-                  onChange={(e) => setQuestionForm({ ...questionForm, placeholder: e.target.value })}
-                  placeholder="e.g., Enter your response..."
-                  data-testid="input-placeholder"
-                />
-              </div>
-            )}
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="dimension">Dimension (Optional)</Label>
-                <Select
-                  value={questionForm.dimensionId || 'none'}
-                  onValueChange={(value) => setQuestionForm({ ...questionForm, dimensionId: value === 'none' ? '' : value })}
-                >
-                  <SelectTrigger id="dimension" data-testid="select-dimension">
-                    <SelectValue placeholder="No dimension" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">No dimension</SelectItem>
-                    {dimensions.map((dimension) => (
-                      <SelectItem key={dimension.id} value={dimension.id}>
-                        {dimension.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label htmlFor="question-order">Order</Label>
-                <Input
-                  id="question-order"
-                  type="number"
-                  value={questionForm.order}
-                  onChange={(e) => setQuestionForm({ ...questionForm, order: parseInt(e.target.value) || 1 })}
-                  min={1}
-                  data-testid="input-question-order"
-                />
-              </div>
-            </div>
-
-            <div>
-              <Label htmlFor="improvement">How to Improve (Optional)</Label>
-              <Textarea
-                id="improvement"
-                value={questionForm.improvementStatement}
-                onChange={(e) => setQuestionForm({ ...questionForm, improvementStatement: e.target.value })}
-                placeholder="Guidance on how to improve in this area..."
-                rows={2}
-                data-testid="input-improvement-statement"
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="resource">Resource Link (Optional)</Label>
-              <Input
-                id="resource"
-                type="url"
-                value={questionForm.resourceLink}
-                onChange={(e) => setQuestionForm({ ...questionForm, resourceLink: e.target.value })}
-                placeholder="https://www.example.com/resource"
-                data-testid="input-resource-link"
-              />
-            </div>
-          </div>
-
-          <DialogFooter>
-            <Button variant="outline" onClick={() => {
-              setIsQuestionDialogOpen(false);
-              setEditingQuestion(null);
-            }}>
-              Cancel
-            </Button>
-            <Button
-              onClick={() => {
-                if (selectedModelId) {
-                  const dataToSend: any = {
-                    ...questionForm,
-                    modelId: selectedModelId,
-                    // Convert 'none' back to null/undefined for the API
-                    dimensionId: questionForm.dimensionId === 'none' || !questionForm.dimensionId ? undefined : questionForm.dimensionId,
-                  };
-                  
-                  // Remove undefined numeric fields for non-numeric questions
-                  if (questionForm.type !== 'numeric') {
-                    delete dataToSend.minValue;
-                    delete dataToSend.maxValue;
-                    delete dataToSend.unit;
-                  }
-                  
-                  if (editingQuestion) {
-                    updateQuestion.mutate({ ...dataToSend, id: editingQuestion.id });
-                  } else {
-                    createQuestion.mutate(dataToSend);
-                  }
-                }
-              }}
-              disabled={createQuestion.isPending || updateQuestion.isPending}
-              data-testid="button-save-question"
-            >
-              {createQuestion.isPending || updateQuestion.isPending ? 'Saving...' : 
-               editingQuestion ? 'Update Question' : 'Save Question'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Answer Management Dialog */}
-      <Dialog open={isAnswerDialogOpen} onOpenChange={setIsAnswerDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Manage Answer Options</DialogTitle>
-            <DialogDescription>
-              {editingQuestion?.text}
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-4">
-            <div className="flex justify-between gap-2">
-              <Button
-                variant="outline"
-                onClick={async () => {
-                  if (!editingQuestion || answers.length === 0) return;
-                  
-                  try {
-                    const response = await apiRequest('/api/admin/ai/rewrite-all-answers', 'POST', {
-                      questionId: editingQuestion.id,
-                      questionText: editingQuestion.text,
-                      answers: answers.map(a => ({
-                        id: a.id,
-                        text: a.text,
-                        score: a.score
-                      })),
-                      modelContext: undefined
-                    });
-                    
-                    toast({
-                      title: "Rewrites Sent to Review Queue",
-                      description: response.message || `${answers.length} answer rewrites pending approval in AI Review tab.`,
-                    });
-                  } catch (error) {
-                    toast({
-                      title: "Generation Failed",
-                      description: "Failed to generate answer rewrites. Please try again.",
-                      variant: "destructive",
-                    });
-                  }
-                }}
-                disabled={!editingQuestion || answers.length === 0}
-                data-testid="button-rewrite-all-answers"
-              >
-                <Sparkles className="mr-2 h-4 w-4" />
-                Rewrite All Answers
-              </Button>
-              <Button
-                onClick={() => {
-                  const newOrder = answers.length + 1;
-                  createAnswer.mutate({
-                    questionId: editingQuestion!.id,
-                    text: `Option ${newOrder}`,
-                    score: newOrder * 100,
-                    order: newOrder
-                  });
-                }}
-                disabled={!editingQuestion}
-                data-testid="button-add-answer"
-              >
-                <Plus className="mr-2 h-4 w-4" />
-                Add Answer
-              </Button>
-            </div>
-
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Answer Text</TableHead>
-                  <TableHead className="w-24">Score</TableHead>
-                  <TableHead className="w-24">Order</TableHead>
-                  <TableHead className="w-32">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {answers.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={4} className="text-center">
-                      No answer options yet. Add your first answer option above.
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  answers.sort((a, b) => a.order - b.order).map((answer) => {
-                    const localState = answerLocalState[answer.id] || { text: answer.text, score: answer.score, order: answer.order };
-                    return (
-                    <TableRow key={answer.id}>
-                      <TableCell>
-                        <Input
-                          value={localState.text}
-                          onChange={(e) => {
-                            setAnswerLocalState({
-                              ...answerLocalState,
-                              [answer.id]: { ...localState, text: e.target.value }
-                            });
-                          }}
-                          onBlur={() => {
-                            if (localState.text !== answer.text) {
-                              updateAnswer.mutate({
-                                id: answer.id,
-                                text: localState.text
-                              });
-                            }
-                          }}
-                          data-testid={`input-answer-text-${answer.id}`}
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <Input
-                          type="number"
-                          value={localState.score}
-                          onChange={(e) => {
-                            setAnswerLocalState({
-                              ...answerLocalState,
-                              [answer.id]: { ...localState, score: parseInt(e.target.value) || 0 }
-                            });
-                          }}
-                          onBlur={() => {
-                            if (localState.score !== answer.score) {
-                              updateAnswer.mutate({
-                                id: answer.id,
-                                score: localState.score
-                              });
-                            }
-                          }}
-                          data-testid={`input-answer-score-${answer.id}`}
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <Input
-                          type="number"
-                          value={localState.order}
-                          onChange={(e) => {
-                            setAnswerLocalState({
-                              ...answerLocalState,
-                              [answer.id]: { ...localState, order: parseInt(e.target.value) || 1 }
-                            });
-                          }}
-                          onBlur={() => {
-                            if (localState.order !== answer.order) {
-                              updateAnswer.mutate({
-                                id: answer.id,
-                                order: localState.order
-                              });
-                            }
-                          }}
-                          data-testid={`input-answer-order-${answer.id}`}
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex gap-1">
-                          <AiAssistant
-                            type="answer-rewrite"
-                            context={{
-                              questionText: editingQuestion?.text,
-                              answerText: localState.text,
-                              answerScore: localState.score,
-                              modelContext: undefined,
-                            }}
-                            onGenerated={(data) => {
-                              if (data.rewrittenAnswer) {
-                                // Update the local state first
-                                setAnswerLocalState({
-                                  ...answerLocalState,
-                                  [answer.id]: { ...localState, text: data.rewrittenAnswer }
-                                });
-                                // Then update the database
-                                updateAnswer.mutate({
-                                  id: answer.id,
-                                  text: data.rewrittenAnswer
-                                });
-                                toast({
-                                  title: "Answer Rewritten",
-                                  description: "The answer has been updated with more contextual language.",
-                                });
-                              }
-                            }}
-                            trigger={
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                title="Rewrite answer to be more contextual"
-                                data-testid={`rewrite-answer-${answer.id}`}
-                              >
-                                <Sparkles className="h-4 w-4" />
-                              </Button>
-                            }
-                          />
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => {
-                              setEditingAnswer(answer);
-                              setAnswerEditForm({
-                                text: answer.text,
-                                score: answer.score,
-                                improvementStatement: answer.improvementStatement || '',
-                                resourceTitle: answer.resourceTitle || '',
-                                resourceDescription: answer.resourceDescription || '',
-                                resourceLink: answer.resourceLink || '',
-                              });
-                              setIsEditAnswerDialogOpen(true);
-                            }}
-                            data-testid={`edit-answer-resources-${answer.id}`}
-                            title="Edit resources and improvement guidance"
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => {
-                              if (confirm('Are you sure you want to delete this answer?')) {
-                                deleteAnswer.mutate(answer.id);
-                              }
-                            }}
-                            data-testid={`delete-answer-${answer.id}`}
-                          >
-                            <Trash className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                    );
-                  })
-                )}
-              </TableBody>
-            </Table>
-
-            <div className="text-sm text-muted-foreground">
-              <p>• Answer text will be shown to users during the assessment</p>
-              <p>• Score determines the maturity level (100-500 scale)</p>
-              <p>• Order determines display sequence</p>
-            </div>
-          </div>
-
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsAnswerDialogOpen(false)}>
-              Close
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Answer Resource Edit Dialog */}
-      <Dialog open={isEditAnswerDialogOpen} onOpenChange={setIsEditAnswerDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Edit Answer Resources & Guidance</DialogTitle>
-            <DialogDescription>
-              Configure improvement guidance and resources for: {answerEditForm.text}
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-4">
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <Label htmlFor="answer-improvement">Improvement Statement</Label>
-                <AiAssistant
-                  type="improvement"
-                  context={{
-                    questionText: editingQuestion?.text,
-                    answerText: answerEditForm.text,
-                    answerScore: answerEditForm.score,
-                  }}
-                  onGenerated={(content) => {
-                    setAnswerEditForm({
-                      ...answerEditForm,
-                      improvementStatement: content.improvementStatement,
-                    });
-                    toast({
-                      title: "AI Content Applied",
-                      description: "The improvement statement has been updated.",
-                    });
-                  }}
-                />
-              </div>
-              <Textarea
-                id="answer-improvement"
-                value={answerEditForm.improvementStatement}
-                onChange={(e) => setAnswerEditForm({ ...answerEditForm, improvementStatement: e.target.value })}
-                placeholder="Guidance on how to improve from this response level..."
-                rows={3}
-                data-testid="input-answer-improvement"
-              />
-              <p className="text-sm text-muted-foreground mt-1">
-                Shown in results for users who selected this answer
-              </p>
-            </div>
-
-            <div className="space-y-4 p-4 border rounded-md">
-              <h4 className="font-medium">Resource Link</h4>
-              
-              <div>
-                <Label htmlFor="resource-title">Resource Title</Label>
-                <Input
-                  id="resource-title"
-                  value={answerEditForm.resourceTitle}
-                  onChange={(e) => setAnswerEditForm({ ...answerEditForm, resourceTitle: e.target.value })}
-                  placeholder="e.g., Guide to AI Implementation"
-                  data-testid="input-resource-title"
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="resource-description">Resource Description</Label>
-                <Textarea
-                  id="resource-description"
-                  value={answerEditForm.resourceDescription}
-                  onChange={(e) => setAnswerEditForm({ ...answerEditForm, resourceDescription: e.target.value })}
-                  placeholder="Brief description of this resource..."
-                  rows={2}
-                  data-testid="input-resource-description"
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="resource-link">Resource URL</Label>
-                <Input
-                  id="resource-link"
-                  type="url"
-                  value={answerEditForm.resourceLink}
-                  onChange={(e) => setAnswerEditForm({ ...answerEditForm, resourceLink: e.target.value })}
-                  placeholder="https://www.example.com/resource"
-                  data-testid="input-resource-url"
-                />
-              </div>
-            </div>
-          </div>
-
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsEditAnswerDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button
-              onClick={() => {
-                if (editingAnswer) {
-                  updateAnswer.mutate({
-                    id: editingAnswer.id,
-                    improvementStatement: answerEditForm.improvementStatement || undefined,
-                    resourceTitle: answerEditForm.resourceTitle || undefined,
-                    resourceDescription: answerEditForm.resourceDescription || undefined,
-                    resourceLink: answerEditForm.resourceLink || undefined,
-                  });
-                  setIsEditAnswerDialogOpen(false);
-                }
-              }}
-              data-testid="button-save-answer-resources"
-            >
-              Save Changes
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Model Creation Wizard */}
+      <ModelCreationWizard
+        open={isWizardOpen}
+        onOpenChange={setIsWizardOpen}
+        onModelCreated={(model) => {
+          setIsWizardOpen(false);
+          setEditingModel(model);
+          setSelectedModelId(model.id);
+          setActiveSection('model-builder');
+        }}
+      />
 
       {/* CSV Import Mode Dialog */}
       <Dialog open={isCSVImportDialogOpen} onOpenChange={setIsCSVImportDialogOpen}>
