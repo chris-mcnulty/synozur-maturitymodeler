@@ -63,13 +63,15 @@ export function ContentManagement() {
     input.onchange = async (e) => {
       const file = (e.target as HTMLInputElement).files?.[0];
       if (!file) return;
-      const formData = new FormData();
-      formData.append("file", file);
       try {
+        const csvContent = await file.text();
         const response = await fetch(`/api/models/${selectedModelId}/import-questions`, {
           method: "POST",
           credentials: "include",
-          body: formData,
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ csvContent }),
         });
         if (!response.ok) throw new Error("Import failed");
         const result = await response.json();
