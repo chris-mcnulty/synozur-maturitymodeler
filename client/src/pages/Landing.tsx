@@ -215,7 +215,7 @@ export default function Landing() {
                 data-testid="img-orion-logo"
               />
             </div>
-            <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-6 bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
+            <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-6 text-white md:bg-gradient-to-r md:from-blue-400 md:via-purple-400 md:to-pink-400 md:bg-clip-text md:text-transparent">
               Digital Transformation Maturity Models
             </h2>
             <p className="text-xl md:text-2xl text-white/90 max-w-4xl mx-auto mb-8">
