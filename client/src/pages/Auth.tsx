@@ -507,7 +507,7 @@ export default function Auth() {
             <img 
               src={orionLogo} 
               alt="Orion - Transformation AI" 
-              className="h-16 w-auto object-contain mb-4"
+              className="h-32 w-auto object-contain mb-4"
               data-testid="img-auth-orion-logo"
             />
           </div>
