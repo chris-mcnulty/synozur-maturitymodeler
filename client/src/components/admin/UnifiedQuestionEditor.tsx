@@ -79,8 +79,7 @@ export function UnifiedQuestionEditor({
   // Fetch answers for this question
   const { data: answers = [], refetch: refetchAnswers } = useQuery<Answer[]>({
     queryKey: ["/api/answers", question.id],
-    queryFn: () =>
-      fetch(`/api/answers/${question.id}`, { credentials: "include" }).then((r) => r.json()),
+    queryFn: () => apiRequest<Answer[]>(`/api/answers/${question.id}`),
     staleTime: 30000,
   });
 
