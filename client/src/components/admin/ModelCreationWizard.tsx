@@ -352,7 +352,6 @@ export function ModelCreationWizard({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="public">Public</SelectItem>
-              <SelectItem value="private">Private (tenant only)</SelectItem>
             </SelectContent>
           </Select>
         </div>
