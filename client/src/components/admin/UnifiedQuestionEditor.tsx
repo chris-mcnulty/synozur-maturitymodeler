@@ -76,11 +76,12 @@ export function UnifiedQuestionEditor({
     Record<string, { text: string; score: number; order: number; improvementStatement: string; resourceTitle: string; resourceDescription: string; resourceLink: string }>
   >({});
 
-  // Fetch answers for this question
+  // Fetch answers for this question (only when expanded to avoid N+1 on load)
   const { data: answers = [], refetch: refetchAnswers } = useQuery<Answer[]>({
     queryKey: ["/api/answers", question.id],
     queryFn: () => apiRequest<Answer[]>(`/api/answers/${question.id}`),
     staleTime: 30000,
+    enabled: isExpanded,
   });
 
   // Sync local answer state when server data arrives
