@@ -211,7 +211,7 @@ export default function Landing() {
               <img
                 src={orionLogo}
                 alt="Orion - Transformation AI"
-                className="h-16 md:h-20 lg:h-24 w-auto object-contain"
+                className="h-24 md:h-[7.5rem] lg:h-36 w-auto object-contain"
                 data-testid="img-orion-logo"
               />
             </div>
