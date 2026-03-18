@@ -10,6 +10,7 @@ import { useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
 import synozurLogo from "@assets/SynozurLogo_color 1400_1759973943542.png";
+import orionLogo from "@assets/Orion_Logo_-_White_1773855710833.png";
 
 function MicrosoftIcon({ className }: { className?: string }) {
   return (
