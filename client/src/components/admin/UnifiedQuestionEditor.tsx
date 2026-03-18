@@ -187,7 +187,7 @@ export function UnifiedQuestionEditor({
     }
   };
 
-  const hasAnswers = ["multiple_choice", "multi_select", "true_false"].includes(question.type);
+  const hasAnswers = ["multiple_choice", "multi_select"].includes(localType);
   const sortedAnswers = [...answers].sort((a, b) => a.order - b.order);
 
   return (
