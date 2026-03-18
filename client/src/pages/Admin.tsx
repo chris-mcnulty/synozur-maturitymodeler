@@ -3017,13 +3017,14 @@ export default function Admin() {
                       deleteDimension.mutate(dimensionId);
                     }}
                     onAddQuestion={(dimensionId) => {
-                      resetQuestionForm();
-                      setQuestionForm(prev => ({
-                        ...prev,
+                      // Directly create a new question instead of opening a (now-removed) dialog
+                      // Use the same mutation flow that is used elsewhere in the admin UI.
+                      // We provide minimal placeholder content so admins can immediately edit it.
+                      (createQuestion as any)?.mutate?.({
                         modelId: editingModel.id,
-                        dimensionId: dimensionId || '',
-                      }));
-                      setIsQuestionDialogOpen(true);
+                        dimensionId: dimensionId || "",
+                        text: "New question",
+                      } as any);
                     }}
                     onUpdateQuestion={(id, updates) => {
                       updateQuestion.mutate({ ...updates, id } as any);
