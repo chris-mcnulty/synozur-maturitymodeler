@@ -11,6 +11,7 @@ import type { Model, Assessment, Dimension } from "@shared/schema";
 
 type ModelWithQuestionCount = Model & { questionCount: number };
 import heroBackground from '@assets/AI_network_hero_background.png';
+import orionLogo from '@assets/Orion_Logo_-_White_1773855710833.png';
 
 function ModelCard({
   model,
@@ -206,10 +207,15 @@ export default function Landing() {
           </div>
 
           <div className="container relative z-10 mx-auto px-4 py-20 text-center">
-            <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold mb-4 leading-[1.15] text-white md:bg-gradient-to-r md:from-blue-400 md:via-purple-400 md:to-pink-400 md:bg-clip-text md:text-transparent">
-              Orion
-            </h1>
-            <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-6 text-white/90">
+            <div className="flex justify-center mb-4">
+              <img
+                src={orionLogo}
+                alt="Orion - Transformation AI"
+                className="h-16 md:h-20 lg:h-24 w-auto object-contain"
+                data-testid="img-orion-logo"
+              />
+            </div>
+            <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-6 bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
               Digital Transformation Maturity Models
             </h2>
             <p className="text-xl md:text-2xl text-white/90 max-w-4xl mx-auto mb-8">
