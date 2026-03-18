@@ -126,15 +126,13 @@ export function ModelCreationWizard({
 
   const { data: dimensions = [], refetch: refetchDimensions } = useQuery<Dimension[]>({
     queryKey: ["/api/dimensions", modelId],
-    queryFn: () =>
-      fetch(`/api/dimensions/${modelId}`, { credentials: "include" }).then((r) => r.json()),
+    queryFn: () => apiRequest(`/api/dimensions/${modelId}`),
     enabled: !!modelId,
   });
 
   const { data: questions = [], refetch: refetchQuestions } = useQuery<Question[]>({
     queryKey: ["/api/questions", modelId],
-    queryFn: () =>
-      fetch(`/api/questions?modelId=${modelId}`, { credentials: "include" }).then((r) => r.json()),
+    queryFn: () => apiRequest(`/api/questions?modelId=${modelId}`),
     enabled: !!modelId,
   });
 
