@@ -5,6 +5,16 @@ import { initializeJWTService } from "./services/jwt-signing";
 import { startSsoStateCleanup } from "./services/sso-service";
 
 const app = express();
+
+// Host-based redirects (must run before all other middleware/routes)
+app.use((req, res, next) => {
+  const host = (req.headers.host || '').toLowerCase().split(':')[0];
+  if (host === 'polaris.synozur.com') {
+    return res.redirect(301, 'https://www.synozur.com/polaris');
+  }
+  next();
+});
+
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: false, limit: '10mb' }));
 
