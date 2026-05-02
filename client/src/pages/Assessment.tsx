@@ -6,6 +6,8 @@ import { QuestionCard } from "@/components/QuestionCard";
 import { QuestionNavigator } from "@/components/QuestionNavigator";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { DataState } from "@/components/DataState";
 import { ChevronLeft, ChevronRight, AlertCircle } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -218,7 +220,9 @@ export default function Assessment() {
       console.error('Failed to calculate results:', error);
       toast({
         title: "Unable to complete assessment",
-        description: error.message || "Please ensure all questions are answered.",
+        description: error.message
+          ? `${error.message} Please ensure you have answered all questions.`
+          : "Please ensure all questions are answered.",
         variant: "destructive",
       });
     },
@@ -309,9 +313,27 @@ export default function Assessment() {
   if (isLoading || !questions.length) {
     return (
       <div className="min-h-screen flex flex-col">
-        <main className="flex-1 flex items-center justify-center">
-          <div className="text-center">
-            <div className="text-lg text-muted-foreground" data-testid="loading-assessment">Loading assessment...</div>
+        <main className="flex-1 py-12">
+          <div className="container mx-auto px-4 max-w-4xl" data-testid="loading-assessment">
+            <div className="mb-8 space-y-2">
+              <Skeleton className="h-4 w-32" />
+              <Skeleton className="h-3 w-full" />
+            </div>
+            <Card className="p-8 space-y-6">
+              <div className="space-y-3">
+                <Skeleton className="h-6 w-3/4" />
+                <Skeleton className="h-4 w-1/2" />
+              </div>
+              <div className="space-y-3">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <Skeleton key={i} className="h-12 w-full" />
+                ))}
+              </div>
+            </Card>
+            <div className="flex justify-between mt-8">
+              <Skeleton className="h-10 w-28" />
+              <Skeleton className="h-10 w-28" />
+            </div>
           </div>
         </main>
         <Footer />

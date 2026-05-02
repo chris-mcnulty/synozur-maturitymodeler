@@ -9,6 +9,7 @@ import { AuthProvider } from "@/hooks/use-auth";
 import { ProtectedRoute } from "@/lib/protected-route";
 import { Header } from "@/components/Header";
 import { WhatsNewModal } from "@/components/WhatsNewModal";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import Landing from "@/pages/Landing";
 import ModelHome from "@/pages/ModelHome";
 import Assessment from "@/pages/Assessment";
@@ -34,25 +35,27 @@ function Router() {
   return (
     <>
       {showHeader && <Header />}
-      <Switch>
-        <Route path="/" component={Landing} />
-        <Route path="/auth" component={Auth} />
-        <Route path="/forgot-password" component={ForgotPassword} />
-        <Route path="/reset-password" component={ResetPassword} />
-        <Route path="/verify-email" component={VerifyEmail} />
-        <Route path="/oauth/consent" component={OAuthConsent} />
-        <Route path="/complete-profile" component={CompleteProfile} />
-        <Route path="/help" component={UserGuide} />
-        <Route path="/changelog" component={Changelog} />
-        <ProtectedRoute path="/support" component={Support} />
-        <Route path="/assessment/:assessmentId" component={Assessment} />
-        <Route path="/results/:assessmentId" component={Results} />
-        <ProtectedRoute path="/me" component={Profile} />
-        <ProtectedRoute path="/insights" component={Insights} />
-        <ProtectedRoute path="/admin" component={Admin} />
-        <Route path="/:modelSlug" component={ModelHome} />
-        <Route component={NotFound} />
-      </Switch>
+      <ErrorBoundary>
+        <Switch>
+          <Route path="/" component={Landing} />
+          <Route path="/auth" component={Auth} />
+          <Route path="/forgot-password" component={ForgotPassword} />
+          <Route path="/reset-password" component={ResetPassword} />
+          <Route path="/verify-email" component={VerifyEmail} />
+          <Route path="/oauth/consent" component={OAuthConsent} />
+          <Route path="/complete-profile" component={CompleteProfile} />
+          <Route path="/help" component={UserGuide} />
+          <Route path="/changelog" component={Changelog} />
+          <ProtectedRoute path="/support" component={Support} />
+          <Route path="/assessment/:assessmentId" component={Assessment} />
+          <Route path="/results/:assessmentId" component={Results} />
+          <ProtectedRoute path="/me" component={Profile} />
+          <ProtectedRoute path="/insights" component={Insights} />
+          <ProtectedRoute path="/admin" component={Admin} />
+          <Route path="/:modelSlug" component={ModelHome} />
+          <Route component={NotFound} />
+        </Switch>
+      </ErrorBoundary>
       <WhatsNewModal />
     </>
   );

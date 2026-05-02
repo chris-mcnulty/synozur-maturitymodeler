@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
@@ -363,26 +364,26 @@ Thank you!`;
 
   if (authLoading) {
     return (
-      <div className="min-h-screen flex flex-col">
+      <div className="min-h-screen flex flex-col" data-testid="loading-profile">
         <main className="flex-1 py-12">
           <div className="container mx-auto px-4 max-w-6xl">
-            <div className="h-8 bg-muted animate-pulse rounded w-1/3 mb-8" />
+            <Skeleton className="h-10 w-1/3 mb-8" />
             <div className="grid md:grid-cols-3 gap-8">
               <div className="md:col-span-1">
                 <Card className="p-6">
                   <div className="space-y-4">
                     {Array.from({ length: 6 }).map((_, i) => (
-                      <div key={i} className="h-10 bg-muted animate-pulse rounded" />
+                      <Skeleton key={i} className="h-10 w-full" />
                     ))}
                   </div>
                 </Card>
               </div>
               <div className="md:col-span-2">
-                <div className="h-8 bg-muted animate-pulse rounded w-1/3 mb-6" />
+                <Skeleton className="h-8 w-1/3 mb-6" />
                 <div className="space-y-4">
                   {Array.from({ length: 3 }).map((_, i) => (
                     <Card key={i} className="p-6">
-                      <div className="h-16 bg-muted animate-pulse rounded" />
+                      <Skeleton className="h-16 w-full" />
                     </Card>
                   ))}
                 </div>
@@ -459,9 +460,13 @@ Thank you!`;
                     <div>
                       <Label>Organization</Label>
                       <div className="flex items-center gap-2 mt-2">
-                        <Badge variant="secondary" data-testid="badge-tenant">
-                          {tenant?.name || 'Loading...'}
-                        </Badge>
+                        {tenant ? (
+                          <Badge variant="secondary" data-testid="badge-tenant">
+                            {tenant.name}
+                          </Badge>
+                        ) : (
+                          <Skeleton className="h-6 w-32" data-testid="loading-tenant" />
+                        )}
                       </div>
                       <p className="text-xs text-muted-foreground mt-1">
                         Your account is associated with this tenant organization
@@ -795,10 +800,12 @@ Thank you!`;
               )}
 
               {historyLoading ? (
-                <div className="space-y-4">
+                <div className="space-y-4" data-testid="loading-history">
                   {Array.from({ length: 3 }).map((_, i) => (
-                    <Card key={i} className="p-6">
-                      <div className="h-16 bg-muted animate-pulse rounded" />
+                    <Card key={i} className="p-6 space-y-3">
+                      <Skeleton className="h-5 w-1/3" />
+                      <Skeleton className="h-4 w-1/2" />
+                      <Skeleton className="h-4 w-1/4" />
                     </Card>
                   ))}
                 </div>

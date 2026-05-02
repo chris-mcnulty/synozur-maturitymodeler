@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Skeleton } from "@/components/ui/skeleton";
 import { ArrowRight, CheckCircle2, Target, TrendingUp, ArrowLeft, Sparkles, Save, Archive, Home } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -49,7 +50,10 @@ export default function ModelHome() {
               setPrivateModelInfo({ name: parsed.model.name, description: parsed.model.description });
             }
           }
-        } catch {}
+        } catch (parseError) {
+          // Embedded JSON is best-effort; we still show the gate without the model preview
+          console.warn('Could not parse private-model preview info from error response:', parseError);
+        }
       }
     }
   }, [error]);
@@ -91,11 +95,33 @@ export default function ModelHome() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex flex-col">
-        <main className="flex-1 flex items-center justify-center">
-          <div className="text-center">
-            <div className="text-lg text-muted-foreground">Loading model...</div>
-          </div>
+      <div className="min-h-screen flex flex-col" data-testid="loading-model">
+        <main className="flex-1">
+          <section className="relative min-h-[400px] flex items-center overflow-hidden bg-primary/10">
+            <div className="container relative z-10 mx-auto px-4 py-16">
+              <div className="max-w-4xl space-y-4">
+                <Skeleton className="h-6 w-24" />
+                <Skeleton className="h-12 w-3/4" />
+                <Skeleton className="h-5 w-2/3" />
+                <Skeleton className="h-5 w-1/2" />
+                <Skeleton className="h-12 w-48 mt-4" />
+              </div>
+            </div>
+          </section>
+          <section className="py-16">
+            <div className="container mx-auto px-4 max-w-6xl">
+              <Skeleton className="h-8 w-64 mx-auto mb-8" />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <Card key={i} className="p-6 space-y-3">
+                    <Skeleton className="h-6 w-1/2" />
+                    <Skeleton className="h-4 w-full" />
+                    <Skeleton className="h-4 w-3/4" />
+                  </Card>
+                ))}
+              </div>
+            </div>
+          </section>
         </main>
         <Footer />
       </div>

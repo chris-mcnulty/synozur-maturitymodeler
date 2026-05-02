@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -392,7 +393,17 @@ Thank you for your help!`;
         </div>
 
         {isLoading ? (
-          <div className="text-center py-8">Loading tenants...</div>
+          <div className="space-y-3 py-4" data-testid="loading-tenants">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="flex items-center gap-4 p-3 border rounded-md">
+                <Skeleton className="h-4 w-32" />
+                <Skeleton className="h-4 w-40" />
+                <Skeleton className="h-4 w-32" />
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-4 w-20" />
+              </div>
+            ))}
+          </div>
         ) : tenants.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">
             No tenants found. Create your first tenant to get started.

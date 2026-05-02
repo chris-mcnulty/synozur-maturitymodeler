@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from "react";
-import { Card } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -143,7 +144,21 @@ function BenchmarkConfig() {
     },
   });
 
-  if (isLoading) return <div>Loading configuration...</div>;
+  if (isLoading) {
+    return (
+      <div className="space-y-4" data-testid="loading-benchmark-config">
+        <div className="grid grid-cols-2 gap-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="p-4 border rounded-md space-y-2">
+              <Skeleton className="h-4 w-32" />
+              <Skeleton className="h-8 w-16" />
+              <Skeleton className="h-3 w-24" />
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   if (!isEditing && config) {
     return (
@@ -358,8 +373,10 @@ function BenchmarksByModel() {
       </div>
 
       {selectedModelId && benchmarksLoading && (
-        <Card className="p-6">
-          <p className="text-muted-foreground">Loading benchmarks...</p>
+        <Card className="p-6 space-y-3" data-testid="loading-benchmarks">
+          <Skeleton className="h-5 w-1/3" />
+          <Skeleton className="h-4 w-1/2" />
+          <Skeleton className="h-32 w-full" />
         </Card>
       )}
 
@@ -3102,9 +3119,15 @@ export default function Admin() {
                   </TableHeader>
                   <TableBody>
                     {modelsLoading ? (
-                      <TableRow>
-                        <TableCell colSpan={6} className="text-center">Loading models...</TableCell>
-                      </TableRow>
+                      Array.from({ length: 3 }).map((_, i) => (
+                        <TableRow key={`loading-model-${i}`} data-testid={`loading-model-row-${i}`}>
+                          {Array.from({ length: 6 }).map((__, j) => (
+                            <TableCell key={j}>
+                              <Skeleton className="h-4 w-full" />
+                            </TableCell>
+                          ))}
+                        </TableRow>
+                      ))
                     ) : models.length === 0 ? (
                       <TableRow>
                         <TableCell colSpan={6} className="text-center">No models found</TableCell>
@@ -3334,7 +3357,20 @@ export default function Admin() {
                 </div>
 
                 {usersLoading ? (
-                  <div className="py-8 text-center text-muted-foreground">Loading users...</div>
+                  <div className="rounded-md border overflow-x-auto" data-testid="loading-users">
+                    <div className="p-4 space-y-3">
+                      {Array.from({ length: 4 }).map((_, i) => (
+                        <div key={i} className="flex items-center gap-4">
+                          <Skeleton className="h-4 w-32" />
+                          <Skeleton className="h-4 w-20" />
+                          <Skeleton className="h-4 w-40" />
+                          <Skeleton className="h-4 w-32" />
+                          <Skeleton className="h-4 w-24" />
+                          <Skeleton className="h-4 w-20" />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 ) : filteredUsers.length === 0 ? (
                   <div className="py-8 text-center text-muted-foreground">No users found</div>
                 ) : (
@@ -3624,9 +3660,15 @@ export default function Admin() {
                   </TableHeader>
                   <TableBody>
                     {resultsLoading ? (
-                      <TableRow>
-                        <TableCell colSpan={8} className="text-center">Loading results...</TableCell>
-                      </TableRow>
+                      Array.from({ length: 3 }).map((_, i) => (
+                        <TableRow key={`loading-result-${i}`} data-testid={`loading-result-row-${i}`}>
+                          {Array.from({ length: 8 }).map((__, j) => (
+                            <TableCell key={j}>
+                              <Skeleton className="h-4 w-full" />
+                            </TableCell>
+                          ))}
+                        </TableRow>
+                      ))
                     ) : results.length === 0 ? (
                       <TableRow>
                         <TableCell colSpan={8} className="text-center">No results found</TableCell>
@@ -4030,8 +4072,17 @@ export default function Admin() {
                         </Button>
                       </div>
                     ) : knowledgeDocsLoading ? (
-                      <div className="text-center py-12 text-muted-foreground">
-                        <p>Loading documents...</p>
+                      <div className="space-y-3 py-4" data-testid="loading-documents">
+                        {Array.from({ length: 3 }).map((_, i) => (
+                          <div key={i} className="flex items-center gap-4 p-3 border rounded-md">
+                            <Skeleton className="h-8 w-8 rounded" />
+                            <div className="flex-1 space-y-2">
+                              <Skeleton className="h-4 w-1/3" />
+                              <Skeleton className="h-3 w-1/4" />
+                            </div>
+                            <Skeleton className="h-8 w-20" />
+                          </div>
+                        ))}
                       </div>
                     ) : knowledgeDocuments.length === 0 ? (
                       <div className="text-center py-12 text-muted-foreground">
