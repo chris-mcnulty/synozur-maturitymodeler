@@ -1,25 +1,72 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { useRoute, useLocation } from "wouter";
 import { Footer } from "@/components/Footer";
 import { ProgressBar } from "@/components/ProgressBar";
 import { QuestionCard } from "@/components/QuestionCard";
+import { QuestionNavigator } from "@/components/QuestionNavigator";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { Card } from "@/components/ui/card";
+import { ChevronLeft, ChevronRight, AlertCircle } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 import type { Assessment as AssessmentType, Question, Answer, Dimension } from "@shared/schema";
 
 interface QuestionWithAnswers extends Question {
   answers: Answer[];
 }
 
+type SaveStatus = "idle" | "saving" | "saved" | "failed";
+
+type SavePayload = {
+  questionId: string;
+  answerId?: string;
+  answerIds?: string[];
+  numericValue?: number;
+  booleanValue?: boolean;
+  textValue?: string;
+};
+
+function isAnswerComplete(question: Question, value: string | string[] | undefined): boolean {
+  if (value === undefined || value === null) return false;
+  switch (question.type) {
+    case "numeric": {
+      const v = typeof value === "string" ? value : "";
+      const num = parseFloat(v);
+      if (v === "" || Number.isNaN(num)) return false;
+      if (question.minValue !== undefined && question.minValue !== null && num < question.minValue) return false;
+      if (question.maxValue !== undefined && question.maxValue !== null && num > question.maxValue) return false;
+      return true;
+    }
+    case "true_false":
+      return value === "true" || value === "false";
+    case "text":
+      return typeof value === "string" && value.trim().length > 0;
+    case "multi_select":
+      // Multi-select: any selection (including intentionally none) counts once recorded.
+      // We require at least one selection so users explicitly indicate completion.
+      return Array.isArray(value) && value.length > 0;
+    case "multiple_choice":
+    default:
+      return typeof value === "string" && value.length > 0;
+  }
+}
+
 export default function Assessment() {
   const [, params] = useRoute("/assessment/:assessmentId");
   const [, setLocation] = useLocation();
+  const { toast } = useToast();
   const assessmentId = params?.assessmentId;
 
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedAnswers, setSelectedAnswers] = useState<Record<string, string | string[]>>({});
+  const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
+  const [showIncomplete, setShowIncomplete] = useState(false);
+
+  // Track in-flight saves keyed by questionId so we can wait before submitting.
+  const pendingSavesRef = useRef<Set<string>>(new Set());
+  const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const failedPayloadsRef = useRef<Map<string, SavePayload>>(new Map());
 
   // Fetch assessment
   const { data: assessment } = useQuery<AssessmentType>({
@@ -49,9 +96,10 @@ export default function Assessment() {
   });
 
   // Fetch existing responses
-  const { data: existingResponses = [] } = useQuery<{ 
-    questionId: string; 
-    answerId?: string; 
+  const { data: existingResponses = [] } = useQuery<{
+    questionId: string;
+    answerId?: string;
+    answerIds?: string[];
     numericValue?: number;
     booleanValue?: boolean;
     textValue?: string;
@@ -72,41 +120,91 @@ export default function Assessment() {
         } else if (r.textValue !== undefined && r.textValue !== null) {
           answers[r.questionId] = r.textValue;
         } else if (r.answerIds) {
-          answers[r.questionId] = r.answerIds; // Multi-select responses
+          answers[r.questionId] = r.answerIds;
         } else if (r.answerId) {
           answers[r.questionId] = r.answerId;
         }
       });
-      setSelectedAnswers(answers);
+      setSelectedAnswers(prev => ({ ...answers, ...prev }));
     }
   }, [existingResponses]);
 
-  // Save response mutation
-  const saveResponse = useMutation({
-    mutationFn: async ({ questionId, answerId, numericValue, booleanValue, textValue }: { 
-      questionId: string; 
-      answerId?: string;
-      numericValue?: number;
-      booleanValue?: boolean;
-      textValue?: string;
-    }) => {
-      const body: any = { questionId };
-      if (numericValue !== undefined) {
-        body.numericValue = numericValue;
-      } else if (booleanValue !== undefined) {
-        body.booleanValue = booleanValue;
-      } else if (textValue !== undefined) {
-        body.textValue = textValue;
-      } else {
-        body.answerId = answerId;
+  // Cleanup timers on unmount
+  useEffect(() => {
+    return () => {
+      if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
+    };
+  }, []);
+
+  const flashSaved = useCallback(() => {
+    if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
+    setSaveStatus("saved");
+    savedTimerRef.current = setTimeout(() => {
+      // Only clear if there are no other pending saves and no failures.
+      if (pendingSavesRef.current.size === 0 && failedPayloadsRef.current.size === 0) {
+        setSaveStatus("idle");
       }
-      
-      return await apiRequest(`/api/assessments/${assessmentId}/responses`, 'POST', body);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/assessments', assessmentId, 'responses'] });
-    },
-  });
+    }, 1500);
+  }, []);
+
+  // Background save with retry. Uses raw fetch via apiRequest so we can attempt
+  // multiple times without going through react-query's mutation lifecycle.
+  const performSave = useCallback(async (payload: SavePayload) => {
+    const { questionId, ...rest } = payload;
+    const body: any = { questionId };
+    if (rest.numericValue !== undefined) body.numericValue = rest.numericValue;
+    else if (rest.booleanValue !== undefined) body.booleanValue = rest.booleanValue;
+    else if (rest.textValue !== undefined) body.textValue = rest.textValue;
+    else if (rest.answerIds !== undefined) body.answerIds = rest.answerIds;
+    else if (rest.answerId !== undefined) body.answerId = rest.answerId;
+
+    pendingSavesRef.current.add(questionId);
+    setSaveStatus("saving");
+
+    const maxAttempts = 3;
+    let lastError: unknown = null;
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      try {
+        await apiRequest(`/api/assessments/${assessmentId}/responses`, "POST", body);
+        pendingSavesRef.current.delete(questionId);
+        failedPayloadsRef.current.delete(questionId);
+        // If still other in-flight, keep "saving"; else flash saved
+        if (pendingSavesRef.current.size === 0) {
+          if (failedPayloadsRef.current.size === 0) {
+            flashSaved();
+          } else {
+            setSaveStatus("failed");
+          }
+        }
+        // Refresh the cache without blocking the UI
+        queryClient.invalidateQueries({ queryKey: ['/api/assessments', assessmentId, 'responses'] });
+        return;
+      } catch (err) {
+        lastError = err;
+        // Exponential backoff: 400ms, 1200ms
+        if (attempt < maxAttempts) {
+          await new Promise(r => setTimeout(r, attempt * 400));
+        }
+      }
+    }
+
+    // All attempts failed
+    pendingSavesRef.current.delete(questionId);
+    failedPayloadsRef.current.set(questionId, payload);
+    setSaveStatus("failed");
+    toast({
+      title: "Couldn't save your answer",
+      description: "We'll keep retrying. Click an answer again to retry now.",
+      variant: "destructive",
+    });
+    // eslint-disable-next-line no-console
+    console.error("Failed to save response after retries:", lastError);
+  }, [assessmentId, flashSaved, toast]);
+
+  const queueSave = useCallback((payload: SavePayload) => {
+    // Fire and forget — UI already updated optimistically
+    void performSave(payload);
+  }, [performSave]);
 
   // Calculate results mutation
   const calculateResults = useMutation({
@@ -118,47 +216,78 @@ export default function Assessment() {
     },
     onError: (error: Error) => {
       console.error('Failed to calculate results:', error);
-      // Show error to user
-      alert(`Unable to complete assessment: ${error.message}. Please ensure you have answered all questions.`);
+      toast({
+        title: "Unable to complete assessment",
+        description: error.message || "Please ensure all questions are answered.",
+        variant: "destructive",
+      });
     },
   });
 
-  const handleAnswer = async (value: string | string[]) => {
+  const handleAnswer = (value: string | string[]) => {
     const question = questions[currentQuestionIndex];
+    if (!question) return;
     const questionId = question.id;
-    setSelectedAnswers({ ...selectedAnswers, [questionId]: value });
-    
-    // Prepare the save data based on question type
-    let saveData: any = { questionId };
-    
+    setSelectedAnswers(prev => ({ ...prev, [questionId]: value }));
+
+    // Build payload by question type. Skip saves for clearly invalid input.
+    const payload: SavePayload = { questionId };
     if (question.type === 'numeric') {
-      const numericValue = parseFloat(value as string);
-      if (!isNaN(numericValue)) {
-        saveData.numericValue = numericValue;
-      } else {
-        return; // Don't save invalid numeric values
-      }
+      const num = parseFloat(value as string);
+      if (Number.isNaN(num)) return;
+      payload.numericValue = num;
     } else if (question.type === 'true_false') {
-      saveData.booleanValue = (value as string) === 'true';
+      payload.booleanValue = (value as string) === 'true';
     } else if (question.type === 'text') {
-      saveData.textValue = value as string;
+      payload.textValue = value as string;
     } else if (question.type === 'multi_select') {
-      saveData.answerIds = value as string[]; // For multi-select questions
+      payload.answerIds = value as string[];
     } else {
-      saveData.answerId = value as string;
+      payload.answerId = value as string;
     }
-    
-    // Wait for the save to complete before allowing next action
-    await new Promise<void>((resolve) => {
-      saveResponse.mutate(saveData, {
-        onSettled: () => resolve(),
-      });
-    });
+
+    queueSave(payload);
   };
 
-  const handleNext = () => {
+  // Indices that count as answered (for navigator + incomplete panel)
+  const answeredIndices = useMemo(() => {
+    const set = new Set<number>();
+    questions.forEach((q, i) => {
+      if (isAnswerComplete(q, selectedAnswers[q.id])) set.add(i);
+    });
+    return set;
+  }, [questions, selectedAnswers]);
+
+  const unansweredQuestions = useMemo(() => {
+    return questions
+      .map((q, index) => ({ q, index }))
+      .filter(({ q }) => !isAnswerComplete(q, selectedAnswers[q.id]));
+  }, [questions, selectedAnswers]);
+
+  // Wait until all in-flight saves have settled
+  const waitForPendingSaves = useCallback(async () => {
+    const start = Date.now();
+    while (pendingSavesRef.current.size > 0) {
+      if (Date.now() - start > 8000) break; // safety cap
+      await new Promise(r => setTimeout(r, 100));
+    }
+  }, []);
+
+  const handleNext = async () => {
     if (currentQuestionIndex === questions.length - 1) {
-      // Complete assessment - safe to calculate since last save is complete
+      // Final question — validate completeness before submitting
+      if (unansweredQuestions.length > 0) {
+        setShowIncomplete(true);
+        // Bring panel into view
+        requestAnimationFrame(() => {
+          document
+            .getElementById("incomplete-panel")
+            ?.scrollIntoView({ behavior: "smooth", block: "center" });
+        });
+        return;
+      }
+      setShowIncomplete(false);
+      await waitForPendingSaves();
       calculateResults.mutate();
     } else {
       setCurrentQuestionIndex(currentQuestionIndex + 1);
@@ -168,6 +297,12 @@ export default function Assessment() {
   const handlePrevious = () => {
     if (currentQuestionIndex > 0) {
       setCurrentQuestionIndex(currentQuestionIndex - 1);
+    }
+  };
+
+  const handleJump = (index: number) => {
+    if (index >= 0 && index < questions.length) {
+      setCurrentQuestionIndex(index);
     }
   };
 
@@ -187,43 +322,30 @@ export default function Assessment() {
   const currentQuestion = questions[currentQuestionIndex];
   const currentAnswer = selectedAnswers[currentQuestion.id];
   const currentDimension = dimensions.find(d => d.id === currentQuestion.dimensionId);
-  
-  // Check if user can go to next question based on question type
-  let canGoNext = false;
-  if (currentQuestion.type === 'numeric') {
-    const numValue = parseFloat(currentAnswer as string);
-    canGoNext = !isNaN(numValue) && (currentAnswer as string) !== "";
-    if (currentQuestion.minValue !== undefined && currentQuestion.minValue !== null) {
-      canGoNext = canGoNext && numValue >= currentQuestion.minValue;
-    }
-    if (currentQuestion.maxValue !== undefined && currentQuestion.maxValue !== null) {
-      canGoNext = canGoNext && numValue <= currentQuestion.maxValue;
-    }
-  } else if (currentQuestion.type === 'text') {
-    // Text questions require some input
-    canGoNext = typeof currentAnswer === 'string' && currentAnswer.trim().length > 0;
-  } else if (currentQuestion.type === 'true_false') {
-    // True/false questions must have an answer selected
-    canGoNext = currentAnswer === 'true' || currentAnswer === 'false';
-  } else if (currentQuestion.type === 'multi_select') {
-    // Multi-select questions - allow proceeding even with 0 selections (scores as 100)
-    canGoNext = true;
-  } else {
-    // Multiple choice questions must have an answer selected
-    canGoNext = !!currentAnswer;
-  }
-  
+
+  const isCurrentAnswered = isAnswerComplete(currentQuestion, currentAnswer);
   const canGoPrev = currentQuestionIndex > 0;
+  const isLast = currentQuestionIndex === questions.length - 1;
 
   return (
     <div className="min-h-screen flex flex-col">
       <main className="flex-1 py-6 sm:py-8 md:py-12">
         <div className="container mx-auto px-3 sm:px-4 max-w-4xl">
           <div className="mb-6 sm:mb-8">
-            <ProgressBar 
-              current={currentQuestionIndex + 1} 
+            <ProgressBar
+              current={currentQuestionIndex + 1}
               total={questions.length}
               dimensionLabel={currentDimension?.label}
+            />
+          </div>
+
+          <div className="mb-6">
+            <QuestionNavigator
+              total={questions.length}
+              currentIndex={currentQuestionIndex}
+              answeredIndices={answeredIndices}
+              onJump={handleJump}
+              saveStatus={saveStatus}
             />
           </div>
 
@@ -243,7 +365,52 @@ export default function Assessment() {
             selectedAnswer={currentAnswer}
           />
 
-          <div className="flex justify-between gap-3 mt-6 sm:mt-8">
+          {showIncomplete && unansweredQuestions.length > 0 && (
+            <Card
+              id="incomplete-panel"
+              className="mt-6 border-destructive/50 bg-destructive/5 p-6"
+              data-testid="panel-incomplete"
+            >
+              <div className="flex items-start gap-3">
+                <AlertCircle className="h-5 w-5 text-destructive mt-0.5 shrink-0" aria-hidden="true" />
+                <div className="flex-1">
+                  <h3 className="font-semibold mb-2" data-testid="text-incomplete-title">
+                    {unansweredQuestions.length === 1
+                      ? "1 question still needs an answer"
+                      : `${unansweredQuestions.length} questions still need answers`}
+                  </h3>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Click any question below to jump to it and complete your assessment.
+                  </p>
+                  <ul className="space-y-2">
+                    {unansweredQuestions.map(({ q, index }) => (
+                      <li key={q.id}>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setCurrentQuestionIndex(index);
+                            setShowIncomplete(false);
+                            window.scrollTo({ top: 0, behavior: "smooth" });
+                          }}
+                          className="w-full text-left p-3 rounded-md border bg-background hover-elevate active-elevate-2"
+                          data-testid={`link-incomplete-${index + 1}`}
+                        >
+                          <div className="flex items-baseline gap-2">
+                            <span className="text-xs font-semibold text-muted-foreground shrink-0">
+                              Q{index + 1}
+                            </span>
+                            <span className="text-sm line-clamp-2">{q.text}</span>
+                          </div>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            </Card>
+          )}
+
+          <div className="flex flex-wrap justify-between gap-3 mt-6 sm:mt-8">
             <Button
               variant="outline"
               onClick={handlePrevious}
@@ -256,12 +423,15 @@ export default function Assessment() {
             </Button>
             <Button
               onClick={handleNext}
-              disabled={!canGoNext || calculateResults.isPending}
+              disabled={
+                calculateResults.isPending ||
+                (!isLast && !isCurrentAnswered)
+              }
               data-testid="button-next"
             >
               {calculateResults.isPending
                 ? "Calculating..."
-                : currentQuestionIndex === questions.length - 1
+                : isLast
                 ? "Complete"
                 : "Next"}
               <ChevronRight className="ml-1 sm:ml-2 h-4 w-4" />
