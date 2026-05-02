@@ -13,7 +13,7 @@ import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Download, Plus, Edit, Trash, FileSpreadsheet, Eye, EyeOff, BarChart3, Settings, FileDown, FileUp, ListOrdered, Users, Star, Upload, X, Sparkles, CheckCircle2, XCircle, Database, FileText, Brain, BookOpen, ClipboardList, Home, Building2, ChevronDown, Shield, Tag, Activity, Copy, Archive, ArchiveRestore, KeyRound, Clock, ExternalLink, Building, Ticket } from "lucide-react";
+import { Download, Plus, Edit, Trash, FileSpreadsheet, Eye, EyeOff, BarChart3, Settings, FileDown, FileUp, ListOrdered, Users, Star, Upload, X, Sparkles, CheckCircle2, XCircle, Database, FileText, Brain, BookOpen, ClipboardList, Home, Building2, ChevronDown, Shield, Tag, Activity, Copy, Archive, ArchiveRestore, KeyRound, Clock, ExternalLink, Building, Ticket, Palette } from "lucide-react";
 import type { Model, Result, Assessment, Dimension, Question, Answer, User, AssessmentTag } from "@shared/schema";
 import { USER_ROLES, type UserRole } from "@shared/constants";
 import { useAuth } from "@/hooks/use-auth";
@@ -36,6 +36,7 @@ import { AccessRequestsSection } from "@/components/admin/AccessRequestsSection"
 import { AssessmentTagSelector } from "@/components/admin/AssessmentTagSelector";
 import { AssessmentReviewDialog } from "@/components/admin/AssessmentReviewDialog";
 import { SupportManagement } from "@/components/admin/SupportManagement";
+import { BrandingPanel } from "@/components/admin/BrandingPanel";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import {
@@ -2526,6 +2527,27 @@ export default function Admin() {
               </SidebarGroup>
             )}
 
+            {isAdminUser(currentUser) && currentUser && normalizeRole(currentUser.role) === USER_ROLES.TENANT_ADMIN && (
+              <SidebarGroup>
+                <SidebarGroupLabel>Tenant</SidebarGroupLabel>
+                <SidebarGroupContent>
+                  <SidebarMenu>
+                    <SidebarMenuItem>
+                      <SidebarMenuButton
+                        onClick={() => setActiveSection('branding')}
+                        isActive={activeSection === 'branding'}
+                        data-testid="tab-branding"
+                        tooltip="Branding"
+                      >
+                        <Palette className="h-4 w-4" />
+                        <span className="group-data-[collapsible=icon]:hidden">Branding</span>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  </SidebarMenu>
+                </SidebarGroupContent>
+              </SidebarGroup>
+            )}
+
             {isAdminUser(currentUser) && currentUser && normalizeRole(currentUser.role) === USER_ROLES.GLOBAL_ADMIN && (
               <SidebarGroup>
                 <SidebarGroupLabel>System</SidebarGroupLabel>
@@ -2540,6 +2562,17 @@ export default function Admin() {
                       >
                         <Building2 className="h-4 w-4" />
                         <span className="group-data-[collapsible=icon]:hidden">Tenants</span>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                    <SidebarMenuItem>
+                      <SidebarMenuButton
+                        onClick={() => setActiveSection('branding')}
+                        isActive={activeSection === 'branding'}
+                        data-testid="tab-branding-global"
+                        tooltip="Branding"
+                      >
+                        <Palette className="h-4 w-4" />
+                        <span className="group-data-[collapsible=icon]:hidden">Branding</span>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
                     <SidebarMenuItem>
@@ -4140,6 +4173,18 @@ export default function Admin() {
               )}
 
               {activeSection === 'tenants' && <TenantManagement />}
+
+              {activeSection === 'branding' && currentUser && (
+                <BrandingPanel
+                  tenantId={
+                    normalizeRole(currentUser.role) === USER_ROLES.GLOBAL_ADMIN
+                      ? (availableTenants[0]?.id ?? '')
+                      : (currentUser.tenantId ?? '')
+                  }
+                  isGlobalAdmin={normalizeRole(currentUser.role) === USER_ROLES.GLOBAL_ADMIN}
+                  availableTenants={availableTenants}
+                />
+              )}
 
               {activeSection === 'oauth-applications' && <OAuthApplications />}
 

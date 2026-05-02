@@ -10,9 +10,11 @@ import {
   insertTenantDomainSchema,
   insertTenantEntitlementSchema,
   insertModelTenantSchema,
+  tenantBrandingSchema,
 } from "@shared/schema";
 import { eq, and } from "drizzle-orm";
-import { ensureGlobalAdmin } from "./auth";
+import { ensureGlobalAdmin, ensureAnyAdmin } from "./auth";
+import { ObjectStorageService } from "./objectStorage";
 
 const router = Router();
 
@@ -52,10 +54,16 @@ router.get("/api/tenants", ensureGlobalAdmin, async (req, res) => {
 });
 
 // Get single tenant by ID
-router.get("/api/tenants/:id", ensureGlobalAdmin, async (req, res) => {
+// Global admins can read any tenant; tenant admins can read only their own tenant.
+router.get("/api/tenants/:id", ensureAnyAdmin, async (req, res) => {
   try {
     const { id } = req.params;
-    
+    const user = req.user!;
+
+    if (user.role === 'tenant_admin' && user.tenantId !== id) {
+      return res.status(403).json({ error: "You can only access your own tenant" });
+    }
+
     const tenant = await db.select().from(tenants).where(eq(tenants.id, id)).limit(1);
     
     if (!tenant.length) {
@@ -190,6 +198,70 @@ router.delete("/api/tenants/:id", ensureGlobalAdmin, async (req, res) => {
   } catch (error) {
     console.error("Error deleting tenant:", error);
     res.status(500).json({ error: "Failed to delete tenant" });
+  }
+});
+
+// ========== TENANT BRANDING ROUTE (Tenant Admin or Global Admin) ==========
+
+// Update tenant branding (logo, favicon, colors, email-from name)
+// Tenant admins may only update their own tenant's branding; global admins may update any tenant.
+router.put("/api/tenants/:id/branding", ensureAnyAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const user = req.user!;
+
+    // Tenant admins may only modify their own tenant
+    if (user.role === 'tenant_admin' && user.tenantId !== id) {
+      return res.status(403).json({ error: "You can only edit branding for your own tenant" });
+    }
+
+    const validated = tenantBrandingSchema.parse(req.body);
+
+    // Make uploaded objects (logo/favicon) publicly readable and normalize their paths.
+    const objectStorageService = new ObjectStorageService();
+    const updates: Record<string, any> = { ...validated };
+
+    for (const field of ['logoUrl', 'faviconUrl'] as const) {
+      const val = updates[field];
+      if (typeof val === 'string' && val.length > 0) {
+        try {
+          const normalizedPath = await objectStorageService.trySetObjectEntityAclPolicy(
+            val,
+            { owner: user.id, visibility: 'public' }
+          );
+          updates[field] = normalizedPath;
+        } catch (e) {
+          // If the path isn't an upload path (e.g. external URL), leave it as-is.
+        }
+      }
+    }
+
+    const [updatedTenant] = await db
+      .update(tenants)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(tenants.id, id))
+      .returning();
+
+    if (!updatedTenant) {
+      return res.status(404).json({ error: "Tenant not found" });
+    }
+
+    await db.insert(tenantAuditLog).values({
+      tenantId: id,
+      actorUserId: user.id,
+      action: "update_branding",
+      targetType: "tenant",
+      targetId: id,
+      metadata: { changes: updates },
+    });
+
+    res.json(updatedTenant);
+  } catch (error: any) {
+    console.error("Error updating tenant branding:", error);
+    if (error.name === "ZodError") {
+      return res.status(400).json({ error: "Invalid branding data", details: error.errors });
+    }
+    res.status(500).json({ error: "Failed to update tenant branding" });
   }
 });
 

@@ -26,17 +26,19 @@ export async function generateVerificationToken(userId: string): Promise<string>
 export async function sendVerificationEmail(
   email: string,
   token: string,
-  baseUrl: string
+  baseUrl: string,
+  tenantId?: string | null
 ): Promise<void> {
-  const { getUncachableSendGridClient } = await import('../sendgrid.js');
+  const { getUncachableSendGridClient, buildEmailFrom } = await import('../sendgrid.js');
   const { client: sgMail, fromEmail } = await getUncachableSendGridClient();
+  const from = await buildEmailFrom(fromEmail, tenantId);
 
   const verificationUrl = `${baseUrl}/verify-email?token=${token}`;
   const emailHeaderUrl = `${baseUrl}/og-image.jpg`;
 
   const msg = {
     to: email,
-    from: fromEmail,
+    from,
     subject: 'Welcome to Orion by Synozur – Please Verify Your Email',
     text: `Welcome to Orion by Synozur!
 

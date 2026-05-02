@@ -111,7 +111,7 @@ export function setupAuth(app: Express) {
             await import('./services/email-verification.js');
           const token = await generateVerificationToken(user.id);
           const baseUrl = `${req.protocol}://${req.get('host')}`;
-          await sendVerificationEmail(user.email, token, baseUrl);
+          await sendVerificationEmail(user.email, token, baseUrl, user.tenantId);
         } catch (emailError) {
           console.error('Failed to send verification email:', emailError);
           // Continue with registration even if email fails
@@ -246,7 +246,7 @@ export function setupAuth(app: Express) {
       const token = await generateVerificationToken(user.id);
       const baseUrl = `${req.protocol}://${req.get('host')}`;
       
-      await sendVerificationEmail(email, token, baseUrl);
+      await sendVerificationEmail(email, token, baseUrl, user.tenantId);
 
       res.json({ success: true, message: "Verification email sent" });
     } catch (error) {

@@ -16,6 +16,7 @@ import {
 import synozurLogo from '@assets/SA-Logo-Horizontal-color_1759930898755.png';
 import { SynozurAppSwitcher } from "./SynozurAppSwitcher";
 import { HelpChatPanel } from "./HelpChatPanel";
+import { useTenantBranding } from "@/hooks/use-tenant-branding";
 
 // Helper function to check if user has admin permissions
 function isAdminUser(user: any): boolean {
@@ -41,6 +42,11 @@ export function Header() {
   const { user, logout, logoutMutation } = useAuth();
   const [, setLocation] = useLocation();
   const [showHelpChat, setShowHelpChat] = useState(false);
+  const { tenant } = useTenantBranding();
+  const logoSrc = tenant?.logoUrl || synozurLogo;
+  const logoAlt = tenant?.name || "Synozur";
+  const logoLink = tenant?.logoUrl ? "/" : "https://www.synozur.com";
+  const logoIsExternal = !tenant?.logoUrl;
 
   const { data: whatsNewData } = useQuery<{ showModal: boolean }>({
     queryKey: ["/api/changelog/whats-new"],
@@ -127,16 +133,15 @@ export function Header() {
         <div className="container mx-auto flex h-16 items-center justify-between gap-2 px-3 sm:px-4">
           <div className="flex items-center gap-2 sm:gap-3 min-w-0">
             <SynozurAppSwitcher currentApp="orion" />
-            <a 
-              href="https://www.synozur.com" 
-              target="_blank" 
-              rel="noopener noreferrer" 
+            <a
+              href={logoLink}
+              {...(logoIsExternal ? { target: "_blank", rel: "noopener noreferrer" } : {})}
               className="flex items-center hover-elevate transition-all rounded-lg -ml-2"
-              data-testid="link-synozur-website"
+              data-testid="link-tenant-logo"
             >
-              <img 
-                src={synozurLogo} 
-                alt="Synozur" 
+              <img
+                src={logoSrc}
+                alt={logoAlt}
                 className="h-8 sm:h-10 w-auto max-w-[100px] sm:max-w-none object-contain"
               />
             </a>

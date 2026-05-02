@@ -224,8 +224,11 @@ export const tenants = pgTable("tenants", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   name: text("name").notNull(),
   logoUrl: text("logo_url"),
+  faviconUrl: text("favicon_url"),
   primaryColor: varchar("primary_color", { length: 7 }), // Hex color #RRGGBB
-  secondaryColor: varchar("secondary_color", { length: 7 }), // Hex color #RRGGBB
+  secondaryColor: varchar("secondary_color", { length: 7 }), // Hex color #RRGGBB (legacy)
+  accentColor: varchar("accent_color", { length: 7 }), // Hex color #RRGGBB
+  emailFromName: varchar("email_from_name", { length: 100 }), // Display name used in tenant-scoped email "From" headers
   autoCreateUsers: boolean("auto_create_users").notNull().default(false),
   // SSO Provisioning settings
   allowUserSelfProvisioning: boolean("allow_user_self_provisioning").notNull().default(true), // Allow users to auto-provision via SSO when domain matches
@@ -800,16 +803,42 @@ export const insertOauthAuthorizationCodeSchema = createInsertSchema(oauthAuthor
 // Hex color regex: #RRGGBB or #RGB
 const hexColorRegex = /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/;
 
+// Accept absolute URLs OR object-storage relative paths like /objects/...
+const logoOrFaviconSchema = z
+  .string()
+  .max(500)
+  .refine(
+    (val) => val === '' || val.startsWith('/objects/') || /^https?:\/\//.test(val),
+    "Must be a URL or an object-storage path"
+  )
+  .nullable()
+  .or(z.literal(''))
+  .transform(val => val === '' ? null : val);
+
 export const insertTenantSchema = createInsertSchema(tenants).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
 }).extend({
   name: z.string().min(1, "Tenant name is required").max(255),
-  logoUrl: z.string().url("Invalid URL format").max(500).nullable().or(z.literal('')).transform(val => val === '' ? null : val),
+  logoUrl: logoOrFaviconSchema,
+  faviconUrl: logoOrFaviconSchema,
   primaryColor: z.string().regex(hexColorRegex, "Invalid hex color format (e.g., #810FFB)").nullable().or(z.literal('')).transform(val => val === '' ? null : val),
   secondaryColor: z.string().regex(hexColorRegex, "Invalid hex color format (e.g., #E60CB3)").nullable().or(z.literal('')).transform(val => val === '' ? null : val),
+  accentColor: z.string().regex(hexColorRegex, "Invalid hex color format (e.g., #E60CB3)").nullable().or(z.literal('')).transform(val => val === '' ? null : val),
+  emailFromName: z.string().max(100).nullable().or(z.literal('')).transform(val => val === '' ? null : val),
 });
+
+// Branding-only update schema (subset, used by tenant_admin's branding endpoint)
+export const tenantBrandingSchema = z.object({
+  logoUrl: logoOrFaviconSchema.optional(),
+  faviconUrl: logoOrFaviconSchema.optional(),
+  primaryColor: z.string().regex(hexColorRegex, "Invalid hex color format (e.g., #810FFB)").nullable().or(z.literal('')).transform(val => val === '' ? null : val).optional(),
+  accentColor: z.string().regex(hexColorRegex, "Invalid hex color format (e.g., #E60CB3)").nullable().or(z.literal('')).transform(val => val === '' ? null : val).optional(),
+  emailFromName: z.string().max(100).nullable().or(z.literal('')).transform(val => val === '' ? null : val).optional(),
+});
+
+export type TenantBranding = z.infer<typeof tenantBrandingSchema>;
 
 export const insertTenantDomainSchema = createInsertSchema(tenantDomains).omit({
   id: true,

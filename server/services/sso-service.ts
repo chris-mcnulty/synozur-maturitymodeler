@@ -251,8 +251,11 @@ export async function provisionUser(ssoUserInfo: SsoUserInfo): Promise<Provision
       const newTenant = await storage.createTenant({
         name: tenantName,
         logoUrl: null,
+        faviconUrl: null,
         primaryColor: null,
         secondaryColor: null,
+        accentColor: null,
+        emailFromName: null,
         allowUserSelfProvisioning: true,
         syncToHubSpot: false, // Opt-in: admin must enable HubSpot sync per tenant
         inviteOnly: false,

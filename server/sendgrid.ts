@@ -1,4 +1,7 @@
 import sgMail from '@sendgrid/mail';
+import { db } from './db';
+import { tenants } from '@shared/schema';
+import { eq } from 'drizzle-orm';
 
 let connectionSettings: any;
 
@@ -40,4 +43,35 @@ export async function getUncachableSendGridClient() {
     client: sgMail,
     fromEmail: email
   };
+}
+
+/**
+ * Build a SendGrid "from" value, optionally using the tenant's configured
+ * emailFromName as the display name. Falls back to "Synozur" when there's
+ * no tenant or no configured name.
+ *
+ * Returns either a string (just an email) or { email, name } object — both
+ * forms are accepted by SendGrid's `from` field.
+ */
+export async function buildEmailFrom(
+  fromEmail: string,
+  tenantId?: string | null
+): Promise<string | { email: string; name: string }> {
+  let displayName: string | null = null;
+  if (tenantId) {
+    try {
+      const [t] = await db
+        .select({ emailFromName: tenants.emailFromName, name: tenants.name })
+        .from(tenants)
+        .where(eq(tenants.id, tenantId))
+        .limit(1);
+      if (t) {
+        displayName = t.emailFromName || t.name || null;
+      }
+    } catch (err) {
+      console.error('Failed to resolve tenant emailFromName:', err);
+    }
+  }
+  const name = displayName || 'Synozur';
+  return { email: fromEmail, name };
 }

@@ -672,13 +672,14 @@ function extractFallbackHighlights(content: string): Array<{ icon: string; title
 async function sendTicketAcknowledgement(user: schema.User, ticket: schema.SupportTicket, req: Request) {
   if (!user.email) return;
   try {
-    const { getUncachableSendGridClient } = await import('./sendgrid.js');
+    const { getUncachableSendGridClient, buildEmailFrom } = await import('./sendgrid.js');
     const { client: sgMail, fromEmail } = await getUncachableSendGridClient();
+    const from = await buildEmailFrom(fromEmail, ticket.tenantId);
     const baseUrl = `${req.protocol}://${req.get('host')}`;
 
     await sgMail.send({
       to: user.email,
-      from: fromEmail,
+      from,
       subject: `Support Ticket #${ticket.ticketNumber} Received - ${escapeHtml(ticket.subject)}`,
       html: `
         <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
@@ -703,8 +704,9 @@ async function sendTicketAcknowledgement(user: schema.User, ticket: schema.Suppo
 
 async function sendInternalNotification(user: schema.User, ticket: schema.SupportTicket, req: Request) {
   try {
-    const { getUncachableSendGridClient } = await import('./sendgrid.js');
+    const { getUncachableSendGridClient, buildEmailFrom } = await import('./sendgrid.js');
     const { client: sgMail, fromEmail } = await getUncachableSendGridClient();
+    const from = await buildEmailFrom(fromEmail, ticket.tenantId);
     const baseUrl = `${req.protocol}://${req.get('host')}`;
 
     const allUsers = await storage.getAllUsers();
@@ -726,7 +728,7 @@ async function sendInternalNotification(user: schema.User, ticket: schema.Suppor
     for (const recipient of recipients) {
       await sgMail.send({
         to: recipient.email!,
-        from: fromEmail,
+        from,
         subject: `[Orion Support] New Ticket #${ticket.ticketNumber}: ${escapeHtml(ticket.subject)}`,
         html: `
           <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
@@ -756,13 +758,14 @@ async function sendTicketClosedEmail(ticket: schema.SupportTicket, newStatus: st
     const ticketUser = await storage.getUser(ticket.userId);
     if (!ticketUser?.email) return;
 
-    const { getUncachableSendGridClient } = await import('./sendgrid.js');
+    const { getUncachableSendGridClient, buildEmailFrom } = await import('./sendgrid.js');
     const { client: sgMail, fromEmail } = await getUncachableSendGridClient();
+    const from = await buildEmailFrom(fromEmail, ticket.tenantId);
     const baseUrl = `${req.protocol}://${req.get('host')}`;
 
     await sgMail.send({
       to: ticketUser.email,
-      from: fromEmail,
+      from,
       subject: `Support Ticket #${ticket.ticketNumber} ${newStatus === 'resolved' ? 'Resolved' : 'Closed'}`,
       html: `
         <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
@@ -789,8 +792,9 @@ async function sendReplyNotificationEmail(ticket: schema.SupportTicket, replier:
     const ticketUser = await storage.getUser(ticket.userId);
     if (!ticketUser?.email) return;
 
-    const { getUncachableSendGridClient } = await import('./sendgrid.js');
+    const { getUncachableSendGridClient, buildEmailFrom } = await import('./sendgrid.js');
     const { client: sgMail, fromEmail } = await getUncachableSendGridClient();
+    const from = await buildEmailFrom(fromEmail, ticket.tenantId);
     const baseUrl = `${req.protocol}://${req.get('host')}`;
 
     const replierName = replier.name || replier.username || 'Support Team';
@@ -798,7 +802,7 @@ async function sendReplyNotificationEmail(ticket: schema.SupportTicket, replier:
 
     await sgMail.send({
       to: ticketUser.email,
-      from: fromEmail,
+      from,
       subject: `New Reply on Ticket #${ticket.ticketNumber}: ${escapeHtml(ticket.subject)}`,
       html: `
         <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
