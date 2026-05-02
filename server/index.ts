@@ -18,6 +18,11 @@ app.use((req, res, next) => {
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: false, limit: '10mb' }));
 
+// Threshold (ms) above which a request is considered slow and logged separately.
+// Override via SLOW_REQUEST_MS env var. Slow log goes to console.warn so it stands
+// out in production logs without requiring a full APM setup.
+const SLOW_REQUEST_MS = Number.parseInt(process.env.SLOW_REQUEST_MS || "500", 10);
+
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;
@@ -42,6 +47,19 @@ app.use((req, res, next) => {
       }
 
       log(logLine);
+
+      // Lightweight slow-query/slow-request logging. Helps surface DB-bound
+      // hotspots in production without an APM. Skips noisy bulk endpoints
+      // (exports/imports) where a few seconds is expected.
+      if (
+        duration >= SLOW_REQUEST_MS &&
+        !path.includes("/export") &&
+        !path.includes("/import")
+      ) {
+        console.warn(
+          `[SLOW] ${req.method} ${path} ${res.statusCode} took ${duration}ms (threshold ${SLOW_REQUEST_MS}ms)`
+        );
+      }
     }
   });
 

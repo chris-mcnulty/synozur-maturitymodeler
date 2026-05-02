@@ -1,5 +1,5 @@
 import { db, pool } from "./db";
-import { eq, and, desc, sql } from "drizzle-orm";
+import { eq, and, desc, sql, inArray, type SQL } from "drizzle-orm";
 import * as schema from "@shared/schema";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
@@ -27,7 +27,7 @@ export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
-  getAllUsers(): Promise<User[]>;
+  getAllUsers(tenantIds?: string[] | null): Promise<User[]>;
   createUser(user: InsertUser): Promise<User>;
   updateUser(id: string, user: Partial<InsertUser>): Promise<User | undefined>;
   deleteUser(id: string): Promise<void>;
@@ -35,7 +35,8 @@ export interface IStorage {
   // Model methods
   getModel(id: string): Promise<Model | undefined>;
   getModelBySlug(slug: string): Promise<Model | undefined>;
-  getAllModels(status?: string): Promise<(Model & { questionCount: number })[]>;
+  getAllModels(status?: string, options?: { excludeArchived?: boolean; tenantIds?: string[] | null }): Promise<(Model & { questionCount: number })[]>;
+  getUserByUsernameCaseInsensitive(username: string): Promise<User | undefined>;
   createModel(model: InsertModel): Promise<Model>;
   updateModel(id: string, model: Partial<InsertModel>): Promise<Model | undefined>;
   deleteModel(id: string): Promise<void>;
@@ -125,7 +126,7 @@ export interface IStorage {
   getModelAccessRequestsByModel(modelId: string, status?: string): Promise<schema.ModelAccessRequest[]>;
   getModelAccessRequestByEmail(modelId: string, email: string): Promise<schema.ModelAccessRequest | undefined>;
   getModelAccessRequestsByTenant(tenantId: string): Promise<schema.ModelAccessRequest[]>;
-  getAllModelAccessRequests(status?: string): Promise<(schema.ModelAccessRequest & { modelName: string })[]>;
+  getAllModelAccessRequests(status?: string, modelId?: string): Promise<(schema.ModelAccessRequest & { modelName: string })[]>;
   updateModelAccessRequest(id: string, data: Partial<schema.ModelAccessRequest>): Promise<schema.ModelAccessRequest | undefined>;
   countPendingAccessRequests(): Promise<number>;
 
@@ -174,8 +175,28 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
-  async getAllUsers(): Promise<User[]> {
-    return db.select().from(schema.users).orderBy(desc(schema.users.createdAt));
+  async getUserByUsernameCaseInsensitive(username: string): Promise<User | undefined> {
+    const [user] = await db
+      .select()
+      .from(schema.users)
+      .where(sql`lower(${schema.users.username}) = lower(${username})`)
+      .limit(1);
+    return user;
+  }
+
+  async getAllUsers(tenantIds?: string[] | null): Promise<User[]> {
+    // null/undefined => all users; [] => no accessible tenants; non-empty => filter
+    if (tenantIds === undefined || tenantIds === null) {
+      return db.select().from(schema.users).orderBy(desc(schema.users.createdAt));
+    }
+    if (tenantIds.length === 0) {
+      return [];
+    }
+    return db
+      .select()
+      .from(schema.users)
+      .where(inArray(schema.users.tenantId, tenantIds))
+      .orderBy(desc(schema.users.createdAt));
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
@@ -203,9 +224,34 @@ export class DatabaseStorage implements IStorage {
     return model;
   }
 
-  async getAllModels(status?: string): Promise<(Model & { questionCount: number })[]> {
-    const statusFilter = status ? sql`WHERE m.status = ${status}` : sql``;
-    
+  async getAllModels(status?: string, options?: { excludeArchived?: boolean; tenantIds?: string[] | null }): Promise<(Model & { questionCount: number })[]> {
+    // Tenant scoping: undefined/null => no tenant restriction (e.g. global admin);
+    // [] => no accessible tenants; non-empty => model must be public, owned by one of
+    // those tenants, or assigned via model_tenants.
+    if (options?.tenantIds !== undefined && options?.tenantIds !== null && options.tenantIds.length === 0) {
+      return [];
+    }
+
+    const whereClauses: SQL[] = [];
+    if (status) {
+      whereClauses.push(sql`m.status = ${status}`);
+    } else if (options?.excludeArchived) {
+      whereClauses.push(sql`m.status <> 'archived'`);
+    }
+    if (options?.tenantIds && options.tenantIds.length > 0) {
+      // Build a SQL array literal of tenant ids for ANY(...) comparisons. Drizzle
+      // will parameterise each value safely via sql.join.
+      const tenantIdList = sql.join(options.tenantIds.map((t) => sql`${t}`), sql`, `);
+      whereClauses.push(sql`(
+        m.visibility = 'public'
+        OR m.owner_tenant_id IN (${tenantIdList})
+        OR m.id IN (SELECT mt.model_id FROM model_tenants mt WHERE mt.tenant_id IN (${tenantIdList}))
+      )`);
+    }
+    const whereSql = whereClauses.length > 0
+      ? sql`WHERE ${sql.join(whereClauses, sql` AND `)}`
+      : sql``;
+
     const result = await db.execute(sql`
       SELECT 
         m.id,
@@ -227,7 +273,7 @@ export class DatabaseStorage implements IStorage {
         COALESCE(COUNT(q.id), 0)::integer as question_count
       FROM models m
       LEFT JOIN questions q ON m.id = q.model_id
-      ${statusFilter}
+      ${whereSql}
       GROUP BY m.id, m.slug, m.name, m.description, m.version, m.estimated_time, m.status, m.featured, m.image_url, m.maturity_scale::text, m.general_resources::text, m.visibility, m.owner_tenant_id, m.model_class, m.created_at, m.updated_at
       ORDER BY m.created_at DESC
     `);
@@ -693,8 +739,10 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(schema.modelAccessRequests.requestedAt));
   }
 
-  async getAllModelAccessRequests(status?: string): Promise<(schema.ModelAccessRequest & { modelName: string })[]> {
-    const conditions = status ? [eq(schema.modelAccessRequests.status, status)] : [];
+  async getAllModelAccessRequests(status?: string, modelId?: string): Promise<(schema.ModelAccessRequest & { modelName: string })[]> {
+    const conditions: SQL[] = [];
+    if (status) conditions.push(eq(schema.modelAccessRequests.status, status));
+    if (modelId) conditions.push(eq(schema.modelAccessRequests.modelId, modelId));
     const rows = await db
       .select({
         id: schema.modelAccessRequests.id,

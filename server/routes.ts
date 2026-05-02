@@ -196,20 +196,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/users', ensureAnyAdmin, async (req, res) => {
     try {
       const currentUser = req.user!;
-      let users = await storage.getAllUsers();
-      
-      // Filter by tenant for tenant_admin
-      if (!checkIsGlobalAdmin(currentUser)) {
-        const accessibleTenants = getAccessibleTenantIds(currentUser);
-        if (accessibleTenants && accessibleTenants.length > 0) {
-          users = users.filter(u => 
-            u.tenantId && accessibleTenants.includes(u.tenantId)
-          );
-        } else {
-          users = []; // No accessible tenants
-        }
-      }
-      
+      // getAccessibleTenantIds returns null for global admin (=> all users),
+      // [] for users with no tenant access, or [tenantId] for tenant-scoped roles.
+      // Pushing this into SQL avoids fetching the entire users table.
+      const accessibleTenants = getAccessibleTenantIds(currentUser);
+      const users = await storage.getAllUsers(accessibleTenants);
+
       // Remove password from response
       const safeUsers = users.map(({ password, ...user }) => user);
       res.json(safeUsers);
@@ -292,8 +284,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { newPassword, username, role, ...updateData } = req.body;
       
       // Get target user to check permissions
-      const allUsers = await storage.getAllUsers();
-      const targetUser = allUsers.find(u => u.id === id);
+      const targetUser = await storage.getUser(id);
       if (!targetUser) {
         return res.status(404).json({ error: "User not found" });
       }
@@ -317,14 +308,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(400).json({ error: "Username cannot be empty" });
         }
         
-        // Check if username is taken by a different user
+        // Check if username is taken by a different user (case-insensitive,
+        // matching the prior behaviour that compared lowercased usernames).
         const trimmedUsername = username.trim();
-        const existingUsers = await storage.getAllUsers();
-        const usernameConflict = existingUsers.find(
-          u => u.username.toLowerCase() === trimmedUsername.toLowerCase() && u.id !== id
-        );
-        
-        if (usernameConflict) {
+        const existingUser = await storage.getUserByUsernameCaseInsensitive(trimmedUsername);
+        if (existingUser && existingUser.id !== id) {
           return res.status(400).json({ error: "Username already exists" });
         }
         
@@ -367,8 +355,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Get target user to check permissions
-      const allUsers = await storage.getAllUsers();
-      const targetUser = allUsers.find(u => u.id === id);
+      const targetUser = await storage.getUser(id);
       if (!targetUser) {
         return res.status(404).json({ error: "User not found" });
       }
@@ -479,8 +466,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { tenantId } = req.body; // null to unassign, tenant ID to assign
       
       // Get target user
-      const allUsers = await storage.getAllUsers();
-      const targetUser = allUsers.find(u => u.id === id);
+      const targetUser = await storage.getUser(id);
       if (!targetUser) {
         return res.status(404).json({ error: "User not found" });
       }
@@ -1556,10 +1542,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { status, modelId } = req.query;
       const requests = await storage.getAllModelAccessRequests(
-        typeof status === 'string' ? status : undefined
+        typeof status === 'string' ? status : undefined,
+        typeof modelId === 'string' ? modelId : undefined,
       );
-      const filtered = modelId ? requests.filter(r => r.modelId === modelId) : requests;
-      res.json(filtered);
+      res.json(requests);
     } catch (error) {
       console.error('Error fetching access requests:', error);
       res.status(500).json({ error: "Failed to fetch access requests" });
@@ -1733,12 +1719,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const questions = await storage.getQuestionsByModelId(model.id);
-      const questionsWithAnswers = await Promise.all(
-        questions.map(async (question) => {
-          const answers = await storage.getAnswersByQuestionId(question.id);
-          return { ...question, answers };
-        })
-      );
+      
+      // Batch fetch all answers for these questions in a single query, then group by questionId.
+      // This avoids one DB roundtrip per question (was N+1).
+      const questionIds = questions.map(q => q.id);
+      const allAnswers = questionIds.length > 0
+        ? await db.select().from(schema.answers)
+            .where(inArray(schema.answers.questionId, questionIds))
+            .orderBy(schema.answers.order)
+        : [];
+      const answersByQuestionId = new Map<string, typeof allAnswers>();
+      for (const a of allAnswers) {
+        if (!answersByQuestionId.has(a.questionId)) {
+          answersByQuestionId.set(a.questionId, []);
+        }
+        answersByQuestionId.get(a.questionId)!.push(a);
+      }
+      const questionsWithAnswers = questions.map((question) => ({
+        ...question,
+        answers: answersByQuestionId.get(question.id) ?? [],
+      }));
 
       res.json(questionsWithAnswers);
     } catch (error) {
@@ -1938,46 +1938,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
         conditions.push(eq(schema.assessments.isProxy, false));
       }
       
-      // Fetch assessments with conditions
-      let allAssessments = conditions.length > 0 
-        ? await db.select().from(schema.assessments).where(and(...conditions))
-        : await db.select().from(schema.assessments);
-      
-      // Apply tag filter if specified
+      // Push tag filter into SQL via subquery so we never load the full
+      // assessments table just to filter it in memory.
       if (tagId && tagId !== 'all') {
-        const tagAssignments = await db.select()
-          .from(schema.assessmentTagAssignments)
-          .where(eq(schema.assessmentTagAssignments.tagId, tagId as string));
-        const assessmentIdsWithTag = new Set(tagAssignments.map(ta => ta.assessmentId));
-        allAssessments = allAssessments.filter(a => assessmentIdsWithTag.has(a.id));
+        conditions.push(
+          inArray(
+            schema.assessments.id,
+            db.select({ id: schema.assessmentTagAssignments.assessmentId })
+              .from(schema.assessmentTagAssignments)
+              .where(eq(schema.assessmentTagAssignments.tagId, tagId as string))
+          )
+        );
       }
       
-      // Fetch user data for each assessment
-      const assessmentsWithUsers = await Promise.all(
-        allAssessments.map(async (assessment) => {
-          if (!assessment.userId) {
-            return {
-              ...assessment,
-              user: null,
-            };
-          }
-          
-          const userResult = await db
-            .select({
-              id: schema.users.id,
-              name: schema.users.name,
-              company: schema.users.company,
-            })
-            .from(schema.users)
-            .where(eq(schema.users.id, assessment.userId))
-            .limit(1);
-          
-          return {
-            ...assessment,
-            user: userResult[0] || null,
-          };
+      // Fetch assessments + user data in a single LEFT JOIN (avoids per-row user lookup)
+      const baseQuery = db
+        .select({
+          assessment: schema.assessments,
+          user: {
+            id: schema.users.id,
+            name: schema.users.name,
+            company: schema.users.company,
+          },
         })
-      );
+        .from(schema.assessments)
+        .leftJoin(schema.users, eq(schema.assessments.userId, schema.users.id));
+      
+      const rows = conditions.length > 0
+        ? await baseQuery.where(and(...conditions))
+        : await baseQuery;
+      
+      const assessmentsWithUsers = rows.map(r => ({
+        ...r.assessment,
+        user: r.user?.id ? r.user : null,
+      }));
       
       res.json(assessmentsWithUsers);
     } catch (error) {
@@ -2364,6 +2358,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const dimensions = await storage.getDimensionsByModelId(model.id);
       const questions = await storage.getQuestionsByModelId(model.id);
       
+      // Batch-fetch all answers for this model's questions in a single query.
+      // Previously the loop below called getAnswersByQuestionId per response (N+1).
+      const allQuestionIds = questions.map(q => q.id);
+      const allAnswersForModel = allQuestionIds.length > 0
+        ? await db.select().from(schema.answers)
+            .where(inArray(schema.answers.questionId, allQuestionIds))
+        : [];
+      const answersByQuestionId = new Map<string, typeof allAnswersForModel>();
+      for (const a of allAnswersForModel) {
+        if (!answersByQuestionId.has(a.questionId)) {
+          answersByQuestionId.set(a.questionId, []);
+        }
+        answersByQuestionId.get(a.questionId)!.push(a);
+      }
+      
       // Determine scoring system based on maturity scale
       // If maturity scale max is <= 100, use 100-point scale
       // Default to averaging scores; can override with scoringMethod: 'sum'
@@ -2410,7 +2419,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             maxPossible = 500;
           }
         } else if (question.type === 'multi_select') {
-          const answers = await storage.getAnswersByQuestionId(question.id);
+          const answers = answersByQuestionId.get(question.id) ?? [];
           const totalOptions = answers.length;
           const selectedCount = response.answerIds ? response.answerIds.length : 0;
           
@@ -2429,7 +2438,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             maxPossible = use100PointScale ? 4 : 500;
           }
         } else {
-          const answers = await storage.getAnswersByQuestionId(question.id);
+          const answers = answersByQuestionId.get(question.id) ?? [];
           const answer = answers.find(a => a.id === response.answerId);
           if (!answer) continue;
           score = answer.score;
@@ -2700,24 +2709,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // By default exclude archived models unless explicitly requested
       const includeArchived = req.query.includeArchived === 'true';
       
-      const allModels = await storage.getAllModels();
+      // Scope models by tenant access in SQL: global admins see everything,
+      // tenant-scoped users (tenant_admin, tenant_modeler) see only public
+      // models plus models owned by or shared with their tenant.
+      const accessibleTenants = getAccessibleTenantIds(req.user!);
+      const models = await storage.getAllModels(undefined, {
+        excludeArchived: !includeArchived,
+        tenantIds: accessibleTenants,
+      });
       
-      // Filter out archived models unless includeArchived is true
-      const models = includeArchived 
-        ? allModels 
-        : allModels.filter(m => m.status !== 'archived');
+      if (models.length === 0) {
+        return res.json([]);
+      }
       
-      const modelsWithStats = await Promise.all(
-        models.map(async (model) => {
-          const dimensions = await storage.getDimensionsByModelId(model.id);
-          const questions = await storage.getQuestionsByModelId(model.id);
-          return {
-            ...model,
-            dimensionCount: dimensions.length,
-            questionCount: questions.length,
-          };
+      // Batch fetch dimension counts for all models in a single query
+      const modelIds = models.map(m => m.id);
+      const dimensionRows = await db
+        .select({
+          modelId: schema.dimensions.modelId,
+          count: sql<number>`count(*)::int`,
         })
-      );
+        .from(schema.dimensions)
+        .where(inArray(schema.dimensions.modelId, modelIds))
+        .groupBy(schema.dimensions.modelId);
+      const dimensionCountMap = new Map(dimensionRows.map(r => [r.modelId, r.count]));
+      
+      const modelsWithStats = models.map((model) => ({
+        ...model,
+        dimensionCount: dimensionCountMap.get(model.id) ?? 0,
+        // questionCount already provided by getAllModels via SQL aggregate
+      }));
       res.json(modelsWithStats);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch models" });
@@ -4558,6 +4579,22 @@ Respond in JSON format:
       const dimensions = await storage.getDimensionsByModelId(model.id);
       const questions = await storage.getQuestionsByModelId(model.id);
 
+      // Batch-fetch all answers in a single query, then group by questionId
+      // (previously this fired one getAnswersByQuestionId per question — N+1).
+      const exportQuestionIds = questions.map(q => q.id);
+      const exportAllAnswers = exportQuestionIds.length > 0
+        ? await db.select().from(schema.answers)
+            .where(inArray(schema.answers.questionId, exportQuestionIds))
+            .orderBy(schema.answers.order)
+        : [];
+      const exportAnswersByQuestion = new Map<string, typeof exportAllAnswers>();
+      for (const a of exportAllAnswers) {
+        if (!exportAnswersByQuestion.has(a.questionId)) {
+          exportAnswersByQuestion.set(a.questionId, []);
+        }
+        exportAnswersByQuestion.get(a.questionId)!.push(a);
+      }
+
       // Sort dimensions by order
       const sortedDimensions = dimensions.sort((a, b) => a.order - b.order);
 
@@ -4582,9 +4619,8 @@ Respond in JSON format:
         for (const question of dimensionQuestions) {
           markdown += `### ${question.text}\n\n`;
 
-          // Get answers for this question
-          const answers = await storage.getAnswersByQuestionId(question.id);
-          const sortedAnswers = answers.sort((a, b) => a.order - b.order);
+          // Use prefetched answers (already sorted by order)
+          const sortedAnswers = exportAnswersByQuestion.get(question.id) ?? [];
 
           if (sortedAnswers.length > 0) {
             for (const answer of sortedAnswers) {
@@ -4729,58 +4765,71 @@ Respond in JSON format:
         return res.status(404).json({ error: "Assessment not found" });
       }
 
-      const [responses, model, dimensions, result] = await Promise.all([
+      const [responses, model, dimensions, result, modelQuestions] = await Promise.all([
         storage.getAssessmentResponses(assessment.id),
         storage.getModel(assessment.modelId),
         storage.getDimensionsByModelId(assessment.modelId),
         storage.getResult(assessment.id),
+        storage.getQuestionsByModelId(assessment.modelId),
       ]);
 
-      // Resolve all questions in parallel
-      const resolvedQuestions = await Promise.all(
-        responses.map(async (r) => {
-          const question = await storage.getQuestion(r.questionId);
-          if (!question) return null;
+      // Batch-fetch all answers for this model's questions in a single query.
+      // Previously this endpoint issued one getQuestion + multiple getAnswersByQuestionId calls
+      // per response, which scaled with the number of responses (N+1).
+      const modelQuestionIds = modelQuestions.map(q => q.id);
+      const allAnswersForReview = modelQuestionIds.length > 0
+        ? await db.select().from(schema.answers)
+            .where(inArray(schema.answers.questionId, modelQuestionIds))
+        : [];
+      const questionMap = new Map(modelQuestions.map(q => [q.id, q]));
+      const answersByQuestionId = new Map<string, typeof allAnswersForReview>();
+      for (const a of allAnswersForReview) {
+        if (!answersByQuestionId.has(a.questionId)) {
+          answersByQuestionId.set(a.questionId, []);
+        }
+        answersByQuestionId.get(a.questionId)!.push(a);
+      }
 
-          // Resolve answer text based on question type
-          let answerText = '';
-          let answerScore: number | null = null;
+      const resolvedQuestions = responses.map((r) => {
+        const question = questionMap.get(r.questionId);
+        if (!question) return null;
 
-          if (r.booleanValue !== null && r.booleanValue !== undefined) {
-            answerText = r.booleanValue ? 'Yes' : 'No';
-          } else if (r.numericValue !== null && r.numericValue !== undefined) {
-            answerText = `${r.numericValue}${question.unit ? ' ' + question.unit : ''}`;
-            answerScore = r.numericValue;
-          } else if (r.textValue) {
-            answerText = r.textValue;
-          } else if (r.answerIds && r.answerIds.length > 0) {
-            // Multi-select: resolve each answer ID
-            const answerTexts = await Promise.all(
-              r.answerIds.map(async (aid) => {
-                const answers = await storage.getAnswersByQuestionId(r.questionId);
-                return answers.find((a) => a.id === aid)?.text || aid;
-              })
-            );
-            answerText = answerTexts.join('; ');
-          } else if (r.answerId) {
-            const answers = await storage.getAnswersByQuestionId(r.questionId);
-            const matched = answers.find((a) => a.id === r.answerId);
-            answerText = matched?.text || r.answerId;
-            answerScore = matched?.score ?? null;
-          }
+        // Resolve answer text based on question type
+        let answerText = '';
+        let answerScore: number | null = null;
 
-          return {
-            questionId: question.id,
-            dimensionId: question.dimensionId,
-            order: question.order,
-            questionText: question.text,
-            questionType: question.type,
-            answerText,
-            answerScore,
-            respondedAt: r.createdAt,
-          };
-        })
-      );
+        if (r.booleanValue !== null && r.booleanValue !== undefined) {
+          answerText = r.booleanValue ? 'Yes' : 'No';
+        } else if (r.numericValue !== null && r.numericValue !== undefined) {
+          answerText = `${r.numericValue}${question.unit ? ' ' + question.unit : ''}`;
+          answerScore = r.numericValue;
+        } else if (r.textValue) {
+          answerText = r.textValue;
+        } else if (r.answerIds && r.answerIds.length > 0) {
+          // Multi-select: resolve each answer ID from the prefetched map
+          const answers = answersByQuestionId.get(r.questionId) ?? [];
+          const answerById = new Map(answers.map(a => [a.id, a]));
+          answerText = r.answerIds
+            .map((aid) => answerById.get(aid)?.text || aid)
+            .join('; ');
+        } else if (r.answerId) {
+          const answers = answersByQuestionId.get(r.questionId) ?? [];
+          const matched = answers.find((a) => a.id === r.answerId);
+          answerText = matched?.text || r.answerId;
+          answerScore = matched?.score ?? null;
+        }
+
+        return {
+          questionId: question.id,
+          dimensionId: question.dimensionId,
+          order: question.order,
+          questionText: question.text,
+          questionType: question.type,
+          answerText,
+          answerScore,
+          respondedAt: r.createdAt,
+        };
+      });
 
       // Filter nulls and group by dimension
       const validQuestions = resolvedQuestions.filter(Boolean) as NonNullable<typeof resolvedQuestions[number]>[];
