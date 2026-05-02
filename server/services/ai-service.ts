@@ -689,6 +689,166 @@ The Synozur Alliance LLC will help you navigate this journey with expertise and 
     }
   }
 
+  // Generate a portfolio narrative across multiple completed models for the
+  // Cross-Model Insights & Trends view. Uses the same provider registry,
+  // 90-day cache, and graceful fallback as other AI summary methods.
+  async generatePortfolioNarrative(
+    scope: 'user' | 'tenant',
+    portfolio: {
+      models: Array<{
+        modelName: string;
+        modelClass: string;
+        latestScorePercent: number;
+        assessmentCount: number;
+        trendDirection: 'up' | 'down' | 'flat' | 'single';
+        trendDelta: number; // percentage points
+      }>;
+      crossModelDimensions: Array<{ label: string; averagePercent: number; modelCount: number }>;
+      cohortSize?: number;
+    },
+    userContext?: { industry?: string; companySize?: string; jobTitle?: string }
+  ): Promise<string> {
+    const { models, crossModelDimensions, cohortSize } = portfolio;
+
+    // No data → no AI call
+    if (models.length === 0) {
+      return scope === 'tenant'
+        ? `No completed assessments yet across this organization. Once team members start completing maturity assessments, portfolio insights will appear here.`
+        : `Welcome! Once you complete a maturity assessment, your personal insights will appear here. The Synozur Alliance LLC is here to help you find your North Star and make the desirable achievable.`;
+    }
+
+    // Identify subject voice based on scope and model classes
+    const allIndividual = scope === 'user' && models.every(m => m.modelClass === 'individual');
+    const subjectIntro = scope === 'tenant'
+      ? `This organization`
+      : allIndividual
+        ? `You`
+        : `Your portfolio`;
+
+    // Sort dimensions by score for strengths/gaps
+    const sortedDims = [...crossModelDimensions].sort((a, b) => b.averagePercent - a.averagePercent);
+    const topStrengths = sortedDims.slice(0, 3);
+    const topGaps = sortedDims.slice(-3).reverse();
+
+    // Sort models by latest score
+    const sortedModels = [...models].sort((a, b) => b.latestScorePercent - a.latestScorePercent);
+    const strongestModel = sortedModels[0];
+    const weakestModel = sortedModels[sortedModels.length - 1];
+
+    const cacheContext = {
+      scope,
+      models: models.map(m => ({
+        n: m.modelName,
+        s: Math.round(m.latestScorePercent),
+        c: m.assessmentCount,
+        t: m.trendDirection,
+      })),
+      dims: crossModelDimensions.map(d => ({ l: d.label, s: Math.round(d.averagePercent) })),
+      cohortSize: cohortSize ?? 0,
+      userContext: userContext || {},
+    };
+
+    // Check cache first
+    const cached = await this.getCachedContent('portfolio_narrative', cacheContext);
+    if (cached) {
+      return cached;
+    }
+
+    try {
+      const dimList = (arr: typeof topStrengths) =>
+        arr.length > 0
+          ? arr.map(d => `• ${d.label} — ${Math.round(d.averagePercent)}% (across ${d.modelCount} model${d.modelCount === 1 ? '' : 's'})`).join('\n')
+          : '• (no dimensions captured)';
+
+      const modelList = sortedModels
+        .map(m => {
+          const trend = m.trendDirection === 'up'
+            ? `trending up by ${m.trendDelta} points`
+            : m.trendDirection === 'down'
+              ? `trending down by ${Math.abs(m.trendDelta)} points`
+              : m.trendDirection === 'single'
+                ? 'single completion'
+                : 'flat';
+          return `• ${m.modelName}: ${Math.round(m.latestScorePercent)}% latest, ${m.assessmentCount} assessment${m.assessmentCount === 1 ? '' : 's'}, ${trend}`;
+        })
+        .join('\n');
+
+      const audienceGuidance = scope === 'tenant'
+        ? `IMPORTANT: This is an aggregated view across ${cohortSize ?? 'multiple'} people in an organization. Write about "the organization" or "your teams" — never about an individual. Do not name people.`
+        : allIndividual
+          ? `IMPORTANT: This is a personal portfolio of INDIVIDUAL assessments. Write directly to the person ("you", "your"). Do not reference an organization or team.`
+          : `IMPORTANT: This is a personal portfolio that may mix individual and organizational assessments. Use "your" and frame insights at the person + their organization level.`;
+
+      const userContextLine = userContext && (userContext.jobTitle || userContext.industry)
+        ? `Reader Context: ${userContext.jobTitle || 'Leader'} in ${userContext.industry || 'their industry'}${userContext.companySize ? `, ${userContext.companySize} company` : ''}.`
+        : '';
+
+      const prompt = `You are a transformation expert from The Synozur Alliance LLC. Write a concise portfolio narrative (~250 words) that ties together insights across multiple maturity assessments.
+
+${audienceGuidance}
+${userContextLine}
+
+PORTFOLIO SNAPSHOT:
+${modelList}
+
+CROSS-MODEL STRENGTHS (highest average across the portfolio):
+${dimList(topStrengths)}
+
+CROSS-MODEL GAPS (lowest average across the portfolio):
+${dimList(topGaps)}
+
+STRONGEST MODEL: ${strongestModel.modelName} at ${Math.round(strongestModel.latestScorePercent)}%
+WEAKEST MODEL: ${weakestModel.modelName} at ${Math.round(weakestModel.latestScorePercent)}%
+
+STRUCTURE (write smooth markdown, no labels):
+
+## Portfolio Snapshot
+One paragraph (3-4 sentences) describing the overall maturity story. Mention the strongest and weakest models by name and what that pattern suggests.
+
+## Cross-Model Strengths
+A short paragraph (2-3 sentences) explaining what the top strengths reveal as a unifying capability. Reference 1-2 of the listed strengths by name.
+
+## Priority Focus Areas
+A short paragraph (2-3 sentences) explaining what the gaps signal and which 1-2 of the listed gaps deserve immediate attention.
+
+## Recommended Next Steps
+A short paragraph (2-3 sentences) with concrete next steps (e.g., focus a quarter on a specific dimension, retake a model in 90 days, broaden the assessment portfolio). Close by emphasizing partnership with The Synozur Alliance LLC and end with the exact phrase: "Let's find your North Star together."
+
+RULES:
+- Use only the data above; do not fabricate scores or dimensions that are not listed.
+- Keep total length around 250 words.
+- Use ## markdown headings exactly as written above.
+- No emoji. No bullet lists outside what I explicitly model in the data section.`;
+
+      const completion = await this.callProvider(prompt, false);
+      if (!completion) {
+        throw new Error('Empty completion for portfolio narrative');
+      }
+      const narrative = completion.trim();
+      await this.saveToCache('portfolio_narrative', cacheContext, narrative);
+      return narrative;
+    } catch (error) {
+      console.error('Error generating portfolio narrative:', error);
+      // Graceful fallback when AI is unavailable
+      const strongestPct = Math.round(strongestModel.latestScorePercent);
+      const weakestPct = Math.round(weakestModel.latestScorePercent);
+      const strengthLabel = topStrengths[0]?.label;
+      const gapLabel = topGaps[0]?.label;
+
+      return `## Portfolio Snapshot
+${subjectIntro} ${scope === 'tenant' ? 'has' : 'have'} ${models.length} model${models.length === 1 ? '' : 's'} in the portfolio. ${strongestModel.modelName} is the strongest at ${strongestPct}%${weakestModel !== strongestModel ? `, while ${weakestModel.modelName} sits at ${weakestPct}%` : ''}.
+
+## Cross-Model Strengths
+${strengthLabel ? `${strengthLabel} stands out as a consistent strength across the portfolio.` : 'Strengths will surface as more dimensions are captured.'}
+
+## Priority Focus Areas
+${gapLabel ? `${gapLabel} is the most consistent gap and a natural place to focus attention.` : 'Focus areas will surface once more dimensions are captured.'}
+
+## Recommended Next Steps
+Schedule a focused review of the lowest-scoring model and consider retaking it in 90 days to measure progress. The Synozur Alliance LLC will help you navigate this journey with expertise and partnership. Let's find your North Star together.`;
+    }
+  }
+
   // Rewrite an answer option to be more contextual to the specific question
   async rewriteAnswer(question: string, answer: string, score: number, modelContext?: string): Promise<string> {
     try {

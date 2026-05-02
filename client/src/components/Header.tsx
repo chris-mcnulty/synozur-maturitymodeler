@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { Moon, Sun, User, LogOut, HelpCircle, BookOpen, FileText, Ticket, Bot, Mail, MoreVertical, Check, Eye } from "lucide-react";
+import { Moon, Sun, User, LogOut, HelpCircle, BookOpen, FileText, Ticket, Bot, Mail, MoreVertical, Check, Eye, BarChart3 } from "lucide-react";
 import { useTheme } from "./ThemeProvider";
 import { useAuth } from "@/hooks/use-auth";
 import { USER_ROLES } from "@shared/constants";
@@ -157,6 +157,9 @@ export function Header() {
                     Admin
                   </Link>
                 )}
+                <Link href="/insights" className="text-sm font-medium hover:text-primary transition-colors" data-testid="link-insights">
+                  Insights
+                </Link>
                 <Link href="/me" className="text-sm font-medium hover:text-primary transition-colors" data-testid="link-profile">
                   Profile
                 </Link>
@@ -240,6 +243,12 @@ export function Header() {
                     <Link href="/me">
                       <User className="mr-2 h-4 w-4" />
                       Profile
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/insights" data-testid="link-insights-mobile">
+                      <BarChart3 className="mr-2 h-4 w-4" />
+                      Insights
                     </Link>
                   </DropdownMenuItem>
                   {canManageModels(user) && (

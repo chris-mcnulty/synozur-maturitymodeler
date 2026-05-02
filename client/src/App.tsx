@@ -14,6 +14,7 @@ import ModelHome from "@/pages/ModelHome";
 import Assessment from "@/pages/Assessment";
 import Results from "@/pages/Results";
 import Profile from "@/pages/Profile";
+import Insights from "@/pages/Insights";
 import Admin from "@/pages/Admin";
 import Auth from "@/pages/Auth";
 import ForgotPassword from "@/pages/ForgotPassword";
@@ -47,6 +48,7 @@ function Router() {
         <Route path="/assessment/:assessmentId" component={Assessment} />
         <Route path="/results/:assessmentId" component={Results} />
         <ProtectedRoute path="/me" component={Profile} />
+        <ProtectedRoute path="/insights" component={Insights} />
         <ProtectedRoute path="/admin" component={Admin} />
         <Route path="/:modelSlug" component={ModelHome} />
         <Route component={NotFound} />

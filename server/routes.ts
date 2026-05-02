@@ -3450,6 +3450,406 @@ Respond in JSON format:
     }
   });
 
+  // ===========================================================================
+  // CROSS-MODEL INSIGHTS & TRENDS (Task #11)
+  // ===========================================================================
+
+  // Helper: build per-model trend + cross-model dimension aggregates from a
+  // set of completed assessments. Normalizes scores to 0-100 percent so 100-pt
+  // and 500-pt models can be compared side-by-side without scoring drift.
+  type CompletedRow = {
+    assessmentId: string;
+    userId: string | null;
+    modelId: string;
+    modelName: string;
+    modelClass: string;
+    maturityScale: any;
+    completedAt: Date | null;
+    overallScore: number;
+    label: string;
+    dimensionScores: any;
+  };
+
+  type ModelInsight = {
+    modelId: string;
+    modelName: string;
+    modelClass: string;
+    maxScore: number;
+    assessmentCount: number;
+    latestScore: number;
+    latestScorePercent: number;
+    latestLabel: string | null;
+    trendDelta: number; // percentage points latest - first
+    trendDirection: 'up' | 'down' | 'flat' | 'single';
+    trend: Array<{
+      assessmentId: string;
+      completedAt: string | null;
+      score: number;
+      scorePercent: number;
+      label: string | null;
+    }>;
+  };
+
+  type DimensionInsight = {
+    label: string;
+    averagePercent: number;
+    modelCount: number;
+    sampleSize: number;
+    contributingModels: Array<{ modelName: string; averagePercent: number }>;
+  };
+
+  function buildInsightsFromRows(
+    rows: CompletedRow[],
+    dimensionLabelMap: Map<string, string>
+  ): { models: ModelInsight[]; crossModelDimensions: DimensionInsight[] } {
+    // Group by model
+    const byModel = new Map<string, CompletedRow[]>();
+    for (const r of rows) {
+      const list = byModel.get(r.modelId) ?? [];
+      list.push(r);
+      byModel.set(r.modelId, list);
+    }
+
+    const models: ModelInsight[] = [];
+    // dimKey -> { sumPercent, sampleSize, perModel: Map<modelId, {sum, n, name}> }
+    const dimAcc = new Map<
+      string,
+      {
+        label: string;
+        sumPercent: number;
+        sampleSize: number;
+        perModel: Map<string, { modelName: string; sumPercent: number; n: number }>;
+      }
+    >();
+
+    Array.from(byModel.entries()).forEach(([modelId, modelRows]) => {
+      // Sort chronologically (oldest -> newest)
+      modelRows.sort((a: CompletedRow, b: CompletedRow) => {
+        const da = a.completedAt ? a.completedAt.getTime() : 0;
+        const db_ = b.completedAt ? b.completedAt.getTime() : 0;
+        return da - db_;
+      });
+
+      const first = modelRows[0];
+      const maturityScale = (first.maturityScale as any[]) || [];
+      const maxScore = maturityScale.length > 0
+        ? Math.max(...maturityScale.map((s: any) => s.maxScore || 100))
+        : 100;
+
+      const trend = modelRows.map(r => ({
+        assessmentId: r.assessmentId,
+        completedAt: r.completedAt ? r.completedAt.toISOString() : null,
+        score: r.overallScore,
+        scorePercent: maxScore > 0 ? Math.round((r.overallScore / maxScore) * 1000) / 10 : 0,
+        label: r.label ?? null,
+      }));
+
+      const latest = modelRows[modelRows.length - 1];
+      const firstPercent = maxScore > 0 ? (first.overallScore / maxScore) * 100 : 0;
+      const latestPercent = maxScore > 0 ? (latest.overallScore / maxScore) * 100 : 0;
+      const trendDelta = Math.round((latestPercent - firstPercent) * 10) / 10;
+      let trendDirection: ModelInsight['trendDirection'];
+      if (modelRows.length === 1) trendDirection = 'single';
+      else if (trendDelta > 1) trendDirection = 'up';
+      else if (trendDelta < -1) trendDirection = 'down';
+      else trendDirection = 'flat';
+
+      models.push({
+        modelId,
+        modelName: first.modelName,
+        modelClass: first.modelClass,
+        maxScore,
+        assessmentCount: modelRows.length,
+        latestScore: latest.overallScore,
+        latestScorePercent: Math.round(latestPercent * 10) / 10,
+        latestLabel: latest.label ?? null,
+        trendDelta,
+        trendDirection,
+        trend,
+      });
+
+      // Aggregate dimensions from the LATEST result of each model only,
+      // so a single model with many retakes does not dominate the radar.
+      const dimScores = (latest.dimensionScores ?? {}) as Record<string, number>;
+      for (const [dimKey, raw] of Object.entries(dimScores)) {
+        if (typeof raw !== 'number' || Number.isNaN(raw)) continue;
+        // Dimension scores follow the same scale as overallScore
+        const pct = maxScore > 0 ? (raw / maxScore) * 100 : 0;
+        const label = dimensionLabelMap.get(`${modelId}:${dimKey}`) || dimKey;
+        const acc = dimAcc.get(label) ?? {
+          label,
+          sumPercent: 0,
+          sampleSize: 0,
+          perModel: new Map<string, { modelName: string; sumPercent: number; n: number }>(),
+        };
+        acc.sumPercent += pct;
+        acc.sampleSize += 1;
+        const perModel = acc.perModel.get(modelId) ?? { modelName: first.modelName, sumPercent: 0, n: 0 };
+        perModel.sumPercent += pct;
+        perModel.n += 1;
+        acc.perModel.set(modelId, perModel);
+        dimAcc.set(label, acc);
+      }
+    });
+
+    const crossModelDimensions: DimensionInsight[] = Array.from(dimAcc.values())
+      .map(d => ({
+        label: d.label,
+        averagePercent: Math.round((d.sumPercent / Math.max(d.sampleSize, 1)) * 10) / 10,
+        modelCount: d.perModel.size,
+        sampleSize: d.sampleSize,
+        contributingModels: Array.from(d.perModel.values()).map(pm => ({
+          modelName: pm.modelName,
+          averagePercent: Math.round((pm.sumPercent / Math.max(pm.n, 1)) * 10) / 10,
+        })),
+      }))
+      .sort((a, b) => b.averagePercent - a.averagePercent);
+
+    return { models, crossModelDimensions };
+  }
+
+  // Personal insights for the logged-in user
+  app.get("/api/insights/user", ensureAuthenticated, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+
+      const completedRows = await db
+        .select({
+          assessmentId: schema.assessments.id,
+          userId: schema.assessments.userId,
+          modelId: schema.assessments.modelId,
+          modelName: schema.models.name,
+          modelClass: schema.models.modelClass,
+          maturityScale: schema.models.maturityScale,
+          completedAt: schema.assessments.completedAt,
+          overallScore: schema.results.overallScore,
+          label: schema.results.label,
+          dimensionScores: schema.results.dimensionScores,
+        })
+        .from(schema.assessments)
+        .innerJoin(schema.models, eq(schema.assessments.modelId, schema.models.id))
+        .innerJoin(schema.results, eq(schema.results.assessmentId, schema.assessments.id))
+        .where(and(
+          eq(schema.assessments.userId, userId),
+          eq(schema.assessments.status, 'completed'),
+        ));
+
+      const modelIds = Array.from(new Set(completedRows.map(r => r.modelId)));
+      const dimensionLabelMap = new Map<string, string>();
+      if (modelIds.length > 0) {
+        const dims = await db
+          .select({ modelId: schema.dimensions.modelId, key: schema.dimensions.key, label: schema.dimensions.label })
+          .from(schema.dimensions)
+          .where(inArray(schema.dimensions.modelId, modelIds));
+        for (const d of dims) dimensionLabelMap.set(`${d.modelId}:${d.key}`, d.label);
+      }
+
+      const { models, crossModelDimensions } = buildInsightsFromRows(
+        completedRows as CompletedRow[],
+        dimensionLabelMap,
+      );
+
+      const totalCompleted = completedRows.length;
+      res.json({
+        scope: 'user',
+        totalCompleted,
+        modelCount: models.length,
+        models,
+        crossModelDimensions,
+      });
+    } catch (error) {
+      console.error('Failed to build user insights:', error);
+      res.status(500).json({ error: 'Failed to build user insights' });
+    }
+  });
+
+  // Tenant aggregate insights for tenant admins (anonymized, cohort-thresholded)
+  app.get("/api/insights/tenant", ensureAuthenticated, async (req, res) => {
+    try {
+      const user = req.user!;
+      const isGlobal = user.role === 'global_admin';
+      const isTenantAdmin = user.role === 'tenant_admin';
+      if (!isGlobal && !isTenantAdmin) {
+        return res.status(403).json({ error: 'Tenant admin access required' });
+      }
+
+      // Resolve tenant scope
+      let tenantId: string | null = null;
+      if (isTenantAdmin) {
+        if (!user.tenantId) return res.status(400).json({ error: 'No tenant assigned' });
+        tenantId = user.tenantId;
+      } else if (typeof req.query.tenantId === 'string') {
+        tenantId = req.query.tenantId;
+      } else {
+        tenantId = user.tenantId ?? null;
+      }
+      if (!tenantId) return res.status(400).json({ error: 'tenantId is required' });
+
+      const tenant = await db.query.tenants.findFirst({ where: eq(schema.tenants.id, tenantId) });
+      if (!tenant) return res.status(404).json({ error: 'Tenant not found' });
+
+      // Reuse benchmark thresholds for the cohort minimum
+      const { getBenchmarkConfig } = await import('./services/benchmark-service');
+      const benchmarkConfig = await getBenchmarkConfig();
+      const minCohort = benchmarkConfig.minSampleSizeOverall;
+
+      // Pull all completed assessments by users in this tenant (excluding proxy/imported)
+      const completedRows = await db
+        .select({
+          assessmentId: schema.assessments.id,
+          userId: schema.assessments.userId,
+          modelId: schema.assessments.modelId,
+          modelName: schema.models.name,
+          modelClass: schema.models.modelClass,
+          maturityScale: schema.models.maturityScale,
+          completedAt: schema.assessments.completedAt,
+          overallScore: schema.results.overallScore,
+          label: schema.results.label,
+          dimensionScores: schema.results.dimensionScores,
+        })
+        .from(schema.assessments)
+        .innerJoin(schema.models, eq(schema.assessments.modelId, schema.models.id))
+        .innerJoin(schema.results, eq(schema.results.assessmentId, schema.assessments.id))
+        .innerJoin(schema.users, eq(schema.users.id, schema.assessments.userId))
+        .where(and(
+          eq(schema.users.tenantId, tenantId),
+          eq(schema.assessments.status, 'completed'),
+          eq(schema.assessments.isProxy, false),
+        ));
+
+      const distinctUsers = new Set(completedRows.map(r => r.userId).filter(Boolean));
+      const cohortSize = distinctUsers.size;
+
+      if (cohortSize < minCohort) {
+        return res.json({
+          scope: 'tenant',
+          tenantId,
+          tenantName: tenant.name,
+          cohortSize,
+          minCohort,
+          belowThreshold: true,
+          totalCompleted: completedRows.length,
+          modelCount: 0,
+          models: [],
+          crossModelDimensions: [],
+        });
+      }
+
+      const modelIds = Array.from(new Set(completedRows.map(r => r.modelId)));
+      const dimensionLabelMap = new Map<string, string>();
+      if (modelIds.length > 0) {
+        const dims = await db
+          .select({ modelId: schema.dimensions.modelId, key: schema.dimensions.key, label: schema.dimensions.label })
+          .from(schema.dimensions)
+          .where(inArray(schema.dimensions.modelId, modelIds));
+        for (const d of dims) dimensionLabelMap.set(`${d.modelId}:${d.key}`, d.label);
+      }
+
+      const built = buildInsightsFromRows(completedRows as CompletedRow[], dimensionLabelMap);
+
+      // Suppress per-model entries below the cohort threshold (count distinct users per model)
+      const usersPerModel = new Map<string, Set<string>>();
+      for (const r of completedRows) {
+        if (!r.userId) continue;
+        const set = usersPerModel.get(r.modelId) ?? new Set<string>();
+        set.add(r.userId);
+        usersPerModel.set(r.modelId, set);
+      }
+
+      const filteredModels = built.models.filter(m => (usersPerModel.get(m.modelId)?.size ?? 0) >= minCohort);
+
+      // Cross-model dims keep cohortSize gate already applied (whole tenant gate above);
+      // additionally drop any dim that came from < minCohort distinct users.
+      const dimUserCount = new Map<string, Set<string>>();
+      for (const r of completedRows) {
+        if (!r.userId) continue;
+        const dimScores = (r.dimensionScores ?? {}) as Record<string, number>;
+        for (const dimKey of Object.keys(dimScores)) {
+          const label = dimensionLabelMap.get(`${r.modelId}:${dimKey}`) || dimKey;
+          const set = dimUserCount.get(label) ?? new Set<string>();
+          set.add(r.userId);
+          dimUserCount.set(label, set);
+        }
+      }
+      const filteredDims = built.crossModelDimensions.filter(d => (dimUserCount.get(d.label)?.size ?? 0) >= minCohort);
+
+      res.json({
+        scope: 'tenant',
+        tenantId,
+        tenantName: tenant.name,
+        cohortSize,
+        minCohort,
+        belowThreshold: false,
+        totalCompleted: completedRows.length,
+        modelCount: filteredModels.length,
+        models: filteredModels,
+        crossModelDimensions: filteredDims,
+      });
+    } catch (error) {
+      console.error('Failed to build tenant insights:', error);
+      res.status(500).json({ error: 'Failed to build tenant insights' });
+    }
+  });
+
+  // Generate the AI portfolio narrative for an Insights view
+  app.post("/api/ai/generate-portfolio-narrative", ensureAuthenticated, async (req, res) => {
+    try {
+      const { scope, models, crossModelDimensions, cohortSize, userContext } = req.body || {};
+      if (scope !== 'user' && scope !== 'tenant') {
+        return res.status(400).json({ error: 'scope must be "user" or "tenant"' });
+      }
+      if (!Array.isArray(models)) {
+        return res.status(400).json({ error: 'models must be an array' });
+      }
+      if (!Array.isArray(crossModelDimensions)) {
+        return res.status(400).json({ error: 'crossModelDimensions must be an array' });
+      }
+
+      // Tenant scope requires admin role
+      if (scope === 'tenant' && !(req.user!.role === 'global_admin' || req.user!.role === 'tenant_admin')) {
+        return res.status(403).json({ error: 'Tenant admin access required for tenant narrative' });
+      }
+
+      const narrative = await aiService.generatePortfolioNarrative(
+        scope,
+        {
+          models: models.map((m: any) => ({
+            modelName: String(m.modelName ?? ''),
+            modelClass: String(m.modelClass ?? 'organizational'),
+            latestScorePercent: Number(m.latestScorePercent ?? 0),
+            assessmentCount: Number(m.assessmentCount ?? 0),
+            trendDirection: (m.trendDirection ?? 'flat') as 'up' | 'down' | 'flat' | 'single',
+            trendDelta: Number(m.trendDelta ?? 0),
+          })),
+          crossModelDimensions: crossModelDimensions.map((d: any) => ({
+            label: String(d.label ?? ''),
+            averagePercent: Number(d.averagePercent ?? 0),
+            modelCount: Number(d.modelCount ?? 0),
+          })),
+          cohortSize: typeof cohortSize === 'number' ? cohortSize : undefined,
+        },
+        userContext,
+      );
+
+      // Best-effort usage logging
+      try {
+        await storage.createAiUsageLog({
+          userId: req.user!.id,
+          modelName: (await providerRegistry.getActiveConfig()).modelId || 'unknown',
+          operation: 'generate-portfolio-narrative',
+          estimatedCost: 3,
+        });
+      } catch {
+        // non-critical
+      }
+
+      res.json({ narrative });
+    } catch (error) {
+      console.error('Failed to generate portfolio narrative:', error);
+      res.status(500).json({ error: 'Failed to generate portfolio narrative' });
+    }
+  });
+
   // Clear AI cache for a specific model (admin only)
   app.post("/api/admin/ai/clear-cache/:modelId", ensureAdmin, async (req, res) => {
     try {
