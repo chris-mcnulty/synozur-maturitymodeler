@@ -45,6 +45,26 @@ The application features a modern fullstack architecture with a dark-mode-first 
 -   **In-App Support System**: Full-stack support ticket system with CRUD, replies, admin management console (Support tab in Admin sidebar), AI help chatbot (SSE streaming from user guide), What's New modal (AI-summarized changelog on login, system-level `showWhatsNew` toggle default OFF), Microsoft Planner integration (auto-sync tickets to tenant-configured plans, multi-tenant credentials). Public /help and /changelog pages render USER_GUIDE.md and CHANGELOG.md. Header help menu dropdown. Email notifications via SendGrid on ticket create/close. Schema tables: `supportTickets`, `supportTicketReplies`, `supportTicketPlannerSync`. Routes: `server/routes-support.ts`. Frontend: `UserGuide.tsx`, `Changelog.tsx`, `Support.tsx`, `WhatsNewModal.tsx`, `HelpChatPanel.tsx`, `SupportManagement.tsx`.
 -   **Planner Integration (System-Level)**: All support tickets sync to a single Synozur Planner board, configured via system settings (`plannerEnabled`, `plannerPlanId`, etc.). Uses `AZURE_CLIENT_ID`/`AZURE_CLIENT_SECRET`/`AZURE_TENANT_ID` environment variables directly — no manual tenant ID entry needed. Global-admin-only configuration in Admin → Support → Settings. No per-tenant Planner setup needed.
 
+## Frontend Bundle / Code-Splitting Policy
+- The router (`client/src/App.tsx`) eagerly imports only `Landing` and `not-found`. Every other page is wrapped in `React.lazy(() => import(...))` and rendered under a single `<Suspense>` boundary with a centered spinner fallback (`data-testid="route-suspense-fallback"`).
+- Heavy libraries are pulled in only by the routes that need them, so they ship in route chunks rather than the landing-page bundle:
+  - `jspdf` / `client/src/services/pdfGenerator.ts` — loaded via dynamic `import()` inside the PDF callbacks in `client/src/pages/Results.tsx`. The PDF generator only downloads when a user clicks Download or Email.
+  - `recharts` — only used by `Profile.tsx`, `admin/AiUsageDashboard.tsx`, and `admin/TrafficDashboard.tsx`, all of which are inside lazy-loaded routes.
+  - `mammoth` / `pdf-parse` — server-side only, never reach the browser bundle.
+- When adding a new page, register it in `App.tsx` with `lazy(() => import(...))` (not a static import). When adding a heavy library that is only used on one route, prefer a dynamic `import()` inside the consuming function/component.
+- A bundle visualizer is wired into `vite.config.ts` behind the `ANALYZE` env var. Run `ANALYZE=1 npx vite build` (or `ANALYZE=1 npm run build`) to produce `dist/bundle-stats.html` (treemap, gzip + brotli sizes) for ongoing visibility. A dedicated `build:analyze` npm script is desirable but the platform blocks direct `package.json` script edits — adding it requires user approval.
+
+### Measured impact (production build, gzip)
+Numbers below are from real builds against this commit (Vite 5.4.20, all assets are static page chunks unless noted):
+
+| Build | Initial entry chunk | Notes |
+| --- | --- | --- |
+| Baseline (every page eager-imported, jsPDF imported statically in Results) | `index-*.js` **2,650.49 kB raw / 802.42 kB gzip** | Single monolithic chunk loaded on the landing page. |
+| After this task (lazy pages + dynamic `import()` for jsPDF) | `index-*.js` **395.72 kB raw / 124.06 kB gzip** | Plus per-route chunks fetched on demand: Admin 670 kB / 179 kB gzip, pdfGenerator 696 kB / 265 kB gzip, Results 50 kB / 14 kB gzip, Profile 24 kB / 7 kB gzip, ModelHome 31 kB / 8 kB gzip, Auth 15 kB / 4 kB gzip, Assessment 10 kB / 3 kB gzip, Support 11 kB / 3 kB gzip, smaller pages (UserGuide, Changelog, ForgotPassword, ResetPassword, VerifyEmail, OAuthConsent, CompleteProfile) all under 8 kB gzip. |
+| **Reduction** | **~85% raw / ~84.5% gzip** | Comfortably above the task's ≥30% target. |
+
+To re-measure after future changes: temporarily revert the lazy imports in `App.tsx` (and the dynamic `import()` in `Results.tsx`) for a baseline build, then restore them — or just compare consecutive `ANALYZE=1` builds via the treemap in `dist/bundle-stats.html`.
+
 ## Technical Debt
 - **ExecAI/Copilot import format**: One-off simple format (`modelName`, `options`, `routing`) added for compatibility. Consider deprecating once models are migrated to standard Orion format.
 

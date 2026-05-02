@@ -18,7 +18,8 @@ import {
 } from "@/components/ui/dialog";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ProfileGate } from "@/components/ProfileGate";
-import { generateAssessmentPDF } from "@/services/pdfGenerator";
+// pdfGenerator (and its jsPDF dependency) is heavy — it is loaded on demand
+// via a dynamic import() inside the PDF callbacks below.
 import { useToast } from "@/hooks/use-toast";
 import { MarkdownContent } from "@/components/MarkdownContent";
 
@@ -388,8 +389,10 @@ export default function Results() {
     return resources.slice(0, 5); // Show top 5 resources
   }, [responses, questions]);
 
-  // PDF download function using useCallback for stable reference
-  const generateAndDownloadPDF = useCallback(() => {
+  // PDF download function using useCallback for stable reference.
+  // Uses a dynamic import() so jsPDF (and the rest of the PDF generator) only
+  // ships in the user's bundle when they actually request a report.
+  const generateAndDownloadPDF = useCallback(async () => {
     try {
       if (!model || !result) {
         toast({
@@ -420,6 +423,7 @@ export default function Results() {
         } : undefined;
       }
 
+      const { generateAssessmentPDF } = await import("@/services/pdfGenerator");
       const pdf = generateAssessmentPDF({
         result,
         model,
@@ -497,7 +501,8 @@ export default function Results() {
         } : undefined;
       }
 
-      // Generate PDF
+      // Generate PDF (jsPDF is loaded on demand via dynamic import)
+      const { generateAssessmentPDF } = await import("@/services/pdfGenerator");
       const pdf = generateAssessmentPDF({
         result,
         model,

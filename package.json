@@ -97,6 +97,7 @@
     "react-resizable-panels": "^2.1.7",
     "recharts": "^2.15.2",
     "remark-gfm": "^4.0.1",
+    "rollup-plugin-visualizer": "^6.0.11",
     "tailwind-merge": "^2.6.0",
     "tailwindcss-animate": "^1.0.7",
     "tough-cookie": "^6.0.0",
