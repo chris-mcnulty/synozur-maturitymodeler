@@ -10,6 +10,8 @@ import type { Express } from "express";
   import { aiService } from "../services/ai-service";
   import { providerRegistry } from "../services/ai-providers/registry";
   import { validateImportData, executeImport, type ImportExportData } from "../services/import-service";
+  import { duplicateModel, exportModelDefinition, importModelDefinition, exportInterviewGuide } from "../services/model-export-service";
+  import { sendServiceError } from "../services/service-error";
   import { z } from "zod";
   import { randomBytes, createHash } from "crypto";
   import bcrypt from "bcryptjs";
@@ -344,89 +346,10 @@ export function registerModelRoutes(app: Express) {
 
   app.post("/api/models/:id/duplicate", ensureAdminOrModeler, async (req, res) => {
     try {
-      const sourceModel = await storage.getModel(req.params.id);
-      if (!sourceModel) {
-        return res.status(404).json({ error: "Model not found" });
-      }
-
-      // Get all related data
-      const dimensions = await storage.getDimensionsByModelId(sourceModel.id);
-      const questions = await storage.getQuestionsByModelId(sourceModel.id);
-
-      // Generate unique name and slug
-      const baseName = `${sourceModel.name} (Copy)`;
-      const baseSlug = `${sourceModel.slug}-copy`;
-      
-      // Check for existing copies and increment
-      const existingModels = await storage.getAllModels();
-      let copyNum = 1;
-      let newName = baseName;
-      let newSlug = baseSlug;
-      
-      while (existingModels.some(m => m.name === newName || m.slug === newSlug)) {
-        copyNum++;
-        newName = `${sourceModel.name} (Copy ${copyNum})`;
-        newSlug = `${sourceModel.slug}-copy-${copyNum}`;
-      }
-
-      // Create the new model
-      const newModel = await storage.createModel({
-        name: newName,
-        slug: newSlug,
-        description: sourceModel.description,
-        version: sourceModel.version,
-        estimatedTime: sourceModel.estimatedTime,
-        status: 'draft',
-        featured: false,
-        imageUrl: sourceModel.imageUrl,
-        maturityScale: sourceModel.maturityScale as any,
-        generalResources: sourceModel.generalResources as any,
-        visibility: sourceModel.visibility,
-        ownerTenantId: sourceModel.ownerTenantId,
-      });
-
-      // Create dimensions and build ID map
-      const dimensionIdMap = new Map<string, string>();
-      for (const dim of dimensions.sort((a, b) => a.order - b.order)) {
-        const newDim = await storage.createDimension({
-          modelId: newModel.id,
-          key: dim.key,
-          label: dim.label,
-          description: dim.description,
-          order: dim.order,
-        });
-        dimensionIdMap.set(dim.id, newDim.id);
-      }
-
-      // Create questions and answers
-      for (const q of questions.sort((a, b) => a.order - b.order)) {
-        const newQuestion = await storage.createQuestion({
-          modelId: newModel.id,
-          dimensionId: q.dimensionId ? dimensionIdMap.get(q.dimensionId) || null : null,
-          text: q.text,
-          order: q.order,
-        });
-
-        // Get and copy answers
-        const answers = await storage.getAnswersByQuestionId(q.id);
-        for (const a of answers.sort((a, b) => a.order - b.order)) {
-          await storage.createAnswer({
-            questionId: newQuestion.id,
-            text: a.text,
-            score: a.score,
-            order: a.order,
-          });
-        }
-      }
-
-      res.json({ 
-        success: true, 
-        model: newModel,
-        message: `Created "${newModel.name}" with ${dimensions.length} dimensions and ${questions.length} questions`
-      });
+      const result = await duplicateModel(req.params.id);
+      res.json(result);
     } catch (error) {
-      console.error("Error duplicating model:", error);
-      res.status(500).json({ error: "Failed to duplicate model" });
+      sendServiceError(res, error, "Failed to duplicate model");
     }
   });
 
@@ -1341,81 +1264,12 @@ export function registerModelRoutes(app: Express) {
 
   app.get("/api/models/:id/export-model", ensureAdminOrModeler, async (req, res) => {
     try {
-      const model = await storage.getModel(req.params.id);
-      if (!model) {
-        return res.status(404).json({ error: "Model not found" });
-      }
-
-      // Fetch all related data
-      const dimensions = await storage.getDimensionsByModelId(model.id);
-      const questions = await storage.getQuestionsByModelId(model.id);
-      
-      // Create dimension key map for lookups
-      const dimensionIdToKey = new Map<string, string>();
-      dimensions.forEach(d => dimensionIdToKey.set(d.id, d.key));
-
-      // Build questions array with embedded answers
-      const questionsData = await Promise.all(
-        questions.map(async (q) => {
-          const answers = await storage.getAnswersByQuestionId(q.id);
-          return {
-            dimensionKey: q.dimensionId ? dimensionIdToKey.get(q.dimensionId) || null : null,
-            text: q.text,
-            type: q.type,
-            order: q.order,
-            minValue: q.minValue,
-            maxValue: q.maxValue,
-            unit: q.unit,
-            placeholder: q.placeholder,
-            improvementStatement: q.improvementStatement,
-            resourceTitle: q.resourceTitle,
-            resourceLink: q.resourceLink,
-            resourceDescription: q.resourceDescription,
-            answers: answers.map(a => ({
-              text: a.text,
-              score: a.score,
-              order: a.order,
-              improvementStatement: a.improvementStatement,
-              resourceTitle: a.resourceTitle,
-              resourceLink: a.resourceLink,
-              resourceDescription: a.resourceDescription,
-            })),
-          };
-        })
-      );
-
-      // Build the export format
-      const exportData: schema.ModelExportFormat = {
-        formatVersion: "1.0",
-        exportedAt: new Date().toISOString(),
-        model: {
-          name: model.name,
-          slug: model.slug,
-          description: model.description,
-          version: model.version,
-          estimatedTime: model.estimatedTime,
-          status: model.status,
-          featured: model.featured,
-          allowAnonymousResults: model.allowAnonymousResults,
-          imageUrl: model.imageUrl,
-          maturityScale: model.maturityScale as any,
-          generalResources: model.generalResources as any,
-        },
-        dimensions: dimensions.map(d => ({
-          key: d.key,
-          label: d.label,
-          description: d.description,
-          order: d.order,
-        })),
-        questions: questionsData,
-      };
-
+      const { model, exportData } = await exportModelDefinition(req.params.id);
       res.setHeader('Content-Type', 'application/json');
       res.setHeader('Content-Disposition', `attachment; filename="${model.slug}.model"`);
       res.json(exportData);
     } catch (error) {
-      console.error('Model export error:', error);
-      res.status(500).json({ error: "Failed to export model" });
+      sendServiceError(res, error, "Failed to export model");
     }
   });
 
@@ -1424,334 +1278,22 @@ export function registerModelRoutes(app: Express) {
   app.post("/api/models/import-model", ensureAdminOrModeler, async (req, res) => {
     try {
       const { modelData, newName, newSlug } = req.body;
-
-      // Transform various import formats to standard format
-      let transformedData = modelData;
-      
-      // Detect "ExecAI" simple format (has modelName and options instead of answers)
-      if (modelData && modelData.modelName && modelData.questions?.[0]?.options) {
-        console.log('Detected ExecAI simple format, transforming...');
-        
-        // Generate a slug from the model name
-        const generatedSlug = modelData.modelName
-          .toLowerCase()
-          .replace(/[^a-z0-9]+/g, '-')
-          .replace(/^-|-$/g, '');
-        
-        // Convert routing ranges to maturity scale
-        const maturityScale = (modelData.routing || []).map((r: any, idx: number) => {
-          const [minStr, maxStr] = (r.range || '0-100').split('-');
-          return {
-            id: String(idx + 1),
-            name: r.breakout || `Level ${idx + 1}`,
-            description: r.breakout || '',
-            minScore: parseInt(minStr, 10) || 0,
-            maxScore: parseInt(maxStr, 10) || 100,
-          };
-        });
-        
-        transformedData = {
-          formatVersion: '1.0',
-          model: {
-            name: modelData.modelName,
-            slug: generatedSlug,
-            description: modelData.description || '',
-            version: '1.0',
-            estimatedTime: null,
-            status: 'draft',
-            featured: false,
-            imageUrl: null,
-            maturityScale: maturityScale.length > 0 ? maturityScale : null,
-            generalResources: null,
-          },
-          dimensions: [],
-          questions: (modelData.questions || []).map((q: any, qIdx: number) => ({
-            dimensionKey: null,
-            text: q.text,
-            type: 'multiple_choice',
-            order: qIdx,
-            minValue: null,
-            maxValue: null,
-            unit: null,
-            placeholder: null,
-            improvementStatement: null,
-            resourceTitle: null,
-            resourceLink: null,
-            resourceDescription: null,
-            answers: (q.options || []).map((opt: any, optIdx: number) => ({
-              text: opt.label,
-              score: opt.score,
-              order: optIdx,
-              improvementStatement: null,
-              resourceTitle: null,
-              resourceLink: null,
-              resourceDescription: null,
-            })),
-          })),
-        };
-      }
-      // Transform production format (separate answers array) to standard format (nested answers)
-      else if (modelData && modelData.answers && Array.isArray(modelData.answers)) {
-        // Production format detected - transform it
-        console.log('Detected production export format, transforming...');
-        
-        // Build a map of questionId -> answers
-        const answersByQuestion = new Map<string, any[]>();
-        for (const answer of modelData.answers) {
-          if (!answersByQuestion.has(answer.questionId)) {
-            answersByQuestion.set(answer.questionId, []);
-          }
-          answersByQuestion.get(answer.questionId)!.push({
-            text: answer.text,
-            score: answer.score,
-            order: answer.order,
-            improvementStatement: answer.improvementStatement,
-            resourceTitle: answer.resourceTitle,
-            resourceLink: answer.resourceLink,
-            resourceDescription: answer.resourceDescription,
-          });
-        }
-        
-        // Build a map of dimensionId -> dimension key
-        const dimensionIdToKey = new Map<string, string>();
-        for (const dim of modelData.dimensions || []) {
-          dimensionIdToKey.set(dim.id, dim.key);
-        }
-        
-        // Transform to standard format
-        transformedData = {
-          formatVersion: modelData.formatVersion || '1.0',
-          exportedAt: modelData.exportedAt,
-          model: {
-            name: modelData.model.name,
-            slug: modelData.model.slug,
-            description: modelData.model.description || '',
-            version: modelData.model.version || '1.0',
-            estimatedTime: modelData.model.estimatedTime,
-            status: modelData.model.status || 'draft',
-            featured: modelData.model.featured || false,
-            imageUrl: modelData.model.imageUrl,
-            maturityScale: modelData.model.maturityScale,
-            generalResources: modelData.model.generalResources,
-          },
-          dimensions: (modelData.dimensions || []).map((d: any) => ({
-            key: d.key,
-            label: d.label,
-            description: d.description || '',
-            order: d.order,
-          })),
-          questions: (modelData.questions || []).map((q: any) => ({
-            dimensionKey: q.dimensionId ? dimensionIdToKey.get(q.dimensionId) : (q.dimensionKey || null),
-            text: q.text,
-            type: q.type,
-            order: q.order,
-            minValue: q.minValue,
-            maxValue: q.maxValue,
-            unit: q.unit,
-            placeholder: q.placeholder,
-            improvementStatement: q.improvementStatement,
-            resourceTitle: q.resourceTitle,
-            resourceLink: q.resourceLink,
-            resourceDescription: q.resourceDescription,
-            answers: answersByQuestion.get(q.id) || [],
-          })),
-        };
-      }
-
-      // Validate the import data
-      const validationResult = schema.modelExportFormatSchema.safeParse(transformedData);
-      if (!validationResult.success) {
-        console.error('Model import validation failed:', validationResult.error.issues);
-        return res.status(400).json({ 
-          error: "Invalid model file format", 
-          details: validationResult.error.issues 
-        });
-      }
-
-      const data = validationResult.data;
-
-      // Use provided name/slug or fall back to original
-      const modelName = newName || data.model.name;
-      const modelSlug = newSlug || data.model.slug;
-
-      // Check if slug already exists
-      const existingModel = await storage.getModelBySlug(modelSlug);
-      if (existingModel) {
-        return res.status(400).json({ 
-          error: "A model with this slug already exists. Please provide a different slug." 
-        });
-      }
-
-      // Create the model
-      const createdModel = await storage.createModel({
-        name: modelName,
-        slug: modelSlug,
-        description: data.model.description,
-        version: data.model.version,
-        estimatedTime: data.model.estimatedTime,
-        status: data.model.status,
-        featured: data.model.featured,
-        imageUrl: data.model.imageUrl,
-        maturityScale: data.model.maturityScale as any,
-        generalResources: data.model.generalResources as any,
-      });
-
-      // Create dimensions and build key-to-ID map
-      const dimensionKeyToId = new Map<string, string>();
-      for (const dim of data.dimensions) {
-        const createdDimension = await storage.createDimension({
-          modelId: createdModel.id,
-          key: dim.key,
-          label: dim.label,
-          description: dim.description,
-          order: dim.order,
-        });
-        dimensionKeyToId.set(dim.key, createdDimension.id);
-      }
-
-      // Create questions and answers
-      let questionsCreated = 0;
-      let answersCreated = 0;
-      
-      for (const q of data.questions) {
-        const createdQuestion = await storage.createQuestion({
-          modelId: createdModel.id,
-          dimensionId: q.dimensionKey ? dimensionKeyToId.get(q.dimensionKey) || null : null,
-          text: q.text,
-          type: q.type,
-          order: q.order,
-          minValue: q.minValue,
-          maxValue: q.maxValue,
-          unit: q.unit,
-          placeholder: q.placeholder,
-          improvementStatement: q.improvementStatement,
-          resourceTitle: q.resourceTitle,
-          resourceLink: q.resourceLink,
-          resourceDescription: q.resourceDescription,
-        });
-        questionsCreated++;
-
-        // Create answers for this question
-        for (const a of q.answers) {
-          await storage.createAnswer({
-            questionId: createdQuestion.id,
-            text: a.text,
-            score: a.score,
-            order: a.order,
-            improvementStatement: a.improvementStatement,
-            resourceTitle: a.resourceTitle,
-            resourceLink: a.resourceLink,
-            resourceDescription: a.resourceDescription,
-          });
-          answersCreated++;
-        }
-      }
-
-      res.json({ 
-        success: true, 
-        model: createdModel,
-        stats: {
-          dimensionsCreated: data.dimensions.length,
-          questionsCreated,
-          answersCreated,
-        }
-      });
+      const result = await importModelDefinition({ modelData, newName, newSlug });
+      res.json(result);
     } catch (error) {
-      console.error('Model import error:', error);
-      res.status(500).json({ error: "Failed to import model" });
+      sendServiceError(res, error, "Failed to import model");
     }
   });
 
   // Export interview guide in markdown format
-
   app.get("/api/models/:id/export-interview", ensureAdminOrModeler, async (req, res) => {
     try {
-      const model = await storage.getModel(req.params.id);
-      if (!model) {
-        return res.status(404).json({ error: "Model not found" });
-      }
-
-      // Fetch all related data
-      const dimensions = await storage.getDimensionsByModelId(model.id);
-      const questions = await storage.getQuestionsByModelId(model.id);
-
-      // Batch-fetch all answers in a single query, then group by questionId
-      // (previously this fired one getAnswersByQuestionId per question — N+1).
-      const exportQuestionIds = questions.map(q => q.id);
-      const exportAllAnswers = exportQuestionIds.length > 0
-        ? await db.select().from(schema.answers)
-            .where(inArray(schema.answers.questionId, exportQuestionIds))
-            .orderBy(schema.answers.order)
-        : [];
-      const exportAnswersByQuestion = new Map<string, typeof exportAllAnswers>();
-      for (const a of exportAllAnswers) {
-        if (!exportAnswersByQuestion.has(a.questionId)) {
-          exportAnswersByQuestion.set(a.questionId, []);
-        }
-        exportAnswersByQuestion.get(a.questionId)!.push(a);
-      }
-
-      // Sort dimensions by order
-      const sortedDimensions = dimensions.sort((a, b) => a.order - b.order);
-
-      // Build markdown content
-      let markdown = `# ${model.name} - Interview Guide\n\n`;
-      markdown += `${model.description || ''}\n\n`;
-      markdown += `**Estimated Time:** ${model.estimatedTime || 'Not specified'}\n\n`;
-      markdown += `---\n\n`;
-
-      // Group questions by dimension
-      for (const dimension of sortedDimensions) {
-        markdown += `## ${dimension.label}\n\n`;
-        if (dimension.description) {
-          markdown += `*${dimension.description}*\n\n`;
-        }
-
-        // Get questions for this dimension
-        const dimensionQuestions = questions
-          .filter(q => q.dimensionId === dimension.id)
-          .sort((a, b) => a.order - b.order);
-
-        for (const question of dimensionQuestions) {
-          markdown += `### ${question.text}\n\n`;
-
-          // Use prefetched answers (already sorted by order)
-          const sortedAnswers = exportAnswersByQuestion.get(question.id) ?? [];
-
-          if (sortedAnswers.length > 0) {
-            for (const answer of sortedAnswers) {
-              markdown += `- [ ] ${answer.text}`;
-              if (answer.score !== null && answer.score !== undefined) {
-                markdown += ` *(Score: ${answer.score})*`;
-              }
-              markdown += `\n`;
-            }
-            markdown += `\n`;
-          } else if (question.type === 'numeric') {
-            markdown += `**Response:** ____________ ${question.unit || ''}\n`;
-            if (question.minValue !== null || question.maxValue !== null) {
-              markdown += `*(Range: ${question.minValue || 'min'} - ${question.maxValue || 'max'})*\n`;
-            }
-            markdown += `\n`;
-          } else if (question.type === 'text') {
-            markdown += `**Response:**\n\n`;
-            markdown += `_______________________________________\n\n`;
-            markdown += `_______________________________________\n\n`;
-            markdown += `_______________________________________\n\n`;
-          }
-        }
-      }
-
-      // Add footer
-      markdown += `---\n\n`;
-      markdown += `*Generated by Orion - Find Your North Star*\n`;
-
+      const { model, markdown } = await exportInterviewGuide(req.params.id);
       res.setHeader('Content-Type', 'text/markdown');
       res.setHeader('Content-Disposition', `attachment; filename="${model.slug}-interview-guide.md"`);
       res.send(markdown);
     } catch (error) {
-      console.error('Interview guide export error:', error);
-      res.status(500).json({ error: "Failed to export interview guide" });
+      sendServiceError(res, error, "Failed to export interview guide");
     }
   });
 

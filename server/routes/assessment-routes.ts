@@ -16,6 +16,10 @@ import type { Express } from "express";
   import { generateAdminConsentUrl, isSsoConfigured, extractDomain } from "../services/sso-service";
   import { hashPassword, comparePasswords } from "../utils/password";
 import { calculateAssessmentScore, type ScoringQuestion } from "../services/scoring";
+import { getAssessmentReview } from "../services/assessment-review-service";
+import { calculateAssessmentResults, bulkAssignDemographics, exportModelAnalysis } from "../services/assessment-analytics-service";
+import { generateAssessmentRecommendations } from "../services/ai-content-service";
+import { sendServiceError } from "../services/service-error";
   
 export function registerAssessmentRoutes(app: Express) {
   app.post("/api/assessments", async (req, res) => {
@@ -542,86 +546,10 @@ export function registerAssessmentRoutes(app: Express) {
 
   app.post("/api/assessments/:id/calculate", async (req, res) => {
     try {
-      const assessment = await storage.getAssessment(req.params.id);
-      if (!assessment) {
-        return res.status(404).json({ error: "Assessment not found" });
-      }
-
-      // Get all responses for this assessment
-      const responses = await storage.getAssessmentResponses(req.params.id);
-      
-      // Guard against empty responses
-      if (responses.length === 0) {
-        return res.status(400).json({ error: "No responses found for this assessment" });
-      }
-
-      // Get model and dimensions
-      const model = await storage.getModel(assessment.modelId);
-      if (!model) {
-        return res.status(404).json({ error: "Model not found" });
-      }
-
-      const dimensions = await storage.getDimensionsByModelId(model.id);
-      const questions = await storage.getQuestionsByModelId(model.id);
-
-      // Batch-fetch all answers for this model's questions in a single query
-      // (avoids N+1 from getAnswersByQuestionId per response). The pure
-      // scoring engine in server/services/scoring.ts then runs synchronously
-      // against the in-memory map.
-      const allQuestionIds = questions.map(q => q.id);
-      const allAnswersForModel = allQuestionIds.length > 0
-        ? await db.select().from(schema.answers)
-            .where(inArray(schema.answers.questionId, allQuestionIds))
-        : [];
-      const answersByQuestionId = new Map<string, Array<{ id: string; score: number }>>();
-      for (const a of allAnswersForModel) {
-        if (!answersByQuestionId.has(a.questionId)) {
-          answersByQuestionId.set(a.questionId, []);
-        }
-        answersByQuestionId.get(a.questionId)!.push({ id: a.id, score: a.score });
-      }
-
-      const scoringQuestions: ScoringQuestion[] = questions.map(q => ({
-        id: q.id,
-        dimensionId: q.dimensionId ?? null,
-        type: q.type as ScoringQuestion['type'],
-        minValue: q.minValue ?? null,
-        maxValue: q.maxValue ?? null,
-        answers: answersByQuestionId.get(q.id) ?? [],
-      }));
-
-      const scoringResult = calculateAssessmentScore({
-        questions: scoringQuestions,
-        responses: responses.map(r => ({
-          questionId: r.questionId,
-          answerId: r.answerId ?? null,
-          answerIds: r.answerIds ?? null,
-          numericValue: r.numericValue ?? null,
-          booleanValue: r.booleanValue ?? null,
-          textValue: r.textValue ?? null,
-        })),
-        dimensions: dimensions.map(d => ({ id: d.id, key: d.key })),
-        maturityScale: model.maturityScale ?? null,
-      });
-
-      // Create result
-      const result = await storage.createResult({
-        assessmentId: req.params.id,
-        overallScore: scoringResult.overallScore,
-        label: scoringResult.label,
-        dimensionScores: scoringResult.dimensionScores,
-      });
-
-      // Update assessment status and completion timestamp
-      await storage.updateAssessment(req.params.id, {
-        status: "completed",
-        completedAt: new Date(),
-      } as any);
-
+      const result = await calculateAssessmentResults(req.params.id);
       res.json(result);
     } catch (error) {
-      console.error(error);
-      res.status(500).json({ error: "Failed to calculate results" });
+      sendServiceError(res, error, "Failed to calculate results");
     }
   });
 
@@ -640,83 +568,12 @@ export function registerAssessmentRoutes(app: Express) {
   });
 
   // Generate AI recommendations for completed assessment
-
   app.post("/api/assessments/:id/recommendations", async (req, res) => {
     try {
-      const { aiService } = await import('../services/ai-service.js');
-      const crypto = await import('crypto');
-      
-      // Get assessment details
-      const assessment = await storage.getAssessment(req.params.id);
-      if (!assessment || assessment.status !== 'completed') {
-        return res.status(404).json({ error: "Completed assessment not found" });
-      }
-
-      // Get related data
-      const [model, dimensions, result, user] = await Promise.all([
-        storage.getModel(assessment.modelId),
-        storage.getDimensionsByModelId(assessment.modelId),
-        storage.getResult(req.params.id),
-        assessment.userId ? storage.getUser(assessment.userId) : null
-      ]);
-
-      if (!model || !result) {
-        return res.status(404).json({ error: "Required data not found" });
-      }
-
-      // Build context for recommendations
-      const context = {
-        assessment,
-        model,
-        dimensions,
-        user: user || undefined,  // Convert null to undefined for type compatibility
-        scores: result.dimensionScores as Record<string, number>
-      };
-
-      // Create cache key from context
-      const contextString = JSON.stringify({
-        modelId: model.id,
-        scores: result.dimensionScores,
-        industry: user?.industry,
-        companySize: user?.companySize
-      });
-      const contextHash = crypto.createHash('sha256').update(contextString).digest('hex');
-
-      // Check cache first
-      const cached = await storage.getAiGeneratedContent('recommendation', contextHash);
-      if (cached && new Date(cached.expiresAt) > new Date()) {
-        return res.json(cached.content);
-      }
-
-      // Generate new recommendations
-      const recommendations = await aiService.generateRecommendations(context);
-
-      // Cache the recommendations (7 days)
-      const expiresAt = new Date();
-      expiresAt.setDate(expiresAt.getDate() + 7);
-      
-      await storage.createAiGeneratedContent({
-        type: 'recommendation',
-        contextHash,
-        content: recommendations as any,
-        metadata: { assessmentId: assessment.id, modelId: model.id },
-        expiresAt
-      });
-
-      // Log AI usage if user is authenticated
-      if (assessment.userId) {
-        await storage.createAiUsageLog({
-          userId: assessment.userId,
-          modelName: (await providerRegistry.getActiveConfig()).modelId || 'unknown',
-          operation: 'recommendation',
-          estimatedCost: 5 // Rough estimate: 5 cents per recommendation generation
-        });
-      }
-
+      const recommendations = await generateAssessmentRecommendations(req.params.id);
       res.json(recommendations);
     } catch (error) {
-      console.error('Failed to generate recommendations:', error);
-      res.status(500).json({ error: "Failed to generate recommendations" });
+      sendServiceError(res, error, "Failed to generate recommendations");
     }
   });
 
@@ -767,135 +624,12 @@ export function registerAssessmentRoutes(app: Express) {
   });
 
   // Assessment review — returns fully-resolved Q&A for admin/modeler review
-
   app.get("/api/admin/assessments/:id/review", ensureAdminOrModeler, async (req, res) => {
     try {
-      const assessment = await storage.getAssessment(req.params.id);
-      if (!assessment) {
-        return res.status(404).json({ error: "Assessment not found" });
-      }
-
-      const [responses, model, dimensions, result, modelQuestions] = await Promise.all([
-        storage.getAssessmentResponses(assessment.id),
-        storage.getModel(assessment.modelId),
-        storage.getDimensionsByModelId(assessment.modelId),
-        storage.getResult(assessment.id),
-        storage.getQuestionsByModelId(assessment.modelId),
-      ]);
-
-      // Batch-fetch all answers for this model's questions in a single query.
-      // Previously this endpoint issued one getQuestion + multiple getAnswersByQuestionId calls
-      // per response, which scaled with the number of responses (N+1).
-      const modelQuestionIds = modelQuestions.map(q => q.id);
-      const allAnswersForReview = modelQuestionIds.length > 0
-        ? await db.select().from(schema.answers)
-            .where(inArray(schema.answers.questionId, modelQuestionIds))
-        : [];
-      const questionMap = new Map(modelQuestions.map(q => [q.id, q]));
-      const answersByQuestionId = new Map<string, typeof allAnswersForReview>();
-      for (const a of allAnswersForReview) {
-        if (!answersByQuestionId.has(a.questionId)) {
-          answersByQuestionId.set(a.questionId, []);
-        }
-        answersByQuestionId.get(a.questionId)!.push(a);
-      }
-
-      const resolvedQuestions = responses.map((r) => {
-        const question = questionMap.get(r.questionId);
-        if (!question) return null;
-
-        // Resolve answer text based on question type
-        let answerText = '';
-        let answerScore: number | null = null;
-
-        if (r.booleanValue !== null && r.booleanValue !== undefined) {
-          answerText = r.booleanValue ? 'Yes' : 'No';
-        } else if (r.numericValue !== null && r.numericValue !== undefined) {
-          answerText = `${r.numericValue}${question.unit ? ' ' + question.unit : ''}`;
-          answerScore = r.numericValue;
-        } else if (r.textValue) {
-          answerText = r.textValue;
-        } else if (r.answerIds && r.answerIds.length > 0) {
-          // Multi-select: resolve each answer ID from the prefetched map
-          const answers = answersByQuestionId.get(r.questionId) ?? [];
-          const answerById = new Map(answers.map(a => [a.id, a]));
-          answerText = r.answerIds
-            .map((aid) => answerById.get(aid)?.text || aid)
-            .join('; ');
-        } else if (r.answerId) {
-          const answers = answersByQuestionId.get(r.questionId) ?? [];
-          const matched = answers.find((a) => a.id === r.answerId);
-          answerText = matched?.text || r.answerId;
-          answerScore = matched?.score ?? null;
-        }
-
-        return {
-          questionId: question.id,
-          dimensionId: question.dimensionId,
-          order: question.order,
-          questionText: question.text,
-          questionType: question.type,
-          answerText,
-          answerScore,
-          respondedAt: r.createdAt,
-        };
-      });
-
-      // Filter nulls and group by dimension
-      const validQuestions = resolvedQuestions.filter(Boolean) as NonNullable<typeof resolvedQuestions[number]>[];
-      const dimensionMap = new Map(dimensions.map((d) => [d.id, d]));
-
-      // Build dimension groups
-      const grouped: Record<string, { dimensionName: string; order: number; questions: typeof validQuestions }> = {};
-      const noDimKey = '__none__';
-
-      for (const q of validQuestions) {
-        const key = q.dimensionId || noDimKey;
-        if (!grouped[key]) {
-          const dim = q.dimensionId ? dimensionMap.get(q.dimensionId) : null;
-          grouped[key] = {
-            dimensionName: dim?.label || 'General',
-            order: dim?.order ?? 999,
-            questions: [],
-          };
-        }
-        grouped[key].questions.push(q);
-      }
-
-      // Sort questions within each dimension by order
-      for (const group of Object.values(grouped)) {
-        group.questions.sort((a, b) => a.order - b.order);
-      }
-
-      const dimensionGroups = Object.values(grouped).sort((a, b) => a.order - b.order);
-
-      res.json({
-        assessment: {
-          id: assessment.id,
-          modelName: model?.name || 'Unknown Model',
-          status: assessment.status,
-          startedAt: assessment.startedAt,
-          completedAt: assessment.completedAt,
-          isProxy: assessment.isProxy,
-          subject: assessment.isProxy
-            ? {
-                name: assessment.proxyName,
-                company: assessment.proxyCompany,
-                jobTitle: assessment.proxyJobTitle,
-                industry: assessment.proxyIndustry,
-                country: assessment.proxyCountry,
-              }
-            : null,
-        },
-        result: result
-          ? { overallScore: result.overallScore, label: result.label }
-          : null,
-        dimensionGroups,
-        totalQuestions: validQuestions.length,
-      });
+      const review = await getAssessmentReview(req.params.id);
+      res.json(review);
     } catch (error) {
-      console.error('Assessment review error:', error);
-      res.status(500).json({ error: "Failed to load assessment review" });
+      sendServiceError(res, error, "Failed to load assessment review");
     }
   });
 
@@ -1243,267 +977,25 @@ export function registerAssessmentRoutes(app: Express) {
   });
 
   // Bulk assign demographics to all assessments with a specific tag
-
   app.post("/api/admin/assessments/bulk-demographics", ensureAdminOrModeler, async (req, res) => {
     try {
       const { tagId, industry, companySize, country } = req.body;
-      
-      if (!tagId) {
-        return res.status(400).json({ error: "Tag ID is required" });
-      }
-      
-      // Check that at least one demographic field is provided
-      if (!industry && !companySize && !country) {
-        return res.status(400).json({ error: "At least one demographic field (industry, companySize, or country) is required" });
-      }
-      
-      // Get all assessment IDs with this tag
-      const tagAssignments = await db
-        .select({ assessmentId: schema.assessmentTagAssignments.assessmentId })
-        .from(schema.assessmentTagAssignments)
-        .where(eq(schema.assessmentTagAssignments.tagId, tagId));
-      
-      if (tagAssignments.length === 0) {
-        return res.json({ 
-          success: true, 
-          message: "No assessments found with this tag",
-          updatedCount: 0,
-          demographics: {}
-        });
-      }
-      
-      const assessmentIds = tagAssignments.map(a => a.assessmentId);
-      
-      // Build the update object with only provided fields
-      const updateData: Record<string, string> = {};
-      if (industry) updateData.proxyIndustry = industry;
-      if (companySize) updateData.proxyCompanySize = companySize;
-      if (country) updateData.proxyCountry = country;
-      
-      // Update all assessments with the demographic data
-      let updatedCount = 0;
-      for (const assessmentId of assessmentIds) {
-        await db
-          .update(schema.assessments)
-          .set(updateData)
-          .where(eq(schema.assessments.id, assessmentId));
-        updatedCount++;
-      }
-      
-      res.json({ 
-        success: true, 
-        message: `Updated demographics for ${updatedCount} assessments`,
-        updatedCount,
-        demographics: updateData
-      });
+      const result = await bulkAssignDemographics({ tagId, industry, companySize, country });
+      res.json(result);
     } catch (error) {
-      console.error('Error bulk assigning demographics:', error);
-      res.status(500).json({ error: "Failed to bulk assign demographics" });
+      sendServiceError(res, error, "Failed to bulk assign demographics");
     }
   });
 
   // Export analytical data for a specific model (for external analysis tools)
-
   app.get("/api/admin/export/model/:modelSlug/analysis", ensureAdminOrModeler, async (req, res) => {
     try {
-      const { modelSlug } = req.params;
-      
-      // Get model
-      const modelResult = await db
-        .select()
-        .from(schema.models)
-        .where(eq(schema.models.slug, modelSlug))
-        .limit(1);
-      
-      const model = modelResult[0];
-      if (!model) {
-        return res.status(404).json({ error: "Model not found" });
-      }
-      
-      // Get dimensions
-      const dimensions = await db
-        .select()
-        .from(schema.dimensions)
-        .where(eq(schema.dimensions.modelId, model.id))
-        .orderBy(schema.dimensions.order);
-      
-      // Get questions
-      const questions = await db
-        .select()
-        .from(schema.questions)
-        .where(eq(schema.questions.modelId, model.id))
-        .orderBy(schema.questions.order);
-      
-      // Get all answers for these questions
-      const questionIds = questions.map(q => q.id);
-      const allAnswers = questionIds.length > 0 ? await db
-        .select()
-        .from(schema.answers)
-        .where(inArray(schema.answers.questionId, questionIds))
-        .orderBy(schema.answers.order) : [];
-      
-      // Get all assessments for this model
-      const assessments = await db
-        .select()
-        .from(schema.assessments)
-        .where(eq(schema.assessments.modelId, model.id));
-      
-      // Build comprehensive export data
-      const exportData = {
-        model: {
-          id: model.id,
-          name: model.name,
-          slug: model.slug,
-          description: model.description,
-          maturityScale: model.maturityScale,
-        },
-        dimensions: dimensions.map(d => ({
-          id: d.id,
-          key: d.key,
-          label: d.label,
-          description: d.description,
-          order: d.order,
-        })),
-        questions: questions.map(q => {
-          const questionAnswers = allAnswers.filter(a => a.questionId === q.id);
-          const dimension = dimensions.find(d => d.id === q.dimensionId);
-          
-          return {
-            id: q.id,
-            text: q.text,
-            type: q.type,
-            dimension: dimension ? {
-              key: dimension.key,
-              label: dimension.label,
-            } : null,
-            order: q.order,
-            minValue: q.minValue,
-            maxValue: q.maxValue,
-            unit: q.unit,
-            placeholder: q.placeholder,
-            answers: questionAnswers.map(a => ({
-              id: a.id,
-              text: a.text,
-              score: a.score,
-              order: a.order,
-            })),
-          };
-        }),
-        assessments: [] as any[],
-      };
-      
-      // For each assessment, get responses, results, and user data
-      for (const assessment of assessments) {
-        // Get user data
-        let userData = null;
-        if (assessment.userId) {
-          const userResult = await db
-            .select({
-              name: schema.users.name,
-              company: schema.users.company,
-              jobTitle: schema.users.jobTitle,
-              industry: schema.users.industry,
-              companySize: schema.users.companySize,
-              country: schema.users.country,
-            })
-            .from(schema.users)
-            .where(eq(schema.users.id, assessment.userId))
-            .limit(1);
-          
-          userData = userResult[0] || null;
-        }
-        
-        // Get results
-        const resultResult = await db
-          .select()
-          .from(schema.results)
-          .where(eq(schema.results.assessmentId, assessment.id))
-          .limit(1);
-        
-        const result = resultResult[0];
-        if (!result) continue; // Skip assessments without results
-        
-        // Get responses
-        const responses = await db
-          .select()
-          .from(schema.assessmentResponses)
-          .where(eq(schema.assessmentResponses.assessmentId, assessment.id));
-        
-        // Get tags for this assessment
-        const tagAssignments = await db
-          .select({
-            tagName: schema.assessmentTags.name,
-            tagColor: schema.assessmentTags.color,
-          })
-          .from(schema.assessmentTagAssignments)
-          .innerJoin(schema.assessmentTags, eq(schema.assessmentTagAssignments.tagId, schema.assessmentTags.id))
-          .where(eq(schema.assessmentTagAssignments.assessmentId, assessment.id));
-        
-        // Build response details with full context
-        const responseDetails = responses.map(r => {
-          const question = questions.find(q => q.id === r.questionId);
-          if (!question) return null;
-          
-          let selectedAnswers: Array<{ id: string; text: string; score: number }> = [];
-          
-          // Handle different question types
-          if (r.answerIds && r.answerIds.length > 0) {
-            // Multi-select
-            selectedAnswers = allAnswers
-              .filter(a => r.answerIds!.includes(a.id))
-              .map(a => ({
-                id: a.id,
-                text: a.text,
-                score: a.score,
-              }));
-          } else if (r.answerId) {
-            // Single answer
-            const answer = allAnswers.find(a => a.id === r.answerId);
-            if (answer) {
-              selectedAnswers = [{
-                id: answer.id,
-                text: answer.text,
-                score: answer.score,
-              }];
-            }
-          }
-          
-          return {
-            questionId: r.questionId,
-            questionText: question.text,
-            questionType: question.type,
-            selectedAnswers,
-            numericValue: r.numericValue,
-            booleanValue: r.booleanValue,
-            textValue: r.textValue,
-          };
-        }).filter((item): item is NonNullable<typeof item> => item !== null);
-        
-        exportData.assessments.push({
-          id: assessment.id,
-          createdAt: assessment.startedAt,
-          startedAt: assessment.startedAt,
-          completedAt: assessment.completedAt,
-          user: userData,
-          isImported: !!assessment.importBatchId,
-          isProxy: assessment.isProxy || false,
-          tags: tagAssignments.map(t => t.tagName),
-          results: {
-            overallScore: result.overallScore,
-            label: result.label,
-            dimensionScores: result.dimensionScores,
-          },
-          responses: responseDetails,
-        });
-      }
-      
-      // Set response headers for JSON download
+      const { modelSlug, exportData } = await exportModelAnalysis(req.params.modelSlug);
       res.setHeader('Content-Type', 'application/json');
       res.setHeader('Content-Disposition', `attachment; filename="${modelSlug}-analysis-${new Date().toISOString().split('T')[0]}.json"`);
       res.json(exportData);
     } catch (error) {
-      console.error('Export error:', error);
-      res.status(500).json({ error: "Failed to generate export" });
+      sendServiceError(res, error, "Failed to generate export");
     }
   });
 

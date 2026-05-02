@@ -15,6 +15,8 @@ import type { Express } from "express";
   import bcrypt from "bcryptjs";
   import { generateAdminConsentUrl, isSsoConfigured, extractDomain } from "../services/sso-service";
   import { hashPassword, comparePasswords } from "../utils/password";
+  import { approveAiReview, rejectAiReview, generateAssessmentInsights, bulkRewriteAnswers } from "../services/ai-content-service";
+  import { sendServiceError } from "../services/service-error";
   
 export function registerAiRoutes(app: Express) {
   app.delete('/api/admin/ai/cache', ensureAdmin, async (req, res) => {
@@ -367,67 +369,19 @@ Respond in JSON format:
   });
 
   // Bulk rewrite all answers for a question
-
   app.post("/api/admin/ai/rewrite-all-answers", ensureAdminOrModeler, async (req, res) => {
     try {
       const { questionId, questionText, answers, modelContext } = req.body;
-      
-      // Validate input
-      if (!questionId || !questionText || !Array.isArray(answers) || answers.length === 0) {
-        return res.status(400).json({ error: "Question ID, question text, and answers array are required" });
-      }
-
-      const reviewIds: string[] = [];
-
-      // Generate rewrites for each answer
-      for (const answer of answers) {
-        if (!answer.text || answer.score === undefined) {
-          continue;
-        }
-
-        try {
-          const rewrittenAnswer = await aiService.rewriteAnswer(
-            questionText,
-            answer.text,
-            answer.score,
-            modelContext
-          );
-
-          // Store in review queue
-          const review = await storage.createAiContentReview({
-            type: 'answer-rewrite',
-            contentType: 'answer_rewrite',
-            targetId: answer.id,
-            generatedContent: { rewrittenAnswer } as any,
-            metadata: { questionText, answerText: answer.text, answerScore: answer.score, modelContext },
-            status: 'pending',
-            createdBy: req.user!.id
-          });
-
-          reviewIds.push(review.id);
-
-          // Log usage for each rewrite
-          await storage.createAiUsageLog({
-            userId: req.user!.id,
-            modelName: (await providerRegistry.getActiveConfig()).modelId || 'unknown',
-            operation: 'rewrite-answer',
-            estimatedCost: 1
-          });
-        } catch (answerError) {
-          console.error(`Failed to rewrite answer ${answer.id}:`, answerError);
-          // Continue with other answers even if one fails
-        }
-      }
-
-      res.json({
-        success: true,
-        message: `${reviewIds.length} answer rewrites generated and sent to review queue`,
-        reviewIds,
-        count: reviewIds.length
+      const result = await bulkRewriteAnswers({
+        questionId,
+        questionText,
+        answers,
+        modelContext,
+        userId: req.user!.id,
       });
+      res.json(result);
     } catch (error) {
-      console.error('Failed to bulk rewrite answers:', error);
-      res.status(500).json({ error: "Failed to bulk rewrite answers" });
+      sendServiceError(res, error, "Failed to bulk rewrite answers");
     }
   });
 
@@ -459,240 +413,26 @@ Respond in JSON format:
   });
 
   // Approve an AI content review (supports partial approvals)
-
   app.post("/api/admin/ai/approve-review/:id", ensureAdminOrModeler, async (req, res) => {
     try {
       const { id } = req.params;
       const { selectedItemIds, editedContent } = req.body;
-      
-      const review = await storage.getAiReviewById(id);
-      if (!review) {
-        return res.status(404).json({ error: "Review not found" });
-      }
-      
-      if (review.status !== 'pending') {
-        return res.status(400).json({ error: "Review has already been processed" });
-      }
-
-      // Use edited content if provided, otherwise use original generated content
-      const contentToApprove = editedContent || review.generatedContent;
-
-      // If selectedItemIds are provided, filter content to only selected items
-      let partialContent = contentToApprove;
-      
-      if (selectedItemIds && selectedItemIds.length > 0) {
-        // Apply partial approval based on content type
-        switch (review.contentType) {
-          case 'dimension_resources':
-            // Filter resources to only selected ones
-            const resourceIndices = selectedItemIds
-              .filter((id: string) => id.startsWith('resource-'))
-              .map((id: string) => parseInt(id.replace('resource-', '')));
-            
-            if (contentToApprove.resources) {
-              partialContent = {
-                ...contentToApprove,
-                resources: contentToApprove.resources.filter((_: any, idx: number) => 
-                  resourceIndices.includes(idx)
-                )
-              };
-            }
-            break;
-            
-          case 'maturity_level_interpretation':
-            partialContent = { ...contentToApprove };
-            
-            // Filter characteristics if not all are selected
-            const charIndices = selectedItemIds
-              .filter((id: string) => id.startsWith('characteristic-'))
-              .map((id: string) => parseInt(id.replace('characteristic-', '')));
-            
-            if (charIndices.length > 0 && contentToApprove.characteristics) {
-              partialContent = {
-                ...partialContent,
-                characteristics: contentToApprove.characteristics.filter((_: string, idx: number) =>
-                  charIndices.includes(idx)
-                )
-              };
-            }
-            
-            // Remove interpretation if not selected
-            if (!selectedItemIds.includes('interpretation')) {
-              delete (partialContent as any).interpretation;
-              delete (partialContent as any).title;
-            }
-            break;
-            
-          case 'answer_improvement':
-          case 'answer_rewrite':
-            // Only approve if main content is selected
-            if (!selectedItemIds.includes('main-content')) {
-              return res.status(400).json({ error: "No content selected for approval" });
-            }
-            break;
-        }
-      }
-
-      // Store the filtered content in review before approving
-      review.generatedContent = partialContent;
-
-      // Approve the review
-      const approved = await storage.approveAiReview(id, req.user!.id);
-      
-      // Apply the approved content to the actual database tables
-      try {
-        switch (review.contentType) {
-          case 'answer_rewrite':
-            if (review.targetId && partialContent.rewrittenAnswer) {
-              await db.update(schema.answers)
-                .set({ text: partialContent.rewrittenAnswer })
-                .where(eq(schema.answers.id, review.targetId));
-            }
-            break;
-            
-          case 'answer_improvement':
-            if (review.targetId && partialContent.improvementStatement) {
-              await db.update(schema.answers)
-                .set({ improvementStatement: partialContent.improvementStatement })
-                .where(eq(schema.answers.id, review.targetId));
-            }
-            break;
-            
-          // TODO: Implement other content types when needed
-          // case 'maturity_level_interpretation':
-          // case 'dimension_resources':
-        }
-      } catch (applyError) {
-        console.error('Failed to apply approved content:', applyError);
-        // Continue anyway - review is approved even if apply fails
-      }
-      
-      res.json({ 
-        success: true, 
-        message: selectedItemIds ? "Selected content approved and applied successfully" : "Content approved and applied successfully",
-        review: approved 
-      });
+      const result = await approveAiReview({ id, selectedItemIds, editedContent, userId: req.user!.id });
+      res.json(result);
     } catch (error) {
-      console.error('Failed to approve review:', error);
-      res.status(500).json({ error: "Failed to approve review" });
+      sendServiceError(res, error, "Failed to approve review");
     }
   });
 
   // Reject an AI content review (supports partial rejections)
-
   app.post("/api/admin/ai/reject-review/:id", ensureAdminOrModeler, async (req, res) => {
     try {
       const { id } = req.params;
       const { reason, selectedItemIds } = req.body;
-      
-      const review = await storage.getAiReviewById(id);
-      if (!review) {
-        return res.status(404).json({ error: "Review not found" });
-      }
-      
-      if (review.status !== 'pending') {
-        return res.status(400).json({ error: "Review has already been processed" });
-      }
-
-      // If selectedItemIds are provided, we're doing a partial rejection
-      if (selectedItemIds && selectedItemIds.length > 0) {
-        // For partial rejections, we need to keep the review pending
-        // and only remove the rejected items from the generated content
-        let remainingContent: any = { ...(review.generatedContent || {}) };
-        
-        switch (review.contentType) {
-          case 'dimension_resources':
-            // Remove rejected resources
-            const rejectedResourceIndices = selectedItemIds
-              .filter((id: string) => id.startsWith('resource-'))
-              .map((id: string) => parseInt(id.replace('resource-', '')));
-            
-            if (remainingContent.resources) {
-              remainingContent = {
-                ...remainingContent,
-                resources: remainingContent.resources.filter((_: any, idx: number) => 
-                  !rejectedResourceIndices.includes(idx)
-                )
-              };
-            }
-            break;
-            
-          case 'maturity_level_interpretation':
-            // Remove rejected characteristics
-            const rejectedCharIndices = selectedItemIds
-              .filter((id: string) => id.startsWith('characteristic-'))
-              .map((id: string) => parseInt(id.replace('characteristic-', '')));
-            
-            if (rejectedCharIndices.length > 0 && remainingContent.characteristics) {
-              remainingContent = {
-                ...remainingContent,
-                characteristics: remainingContent.characteristics.filter((_: string, idx: number) =>
-                  !rejectedCharIndices.includes(idx)
-                )
-              };
-            }
-            
-            // Remove interpretation if rejected
-            if (selectedItemIds.includes('interpretation')) {
-              delete remainingContent.interpretation;
-              delete remainingContent.title;
-            }
-            break;
-            
-          case 'answer_improvement':
-          case 'answer_rewrite':
-            // If main content is rejected, reject the entire review
-            if (selectedItemIds.includes('main-content')) {
-              const rejected = await storage.rejectAiReview(id, req.user!.id, reason);
-              return res.json({
-                success: true,
-                message: "Content rejected successfully",
-                review: rejected
-              });
-            }
-            break;
-        }
-        
-        // Update the review with remaining content
-        // Note: We keep it pending so remaining items can still be approved
-        review.generatedContent = remainingContent;
-        
-        // Check if any content remains
-        const hasRemainingContent = 
-          (review.contentType === 'dimension_resources' && remainingContent.resources?.length > 0) ||
-          (review.contentType === 'maturity_level_interpretation' && 
-            (remainingContent.interpretation || remainingContent.characteristics?.length > 0)) ||
-          (review.contentType === 'answer_improvement' && remainingContent.improvementStatement) ||
-          (review.contentType === 'answer_rewrite' && remainingContent.rewrittenAnswer);
-        
-        if (!hasRemainingContent) {
-          // No content remains, reject the entire review
-          const rejected = await storage.rejectAiReview(id, req.user!.id, reason);
-          return res.json({
-            success: true,
-            message: "All content rejected",
-            review: rejected
-          });
-        }
-        
-        return res.json({
-          success: true,
-          message: "Selected items rejected, remaining items still pending",
-          review
-        });
-      } else {
-        // Full rejection
-        const rejected = await storage.rejectAiReview(id, req.user!.id, reason);
-        
-        res.json({ 
-          success: true, 
-          message: "Content rejected successfully",
-          review: rejected 
-        });
-      }
+      const result = await rejectAiReview({ id, reason, selectedItemIds, userId: req.user!.id });
+      res.json(result);
     } catch (error) {
-      console.error('Failed to reject review:', error);
-      res.status(500).json({ error: "Failed to reject review" });
+      sendServiceError(res, error, "Failed to reject review");
     }
   });
 
@@ -892,151 +632,13 @@ Respond in JSON format:
   });
 
   // Generate AI insights for a set of filtered assessments
-
   app.post("/api/admin/ai/generate-insights", ensureAdminOrModeler, async (req, res) => {
     try {
       const { assessmentIds } = req.body;
-      
-      if (!assessmentIds || !Array.isArray(assessmentIds) || assessmentIds.length === 0) {
-        return res.status(400).json({ error: "Assessment IDs are required" });
-      }
-
-      // Fetch assessments with their data
-      const assessments = await db.select()
-        .from(schema.assessments)
-        .where(inArray(schema.assessments.id, assessmentIds));
-      
-      if (assessments.length === 0) {
-        return res.status(404).json({ error: "No assessments found" });
-      }
-
-      // Fetch results for these assessments (contains scores)
-      const results = await db.select()
-        .from(schema.results)
-        .where(inArray(schema.results.assessmentId, assessmentIds));
-      const resultsMap = new Map(results.map(r => [r.assessmentId, r]));
-
-      // Fetch models for the assessments
-      const modelIds = Array.from(new Set(assessments.map(a => a.modelId)));
-      const models = await db.select()
-        .from(schema.models)
-        .where(inArray(schema.models.id, modelIds));
-      const modelMap = new Map(models.map(m => [m.id, m]));
-
-      // Fetch dimensions for each model
-      const dimensions = await db.select()
-        .from(schema.dimensions)
-        .where(inArray(schema.dimensions.modelId, modelIds));
-      const dimensionsByModel = dimensions.reduce((acc, d) => {
-        if (!acc[d.modelId]) acc[d.modelId] = [];
-        acc[d.modelId].push(d);
-        return acc;
-      }, {} as Record<string, typeof dimensions>);
-
-      // Fetch users for user context (if not proxy)
-      const userIds = Array.from(new Set(assessments.filter(a => a.userId).map(a => a.userId!)));
-      const users = userIds.length > 0 
-        ? await db.select().from(schema.users).where(inArray(schema.users.id, userIds))
-        : [];
-      const userMap = new Map(users.map(u => [u.id, u]));
-
-      // Fetch tags for assessments
-      const tagAssignments = await db.select()
-        .from(schema.assessmentTagAssignments)
-        .where(inArray(schema.assessmentTagAssignments.assessmentId, assessmentIds));
-      
-      // Get unique tag IDs
-      const tagIds = Array.from(new Set(tagAssignments.map(ta => ta.tagId)));
-      const tags = tagIds.length > 0
-        ? await db.select().from(schema.assessmentTags).where(inArray(schema.assessmentTags.id, tagIds))
-        : [];
-      const tagMap = new Map(tags.map(t => [t.id, t]));
-      
-      // Map assessment IDs to their tag names
-      const assessmentTagsMap = new Map<string, string[]>();
-      tagAssignments.forEach(ta => {
-        if (!assessmentTagsMap.has(ta.assessmentId)) {
-          assessmentTagsMap.set(ta.assessmentId, []);
-        }
-        const tag = tagMap.get(ta.tagId);
-        if (tag) {
-          assessmentTagsMap.get(ta.assessmentId)!.push(tag.name);
-        }
-      });
-
-      // Prepare assessment data for AI analysis
-      const assessmentData = assessments.map(a => {
-        const model = modelMap.get(a.modelId);
-        const result = resultsMap.get(a.id);
-        const dims = dimensionsByModel[a.modelId] || [];
-        const user = a.userId ? userMap.get(a.userId) : null;
-        
-        // Get dimension scores from result
-        // Note: dimensionScores are stored by dimension KEY (e.g., "skills"), not by dimension ID (UUID)
-        const dimensionScoresRaw = (result?.dimensionScores || {}) as Record<string, number>;
-        const dimensionScores: Record<string, number> = {};
-        const dimensionLabels: Record<string, string> = {};
-        
-        dims.forEach(dim => {
-          // Use dim.key to look up scores, as that's how they're stored in results
-          dimensionScores[dim.key] = dimensionScoresRaw[dim.key] || 0;
-          dimensionLabels[dim.key] = dim.label;
-        });
-
-        // Get user context - either from proxy fields or user
-        let userContext: { industry?: string; companySize?: string; jobTitle?: string; country?: string } = {};
-        if (a.isProxy) {
-          userContext = {
-            industry: a.proxyIndustry || undefined,
-            companySize: a.proxyCompanySize || undefined,
-            jobTitle: a.proxyJobTitle || undefined,
-            country: a.proxyCountry || undefined
-          };
-        } else if (user) {
-          userContext = {
-            industry: user.industry || undefined,
-            companySize: user.companySize || undefined,
-            jobTitle: user.jobTitle || undefined,
-            country: user.country || undefined
-          };
-        }
-
-        // Calculate max score based on model's maturity scale
-        const maturityScale = model?.maturityScale as any[] || [];
-        const maxScaleScore = maturityScale.length > 0 ? Math.max(...maturityScale.map(s => s.maxScore || 100)) : 100;
-        const maxScore = maxScaleScore;
-
-        return {
-          id: a.id,
-          modelId: a.modelId,
-          modelName: model?.name || 'Unknown Model',
-          totalScore: result?.overallScore || 0,
-          maxScore,
-          completedAt: a.completedAt,
-          dimensionScores,
-          dimensionLabels,
-          userContext,
-          isProxy: a.isProxy || false,
-          tags: assessmentTagsMap.get(a.id) || []
-        };
-      });
-
-      // Generate insights using AI service
-      const { aiService } = await import('../services/ai-service');
-      const insights = await aiService.generateAssessmentInsights(assessmentData);
-
-      // Log AI usage
-      await storage.createAiUsageLog({
-        userId: req.user!.id,
-        modelName: (await providerRegistry.getActiveConfig()).modelId || 'unknown',
-        operation: 'generate-assessment-insights',
-        estimatedCost: 5 // Higher cost for aggregate analysis
-      });
-
+      const insights = await generateAssessmentInsights({ assessmentIds, userId: req.user!.id });
       res.json(insights);
     } catch (error) {
-      console.error('Failed to generate assessment insights:', error);
-      res.status(500).json({ error: "Failed to generate assessment insights" });
+      sendServiceError(res, error, "Failed to generate assessment insights");
     }
   });
 
