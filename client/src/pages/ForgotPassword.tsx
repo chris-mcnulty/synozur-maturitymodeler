@@ -59,6 +59,7 @@ export default function ForgotPassword() {
                 variant="ghost"
                 size="icon"
                 onClick={() => setLocation("/")}
+                aria-label="Back to home"
                 data-testid="button-back"
               >
                 <ArrowLeft className="h-5 w-5" />

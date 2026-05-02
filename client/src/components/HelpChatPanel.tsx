@@ -124,7 +124,7 @@ export function HelpChatPanel({ open, onClose }: HelpChatPanelProps) {
           <Bot className="h-5 w-5 text-primary" />
           <h3 className="font-semibold">Help Assistant</h3>
         </div>
-        <Button size="icon" variant="ghost" onClick={onClose} data-testid="button-close-chat">
+        <Button size="icon" variant="ghost" onClick={onClose} aria-label="Close help chat" data-testid="button-close-chat">
           <X className="h-4 w-4" />
         </Button>
       </div>
@@ -163,7 +163,7 @@ export function HelpChatPanel({ open, onClose }: HelpChatPanelProps) {
             disabled={isStreaming}
             data-testid="input-chat-message"
           />
-          <Button size="icon" onClick={handleSend} disabled={!input.trim() || isStreaming} data-testid="button-send-chat">
+          <Button size="icon" onClick={handleSend} disabled={!input.trim() || isStreaming} aria-label="Send message" data-testid="button-send-chat">
             <Send className="h-4 w-4" />
           </Button>
         </div>

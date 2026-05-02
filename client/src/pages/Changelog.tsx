@@ -182,6 +182,7 @@ export default function Changelog() {
           variant="outline"
           className="fixed bottom-6 right-6 z-50 rounded-full shadow-lg"
           onClick={scrollToTop}
+          aria-label="Scroll to top"
           data-testid="button-scroll-top"
         >
           <ArrowUp className="h-4 w-4" />

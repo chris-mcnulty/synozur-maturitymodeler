@@ -868,6 +868,7 @@ Thank you!`;
                               <Button
                                 size="icon"
                                 variant="ghost"
+                                aria-label="Delete assessment"
                                 data-testid={`button-delete-${item.assessmentId}`}
                                 onClick={() => setDeleteTarget(item)}
                               >

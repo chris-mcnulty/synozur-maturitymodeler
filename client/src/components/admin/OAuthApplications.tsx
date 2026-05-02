@@ -226,6 +226,7 @@ export function OAuthApplications() {
                         size="icon"
                         className="h-6 w-6"
                         onClick={() => copyToClipboard(client.clientId, 'Client ID')}
+                        aria-label="Copy Client ID"
                         data-testid={`button-copy-client-id-${client.clientId}`}
                       >
                         <Copy className="h-3 w-3" />
@@ -258,6 +259,7 @@ export function OAuthApplications() {
                         variant="ghost"
                         size="icon"
                         onClick={() => handleRegenerateSecret(client)}
+                        aria-label={`Regenerate secret for ${client.name}`}
                         data-testid={`button-regenerate-secret-${client.clientId}`}
                       >
                         <Key className="h-4 w-4" />
@@ -266,6 +268,7 @@ export function OAuthApplications() {
                         variant="ghost"
                         size="icon"
                         onClick={() => handleEdit(client)}
+                        aria-label={`Edit ${client.name}`}
                         data-testid={`button-edit-${client.clientId}`}
                       >
                         <Edit className="h-4 w-4" />
@@ -274,6 +277,7 @@ export function OAuthApplications() {
                         variant="ghost"
                         size="icon"
                         onClick={() => handleDelete(client)}
+                        aria-label={`Delete ${client.name}`}
                         data-testid={`button-delete-${client.clientId}`}
                       >
                         <Trash className="h-4 w-4" />
@@ -481,6 +485,7 @@ export function OAuthApplications() {
                   variant="outline"
                   size="icon"
                   onClick={() => newClientSecret && copyToClipboard(newClientSecret, 'Client secret')}
+                  aria-label="Copy Client Secret"
                   data-testid="button-copy-client-secret"
                 >
                   <Copy className="h-4 w-4" />

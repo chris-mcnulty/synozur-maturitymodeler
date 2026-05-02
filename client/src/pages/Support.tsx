@@ -271,6 +271,7 @@ export default function Support() {
                     size="icon"
                     onClick={() => replyMutation.mutate({ ticketId: ticketDetail.id, message: replyMessage })}
                     disabled={!replyMessage.trim() || replyMutation.isPending}
+                    aria-label="Send reply"
                     data-testid="button-send-reply"
                   >
                     <Send className="h-4 w-4" />

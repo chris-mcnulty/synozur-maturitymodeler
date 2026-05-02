@@ -224,6 +224,7 @@ export function UnifiedQuestionEditor({
                 onDeleteQuestion(question.id);
               }
             }}
+            aria-label="Delete question"
             data-testid={`button-delete-question-${question.id}`}
           >
             <Trash className="h-3.5 w-3.5" />
@@ -511,6 +512,7 @@ export function UnifiedQuestionEditor({
                                   size="icon"
                                   className="h-8 w-8 flex-shrink-0"
                                   title="AI rewrite this answer"
+                                  aria-label="AI rewrite this answer"
                                   data-testid={`button-ai-answer-${answer.id}`}
                                 >
                                   <Sparkles className="h-3.5 w-3.5" />
@@ -523,6 +525,8 @@ export function UnifiedQuestionEditor({
                               className={`h-8 w-8 flex-shrink-0 transition-colors ${resourcesOpen ? "text-primary" : "text-muted-foreground"}`}
                               onClick={() => toggleResources(answer.id)}
                               title="Toggle resources & guidance"
+                              aria-label="Toggle resources & guidance"
+                              aria-expanded={resourcesOpen}
                               data-testid={`button-resources-${answer.id}`}
                             >
                               <Link2 className="h-3.5 w-3.5" />
@@ -534,6 +538,7 @@ export function UnifiedQuestionEditor({
                               onClick={() => {
                                 if (confirm("Delete this answer?")) deleteAnswer.mutate(answer.id);
                               }}
+                              aria-label="Delete answer"
                               data-testid={`button-delete-answer-${answer.id}`}
                             >
                               <Trash className="h-3.5 w-3.5" />

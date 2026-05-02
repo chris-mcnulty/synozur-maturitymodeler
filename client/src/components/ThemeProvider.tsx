@@ -10,6 +10,8 @@ type ThemeProviderProps = {
 type ThemeProviderState = {
   theme: Theme;
   setTheme: (theme: Theme) => void;
+  highContrast: boolean;
+  setHighContrast: (value: boolean) => void;
 };
 
 const ThemeProviderContext = createContext<ThemeProviderState | undefined>(undefined);
@@ -20,6 +22,10 @@ export function ThemeProvider({ children, defaultTheme = "dark" }: ThemeProvider
     return stored || defaultTheme;
   });
 
+  const [highContrast, setHighContrast] = useState<boolean>(() => {
+    return localStorage.getItem("highContrast") === "true";
+  });
+
   useEffect(() => {
     const root = window.document.documentElement;
     root.classList.remove("light", "dark");
@@ -27,8 +33,18 @@ export function ThemeProvider({ children, defaultTheme = "dark" }: ThemeProvider
     localStorage.setItem("theme", theme);
   }, [theme]);
 
+  useEffect(() => {
+    const root = window.document.documentElement;
+    if (highContrast) {
+      root.classList.add("high-contrast");
+    } else {
+      root.classList.remove("high-contrast");
+    }
+    localStorage.setItem("highContrast", String(highContrast));
+  }, [highContrast]);
+
   return (
-    <ThemeProviderContext.Provider value={{ theme, setTheme }}>
+    <ThemeProviderContext.Provider value={{ theme, setTheme, highContrast, setHighContrast }}>
       {children}
     </ThemeProviderContext.Provider>
   );

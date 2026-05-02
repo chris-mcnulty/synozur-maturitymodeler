@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { Moon, Sun, User, LogOut, HelpCircle, BookOpen, FileText, Ticket, Bot, Mail, MoreVertical } from "lucide-react";
+import { Moon, Sun, User, LogOut, HelpCircle, BookOpen, FileText, Ticket, Bot, Mail, MoreVertical, Check, Eye } from "lucide-react";
 import { useTheme } from "./ThemeProvider";
 import { useAuth } from "@/hooks/use-auth";
 import { USER_ROLES } from "@shared/constants";
@@ -37,7 +37,7 @@ function canManageModels(user: any): boolean {
 }
 
 export function Header() {
-  const { theme, setTheme } = useTheme();
+  const { theme, setTheme, highContrast, setHighContrast } = useTheme();
   const { user, logout, logoutMutation } = useAuth();
   const [, setLocation] = useLocation();
   const [showHelpChat, setShowHelpChat] = useState(false);
@@ -96,23 +96,29 @@ export function Header() {
     </>
   );
 
-  const themeMenuItem = (
-    <DropdownMenuItem
-      onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-      data-testid="button-theme-toggle-mobile"
-    >
-      {theme === "dark" ? (
-        <>
-          <Sun className="mr-2 h-4 w-4" />
-          Light mode
-        </>
-      ) : (
-        <>
-          <Moon className="mr-2 h-4 w-4" />
-          Dark mode
-        </>
-      )}
-    </DropdownMenuItem>
+  const displayMenuItems = (
+    <>
+      <DropdownMenuItem onClick={() => setTheme("light")} data-testid="button-theme-light">
+        <Sun className="mr-2 h-4 w-4" />
+        Light
+        {theme === "light" && <Check className="ml-auto h-4 w-4" />}
+      </DropdownMenuItem>
+      <DropdownMenuItem onClick={() => setTheme("dark")} data-testid="button-theme-dark">
+        <Moon className="mr-2 h-4 w-4" />
+        Dark
+        {theme === "dark" && <Check className="ml-auto h-4 w-4" />}
+      </DropdownMenuItem>
+      <DropdownMenuSeparator />
+      <DropdownMenuItem
+        onClick={() => setHighContrast(!highContrast)}
+        data-testid="button-toggle-high-contrast"
+        aria-pressed={highContrast}
+      >
+        <Eye className="mr-2 h-4 w-4" />
+        High Contrast
+        {highContrast && <Check className="ml-auto h-4 w-4" />}
+      </DropdownMenuItem>
+    </>
   );
 
   return (
@@ -165,6 +171,7 @@ export function Header() {
                 <Button
                   variant="ghost"
                   size="icon"
+                  aria-label="Help menu"
                   data-testid="button-help-menu"
                   className="relative hidden sm:inline-flex"
                 >
@@ -179,16 +186,23 @@ export function Header() {
               </DropdownMenuContent>
             </DropdownMenu>
 
-            {/* Theme toggle - hidden on small screens (collapses into overflow menu) */}
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-              data-testid="button-theme-toggle"
-              className="hover-elevate active-elevate-2 hidden sm:inline-flex"
-            >
-              {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
-            </Button>
+            {/* Display preferences dropdown - hidden on small screens (collapses into overflow menu) */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  aria-label="Display preferences"
+                  data-testid="button-theme-toggle"
+                  className="hover-elevate active-elevate-2 hidden sm:inline-flex"
+                >
+                  {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {displayMenuItems}
+              </DropdownMenuContent>
+            </DropdownMenu>
 
             {/* Mobile overflow menu - shown on small screens only */}
             <DropdownMenu>
@@ -207,7 +221,7 @@ export function Header() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
-                {themeMenuItem}
+                {displayMenuItems}
                 <DropdownMenuSeparator />
                 {helpMenuItems}
               </DropdownMenuContent>
@@ -216,7 +230,7 @@ export function Header() {
             {user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="gap-2 px-2 sm:px-3" data-testid="button-user-menu">
+                  <Button variant="ghost" className="gap-2 px-2 sm:px-3" aria-label="User menu" data-testid="button-user-menu">
                     <User className="h-5 w-5" />
                     <span className="hidden md:inline">{user.name}</span>
                   </Button>

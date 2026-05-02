@@ -452,6 +452,7 @@ Thank you for your help!`;
                           }}
                           data-testid={`button-copy-sso-id-${tenant.id}`}
                           title="Copy full SSO Tenant ID"
+                          aria-label="Copy full SSO Tenant ID"
                         >
                           <Copy className="h-3 w-3" />
                         </Button>
@@ -484,6 +485,8 @@ Thank you for your help!`;
                               }}
                               data-testid={`button-toggle-verification-${domain.id}`}
                               title={domain.verified ? "Click to unverify domain" : "Click to verify domain"}
+                              aria-label={domain.verified ? `Unverify domain ${domain.domain}` : `Verify domain ${domain.domain}`}
+                              aria-pressed={domain.verified}
                             >
                               {domain.verified ? (
                                 <CheckCircle className="h-4 w-4 text-green-500" />

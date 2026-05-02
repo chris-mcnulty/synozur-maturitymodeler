@@ -2722,6 +2722,8 @@ export default function Admin() {
                                   onClick={() => toggleFeatured.mutate({ modelId: model.id, featured: !model.featured })}
                                   data-testid={`button-toggle-featured-${model.id}`}
                                   title={model.featured ? "Remove from featured" : "Mark as featured"}
+                                  aria-label={model.featured ? "Remove from featured" : "Mark as featured"}
+                                  aria-pressed={!!model.featured}
                                   className="flex-shrink-0"
                                 >
                                   <Star className={`h-4 w-4 ${model.featured ? 'fill-yellow-500 text-yellow-500' : 'text-muted-foreground'}`} />
@@ -2797,6 +2799,7 @@ export default function Admin() {
                                 onClick={() => window.open(`/${model.slug}`, '_blank')}
                                 data-testid={`button-view-${model.id}`}
                                 title="View model"
+                                aria-label="View model"
                               >
                                 <Eye className="h-4 w-4" />
                               </Button>
@@ -2817,6 +2820,7 @@ export default function Admin() {
                                 }}
                                 data-testid={`button-maturity-scale-${model.id}`}
                                 title="Edit maturity scale"
+                                aria-label="Edit maturity scale"
                               >
                                 <BarChart3 className="h-4 w-4" />
                               </Button>
@@ -2826,6 +2830,7 @@ export default function Admin() {
                                 onClick={() => exportInterviewGuide(model.id)}
                                 data-testid={`button-export-interview-${model.id}`}
                                 title="Export Interview Guide (Markdown)"
+                                aria-label="Export Interview Guide (Markdown)"
                               >
                                 <FileText className="h-4 w-4" />
                               </Button>
@@ -2836,6 +2841,7 @@ export default function Admin() {
                                 disabled={duplicateModel.isPending}
                                 data-testid={`button-duplicate-${model.id}`}
                                 title="Duplicate model"
+                                aria-label="Duplicate model"
                               >
                                 <Copy className="h-4 w-4" />
                               </Button>
@@ -2854,6 +2860,7 @@ export default function Admin() {
                                 disabled={archiveModel.isPending}
                                 data-testid={`button-archive-${model.id}`}
                                 title={model.status === 'archived' ? "Restore from archive" : "Archive model"}
+                                aria-label={model.status === 'archived' ? "Restore from archive" : "Archive model"}
                               >
                                 {model.status === 'archived' 
                                   ? <ArchiveRestore className="h-4 w-4" />
@@ -2871,6 +2878,7 @@ export default function Admin() {
                                 }}
                                 data-testid={`button-delete-data-${model.id}`}
                                 title="Delete all assessment data (for testing)"
+                                aria-label="Delete all assessment data (for testing)"
                               >
                                 <Database className="h-4 w-4 text-destructive" />
                               </Button>
@@ -2884,6 +2892,7 @@ export default function Admin() {
                                 }}
                                 data-testid={`button-delete-${model.id}`}
                                 title="Delete model"
+                                aria-label="Delete model"
                               >
                                 <Trash className="h-4 w-4" />
                               </Button>
@@ -3096,6 +3105,7 @@ export default function Admin() {
                                 size="icon"
                                 onClick={() => window.open(`/${model.slug}`, '_blank')}
                                 data-testid={`button-view-${model.id}`}
+                                aria-label="View model"
                               >
                                 <Eye className="h-4 w-4" />
                               </Button>
@@ -3105,6 +3115,7 @@ export default function Admin() {
                                 onClick={() => handleImportClick(model.id)}
                                 data-testid={`button-import-${model.id}`}
                                 title="Import Questions CSV"
+                                aria-label="Import Questions CSV"
                               >
                                 <FileUp className="h-4 w-4" />
                               </Button>
@@ -3114,6 +3125,7 @@ export default function Admin() {
                                 onClick={() => exportModelToCSV(model.id)}
                                 data-testid={`button-export-${model.id}`}
                                 title="Export Questions CSV"
+                                aria-label="Export Questions CSV"
                               >
                                 <FileDown className="h-4 w-4" />
                               </Button>
@@ -3123,6 +3135,7 @@ export default function Admin() {
                                 onClick={() => exportModelDefinition(model.id)}
                                 data-testid={`button-export-model-${model.id}`}
                                 title="Export Model Definition (.model file)"
+                                aria-label="Export Model Definition"
                               >
                                 <Database className="h-4 w-4" />
                               </Button>
@@ -3132,6 +3145,7 @@ export default function Admin() {
                                 onClick={() => exportInterviewGuide(model.id)}
                                 data-testid={`button-export-interview-${model.id}`}
                                 title="Export Interview Guide (Markdown)"
+                                aria-label="Export Interview Guide"
                               >
                                 <FileText className="h-4 w-4" />
                               </Button>
@@ -3141,6 +3155,7 @@ export default function Admin() {
                                 onClick={() => handleEditModel(model)}
                                 data-testid={`button-edit-${model.id}`}
                                 title="Edit Model"
+                                aria-label="Edit Model"
                               >
                                 <Edit className="h-4 w-4" />
                               </Button>
@@ -3161,6 +3176,7 @@ export default function Admin() {
                                 }}
                                 data-testid={`button-maturity-scale-${model.id}`}
                                 title="Edit Maturity Scale"
+                                aria-label="Edit Maturity Scale"
                               >
                                 <BarChart3 className="h-4 w-4" />
                               </Button>
@@ -3174,6 +3190,7 @@ export default function Admin() {
                                 }}
                                 data-testid={`button-general-resources-${model.id}`}
                                 title="Edit General Resources"
+                                aria-label="Edit General Resources"
                               >
                                 <FileSpreadsheet className="h-4 w-4" />
                               </Button>
@@ -3184,6 +3201,7 @@ export default function Admin() {
                                 disabled={duplicateModel.isPending}
                                 data-testid={`button-duplicate-${model.id}`}
                                 title="Duplicate Model"
+                                aria-label="Duplicate Model"
                               >
                                 <Copy className="h-4 w-4" />
                               </Button>
@@ -3198,6 +3216,7 @@ export default function Admin() {
                                 }}
                                 data-testid={`button-delete-data-${model.id}`}
                                 title="Delete All Assessment Data (for testing)"
+                                aria-label="Delete All Assessment Data"
                               >
                                 <Database className="h-4 w-4 text-destructive" />
                               </Button>
@@ -3211,6 +3230,7 @@ export default function Admin() {
                                 }}
                                 data-testid={`button-delete-${model.id}`}
                                 title="Delete Model"
+                                aria-label="Delete Model"
                               >
                                 <Trash className="h-4 w-4" />
                               </Button>
@@ -3367,6 +3387,7 @@ export default function Admin() {
                                       }
                                     }}
                                     title="Verify email"
+                                    aria-label={`Verify email for ${user.username}`}
                                     data-testid={`verify-email-${user.id}`}
                                   >
                                     <CheckCircle2 className="h-4 w-4 text-green-600" />
@@ -3387,6 +3408,7 @@ export default function Admin() {
                                     });
                                     setIsUserDialogOpen(true);
                                   }}
+                                  aria-label={`Edit user ${user.username}`}
                                   data-testid={`edit-user-${user.id}`}
                                 >
                                   <Edit className="h-4 w-4" />
@@ -3399,6 +3421,7 @@ export default function Admin() {
                                       deleteUser.mutate(user.id);
                                     }
                                   }}
+                                  aria-label={`Delete user ${user.username}`}
                                   data-testid={`delete-user-${user.id}`}
                                 >
                                   <Trash className="h-4 w-4" />
@@ -5148,6 +5171,8 @@ ${insightsData.recommendations.map((r, i) => `${i + 1}. ${r}`).join('\n')}
                   size="icon"
                   className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
                   onClick={() => setShowPassword(!showPassword)}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  aria-pressed={showPassword}
                   data-testid="button-toggle-password"
                 >
                   {showPassword ? <EyeOff className="h-4 w-4 text-muted-foreground" /> : <Eye className="h-4 w-4 text-muted-foreground" />}

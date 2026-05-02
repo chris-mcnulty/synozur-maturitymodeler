@@ -98,12 +98,12 @@ export function QuestionCard({
       </h2>
       
       {questionType === 'multiple_choice' ? (
-        <RadioGroup value={selected} onValueChange={handleSelect}>
+        <RadioGroup value={selected} onValueChange={handleSelect} aria-label={question}>
           <div className="space-y-2 sm:space-y-3">
             {answers.map((answer) => (
               <div
                 key={answer.key}
-                className={`flex items-center space-x-3 p-3 sm:p-4 rounded-lg border-2 transition-all hover-elevate ${
+                className={`flex items-center space-x-3 p-3 sm:p-4 rounded-lg border-2 transition-all hover-elevate focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 ${
                   selected === answer.key
                     ? "border-primary bg-primary/5"
                     : "border-border"
@@ -122,12 +122,12 @@ export function QuestionCard({
           </div>
         </RadioGroup>
       ) : questionType === 'multi_select' ? (
-        <div className="space-y-2 sm:space-y-3">
+        <div className="space-y-2 sm:space-y-3" role="group" aria-label={question}>
           <p className="text-sm text-muted-foreground mb-3 sm:mb-4">Select all that apply</p>
           {answers.map((answer) => (
             <div
               key={answer.key}
-              className={`flex items-center space-x-3 p-3 sm:p-4 rounded-lg border-2 transition-all hover-elevate ${
+              className={`flex items-center space-x-3 p-3 sm:p-4 rounded-lg border-2 transition-all hover-elevate focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 ${
                 multiSelected.includes(answer.key)
                   ? "border-primary bg-primary/5"
                   : "border-border"
@@ -148,16 +148,16 @@ export function QuestionCard({
             </div>
           ))}
           {multiSelected.length > 0 && (
-            <p className="text-sm text-muted-foreground mt-2">
+            <p className="text-sm text-muted-foreground mt-2" aria-live="polite">
               {multiSelected.length} option{multiSelected.length !== 1 ? 's' : ''} selected
             </p>
           )}
         </div>
       ) : questionType === 'true_false' ? (
-        <RadioGroup value={selected} onValueChange={handleSelect}>
+        <RadioGroup value={selected} onValueChange={handleSelect} aria-label={question}>
           <div className="space-y-2 sm:space-y-3">
             <div
-              className={`flex items-center space-x-3 p-3 sm:p-4 rounded-lg border-2 transition-all hover-elevate ${
+              className={`flex items-center space-x-3 p-3 sm:p-4 rounded-lg border-2 transition-all hover-elevate focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 ${
                 selected === 'true'
                   ? "border-primary bg-primary/5"
                   : "border-border"
@@ -173,7 +173,7 @@ export function QuestionCard({
               </Label>
             </div>
             <div
-              className={`flex items-center space-x-3 p-3 sm:p-4 rounded-lg border-2 transition-all hover-elevate ${
+              className={`flex items-center space-x-3 p-3 sm:p-4 rounded-lg border-2 transition-all hover-elevate focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 ${
                 selected === 'false'
                   ? "border-primary bg-primary/5"
                   : "border-border"
@@ -198,6 +198,7 @@ export function QuestionCard({
             placeholder={placeholder || "Enter your answer here..."}
             className="min-h-[120px] resize-none"
             data-testid="textarea-text-answer"
+            aria-label={question}
           />
           {selected.length > 0 && (
             <p className="text-sm text-muted-foreground">
@@ -224,6 +225,9 @@ export function QuestionCard({
               placeholder={`Enter value${unit ? ` in ${unit}` : ''}`}
               className={`max-w-xs ${numericError ? 'border-destructive' : ''}`}
               data-testid="input-numeric-answer"
+              aria-label={question}
+              aria-invalid={!!numericError}
+              aria-describedby={numericError ? 'numeric-answer-error' : undefined}
             />
             {unit && (
               <span className="text-muted-foreground">{unit}</span>
@@ -231,7 +235,7 @@ export function QuestionCard({
           </div>
           
           {numericError && (
-            <p className="text-sm text-destructive">{numericError}</p>
+            <p className="text-sm text-destructive" id="numeric-answer-error" role="alert">{numericError}</p>
           )}
           
           {minValue === 0 && maxValue === 800 && (

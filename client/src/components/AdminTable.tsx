@@ -34,13 +34,13 @@ export function AdminTable({ type, data }: AdminTableProps) {
               </TableCell>
               <TableCell className="text-right">
                 <div className="flex justify-end gap-2">
-                  <Button variant="ghost" size="icon" data-testid={`button-view-${model.id}`} className="hover-elevate active-elevate-2">
+                  <Button variant="ghost" size="icon" aria-label={`View ${model.name}`} data-testid={`button-view-${model.id}`} className="hover-elevate active-elevate-2">
                     <Eye className="h-4 w-4" />
                   </Button>
-                  <Button variant="ghost" size="icon" data-testid={`button-edit-${model.id}`} className="hover-elevate active-elevate-2">
+                  <Button variant="ghost" size="icon" aria-label={`Edit ${model.name}`} data-testid={`button-edit-${model.id}`} className="hover-elevate active-elevate-2">
                     <Pencil className="h-4 w-4" />
                   </Button>
-                  <Button variant="ghost" size="icon" data-testid={`button-delete-${model.id}`} className="hover-elevate active-elevate-2">
+                  <Button variant="ghost" size="icon" aria-label={`Delete ${model.name}`} data-testid={`button-delete-${model.id}`} className="hover-elevate active-elevate-2">
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
@@ -75,7 +75,7 @@ export function AdminTable({ type, data }: AdminTableProps) {
               <Badge variant="secondary">{result.score}</Badge>
             </TableCell>
             <TableCell className="text-right">
-              <Button variant="ghost" size="icon" data-testid={`button-view-result-${result.id}`} className="hover-elevate active-elevate-2">
+              <Button variant="ghost" size="icon" aria-label="View result" data-testid={`button-view-result-${result.id}`} className="hover-elevate active-elevate-2">
                 <Eye className="h-4 w-4" />
               </Button>
             </TableCell>

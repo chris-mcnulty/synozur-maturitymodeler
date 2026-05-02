@@ -704,7 +704,7 @@ export function SupportManagement() {
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground">{new Date(ticket.createdAt).toLocaleDateString()}</TableCell>
                   <TableCell>
-                    <Button size="icon" variant="ghost" data-testid={`button-view-ticket-${ticket.id}`}>
+                    <Button size="icon" variant="ghost" aria-label="View ticket" data-testid={`button-view-ticket-${ticket.id}`}>
                       <ExternalLink className="h-4 w-4" />
                     </Button>
                   </TableCell>

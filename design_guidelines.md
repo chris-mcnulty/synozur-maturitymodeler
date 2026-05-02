@@ -228,6 +228,44 @@ The platform is mobile-first. Default Tailwind classes target the smallest viewp
 - Avoid horizontal scroll: long word-breaking content should use `min-w-0` on flex children and `truncate` only when the truncation is acceptable.
 - Never set fixed widths in pixels for layout containers. Use `max-w-*` plus `w-full`.
 
+### WCAG 2.1 AA Checklist
+
+Use this checklist when reviewing new pages or components. The platform
+targets WCAG 2.1 Level AA. Items marked **(AAA)** are aspirational.
+
+**Perceivable**
+- [ ] Every non-decorative image has meaningful `alt` text; decorative images use `alt=""`.
+- [ ] Icon-only buttons expose an accessible name via `aria-label` (preferred) or a visible `<span className="sr-only">` label. A `title` alone is not sufficient.
+- [ ] Body text meets a 4.5:1 contrast ratio against its background; large text (18pt+ or 14pt+ bold) and UI components / graphical objects meet at least 3:1.
+- [ ] Color is never the sole means of conveying information (pair with iconography, text labels, or shape).
+- [ ] Layouts reflow without horizontal scrolling at 320 CSS pixels and 400% zoom.
+- [ ] A **High Contrast** theme is available (toggle in the header "Display preferences" menu) that maximises foreground/background and border contrast for users with low vision. (See `.high-contrast` token overrides in `client/src/index.css`.)
+
+**Operable**
+- [ ] Every interactive element is reachable and operable with the keyboard alone (Tab/Shift+Tab/Enter/Space/Esc/Arrow keys for menus and radio groups).
+- [ ] Focus order matches visual reading order; focus is never trapped except inside open dialogs/menus, which return focus to the trigger on close.
+- [ ] Focus indicators are clearly visible. Custom radio/checkbox cards in `QuestionCard` use `focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2` so the wrapper highlights when the inner control is focused. The High Contrast theme additionally applies a 3px outline with 2px offset.
+- [ ] No content flashes more than three times per second.
+- [ ] Animations and transitions respect `prefers-reduced-motion`.
+- [ ] Touch targets are at least 44×44px (use `<Button size="icon">` defaults; do not shrink with `h-* w-*` overrides).
+
+**Understandable**
+- [ ] Form fields have a programmatic label via `<Label htmlFor>` or `aria-label`/`aria-labelledby`.
+- [ ] Validation errors are announced via `role="alert"` and associated to their field via `aria-describedby` and `aria-invalid`.
+- [ ] Live regions (`aria-live="polite"`) are used for non-urgent status updates such as multi-select counts and progress changes.
+- [ ] Page titles are unique and descriptive. The primary language is set on `<html lang>`.
+
+**Robust**
+- [ ] Use semantic HTML first (`<button>`, `<nav>`, `<main>`, `<header>`, `<h1>`–`<h3>`); only reach for ARIA when a native element cannot express the role.
+- [ ] Progress indicators use `role="progressbar"` with `aria-valuenow`, `aria-valuemin`, `aria-valuemax`, and an `aria-label` (see `ProgressBar.tsx`).
+- [ ] Toggle buttons expose state with `aria-pressed`; expandable controls use `aria-expanded`.
+- [ ] Dropdowns/menus/dialogs use the Shadcn primitives, which already wire up the correct ARIA roles, focus management, and keyboard handling.
+
+**Out of scope for this pass**
+- Localization / RTL support
+- Full screen-reader scripted regression testing (NVDA / JAWS / VoiceOver)
+- PDF accessibility for exported reports
+
 ## Animation & Motion
 
 **Use Sparingly**

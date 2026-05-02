@@ -446,6 +446,7 @@ export function ModelCreationWizard({
                 size="icon"
                 className="h-7 w-7 text-muted-foreground hover:text-destructive"
                 onClick={() => deleteDimension.mutate(dim.id)}
+                aria-label={`Delete dimension ${dim.name}`}
               >
                 <Trash className="h-3.5 w-3.5" />
               </Button>
@@ -672,6 +673,7 @@ export function ModelCreationWizard({
                   onClick={() =>
                     setMaturityLevels((prev) => prev.filter((l) => l.id !== level.id))
                   }
+                  aria-label="Delete maturity level"
                 >
                   <Trash className="h-3.5 w-3.5" />
                 </Button>
