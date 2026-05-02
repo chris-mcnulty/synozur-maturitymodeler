@@ -13,6 +13,7 @@ import { canManageUsers, canAssignRole, checkIsGlobalAdmin, getAccessibleTenantI
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
 import { aiService } from "./services/ai-service";
 import { providerRegistry } from "./services/ai-providers/registry";
+import { calculateAssessmentScore, type ScoringQuestion } from "./services/scoring";
 import { validateImportData, executeImport, type ImportExportData } from "./services/import-service";
 import { z } from "zod";
 import { scrypt, randomBytes, createHash, timingSafeEqual } from "crypto";
@@ -2357,158 +2358,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const dimensions = await storage.getDimensionsByModelId(model.id);
       const questions = await storage.getQuestionsByModelId(model.id);
-      
-      // Batch-fetch all answers for this model's questions in a single query.
-      // Previously the loop below called getAnswersByQuestionId per response (N+1).
+
+      // Batch-fetch all answers for this model's questions in a single query
+      // (avoids N+1 from getAnswersByQuestionId per response). The pure
+      // scoring engine in server/services/scoring.ts then runs synchronously
+      // against the in-memory map.
       const allQuestionIds = questions.map(q => q.id);
       const allAnswersForModel = allQuestionIds.length > 0
         ? await db.select().from(schema.answers)
             .where(inArray(schema.answers.questionId, allQuestionIds))
         : [];
-      const answersByQuestionId = new Map<string, typeof allAnswersForModel>();
+      const answersByQuestionId = new Map<string, Array<{ id: string; score: number }>>();
       for (const a of allAnswersForModel) {
         if (!answersByQuestionId.has(a.questionId)) {
           answersByQuestionId.set(a.questionId, []);
         }
-        answersByQuestionId.get(a.questionId)!.push(a);
-      }
-      
-      // Determine scoring system based on maturity scale
-      // If maturity scale max is <= 100, use 100-point scale
-      // Default to averaging scores; can override with scoringMethod: 'sum'
-      const modelMaturityScale = model.maturityScale || [];
-      const maxMaturityScore = modelMaturityScale.length > 0 
-        ? Math.max(...modelMaturityScale.map(level => level.maxScore))
-        : 500;
-      const use100PointScale = maxMaturityScore <= 100;
-      
-      // Check for scoring method override on the maturity scale
-      // Default: 'average' for 100-point scale, always average for 500-point scale
-      const scoringMethodOverride = (modelMaturityScale as any)?.scoringMethod;
-      const useSumScoring = use100PointScale && scoringMethodOverride === 'sum';
-
-      // Calculate scores
-      let totalScore = 0;
-      let totalMaxPossible = 0;
-      const dimensionScores: Record<string, number[]> = {};
-      const dimensionMaxScores: Record<string, number[]> = {};
-      let questionCount = 0;
-
-      for (const response of responses) {
-        const question = questions.find(q => q.id === response.questionId);
-        if (!question) continue;
-
-        let score = 0;
-        let maxPossible = 0;
-        
-        if (question.type === 'numeric' && response.numericValue !== undefined && response.numericValue !== null) {
-          const minValue = question.minValue || 0;
-          const maxValue = question.maxValue || 100;
-          const numericValue = response.numericValue;
-          const range = maxValue - minValue;
-          
-          if (use100PointScale) {
-            const normalizedValue = range > 0 ? (numericValue - minValue) / range : 0;
-            score = Math.round(normalizedValue * 4);
-            score = Math.max(0, Math.min(4, score));
-            maxPossible = 4;
-          } else {
-            const normalizedValue = range > 0 ? (numericValue - minValue) / range : 0;
-            score = Math.round(normalizedValue * 400 + 100);
-            score = Math.max(100, Math.min(500, score));
-            maxPossible = 500;
-          }
-        } else if (question.type === 'multi_select') {
-          const answers = answersByQuestionId.get(question.id) ?? [];
-          const totalOptions = answers.length;
-          const selectedCount = response.answerIds ? response.answerIds.length : 0;
-          
-          if (totalOptions > 0) {
-            if (use100PointScale) {
-              score = Math.round((selectedCount / totalOptions) * 4);
-              score = Math.max(0, Math.min(4, score));
-              maxPossible = 4;
-            } else {
-              score = Math.round((selectedCount / totalOptions) * 400 + 100);
-              score = Math.max(100, Math.min(500, score));
-              maxPossible = 500;
-            }
-          } else {
-            score = use100PointScale ? 0 : 100;
-            maxPossible = use100PointScale ? 4 : 500;
-          }
-        } else {
-          const answers = answersByQuestionId.get(question.id) ?? [];
-          const answer = answers.find(a => a.id === response.answerId);
-          if (!answer) continue;
-          score = answer.score;
-          maxPossible = Math.max(...answers.map(a => a.score), 1);
-        }
-
-        totalScore += score;
-        totalMaxPossible += maxPossible;
-        questionCount++;
-
-        if (question.dimensionId) {
-          const dimension = dimensions.find(d => d.id === question.dimensionId);
-          if (dimension) {
-            if (!dimensionScores[dimension.key]) {
-              dimensionScores[dimension.key] = [];
-              dimensionMaxScores[dimension.key] = [];
-            }
-            dimensionScores[dimension.key].push(score);
-            dimensionMaxScores[dimension.key].push(maxPossible);
-          }
-        }
+        answersByQuestionId.get(a.questionId)!.push({ id: a.id, score: a.score });
       }
 
-      // Calculate dimension scores as percentage of max possible, scaled to maturity scale
-      const dimensionAverages: Record<string, number> = {};
-      for (const [key, scores] of Object.entries(dimensionScores)) {
-        const dimTotal = scores.reduce((a, b) => a + b, 0);
-        const dimMax = dimensionMaxScores[key].reduce((a, b) => a + b, 0);
-        if (use100PointScale) {
-          dimensionAverages[key] = dimMax > 0 ? Math.round((dimTotal / dimMax) * maxMaturityScore) : 0;
-        } else {
-          dimensionAverages[key] = questionCount > 0 ? Math.round(dimTotal / scores.length) : 0;
-        }
-      }
+      const scoringQuestions: ScoringQuestion[] = questions.map(q => ({
+        id: q.id,
+        dimensionId: q.dimensionId ?? null,
+        type: q.type as ScoringQuestion['type'],
+        minValue: q.minValue ?? null,
+        maxValue: q.maxValue ?? null,
+        answers: answersByQuestionId.get(q.id) ?? [],
+      }));
 
-      // Calculate overall score as percentage of max possible, scaled to maturity scale
-      let overallScore;
-      if (use100PointScale) {
-        overallScore = totalMaxPossible > 0 ? Math.round((totalScore / totalMaxPossible) * maxMaturityScore) : 0;
-      } else {
-        overallScore = questionCount > 0 ? Math.round(totalScore / questionCount) : 0;
-      }
-
-      // Determine label based on score using model's maturity scale
-      // Default scale if not configured
-      const defaultScale = [
-        { id: '1', name: 'Nascent', description: 'Beginning AI journey', minScore: 100, maxScore: 199 },
-        { id: '2', name: 'Experimental', description: 'Experimenting with AI', minScore: 200, maxScore: 299 },
-        { id: '3', name: 'Operational', description: 'Operational AI processes', minScore: 300, maxScore: 399 },
-        { id: '4', name: 'Strategic', description: 'Strategic AI foundations', minScore: 400, maxScore: 449 },
-        { id: '5', name: 'Transformational', description: 'Leading AI transformation', minScore: 450, maxScore: 500 },
-      ];
-      
-      const maturityScale = model.maturityScale || defaultScale;
-      let label = maturityScale[0]?.name || "Nascent";
-      
-      // Find the appropriate maturity level based on score
-      for (const level of maturityScale) {
-        if (overallScore >= level.minScore && overallScore <= level.maxScore) {
-          label = level.name;
-          break;
-        }
-      }
+      const scoringResult = calculateAssessmentScore({
+        questions: scoringQuestions,
+        responses: responses.map(r => ({
+          questionId: r.questionId,
+          answerId: r.answerId ?? null,
+          answerIds: r.answerIds ?? null,
+          numericValue: r.numericValue ?? null,
+          booleanValue: r.booleanValue ?? null,
+          textValue: r.textValue ?? null,
+        })),
+        dimensions: dimensions.map(d => ({ id: d.id, key: d.key })),
+        maturityScale: model.maturityScale ?? null,
+      });
 
       // Create result
       const result = await storage.createResult({
         assessmentId: req.params.id,
-        overallScore,
-        label,
-        dimensionScores: dimensionAverages,
+        overallScore: scoringResult.overallScore,
+        label: scoringResult.label,
+        dimensionScores: scoringResult.dimensionScores,
       });
 
       // Update assessment status and completion timestamp
