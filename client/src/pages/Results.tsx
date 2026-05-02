@@ -709,7 +709,7 @@ export default function Results() {
   return (
     <div className="min-h-screen flex flex-col bg-background">
       {/* Hero Section */}
-      <section className="relative bg-gradient-to-b from-primary/5 to-background py-16 overflow-hidden">
+      <section className="relative bg-gradient-to-b from-primary/5 to-background py-10 sm:py-12 md:py-16 overflow-hidden">
         {model.imageUrl && (
           <div className="absolute inset-0 z-0">
             <img 
@@ -723,18 +723,19 @@ export default function Results() {
           <Button
             variant="ghost"
             onClick={() => setLocation('/')}
-            className="mb-6"
+            className="mb-4 sm:mb-6"
             data-testid="button-back"
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Assessments
+            <span className="hidden sm:inline">Back to Assessments</span>
+            <span className="sm:hidden">Back</span>
           </Button>
 
-          <div className="text-center mb-12">
-            <h1 className="text-5xl font-bold mb-4" data-testid="text-title">
+          <div className="text-center mb-8 sm:mb-12">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-3 sm:mb-4 leading-tight" data-testid="text-title">
               {assessment?.isProxy ? `${model.name} Results` : `Your ${model.name} Results`}
             </h1>
-            <p className="text-xl text-muted-foreground">
+            <p className="text-base sm:text-xl text-muted-foreground">
               Assessment completed on {new Date().toLocaleDateString()}
             </p>
             
@@ -764,30 +765,30 @@ export default function Results() {
           </div>
 
           {/* Overall Score Card */}
-          <Card className="p-8 mb-8">
-            <div className="grid md:grid-cols-2 gap-8 items-center">
+          <Card className="p-5 sm:p-6 md:p-8 mb-6 sm:mb-8">
+            <div className="grid md:grid-cols-2 gap-6 sm:gap-8 items-center">
               <div className="text-center md:text-left">
-                <div className="mb-6">
-                  <div className="text-7xl font-bold text-primary mb-2" data-testid="text-score">
+                <div className="mb-4 sm:mb-6">
+                  <div className="text-5xl sm:text-6xl md:text-7xl font-bold text-primary mb-2" data-testid="text-score">
                     {result.overallScore}
                   </div>
-                  <div className="text-lg text-muted-foreground">out of {maturityMaxScore}</div>
+                  <div className="text-base sm:text-lg text-muted-foreground">out of {maturityMaxScore}</div>
                 </div>
                 
                 <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full ${maturityLevel.bgColor} ${maturityLevel.borderColor} border`}>
-                  <span className={`text-xl font-bold ${maturityLevel.color}`}>
+                  <span className={`text-lg sm:text-xl font-bold ${maturityLevel.color}`}>
                     {maturityLevel.name}
                   </span>
                 </div>
                 
-                <p className="mt-4 text-muted-foreground">
+                <p className="mt-3 sm:mt-4 text-sm sm:text-base text-muted-foreground">
                   {maturityLevel.description}
                 </p>
               </div>
 
               <div>
                 {benchmark && (
-                  <div className="bg-muted/30 rounded-lg p-6">
+                  <div className="bg-muted/30 rounded-lg p-4 sm:p-6">
                     <h3 className="font-semibold mb-4">Industry Benchmark</h3>
                     <div className="space-y-3">
                       <div>
@@ -816,14 +817,14 @@ export default function Results() {
 
           {/* AI-Generated Maturity Summary */}
           {!user && !model?.allowAnonymousResults ? (
-            <Card className="p-8 mb-8 border-2 border-primary/20 bg-gradient-to-br from-primary/5 to-secondary/5">
-              <div className="flex items-start gap-4 mb-4">
-                <div className="p-3 rounded-lg bg-primary/10">
-                  <Sparkles className="h-6 w-6 text-primary" />
+            <Card className="p-5 sm:p-6 md:p-8 mb-6 sm:mb-8 border-2 border-primary/20 bg-gradient-to-br from-primary/5 to-secondary/5">
+              <div className="flex items-start gap-3 sm:gap-4 mb-4">
+                <div className="p-2 sm:p-3 rounded-lg bg-primary/10 flex-shrink-0">
+                  <Sparkles className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
                 </div>
-                <div className="flex-1">
-                  <h3 className="text-2xl font-bold mb-2 text-primary">AI-Powered Insights</h3>
-                  <p className="text-muted-foreground mb-4">
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-xl sm:text-2xl font-bold mb-2 text-primary">AI-Powered Insights</h3>
+                  <p className="text-sm sm:text-base text-muted-foreground mb-4">
                     Create a free account to unlock your personalized AI-powered executive summary
                   </p>
                   <Alert className="bg-background/50 border-primary/30 mb-4">
@@ -846,7 +847,7 @@ export default function Results() {
                       </ul>
                     </AlertDescription>
                   </Alert>
-                  <div className="flex gap-3">
+                  <div className="flex flex-wrap gap-2 sm:gap-3">
                     <Button 
                       onClick={() => setLocation(`/auth?redirect=/results/${assessmentId}&claimAssessment=${assessmentId}`)} 
                       data-testid="button-signup-executive"
@@ -866,8 +867,8 @@ export default function Results() {
               </div>
             </Card>
           ) : (aiContentLoading || maturitySummary) && (
-            <Card className="p-8 mb-8">
-              <h3 className="text-2xl font-bold mb-4 text-primary">Executive Summary</h3>
+            <Card className="p-5 sm:p-6 md:p-8 mb-6 sm:mb-8">
+              <h3 className="text-xl sm:text-2xl font-bold mb-4 text-primary">Executive Summary</h3>
               {aiContentLoading && !maturitySummary ? (
                 <div className="space-y-3">
                   <div className="flex items-center gap-2 text-muted-foreground">
@@ -889,15 +890,15 @@ export default function Results() {
       </section>
 
       {/* Dimension Breakdown */}
-      <section className="py-12">
+      <section className="py-8 sm:py-12">
         <div className="container mx-auto px-4 max-w-6xl">
-          <h2 className="text-3xl font-bold mb-8 text-center text-foreground">Dimension Breakdown</h2>
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <h2 className="text-2xl sm:text-3xl font-bold mb-6 sm:mb-8 text-center text-foreground">Dimension Breakdown</h2>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
             {dimensionScores.map(dim => (
-              <Card key={dim.key} className="p-6" data-testid={`card-dimension-${dim.key}`}>
-                <h3 className="font-semibold mb-3">{dim.label}</h3>
+              <Card key={dim.key} className="p-4 sm:p-6" data-testid={`card-dimension-${dim.key}`}>
+                <h3 className="font-semibold mb-3 text-sm sm:text-base">{dim.label}</h3>
                 <div className="flex items-center justify-between mb-3">
-                  <span className="text-3xl font-bold text-primary">{dim.score}</span>
+                  <span className="text-2xl sm:text-3xl font-bold text-primary">{dim.score}</span>
                   <span className="text-sm text-muted-foreground">/ {dimensionMaxScore}</span>
                 </div>
                 <Progress value={(dim.score / dimensionMaxScore) * 100} className="h-2" />
@@ -908,23 +909,23 @@ export default function Results() {
       </section>
 
       {/* Personalized Recommendations */}
-      <section className="py-12 bg-muted/30">
+      <section className="py-8 sm:py-12 bg-muted/30">
         <div className="container mx-auto px-4 max-w-6xl">
-          <h2 className="text-3xl font-bold mb-8 text-center text-foreground">Strategic Recommendations</h2>
+          <h2 className="text-2xl sm:text-3xl font-bold mb-6 sm:mb-8 text-center text-foreground">Strategic Recommendations</h2>
           
           {/* AI-Generated Recommendations Summary */}
           {!user && !model?.allowAnonymousResults ? (
-            <Card className="p-6 mb-8 border-2 border-secondary/20 bg-gradient-to-br from-secondary/5 to-primary/5">
-              <div className="flex items-start gap-4">
-                <div className="p-3 rounded-lg bg-secondary/10">
-                  <Target className="h-6 w-6 text-secondary" />
+            <Card className="p-4 sm:p-6 mb-6 sm:mb-8 border-2 border-secondary/20 bg-gradient-to-br from-secondary/5 to-primary/5">
+              <div className="flex items-start gap-3 sm:gap-4">
+                <div className="p-2 sm:p-3 rounded-lg bg-secondary/10 flex-shrink-0">
+                  <Target className="h-5 w-5 sm:h-6 sm:w-6 text-secondary" />
                 </div>
-                <div className="flex-1">
-                  <h3 className="text-lg font-semibold mb-2 text-secondary">Your Transformation Roadmap</h3>
-                  <p className="text-muted-foreground mb-4">
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-base sm:text-lg font-semibold mb-2 text-secondary">Your Transformation Roadmap</h3>
+                  <p className="text-sm sm:text-base text-muted-foreground mb-4">
                     Create a free account to unlock your personalized transformation roadmap with AI-powered strategic recommendations
                   </p>
-                  <div className="flex gap-3">
+                  <div className="flex flex-wrap gap-2 sm:gap-3">
                     <Button 
                       variant="secondary" 
                       onClick={() => setLocation(`/auth?redirect=/results/${assessmentId}&claimAssessment=${assessmentId}`)} 
@@ -965,16 +966,16 @@ export default function Results() {
             </Card>
           )}
           
-          <div className="grid md:grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="grid md:grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
             {recommendations.map((rec, idx) => (
-              <Card key={idx} className="p-6" data-testid={`card-recommendation-${idx}`}>
-                <div className="flex items-start gap-4">
-                  <div className="p-2 rounded-lg bg-primary/10 text-primary">
+              <Card key={idx} className="p-4 sm:p-6" data-testid={`card-recommendation-${idx}`}>
+                <div className="flex items-start gap-3 sm:gap-4">
+                  <div className="p-2 rounded-lg bg-primary/10 text-primary flex-shrink-0">
                     {rec.icon}
                   </div>
-                  <div className="flex-1">
-                    <h3 className="font-semibold mb-2">{rec.title}</h3>
-                    <p className="text-base text-muted-foreground">{rec.description}</p>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-semibold mb-2 text-sm sm:text-base">{rec.title}</h3>
+                    <p className="text-sm sm:text-base text-muted-foreground">{rec.description}</p>
                   </div>
                 </div>
               </Card>
@@ -985,9 +986,9 @@ export default function Results() {
 
       {/* Improvement Resources */}
       {improvementResources.length > 0 && (
-        <section className="py-12">
+        <section className="py-8 sm:py-12">
           <div className="container mx-auto px-4 max-w-6xl">
-            <h2 className="text-3xl font-bold mb-8 text-center text-foreground">Improvement Resources</h2>
+            <h2 className="text-2xl sm:text-3xl font-bold mb-6 sm:mb-8 text-center text-foreground">Improvement Resources</h2>
             <div className="space-y-4">
               {improvementResources.map((resource, idx) => (
                 <Card key={idx} className="p-6" data-testid={`card-resource-${idx}`}>
@@ -1037,12 +1038,12 @@ export default function Results() {
       )}
 
       {/* Actions Section */}
-      <section className="py-12">
+      <section className="py-8 sm:py-12">
         <div className="container mx-auto px-4 max-w-6xl">
-          <Card className="p-8 bg-primary/5">
+          <Card className="p-5 sm:p-6 md:p-8 bg-primary/5">
             <div className="text-center mb-6">
-              <h2 className="text-2xl font-bold mb-2 text-foreground">Get Your Full Report</h2>
-              <p className="text-muted-foreground">
+              <h2 className="text-xl sm:text-2xl font-bold mb-2 text-foreground">Get Your Full Report</h2>
+              <p className="text-sm sm:text-base text-muted-foreground">
                 Download your comprehensive PDF report with detailed insights and action plans
               </p>
             </div>
@@ -1228,13 +1229,13 @@ export default function Results() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-16 bg-gradient-to-b from-background to-primary/5">
+      <section className="py-10 sm:py-12 md:py-16 bg-gradient-to-b from-background to-primary/5">
         <div className="container mx-auto px-4 max-w-4xl text-center">
-          <h2 className="text-3xl font-bold mb-4">Ready to Transform Your Organization?</h2>
-          <p className="text-lg text-muted-foreground mb-8">
+          <h2 className="text-2xl sm:text-3xl font-bold mb-3 sm:mb-4">Ready to Transform Your Organization?</h2>
+          <p className="text-base sm:text-lg text-muted-foreground mb-6 sm:mb-8">
             Connect with our transformation experts to create a custom roadmap
           </p>
-          <div className="grid md:grid-cols-3 gap-4 mb-8">
+          <div className="grid sm:grid-cols-3 gap-3 sm:gap-4 mb-6 sm:mb-8">
             <Card 
               className="p-4 hover-elevate cursor-pointer"
               onClick={() => window.open('https://www.synozur.com/start', '_blank')}

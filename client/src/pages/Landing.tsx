@@ -196,7 +196,7 @@ export default function Landing() {
     <div className="min-h-screen flex flex-col">
       <main className="flex-1">
         {/* Hero Section */}
-        <section className="relative min-h-[600px] flex items-center bg-gray-900 overflow-hidden">
+        <section className="relative min-h-[480px] sm:min-h-[600px] flex items-center bg-gray-900 overflow-hidden">
           <div className="absolute inset-0">
             <img
               src={heroBackground}
@@ -206,23 +206,23 @@ export default function Landing() {
             <div className="absolute inset-0 bg-gradient-to-b from-black/40 to-black/60" />
           </div>
 
-          <div className="container relative z-10 mx-auto px-4 py-20 text-center">
+          <div className="container relative z-10 mx-auto px-4 py-12 sm:py-16 md:py-20 text-center">
             <div className="flex justify-center mb-4">
               <img
                 src={orionLogo}
                 alt="Orion - Transformation AI"
-                className="h-24 md:h-[7.5rem] lg:h-36 w-auto object-contain"
+                className="h-16 sm:h-24 md:h-[7.5rem] lg:h-36 w-auto object-contain"
                 data-testid="img-orion-logo"
               />
             </div>
-            <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-6 text-white md:bg-gradient-to-r md:from-blue-400 md:via-purple-400 md:to-pink-400 md:bg-clip-text md:text-transparent">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-4 sm:mb-6 text-white md:bg-gradient-to-r md:from-blue-400 md:via-purple-400 md:to-pink-400 md:bg-clip-text md:text-transparent">
               Digital Transformation Maturity Models
             </h2>
-            <p className="text-xl md:text-2xl text-white/90 max-w-4xl mx-auto mb-8">
+            <p className="text-base sm:text-xl md:text-2xl text-white/90 max-w-4xl mx-auto mb-6 sm:mb-8">
               Take Synozur's comprehensive assessments to identify where your organization stands on your transformation journey.
               Receive a precise Maturity Score and personalized recommendations to advance your capabilities.
             </p>
-            <p className="text-lg text-white/80 max-w-3xl mx-auto mb-8">
+            <p className="text-sm sm:text-lg text-white/80 max-w-3xl mx-auto mb-6 sm:mb-8">
               Orion is still in beta.{' '}
               <a
                 href="https://www.synozur.com/join"
@@ -261,11 +261,11 @@ export default function Landing() {
                   Featured Assessment
                 </Badge>
 
-                <div className="text-center mb-12">
-                  <h2 className="text-4xl md:text-5xl font-bold mb-4 text-white md:bg-gradient-to-r md:from-blue-400 md:via-purple-400 md:to-pink-400 md:bg-clip-text md:text-transparent">
+                <div className="text-center mb-8 sm:mb-12">
+                  <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-3 sm:mb-4 text-white md:bg-gradient-to-r md:from-blue-400 md:via-purple-400 md:to-pink-400 md:bg-clip-text md:text-transparent">
                     {featuredModel.name}
                   </h2>
-                  <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto">
+                  <p className="text-base sm:text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto">
                     {featuredModel.description}
                   </p>
                 </div>
@@ -356,7 +356,7 @@ export default function Landing() {
                   </div>
                 </div>
 
-                <h2 className="text-3xl md:text-4xl font-bold mb-2">
+                <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-2">
                   Featured for {tenantName}
                 </h2>
                 <p className="text-muted-foreground mb-10 max-w-2xl">
@@ -386,14 +386,14 @@ export default function Landing() {
             <div className="absolute bottom-20 right-20 w-96 h-96 bg-accent/10 rounded-full blur-3xl" />
           </div>
           <div className="container mx-auto px-4 relative z-10">
-            <div className="text-center mb-16">
+            <div className="text-center mb-10 sm:mb-16">
               <Badge className="mb-4 px-4 py-1 text-sm" variant="outline">
                 Comprehensive Assessment Suite
               </Badge>
-              <h2 className="text-4xl md:text-5xl font-bold mb-4 text-white md:bg-gradient-to-r md:from-blue-400 md:via-purple-400 md:to-pink-400 md:bg-clip-text md:text-transparent">
+              <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-3 sm:mb-4 text-white md:bg-gradient-to-r md:from-blue-400 md:via-purple-400 md:to-pink-400 md:bg-clip-text md:text-transparent">
                 All Maturity Models
               </h2>
-              <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
+              <p className="text-base sm:text-xl text-muted-foreground max-w-3xl mx-auto">
                 Choose from our complete collection of enterprise maturity assessments.
                 Each model provides tailored insights for your transformation journey.
               </p>
@@ -427,16 +427,16 @@ export default function Landing() {
         </section>
 
         {/* CTA Section */}
-        <section className="py-20 bg-primary text-white">
+        <section className="py-12 sm:py-16 md:py-20 bg-primary text-white">
           <div className="container mx-auto px-4 text-center">
-            <h2 className="text-4xl md:text-5xl font-bold mb-6">Feeling Immature?</h2>
-            <p className="text-xl text-white/90 mb-8 max-w-3xl mx-auto">
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4 sm:mb-6">Feeling Immature?</h2>
+            <p className="text-base sm:text-xl text-white/90 mb-6 sm:mb-8 max-w-3xl mx-auto">
               Join leading organizations that are using Synozur's assessment to accelerate their transformation journey
             </p>
-            <div className="flex flex-wrap gap-4 justify-center">
+            <div className="flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4 justify-center items-center">
               <Button
                 size="lg"
-                className="bg-white text-primary hover:bg-white/90 px-8 py-6 text-lg"
+                className="bg-white text-primary hover:bg-white/90 w-full sm:w-auto sm:px-8 sm:py-6 sm:text-lg"
                 onClick={() => createAssessment.mutate()}
                 disabled={createAssessment.isPending || !aiModel}
                 data-testid="button-start-assessment-cta"
@@ -447,7 +447,7 @@ export default function Landing() {
               <Button
                 size="lg"
                 variant="outline"
-                className="bg-transparent text-white border-white hover:bg-white/10 px-8 py-6 text-lg"
+                className="bg-transparent text-white border-white hover:bg-white/10 w-full sm:w-auto sm:px-8 sm:py-6 sm:text-lg"
                 onClick={() => window.open('https://www.synozur.com', '_blank')}
                 data-testid="button-visit-synozur"
               >

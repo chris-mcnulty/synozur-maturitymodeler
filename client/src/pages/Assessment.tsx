@@ -217,9 +217,9 @@ export default function Assessment() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <main className="flex-1 py-12">
-        <div className="container mx-auto px-4 max-w-4xl">
-          <div className="mb-8">
+      <main className="flex-1 py-6 sm:py-8 md:py-12">
+        <div className="container mx-auto px-3 sm:px-4 max-w-4xl">
+          <div className="mb-6 sm:mb-8">
             <ProgressBar 
               current={currentQuestionIndex + 1} 
               total={questions.length}
@@ -243,15 +243,16 @@ export default function Assessment() {
             selectedAnswer={currentAnswer}
           />
 
-          <div className="flex justify-between mt-8">
+          <div className="flex justify-between gap-3 mt-6 sm:mt-8">
             <Button
               variant="outline"
               onClick={handlePrevious}
               disabled={!canGoPrev}
               data-testid="button-previous"
             >
-              <ChevronLeft className="mr-2 h-4 w-4" />
-              Previous
+              <ChevronLeft className="mr-1 sm:mr-2 h-4 w-4" />
+              <span className="hidden sm:inline">Previous</span>
+              <span className="sm:hidden">Back</span>
             </Button>
             <Button
               onClick={handleNext}
@@ -261,9 +262,9 @@ export default function Assessment() {
               {calculateResults.isPending
                 ? "Calculating..."
                 : currentQuestionIndex === questions.length - 1
-                ? "Complete Assessment"
+                ? "Complete"
                 : "Next"}
-              <ChevronRight className="ml-2 h-4 w-4" />
+              <ChevronRight className="ml-1 sm:ml-2 h-4 w-4" />
             </Button>
           </div>
         </div>

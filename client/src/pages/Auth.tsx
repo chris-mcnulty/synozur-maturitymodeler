@@ -156,15 +156,39 @@ export default function Auth() {
   return (
     <div className="min-h-screen flex flex-col lg:flex-row">
       {/* Left side - Forms */}
-      <div className="flex-1 flex flex-col p-8">
+      <div className="flex-1 flex flex-col p-4 sm:p-6 lg:p-8">
+        {/* Mobile Value Proposition - shown ABOVE the form on mobile only */}
+        <div className="lg:hidden max-w-md mx-auto w-full mb-6 sm:mb-8" data-testid="mobile-value-prop">
+          <div className="rounded-md border border-border bg-card p-5 sm:p-6">
+            <h2 className="text-xl sm:text-2xl font-bold mb-3">Why Sign Up?</h2>
+            <p className="text-sm sm:text-base text-muted-foreground mb-4">
+              Because your maturity journey deserves more than guesswork. Sign up free to unlock:
+            </p>
+            <ul className="space-y-2 mb-2">
+              <li className="flex items-start text-sm sm:text-base">
+                <span className="text-primary mr-2" aria-hidden="true">✓</span>
+                <span>Personalized recommendations</span>
+              </li>
+              <li className="flex items-start text-sm sm:text-base">
+                <span className="text-primary mr-2" aria-hidden="true">✓</span>
+                <span>Saved assessments to track growth</span>
+              </li>
+              <li className="flex items-start text-sm sm:text-base">
+                <span className="text-primary mr-2" aria-hidden="true">✓</span>
+                <span>Downloadable PDF reports</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+
         <div className="flex items-center justify-center flex-1">
-          <Card className="w-full max-w-md p-8">
-            <div className="mb-8 text-center">
+          <Card className="w-full max-w-md p-6 sm:p-8">
+            <div className="mb-6 sm:mb-8 text-center">
               <div className="flex items-center justify-center mb-4">
                 <img 
                   src={synozurLogo} 
                   alt="Synozur Logo" 
-                  className="w-24 h-24 object-contain"
+                  className="w-20 h-20 sm:w-24 sm:h-24 object-contain"
                 />
               </div>
               <h2 className="text-xl font-semibold mt-2">Orion</h2>
@@ -458,42 +482,22 @@ export default function Auth() {
         </Card>
         </div>
 
-        {/* Mobile Disclaimer - Only shown on mobile */}
-        <div className="lg:hidden mt-8 max-w-md mx-auto" data-testid="mobile-disclaimer">
-          <div className="pt-8 border-t border-border">
-            <h3 className="text-2xl font-bold mb-4">Why Sign Up?</h3>
-            <p className="text-muted-foreground mb-6">
-              Because your maturity journey deserves more than guesswork. When you sign up, you unlock tools that make progress clear and actionable:
-            </p>
-            <ul className="space-y-3 mb-6">
-              <li className="flex items-start">
-                <span className="text-primary mr-3">✅</span>
-                <span>Personalized recommendations designed to fit your goals</span>
-              </li>
-              <li className="flex items-start">
-                <span className="text-primary mr-3">✅</span>
-                <span>Saved assessments so you can track growth over time</span>
-              </li>
-              <li className="flex items-start">
-                <span className="text-primary mr-3">✅</span>
-                <span>Downloadable PDFs for easy sharing and reference</span>
-              </li>
-            </ul>
-            <p className="font-semibold mb-6">And the best part? It's completely free.</p>
-            
-            <h4 className="font-semibold mb-3">We take your privacy seriously:</h4>
-            <ul className="space-y-2 mb-6">
+        {/* Mobile Privacy Notice - shown below the form on mobile only */}
+        <div className="lg:hidden mt-6 max-w-md mx-auto w-full" data-testid="mobile-disclaimer">
+          <div className="pt-6 border-t border-border">
+            <p className="font-semibold mb-3 text-sm sm:text-base">It&apos;s completely free.</p>
+            <h4 className="font-semibold mb-2 text-sm sm:text-base">We take your privacy seriously:</h4>
+            <ul className="space-y-2 mb-4">
               <li className="flex items-start text-sm text-muted-foreground">
-                <span className="mr-2">•</span>
+                <span className="mr-2" aria-hidden="true">•</span>
                 <span>We never sell or share your data</span>
               </li>
               <li className="flex items-start text-sm text-muted-foreground">
-                <span className="mr-2">•</span>
+                <span className="mr-2" aria-hidden="true">•</span>
                 <span>We only use anonymized insights to improve benchmarks</span>
               </li>
             </ul>
-            
-            <p className="text-sm text-muted-foreground">
+            <p className="text-xs sm:text-sm text-muted-foreground">
               By signing up, you agree to receive occasional updates from Synozur—always relevant, never overwhelming—and you can unsubscribe anytime.
             </p>
           </div>
@@ -501,7 +505,7 @@ export default function Auth() {
       </div>
 
       {/* Right side - Hero - Only shown on desktop */}
-      <div className="flex-1 bg-gradient-to-br from-primary/10 via-primary/5 to-background p-8 hidden lg:flex flex-col justify-center">
+      <div className="flex-1 bg-gradient-to-br from-primary/10 via-primary/5 to-background p-8 hidden lg:flex flex-col justify-center" data-testid="desktop-value-prop">
         <div className="max-w-lg">
           <div className="mb-8">
             <img 

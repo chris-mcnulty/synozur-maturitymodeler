@@ -195,8 +195,38 @@ This is a utility-focused maturity assessment platform requiring professional cr
 - Touch targets: Minimum 44x44px for all interactive elements
 - Focus indicators: 2px primary color outline on all focusable elements
 - Screen reader labels for all form inputs and interactive elements
-- Responsive breakpoints: 640px (mobile), 768px (tablet), 1024px (desktop), 1280px (large)
 - Test on iOS Safari and Android Chrome
+
+### Breakpoint & Spacing Policy (mobile-first)
+
+The platform is mobile-first. Default Tailwind classes target the smallest viewport, and responsive variants scale up.
+
+**Tier definitions** (Tailwind defaults):
+- Base (mobile): 0–639px — primary target widths 375px and 414px
+- `sm:` 640px+ — large phones / small tablets
+- `md:` 768px+ — tablet portrait, the threshold where two-column layouts appear
+- `lg:` 1024px+ — desktop, where multi-column dashboards and side-by-side hero layouts appear
+- `xl:` 1280px+ — large desktop, used for 4-up grids and wider containers
+
+**Spacing scale** — pick one rung per tier and stay consistent within a page:
+- Container side padding: `px-4 sm:px-4 md:px-4` (extra `px-3` only on tight headers)
+- Section vertical padding: `py-8 sm:py-12 md:py-16` for content sections; `py-10 sm:py-16 md:py-20` for hero/CTA sections
+- Card padding: `p-5 sm:p-6 md:p-8` for primary cards; `p-4 sm:p-6` for compact cards
+- Stack spacing inside cards: `space-y-3 sm:space-y-4` or `gap-4 sm:gap-6`
+
+**Typography scale** — use these responsive ramps for headings instead of single fixed sizes:
+- Page H1: `text-3xl sm:text-4xl md:text-5xl`
+- Section H2: `text-2xl sm:text-3xl md:text-4xl`
+- Card H3: `text-lg sm:text-xl`
+- Body copy: `text-sm sm:text-base` for dense UI; `text-base sm:text-lg` for marketing copy
+- Hero score / KPI numbers: `text-5xl sm:text-6xl md:text-7xl`
+
+**Layout rules**:
+- Buttons in horizontal action rows must `flex-wrap` and use `gap-3 sm:gap-4`. Two-button hero CTAs should stack full-width on mobile (`flex-col sm:flex-row` with `w-full sm:w-auto`).
+- Headers: only the brand/logo and the primary action (Sign In or user menu) are guaranteed visible at all widths. All other icon controls collapse into an overflow menu below `sm`.
+- Forms: stack to single column below `lg`. Auxiliary marketing content (value prop, testimonials) appears **above** the form on mobile and beside it on desktop.
+- Avoid horizontal scroll: long word-breaking content should use `min-w-0` on flex children and `truncate` only when the truncation is acceptable.
+- Never set fixed widths in pixels for layout containers. Use `max-w-*` plus `w-full`.
 
 ## Animation & Motion
 

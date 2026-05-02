@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { Moon, Sun, User, LogOut, HelpCircle, BookOpen, FileText, Ticket, Bot, Mail } from "lucide-react";
+import { Moon, Sun, User, LogOut, HelpCircle, BookOpen, FileText, Ticket, Bot, Mail, MoreVertical } from "lucide-react";
 import { useTheme } from "./ThemeProvider";
 import { useAuth } from "@/hooks/use-auth";
 import { USER_ROLES } from "@shared/constants";
@@ -54,11 +54,72 @@ export function Header() {
     setLocation('/');
   };
 
+  const helpMenuItems = (
+    <>
+      <DropdownMenuItem asChild>
+        <Link href="/help" data-testid="link-help-user-guide">
+          <BookOpen className="mr-2 h-4 w-4" />
+          User Guide
+        </Link>
+      </DropdownMenuItem>
+      <DropdownMenuItem asChild>
+        <Link href="/changelog" data-testid="link-help-changelog">
+          <FileText className="mr-2 h-4 w-4" />
+          Changelog
+          {hasUnseenUpdates && (
+            <span className="ml-auto h-2 w-2 rounded-full bg-primary" />
+          )}
+        </Link>
+      </DropdownMenuItem>
+      {user && (
+        <>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem asChild>
+            <Link href="/support" data-testid="link-help-support">
+              <Ticket className="mr-2 h-4 w-4" />
+              Support Tickets
+            </Link>
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setShowHelpChat(true)} data-testid="button-help-chat">
+            <Bot className="mr-2 h-4 w-4" />
+            Ask Help Assistant
+          </DropdownMenuItem>
+        </>
+      )}
+      <DropdownMenuSeparator />
+      <DropdownMenuItem asChild>
+        <a href="mailto:support@synozur.com" data-testid="link-help-email">
+          <Mail className="mr-2 h-4 w-4" />
+          Email Support
+        </a>
+      </DropdownMenuItem>
+    </>
+  );
+
+  const themeMenuItem = (
+    <DropdownMenuItem
+      onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+      data-testid="button-theme-toggle-mobile"
+    >
+      {theme === "dark" ? (
+        <>
+          <Sun className="mr-2 h-4 w-4" />
+          Light mode
+        </>
+      ) : (
+        <>
+          <Moon className="mr-2 h-4 w-4" />
+          Dark mode
+        </>
+      )}
+    </DropdownMenuItem>
+  );
+
   return (
     <>
       <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container mx-auto flex h-16 items-center justify-between px-4">
-          <div className="flex items-center gap-3">
+        <div className="container mx-auto flex h-16 items-center justify-between gap-2 px-3 sm:px-4">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
             <SynozurAppSwitcher currentApp="orion" />
             <a 
               href="https://www.synozur.com" 
@@ -70,11 +131,11 @@ export function Header() {
               <img 
                 src={synozurLogo} 
                 alt="Synozur" 
-                className="h-10 w-auto max-w-[120px] sm:max-w-none object-contain"
+                className="h-8 sm:h-10 w-auto max-w-[100px] sm:max-w-none object-contain"
               />
             </a>
             <div className="h-6 w-px bg-border"></div>
-            <Link href="/" className="text-lg font-bold text-foreground hover:text-primary transition-colors">
+            <Link href="/" className="text-base sm:text-lg font-bold text-foreground hover:text-primary transition-colors">
               Orion
             </Link>
           </div>
@@ -97,10 +158,16 @@ export function Header() {
             )}
           </nav>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 sm:gap-2">
+            {/* Help dropdown - hidden on small screens (collapses into overflow menu) */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" data-testid="button-help-menu" className="relative">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  data-testid="button-help-menu"
+                  className="relative hidden sm:inline-flex"
+                >
                   <HelpCircle className="h-5 w-5" />
                   {hasUnseenUpdates && (
                     <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-primary" data-testid="indicator-unseen-updates" />
@@ -108,60 +175,48 @@ export function Header() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem asChild>
-                  <Link href="/help" data-testid="link-help-user-guide">
-                    <BookOpen className="mr-2 h-4 w-4" />
-                    User Guide
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link href="/changelog" data-testid="link-help-changelog">
-                    <FileText className="mr-2 h-4 w-4" />
-                    Changelog
-                    {hasUnseenUpdates && (
-                      <span className="ml-auto h-2 w-2 rounded-full bg-primary" />
-                    )}
-                  </Link>
-                </DropdownMenuItem>
-                {user && (
-                  <>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem asChild>
-                      <Link href="/support" data-testid="link-help-support">
-                        <Ticket className="mr-2 h-4 w-4" />
-                        Support Tickets
-                      </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setShowHelpChat(true)} data-testid="button-help-chat">
-                      <Bot className="mr-2 h-4 w-4" />
-                      Ask Help Assistant
-                    </DropdownMenuItem>
-                  </>
-                )}
-                <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
-                  <a href="mailto:support@synozur.com" data-testid="link-help-email">
-                    <Mail className="mr-2 h-4 w-4" />
-                    Email Support
-                  </a>
-                </DropdownMenuItem>
+                {helpMenuItems}
               </DropdownMenuContent>
             </DropdownMenu>
 
+            {/* Theme toggle - hidden on small screens (collapses into overflow menu) */}
             <Button
               variant="ghost"
               size="icon"
               onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
               data-testid="button-theme-toggle"
-              className="hover-elevate active-elevate-2"
+              className="hover-elevate active-elevate-2 hidden sm:inline-flex"
             >
               {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
             </Button>
+
+            {/* Mobile overflow menu - shown on small screens only */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="relative sm:hidden"
+                  data-testid="button-mobile-overflow"
+                  aria-label="More options"
+                >
+                  <MoreVertical className="h-5 w-5" />
+                  {hasUnseenUpdates && (
+                    <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-primary" data-testid="indicator-unseen-updates-mobile" />
+                  )}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                {themeMenuItem}
+                <DropdownMenuSeparator />
+                {helpMenuItems}
+              </DropdownMenuContent>
+            </DropdownMenu>
             
             {user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="gap-2" data-testid="button-user-menu">
+                  <Button variant="ghost" className="gap-2 px-2 sm:px-3" data-testid="button-user-menu">
                     <User className="h-5 w-5" />
                     <span className="hidden md:inline">{user.name}</span>
                   </Button>

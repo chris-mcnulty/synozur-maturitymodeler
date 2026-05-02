@@ -92,18 +92,18 @@ export function QuestionCard({
   };
 
   return (
-    <Card className="p-8 max-w-3xl mx-auto" data-testid="card-question">
-      <h2 className="text-2xl font-bold mb-6" data-testid="text-question">
+    <Card className="p-5 sm:p-6 md:p-8 max-w-3xl mx-auto" data-testid="card-question">
+      <h2 className="text-lg sm:text-xl md:text-2xl font-bold mb-4 sm:mb-6 leading-snug" data-testid="text-question">
         {question}
       </h2>
       
       {questionType === 'multiple_choice' ? (
         <RadioGroup value={selected} onValueChange={handleSelect}>
-          <div className="space-y-3">
+          <div className="space-y-2 sm:space-y-3">
             {answers.map((answer) => (
               <div
                 key={answer.key}
-                className={`flex items-center space-x-3 p-4 rounded-lg border-2 transition-all hover-elevate ${
+                className={`flex items-center space-x-3 p-3 sm:p-4 rounded-lg border-2 transition-all hover-elevate ${
                   selected === answer.key
                     ? "border-primary bg-primary/5"
                     : "border-border"
@@ -113,7 +113,7 @@ export function QuestionCard({
                 <RadioGroupItem value={answer.key} id={answer.key} />
                 <Label
                   htmlFor={answer.key}
-                  className="flex-1 cursor-pointer font-medium"
+                  className="flex-1 cursor-pointer font-medium text-sm sm:text-base"
                 >
                   {answer.label}
                 </Label>
@@ -122,12 +122,12 @@ export function QuestionCard({
           </div>
         </RadioGroup>
       ) : questionType === 'multi_select' ? (
-        <div className="space-y-3">
-          <p className="text-sm text-muted-foreground mb-4">Select all that apply</p>
+        <div className="space-y-2 sm:space-y-3">
+          <p className="text-sm text-muted-foreground mb-3 sm:mb-4">Select all that apply</p>
           {answers.map((answer) => (
             <div
               key={answer.key}
-              className={`flex items-center space-x-3 p-4 rounded-lg border-2 transition-all hover-elevate ${
+              className={`flex items-center space-x-3 p-3 sm:p-4 rounded-lg border-2 transition-all hover-elevate ${
                 multiSelected.includes(answer.key)
                   ? "border-primary bg-primary/5"
                   : "border-border"
@@ -141,7 +141,7 @@ export function QuestionCard({
               />
               <Label
                 htmlFor={answer.key}
-                className="flex-1 cursor-pointer font-medium"
+                className="flex-1 cursor-pointer font-medium text-sm sm:text-base"
               >
                 {answer.label}
               </Label>
@@ -155,9 +155,9 @@ export function QuestionCard({
         </div>
       ) : questionType === 'true_false' ? (
         <RadioGroup value={selected} onValueChange={handleSelect}>
-          <div className="space-y-3">
+          <div className="space-y-2 sm:space-y-3">
             <div
-              className={`flex items-center space-x-3 p-4 rounded-lg border-2 transition-all hover-elevate ${
+              className={`flex items-center space-x-3 p-3 sm:p-4 rounded-lg border-2 transition-all hover-elevate ${
                 selected === 'true'
                   ? "border-primary bg-primary/5"
                   : "border-border"
@@ -167,13 +167,13 @@ export function QuestionCard({
               <RadioGroupItem value="true" id="true" />
               <Label
                 htmlFor="true"
-                className="flex-1 cursor-pointer font-medium"
+                className="flex-1 cursor-pointer font-medium text-sm sm:text-base"
               >
                 True
               </Label>
             </div>
             <div
-              className={`flex items-center space-x-3 p-4 rounded-lg border-2 transition-all hover-elevate ${
+              className={`flex items-center space-x-3 p-3 sm:p-4 rounded-lg border-2 transition-all hover-elevate ${
                 selected === 'false'
                   ? "border-primary bg-primary/5"
                   : "border-border"
@@ -183,7 +183,7 @@ export function QuestionCard({
               <RadioGroupItem value="false" id="false" />
               <Label
                 htmlFor="false"
-                className="flex-1 cursor-pointer font-medium"
+                className="flex-1 cursor-pointer font-medium text-sm sm:text-base"
               >
                 False
               </Label>
