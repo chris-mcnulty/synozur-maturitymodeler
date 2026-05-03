@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import type { Tenant } from "@shared/schema";
 import { useAuth } from "@/hooks/use-auth";
@@ -42,6 +42,68 @@ export function hexToHsl(hex: string): string | null {
 }
 
 /**
+ * Public branding fields exposed by /api/branding/by-domain/:domain.
+ * Intentionally a subset of the Tenant type — only safe-to-show fields.
+ */
+export type PublicTenantBranding = {
+  id: string;
+  name: string;
+  logoUrl: string | null;
+  faviconUrl: string | null;
+  primaryColor: string | null;
+  accentColor: string | null;
+};
+
+type BrandingInput = Pick<
+  Tenant,
+  "primaryColor" | "accentColor" | "faviconUrl"
+> | null | undefined;
+
+/**
+ * Apply tenant branding (CSS variables, favicon) to the document.
+ * Returns a cleanup function that restores defaults.
+ */
+function applyBranding(branding: BrandingInput): () => void {
+  const root = document.documentElement;
+  const setVars: string[] = [];
+
+  if (branding?.primaryColor) {
+    const hsl = hexToHsl(branding.primaryColor);
+    if (hsl) {
+      root.style.setProperty("--primary", hsl);
+      setVars.push("--primary");
+    }
+  }
+
+  if (branding?.accentColor) {
+    const hsl = hexToHsl(branding.accentColor);
+    if (hsl) {
+      root.style.setProperty("--accent", hsl);
+      setVars.push("--accent");
+    }
+  }
+
+  let faviconLink: HTMLLinkElement | null = null;
+  let originalFavicon: string | null = null;
+  if (branding?.faviconUrl) {
+    faviconLink = document.querySelector('link[rel="icon"]');
+    if (faviconLink) {
+      originalFavicon = faviconLink.href;
+      faviconLink.href = branding.faviconUrl;
+    }
+  }
+
+  return () => {
+    for (const v of setVars) {
+      root.style.removeProperty(v);
+    }
+    if (faviconLink && originalFavicon !== null) {
+      faviconLink.href = originalFavicon;
+    }
+  };
+}
+
+/**
  * Apply tenant branding (CSS variables, favicon) to the document at runtime.
  * Falls back to Synozur defaults defined in index.css / index.html when no
  * tenant context exists.
@@ -58,47 +120,61 @@ export function useTenantBranding(): {
   });
 
   useEffect(() => {
-    const root = document.documentElement;
-
-    // Track the variables we set so we can clear only ours on cleanup.
-    const setVars: string[] = [];
-
-    if (tenant?.primaryColor) {
-      const hsl = hexToHsl(tenant.primaryColor);
-      if (hsl) {
-        root.style.setProperty("--primary", hsl);
-        setVars.push("--primary");
-      }
-    }
-
-    if (tenant?.accentColor) {
-      const hsl = hexToHsl(tenant.accentColor);
-      if (hsl) {
-        root.style.setProperty("--accent", hsl);
-        setVars.push("--accent");
-      }
-    }
-
-    // Favicon — replace existing icon links with the tenant's favicon.
-    let faviconLink: HTMLLinkElement | null = null;
-    let originalFavicon: string | null = null;
-    if (tenant?.faviconUrl) {
-      faviconLink = document.querySelector('link[rel="icon"]');
-      if (faviconLink) {
-        originalFavicon = faviconLink.href;
-        faviconLink.href = tenant.faviconUrl;
-      }
-    }
-
-    return () => {
-      for (const v of setVars) {
-        root.style.removeProperty(v);
-      }
-      if (faviconLink && originalFavicon !== null) {
-        faviconLink.href = originalFavicon;
-      }
-    };
+    return applyBranding(tenant ?? null);
   }, [tenant?.primaryColor, tenant?.accentColor, tenant?.faviconUrl]);
 
   return { tenant: tenant ?? null, isLoading };
+}
+
+/** Extract the lowercase domain portion of an email address, or null. */
+export function extractEmailDomain(email: string): string | null {
+  if (!email) return null;
+  const trimmed = email.trim().toLowerCase();
+  const at = trimmed.lastIndexOf("@");
+  if (at < 0 || at === trimmed.length - 1) return null;
+  const domain = trimmed.slice(at + 1);
+  // Must contain a dot and only valid domain chars.
+  if (!/^[a-z0-9.-]+\.[a-z]{2,}$/i.test(domain)) return null;
+  return domain;
+}
+
+/**
+ * Look up tenant branding by email domain and apply it live to the document.
+ * Used on the login page so users see their tenant's branding as they type
+ * their email — before authenticating. Falls back to Synozur defaults when
+ * the domain doesn't match any tenant.
+ */
+export function useDomainBranding(email: string): {
+  branding: PublicTenantBranding | null;
+  isLoading: boolean;
+} {
+  const domain = useMemo(() => extractEmailDomain(email), [email]);
+  const [debouncedDomain, setDebouncedDomain] = useState<string | null>(domain);
+
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedDomain(domain), 300);
+    return () => clearTimeout(t);
+  }, [domain]);
+
+  const { data, isLoading } = useQuery<PublicTenantBranding | null>({
+    queryKey: ["/api/branding/by-domain", debouncedDomain],
+    queryFn: async () => {
+      if (!debouncedDomain) return null;
+      const res = await fetch(
+        `/api/branding/by-domain/${encodeURIComponent(debouncedDomain)}`,
+        { credentials: "omit" },
+      );
+      if (res.status === 404 || res.status === 400) return null;
+      if (!res.ok) throw new Error("Failed to fetch branding");
+      return (await res.json()) as PublicTenantBranding;
+    },
+    enabled: !!debouncedDomain,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  useEffect(() => {
+    return applyBranding(data ?? null);
+  }, [data?.primaryColor, data?.accentColor, data?.faviconUrl]);
+
+  return { branding: data ?? null, isLoading };
 }

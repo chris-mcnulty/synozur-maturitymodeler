@@ -18,6 +18,57 @@ import { ObjectStorageService } from "./objectStorage";
 
 const router = Router();
 
+// ========== PUBLIC BRANDING ROUTE (Unauthenticated) ==========
+
+// Look up tenant branding by email domain. Returns ONLY safe public fields
+// (logo, favicon, colors, name). Used by the login page to show tenant
+// branding before the user authenticates.
+router.get("/api/branding/by-domain/:domain", async (req: Request, res: Response) => {
+  try {
+    const rawDomain = String(req.params.domain || "").trim().toLowerCase();
+
+    // Basic domain shape validation: letters, digits, dots, hyphens; must
+    // contain a dot. This guards against odd input without being too strict.
+    if (!rawDomain || !/^[a-z0-9.-]+\.[a-z]{2,}$/i.test(rawDomain)) {
+      return res.status(400).json({ error: "Invalid domain" });
+    }
+
+    const domainRow = await db
+      .select({ tenantId: tenantDomains.tenantId })
+      .from(tenantDomains)
+      .where(eq(tenantDomains.domain, rawDomain))
+      .limit(1);
+
+    if (!domainRow.length) {
+      return res.status(404).json({ error: "No tenant for domain" });
+    }
+
+    const tenantRow = await db
+      .select({
+        id: tenants.id,
+        name: tenants.name,
+        logoUrl: tenants.logoUrl,
+        faviconUrl: tenants.faviconUrl,
+        primaryColor: tenants.primaryColor,
+        accentColor: tenants.accentColor,
+      })
+      .from(tenants)
+      .where(eq(tenants.id, domainRow[0].tenantId))
+      .limit(1);
+
+    if (!tenantRow.length) {
+      return res.status(404).json({ error: "No tenant for domain" });
+    }
+
+    // Cache briefly at the edge — branding rarely changes.
+    res.setHeader("Cache-Control", "public, max-age=60");
+    res.json(tenantRow[0]);
+  } catch (error) {
+    console.error("Error fetching branding by domain:", error);
+    res.status(500).json({ error: "Failed to fetch branding" });
+  }
+});
+
 // ========== TENANT MANAGEMENT ROUTES (Admin Only) ==========
 
 // Get all tenants

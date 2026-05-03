@@ -21,6 +21,7 @@ function MicrosoftIcon({ className }: { className?: string }) {
 }
 import { JOB_ROLES, INDUSTRIES, COMPANY_SIZES, COUNTRIES } from "@/lib/constants";
 import { useQuery } from "@tanstack/react-query";
+import { useDomainBranding } from "@/hooks/use-tenant-branding";
 
 export default function Auth() {
   const [, setLocation] = useLocation();
@@ -55,6 +56,17 @@ export default function Auth() {
     industry: "",
     country: "",
   });
+
+  // Track the active auth tab so we only derive tenant branding from the
+  // form the user is currently looking at.
+  const [activeTab, setActiveTab] = useState<string>("login");
+
+  // Apply tenant branding live based on the email/username being typed in
+  // the currently visible form. (Users frequently log in with their email,
+  // so we also accept the login username field.)
+  const brandingEmail =
+    activeTab === "register" ? registerForm.email : loginForm.username;
+  const { branding: domainBranding } = useDomainBranding(brandingEmail);
 
   // Parse query parameters for redirect and assessment claim
   const queryParams = new URLSearchParams(window.location.search);
@@ -185,17 +197,18 @@ export default function Auth() {
           <Card className="w-full max-w-md p-6 sm:p-8">
             <div className="mb-6 sm:mb-8 text-center">
               <div className="flex items-center justify-center mb-4">
-                <img 
-                  src={synozurLogo} 
-                  alt="Synozur Logo" 
+                <img
+                  src={domainBranding?.logoUrl || synozurLogo}
+                  alt={domainBranding?.name ? `${domainBranding.name} logo` : "Synozur Logo"}
                   className="w-20 h-20 sm:w-24 sm:h-24 object-contain"
+                  data-testid="img-auth-tenant-logo"
                 />
               </div>
               <h2 className="text-xl font-semibold mt-2">Orion</h2>
               <p className="text-muted-foreground mt-2">Find Your North Star</p>
             </div>
 
-          <Tabs defaultValue="login" className="w-full">
+          <Tabs defaultValue="login" className="w-full" value={activeTab} onValueChange={setActiveTab}>
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="login">Login</TabsTrigger>
               <TabsTrigger value="register">Sign Up</TabsTrigger>
