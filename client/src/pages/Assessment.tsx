@@ -69,6 +69,7 @@ export default function Assessment() {
   const pendingSavesRef = useRef<Set<string>>(new Set());
   const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const failedPayloadsRef = useRef<Map<string, SavePayload>>(new Map());
+  const didResumeRef = useRef(false);
 
   // Fetch assessment
   const { data: assessment } = useQuery<AssessmentType>({
@@ -98,7 +99,7 @@ export default function Assessment() {
   });
 
   // Fetch existing responses
-  const { data: existingResponses = [] } = useQuery<{
+  const { data: existingResponses = [], isFetched: responsesFetched } = useQuery<{
     questionId: string;
     answerId?: string;
     answerIds?: string[];
@@ -130,6 +131,48 @@ export default function Assessment() {
       setSelectedAnswers(prev => ({ ...answers, ...prev }));
     }
   }, [existingResponses]);
+
+  // On first load, resume at the first unanswered question (or the last
+  // question if every answer is already saved). Manual jumps after this
+  // point are preserved because the effect runs only once.
+  useEffect(() => {
+    if (didResumeRef.current) return;
+    if (!questions.length) return;
+    // Wait for the responses query to actually finish before deciding.
+    if (!responsesFetched) return;
+
+    // Build the initial answered-value map directly from existingResponses
+    // so we don't depend on the populate effect having flushed first.
+    const initialValues: Record<string, string | string[]> = {};
+    for (const r of existingResponses) {
+      if (r.numericValue !== undefined && r.numericValue !== null) {
+        initialValues[r.questionId] = r.numericValue.toString();
+      } else if (r.booleanValue !== undefined && r.booleanValue !== null) {
+        initialValues[r.questionId] = r.booleanValue.toString();
+      } else if (r.textValue !== undefined && r.textValue !== null) {
+        initialValues[r.questionId] = r.textValue;
+      } else if (r.answerIds) {
+        initialValues[r.questionId] = r.answerIds;
+      } else if (r.answerId) {
+        initialValues[r.questionId] = r.answerId;
+      }
+    }
+
+    const firstUnanswered = questions.findIndex(
+      q => !isAnswerComplete(q, initialValues[q.id])
+    );
+    const targetIndex = firstUnanswered === -1 ? questions.length - 1 : firstUnanswered;
+    if (targetIndex > 0) {
+      setCurrentQuestionIndex(targetIndex);
+    }
+    didResumeRef.current = true;
+  }, [questions, existingResponses, responsesFetched]);
+
+  // Reset resume guard if the assessment id changes (in case the component
+  // is reused for a different assessment without unmounting).
+  useEffect(() => {
+    didResumeRef.current = false;
+  }, [assessmentId]);
 
   // Cleanup timers on unmount
   useEffect(() => {
