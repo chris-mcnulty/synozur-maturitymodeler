@@ -11,7 +11,7 @@ import { DataState } from "@/components/DataState";
 import type { Model, Assessment, Dimension } from "@shared/schema";
 
 type ModelWithQuestionCount = Model & { questionCount: number };
-import heroBackground from '@assets/AI_network_hero_background.png';
+import heroBackground from '@assets/AI_network_hero_background.webp';
 import orionLogo from '@assets/Orion_Logo_-_White_1773855710833.png';
 
 function ModelCard({
@@ -203,6 +203,9 @@ export default function Landing() {
               src={heroBackground}
               alt="AI Network Background"
               className="w-full h-full object-cover opacity-60"
+              loading="eager"
+              decoding="async"
+              fetchPriority="high"
             />
             <div className="absolute inset-0 bg-gradient-to-b from-black/40 to-black/60" />
           </div>
@@ -213,6 +216,9 @@ export default function Landing() {
                 src={orionLogo}
                 alt="Orion - Transformation AI"
                 className="h-16 sm:h-24 md:h-[7.5rem] lg:h-36 w-auto object-contain"
+                loading="eager"
+                decoding="async"
+                fetchPriority="high"
                 data-testid="img-orion-logo"
               />
             </div>
