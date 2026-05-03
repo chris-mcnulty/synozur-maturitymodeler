@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback, useRef, useEffect, lazy, Suspense } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
@@ -19,31 +19,76 @@ import type { Model, Result, Assessment, Dimension, Question, Answer, User, Asse
 import { USER_ROLES, type UserRole } from "@shared/constants";
 import { useAuth } from "@/hooks/use-auth";
 import { ObjectUploader } from "@/components/ObjectUploader";
-import { AiAssistant } from "@/components/admin/AiAssistant";
-import { AiUsageDashboard } from "@/components/admin/AiUsageDashboard";
-import { AiContentReviewQueue } from "@/components/admin/AiContentReviewQueue";
-import { ContentManagement } from "@/components/admin/ContentManagement";
-import { ImportManager } from "@/components/admin/ImportManager";
-import { ImportBatches } from "@/components/admin/ImportBatches";
 import { ProxyAssessmentDialog } from "@/components/admin/ProxyAssessmentDialog";
-import { TenantManagement } from "@/components/admin/TenantManagement";
-import { OAuthApplications } from "@/components/admin/OAuthApplications";
-import { lazy, Suspense } from "react";
+import { AssessmentTagSelector } from "@/components/admin/AssessmentTagSelector";
 const GalaxyIntegration = lazy(() =>
   import("@/components/admin/GalaxyIntegration").then((m) => ({ default: m.GalaxyIntegration })),
 );
-import { ImportExportPanel } from "@/components/admin/ImportExportPanel";
-import { ModelBuilder } from "@/components/admin/ModelBuilder";
-import { ModelCreationWizard } from "@/components/admin/ModelCreationWizard";
-import { TagManagement } from "@/components/admin/TagManagement";
-import { TrafficDashboard } from "@/components/admin/TrafficDashboard";
-import { AccessRequestsSection } from "@/components/admin/AccessRequestsSection";
-import { AssessmentTagSelector } from "@/components/admin/AssessmentTagSelector";
-import { AssessmentReviewDialog } from "@/components/admin/AssessmentReviewDialog";
-import { SupportManagement } from "@/components/admin/SupportManagement";
-import { BrandingPanel } from "@/components/admin/BrandingPanel";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
+
+// Lazy-loaded admin sections — each major sidebar entry/dialog is split into its
+// own chunk so the initial Admin bundle stays small. The Suspense fallback
+// briefly shows a skeleton on first navigation to a section.
+const AiUsageDashboard = lazy(() =>
+  import("@/components/admin/AiUsageDashboard").then((m) => ({ default: m.AiUsageDashboard })),
+);
+const AiContentReviewQueue = lazy(() =>
+  import("@/components/admin/AiContentReviewQueue").then((m) => ({ default: m.AiContentReviewQueue })),
+);
+const ContentManagement = lazy(() =>
+  import("@/components/admin/ContentManagement").then((m) => ({ default: m.ContentManagement })),
+);
+const ImportManager = lazy(() =>
+  import("@/components/admin/ImportManager").then((m) => ({ default: m.ImportManager })),
+);
+const ImportBatches = lazy(() =>
+  import("@/components/admin/ImportBatches").then((m) => ({ default: m.ImportBatches })),
+);
+const TenantManagement = lazy(() =>
+  import("@/components/admin/TenantManagement").then((m) => ({ default: m.TenantManagement })),
+);
+const OAuthApplications = lazy(() =>
+  import("@/components/admin/OAuthApplications").then((m) => ({ default: m.OAuthApplications })),
+);
+const ImportExportPanel = lazy(() =>
+  import("@/components/admin/ImportExportPanel").then((m) => ({ default: m.ImportExportPanel })),
+);
+const ModelBuilder = lazy(() =>
+  import("@/components/admin/ModelBuilder").then((m) => ({ default: m.ModelBuilder })),
+);
+const ModelCreationWizard = lazy(() =>
+  import("@/components/admin/ModelCreationWizard").then((m) => ({ default: m.ModelCreationWizard })),
+);
+const TagManagement = lazy(() =>
+  import("@/components/admin/TagManagement").then((m) => ({ default: m.TagManagement })),
+);
+const TrafficDashboard = lazy(() =>
+  import("@/components/admin/TrafficDashboard").then((m) => ({ default: m.TrafficDashboard })),
+);
+const AccessRequestsSection = lazy(() =>
+  import("@/components/admin/AccessRequestsSection").then((m) => ({ default: m.AccessRequestsSection })),
+);
+const AssessmentReviewDialog = lazy(() =>
+  import("@/components/admin/AssessmentReviewDialog").then((m) => ({ default: m.AssessmentReviewDialog })),
+);
+const SupportManagement = lazy(() =>
+  import("@/components/admin/SupportManagement").then((m) => ({ default: m.SupportManagement })),
+);
+const BrandingPanel = lazy(() =>
+  import("@/components/admin/BrandingPanel").then((m) => ({ default: m.BrandingPanel })),
+);
+
+function SectionFallback() {
+  return (
+    <div className="space-y-4" data-testid="admin-section-loading">
+      <Skeleton className="h-8 w-48" />
+      <Skeleton className="h-4 w-80" />
+      <Skeleton className="h-64 w-full" />
+    </div>
+  );
+}
+const AdminGuideSection = lazy(() =>
+  import("@/components/admin/AdminGuideSection").then((m) => ({ default: m.AdminGuideSection })),
+);
 import {
   Sidebar,
   SidebarContent,
@@ -440,50 +485,6 @@ function BenchmarksByModel() {
           </Card>
         </div>
       )}
-    </div>
-  );
-}
-
-function AdminGuideSection() {
-  const { data: content, isLoading, isError } = useQuery<string>({
-    queryKey: ["/api/admin-guide"],
-    queryFn: async () => {
-      const res = await fetch("/api/admin-guide");
-      if (!res.ok) throw new Error("Failed to load admin guide");
-      const data = await res.json();
-      return data.content || "";
-    },
-  });
-
-  if (isLoading) {
-    return (
-      <div className="flex justify-center py-12">
-        <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" />
-      </div>
-    );
-  }
-
-  if (isError || !content) {
-    return (
-      <Card>
-        <CardContent className="py-12 text-center">
-          <p className="text-destructive mb-2">Failed to load admin guide.</p>
-          <p className="text-sm text-muted-foreground">Please try refreshing the page.</p>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  return (
-    <div className="space-y-4" data-testid="section-admin-guide">
-      <h2 className="text-xl font-semibold flex items-center gap-2">
-        <BookOpen className="h-5 w-5" /> Admin Guide
-      </h2>
-      <Card>
-        <CardContent className="p-6 prose dark:prose-invert max-w-none">
-          <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
-        </CardContent>
-      </Card>
     </div>
   );
 }
@@ -2695,6 +2696,7 @@ export default function Admin() {
 
           <main className="flex-1 overflow-y-auto overflow-x-hidden p-6">
             <div className="w-full max-w-7xl mx-auto space-y-6">
+              <Suspense fallback={<SectionFallback />}>
               {activeSection === 'models' && (
               <div className="space-y-6">
                 <div className="flex justify-between items-center">
@@ -4271,6 +4273,7 @@ export default function Admin() {
               {activeSection === 'support' && <SupportManagement />}
 
               {activeSection === 'admin-guide' && <AdminGuideSection />}
+              </Suspense>
             </div>
 
             {/* Footer Stats */}
@@ -5002,17 +5005,21 @@ ${insightsData.recommendations.map((r, i) => `${i + 1}. ${r}`).join('\n')}
       </Dialog>
 
 
-      {/* Model Creation Wizard */}
-      <ModelCreationWizard
-        open={isWizardOpen}
-        onOpenChange={setIsWizardOpen}
-        onModelCreated={(model) => {
-          setIsWizardOpen(false);
-          setEditingModel(model);
-          setSelectedModelId(model.id);
-          setActiveSection('model-builder');
-        }}
-      />
+      {/* Model Creation Wizard — lazy-mounted only when first opened */}
+      {isWizardOpen && (
+        <Suspense fallback={null}>
+          <ModelCreationWizard
+            open={isWizardOpen}
+            onOpenChange={setIsWizardOpen}
+            onModelCreated={(model) => {
+              setIsWizardOpen(false);
+              setEditingModel(model);
+              setSelectedModelId(model.id);
+              setActiveSection('model-builder');
+            }}
+          />
+        </Suspense>
+      )}
 
       {/* CSV Import Mode Dialog */}
       <Dialog open={isCSVImportDialogOpen} onOpenChange={setIsCSVImportDialogOpen}>
@@ -5914,33 +5921,41 @@ ${insightsData.recommendations.map((r, i) => `${i + 1}. ${r}`).join('\n')}
         </DialogContent>
       </Dialog>
 
-      {/* Import/Export Panel */}
-      <ImportExportPanel
-        open={isImportExportOpen}
-        onOpenChange={setIsImportExportOpen}
-        selectedModel={importExportModel || undefined}
-        dimensions={importExportDimensions}
-        questions={importExportQuestions}
-        answers={importExportAnswers}
-        scoringLevels={importExportModel?.maturityScale?.map(level => ({
-          ...level,
-          label: level.name,
-        })) || []}
-        onImportComplete={() => {
-          queryClient.invalidateQueries({ queryKey: ['/api/models'] });
-          queryClient.invalidateQueries({ queryKey: ['/api/dimensions', importExportModel?.id] });
-          queryClient.invalidateQueries({ queryKey: ['/api/questions', importExportModel?.id] });
-          toast({
-            title: "Import Complete",
-            description: "Model data has been imported successfully.",
-          });
-        }}
-      />
+      {/* Import/Export Panel — lazy-mounted only when first opened */}
+      {isImportExportOpen && (
+        <Suspense fallback={null}>
+          <ImportExportPanel
+            open={isImportExportOpen}
+            onOpenChange={setIsImportExportOpen}
+            selectedModel={importExportModel || undefined}
+            dimensions={importExportDimensions}
+            questions={importExportQuestions}
+            answers={importExportAnswers}
+            scoringLevels={importExportModel?.maturityScale?.map(level => ({
+              ...level,
+              label: level.name,
+            })) || []}
+            onImportComplete={() => {
+              queryClient.invalidateQueries({ queryKey: ['/api/models'] });
+              queryClient.invalidateQueries({ queryKey: ['/api/dimensions', importExportModel?.id] });
+              queryClient.invalidateQueries({ queryKey: ['/api/questions', importExportModel?.id] });
+              toast({
+                title: "Import Complete",
+                description: "Model data has been imported successfully.",
+              });
+            }}
+          />
+        </Suspense>
+      )}
 
-      <AssessmentReviewDialog
-        assessmentId={reviewAssessmentId}
-        onClose={() => setReviewAssessmentId(null)}
-      />
+      {reviewAssessmentId && (
+        <Suspense fallback={null}>
+          <AssessmentReviewDialog
+            assessmentId={reviewAssessmentId}
+            onClose={() => setReviewAssessmentId(null)}
+          />
+        </Suspense>
+      )}
 
     </SidebarProvider>
     </TooltipProvider>
