@@ -16,7 +16,8 @@ import {
   Radar,
   Legend,
 } from "recharts";
-import { TrendingUp, TrendingDown, Minus, BarChart3, Sparkles, Lock, Users, Target, AlertCircle } from "lucide-react";
+import { TrendingUp, TrendingDown, Minus, BarChart3, Sparkles, Lock, Users, Target, AlertCircle, Download } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -260,8 +261,19 @@ function StrengthsAndGapsCard({ dimensions }: { dimensions: DimensionInsight[] }
   );
 }
 
-function NarrativeCard({ data, scope, userContext }: { data: InsightsResponse; scope: "user" | "tenant"; userContext?: { industry?: string; companySize?: string; jobTitle?: string } }) {
-  const [narrative, setNarrative] = useState<string | null>(null);
+function NarrativeCard({
+  data,
+  scope,
+  userContext,
+  narrative,
+  setNarrative,
+}: {
+  data: InsightsResponse;
+  scope: "user" | "tenant";
+  userContext?: { industry?: string; companySize?: string; jobTitle?: string };
+  narrative: string | null;
+  setNarrative: (n: string | null) => void;
+}) {
   const [error, setError] = useState<string | null>(null);
 
   const generate = useMutation({
@@ -333,9 +345,82 @@ function NarrativeCard({ data, scope, userContext }: { data: InsightsResponse; s
   );
 }
 
-function InsightsContent({ data, scope, userContext }: { data: InsightsResponse; scope: "user" | "tenant"; userContext?: { industry?: string; companySize?: string; jobTitle?: string } }) {
+function InsightsContent({
+  data,
+  scope,
+  userContext,
+  userName,
+  userCompany,
+}: {
+  data: InsightsResponse;
+  scope: "user" | "tenant";
+  userContext?: { industry?: string; companySize?: string; jobTitle?: string };
+  userName?: string;
+  userCompany?: string;
+}) {
   const [, setLocation] = useLocation();
   const isTenant = data.scope === "tenant";
+  const { toast } = useToast();
+  const [narrative, setNarrative] = useState<string | null>(null);
+  const [downloading, setDownloading] = useState(false);
+
+  const handleDownloadPdf = async () => {
+    try {
+      setDownloading(true);
+      const { generateInsightsPDF } = await import("@/services/insightsPdfGenerator");
+      const tenantData = data.scope === "tenant" ? (data as TenantInsightsResponse) : null;
+      const pdf = generateInsightsPDF({
+        scope,
+        tenantName: tenantData?.tenantName,
+        cohortSize: tenantData?.cohortSize,
+        totalCompleted: data.totalCompleted,
+        models: data.models.map(m => ({
+          modelId: m.modelId,
+          modelName: m.modelName,
+          modelClass: m.modelClass,
+          maxScore: m.maxScore,
+          assessmentCount: m.assessmentCount,
+          latestScore: m.latestScore,
+          latestScorePercent: m.latestScorePercent,
+          latestLabel: m.latestLabel,
+          trendDelta: m.trendDelta,
+          trendDirection: m.trendDirection,
+          trend: m.trend.map(t => ({
+            completedAt: t.completedAt,
+            score: t.score,
+            scorePercent: t.scorePercent,
+          })),
+        })),
+        crossModelDimensions: data.crossModelDimensions.map(d => ({
+          label: d.label,
+          averagePercent: d.averagePercent,
+          modelCount: d.modelCount,
+        })),
+        narrative,
+        userContext: scope === "user" ? {
+          name: userName,
+          company: userCompany,
+          jobTitle: userContext?.jobTitle,
+          industry: userContext?.industry,
+        } : undefined,
+      });
+      const today = new Date().toISOString().split("T")[0];
+      pdf.save(`orion-insights-${scope}-${today}.pdf`);
+      toast({
+        title: "PDF downloaded",
+        description: "Your Insights report has been downloaded.",
+      });
+    } catch (err) {
+      console.error("Failed to generate insights PDF:", err);
+      toast({
+        title: "Could not generate PDF",
+        description: "Something went wrong while building your report. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setDownloading(false);
+    }
+  };
 
   if (data.totalCompleted === 0) {
     return (
@@ -383,9 +468,20 @@ function InsightsContent({ data, scope, userContext }: { data: InsightsResponse;
           <p className="text-sm text-muted-foreground mb-4">
             You've completed your first assessment ({m.modelName}, {m.latestScore}/{m.maxScore} · {m.latestScorePercent}%). Take another assessment — or retake this one — to unlock trend lines, cross-model strengths, and an AI portfolio narrative.
           </p>
-          <Button onClick={() => setLocation("/")} data-testid="button-browse-more">
-            Browse Assessments
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button onClick={() => setLocation("/")} data-testid="button-browse-more">
+              Browse Assessments
+            </Button>
+            <Button
+              onClick={handleDownloadPdf}
+              disabled={downloading}
+              variant="outline"
+              data-testid="button-download-insights-pdf"
+            >
+              <Download className="h-4 w-4" />
+              {downloading ? "Preparing PDF..." : "Download PDF"}
+            </Button>
+          </div>
         </Card>
         <PerModelTrendCard model={m} />
       </div>
@@ -403,7 +499,25 @@ function InsightsContent({ data, scope, userContext }: { data: InsightsResponse;
         </Alert>
       )}
 
-      <NarrativeCard data={data} scope={scope} userContext={userContext} />
+      <div className="flex justify-end">
+        <Button
+          onClick={handleDownloadPdf}
+          disabled={downloading}
+          variant="outline"
+          data-testid="button-download-insights-pdf"
+        >
+          <Download className="h-4 w-4" />
+          {downloading ? "Preparing PDF..." : "Download PDF"}
+        </Button>
+      </div>
+
+      <NarrativeCard
+        data={data}
+        scope={scope}
+        userContext={userContext}
+        narrative={narrative}
+        setNarrative={setNarrative}
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <CrossModelRadarCard dimensions={data.crossModelDimensions} scope={scope} />
@@ -475,7 +589,7 @@ export default function Insights() {
               ) : userQuery.error ? (
                 <Alert variant="destructive"><AlertCircle className="h-4 w-4" /><AlertDescription>Failed to load insights.</AlertDescription></Alert>
               ) : userQuery.data ? (
-                <InsightsContent data={userQuery.data} scope="user" userContext={userContext} />
+                <InsightsContent data={userQuery.data} scope="user" userContext={userContext} userName={user?.name || undefined} userCompany={user?.company || undefined} />
               ) : null}
             </TabsContent>
 
@@ -494,7 +608,7 @@ export default function Insights() {
         ) : userQuery.error ? (
           <Alert variant="destructive"><AlertCircle className="h-4 w-4" /><AlertDescription>Failed to load insights.</AlertDescription></Alert>
         ) : userQuery.data ? (
-          <InsightsContent data={userQuery.data} scope="user" userContext={userContext} />
+          <InsightsContent data={userQuery.data} scope="user" userContext={userContext} userName={user?.name || undefined} userCompany={user?.company || undefined} />
         ) : null}
       </main>
 
