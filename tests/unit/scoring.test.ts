@@ -347,6 +347,237 @@ describe('calculateAssessmentScore - 100-point scale (percentage of max)', () =>
   });
 });
 
+describe('scoreResponse - true_false (boolean) questions', () => {
+  it('scores a true_false question by matching the selected answer id (500-point)', () => {
+    const q: ScoringQuestion = {
+      id: 'q',
+      dimensionId: null,
+      type: 'true_false',
+      answers: [
+        { id: 'yes', score: 500 },
+        { id: 'no', score: 100 },
+      ],
+    };
+    expect(scoreResponse(q, { questionId: 'q', answerId: 'yes' }, false)).toEqual({
+      score: 500,
+      maxPossible: 500,
+    });
+    expect(scoreResponse(q, { questionId: 'q', answerId: 'no' }, false)).toEqual({
+      score: 100,
+      maxPossible: 500,
+    });
+  });
+
+  it('scores a true_false question on the 100-point scale by raw answer score', () => {
+    const q: ScoringQuestion = {
+      id: 'q',
+      dimensionId: null,
+      type: 'true_false',
+      answers: [
+        { id: 'yes', score: 4 },
+        { id: 'no', score: 0 },
+      ],
+    };
+    expect(scoreResponse(q, { questionId: 'q', answerId: 'yes' }, true)).toEqual({
+      score: 4,
+      maxPossible: 4,
+    });
+    expect(scoreResponse(q, { questionId: 'q', answerId: 'no' }, true)).toEqual({
+      score: 0,
+      maxPossible: 4,
+    });
+  });
+
+  it('returns null when a true_false response has no matching answer id', () => {
+    const q: ScoringQuestion = {
+      id: 'q',
+      dimensionId: null,
+      type: 'true_false',
+      answers: [
+        { id: 'yes', score: 500 },
+        { id: 'no', score: 100 },
+      ],
+    };
+    expect(scoreResponse(q, { questionId: 'q', answerId: 'maybe' }, false)).toBeNull();
+  });
+});
+
+describe('scoreResponse - text questions', () => {
+  it('scores a text question by the matched answer id (500-point)', () => {
+    const q: ScoringQuestion = {
+      id: 'q',
+      dimensionId: null,
+      type: 'text',
+      answers: [
+        { id: 'low', score: 100 },
+        { id: 'mid', score: 300 },
+        { id: 'high', score: 500 },
+      ],
+    };
+    expect(scoreResponse(q, { questionId: 'q', answerId: 'mid' }, false)).toEqual({
+      score: 300,
+      maxPossible: 500,
+    });
+  });
+
+  it('returns null for a text question with no matching answer id', () => {
+    const q: ScoringQuestion = {
+      id: 'q',
+      dimensionId: null,
+      type: 'text',
+      answers: [{ id: 'a', score: 100 }],
+    };
+    expect(scoreResponse(q, { questionId: 'q', answerId: 'unknown' }, false)).toBeNull();
+    // No answerId at all — also unscoreable.
+    expect(scoreResponse(q, { questionId: 'q' }, false)).toBeNull();
+  });
+});
+
+describe('calculateAssessmentScore - mixed types including boolean and text', () => {
+  it('aggregates single, multi-select, numeric, true_false and text on the 500-point scale', () => {
+    const questions: ScoringQuestion[] = [
+      // single (multiple_choice) — score 300
+      mcQuestion('q1', 'dim-strategy', [100, 300, 500]),
+      // multi_select — 2 of 4 selected → 100 + (2/4 * 400) = 300
+      {
+        id: 'q2',
+        dimensionId: 'dim-strategy',
+        type: 'multi_select',
+        answers: [
+          { id: 'a', score: 0 },
+          { id: 'b', score: 0 },
+          { id: 'c', score: 0 },
+          { id: 'd', score: 0 },
+        ],
+      },
+      // numeric — 50% of 0..100 → 100 + 200 = 300
+      {
+        id: 'q3',
+        dimensionId: 'dim-people',
+        type: 'numeric',
+        minValue: 0,
+        maxValue: 100,
+        answers: [],
+      },
+      // true_false — score 300
+      {
+        id: 'q4',
+        dimensionId: 'dim-people',
+        type: 'true_false',
+        answers: [
+          { id: 'yes', score: 500 },
+          { id: 'meh', score: 300 },
+          { id: 'no', score: 100 },
+        ],
+      },
+      // text — score 300
+      {
+        id: 'q5',
+        dimensionId: 'dim-people',
+        type: 'text',
+        answers: [
+          { id: 'low', score: 100 },
+          { id: 'mid', score: 300 },
+          { id: 'high', score: 500 },
+        ],
+      },
+    ];
+
+    const responses = [
+      { questionId: 'q1', answerId: 'q1-a1' },
+      { questionId: 'q2', answerIds: ['a', 'b'] },
+      { questionId: 'q3', numericValue: 50 },
+      { questionId: 'q4', answerId: 'meh' },
+      { questionId: 'q5', answerId: 'mid' },
+    ];
+
+    const result = calculateAssessmentScore({
+      questions,
+      responses,
+      dimensions,
+      maturityScale: FIVE_HUNDRED_SCALE,
+    });
+
+    expect(result.use100PointScale).toBe(false);
+    expect(result.maxMaturityScore).toBe(500);
+    expect(result.overallScore).toBe(300);
+    expect(result.dimensionScores).toEqual({ strategy: 300, people: 300 });
+    expect(result.label).toBe('Operational');
+  });
+
+  it('aggregates single, multi-select, numeric, true_false and text on the 100-point scale', () => {
+    const questions: ScoringQuestion[] = [
+      // single — 2 of 4
+      mcQuestion('q1', 'dim-strategy', [0, 1, 2, 3, 4]),
+      // multi_select — 2 of 4
+      {
+        id: 'q2',
+        dimensionId: 'dim-strategy',
+        type: 'multi_select',
+        answers: [
+          { id: 'a', score: 0 },
+          { id: 'b', score: 0 },
+          { id: 'c', score: 0 },
+          { id: 'd', score: 0 },
+        ],
+      },
+      // numeric — 5/10 → 2 of 4
+      {
+        id: 'q3',
+        dimensionId: 'dim-people',
+        type: 'numeric',
+        minValue: 0,
+        maxValue: 10,
+        answers: [],
+      },
+      // true_false — 2 of 4
+      {
+        id: 'q4',
+        dimensionId: 'dim-people',
+        type: 'true_false',
+        answers: [
+          { id: 'yes', score: 4 },
+          { id: 'partial', score: 2 },
+          { id: 'no', score: 0 },
+        ],
+      },
+      // text — 2 of 4
+      {
+        id: 'q5',
+        dimensionId: 'dim-people',
+        type: 'text',
+        answers: [
+          { id: 'low', score: 0 },
+          { id: 'mid', score: 2 },
+          { id: 'high', score: 4 },
+        ],
+      },
+    ];
+
+    const responses = [
+      { questionId: 'q1', answerId: 'q1-a2' },
+      { questionId: 'q2', answerIds: ['a', 'b'] },
+      { questionId: 'q3', numericValue: 5 },
+      { questionId: 'q4', answerId: 'partial' },
+      { questionId: 'q5', answerId: 'mid' },
+    ];
+
+    const result = calculateAssessmentScore({
+      questions,
+      responses,
+      dimensions,
+      maturityScale: HUNDRED_SCALE,
+    });
+
+    // 5 questions × (2/4) → 50%
+    expect(result.use100PointScale).toBe(true);
+    expect(result.maxMaturityScore).toBe(100);
+    expect(result.overallScore).toBe(50);
+    expect(result.dimensionScores).toEqual({ strategy: 50, people: 50 });
+    expect(result.label).toBe('Developing');
+  });
+});
+
 describe('calculateAssessmentScore - degenerate inputs', () => {
   it('returns zero/lowest label when there are no responses', () => {
     const result = calculateAssessmentScore({
