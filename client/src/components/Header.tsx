@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
-import { Moon, Sun, User, LogOut, HelpCircle, BookOpen, FileText, Ticket, Bot, Mail, MoreVertical, Check, Eye, BarChart3 } from "lucide-react";
+import { Moon, Sun, User, LogOut, HelpCircle, BookOpen, FileText, Ticket, Bot, Mail, MoreVertical, Check, Eye, BarChart3, Languages } from "lucide-react";
 import { useTheme } from "./ThemeProvider";
+import { SUPPORTED_LANGUAGES, type SupportedLocale } from "@/lib/i18n";
 import { useAuth } from "@/hooks/use-auth";
 import { USER_ROLES } from "@shared/constants";
 import {
@@ -16,6 +18,7 @@ import {
 import synozurLogo from '@assets/SA-Logo-Horizontal-color_1759930898755.png';
 import { SynozurAppSwitcher } from "./SynozurAppSwitcher";
 import { HelpChatPanel } from "./HelpChatPanel";
+import { LanguageSwitcher } from "./LanguageSwitcher";
 import { useTenantBranding, useBrandingPreview } from "@/hooks/use-tenant-branding";
 
 // Helper function to check if user has admin permissions
@@ -39,6 +42,8 @@ function canManageModels(user: any): boolean {
 
 export function Header() {
   const { theme, setTheme, highContrast, setHighContrast } = useTheme();
+  const { t, i18n } = useTranslation();
+  const currentLang = (i18n.language || "en").split("-")[0] as SupportedLocale;
   const { user, logout, logoutMutation } = useAuth();
   const [, setLocation] = useLocation();
   const [showHelpChat, setShowHelpChat] = useState(false);
@@ -196,6 +201,11 @@ export function Header() {
               </DropdownMenuContent>
             </DropdownMenu>
 
+            {/* Language switcher - hidden on small screens (collapses into overflow menu) */}
+            <div className="hidden sm:inline-flex">
+              <LanguageSwitcher />
+            </div>
+
             {/* Display preferences dropdown - hidden on small screens (collapses into overflow menu) */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -232,6 +242,21 @@ export function Header() {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
                 {displayMenuItems}
+                <DropdownMenuSeparator />
+                <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground flex items-center gap-2">
+                  <Languages className="h-4 w-4" />
+                  {t("common.language")}
+                </div>
+                {SUPPORTED_LANGUAGES.map((lang) => (
+                  <DropdownMenuItem
+                    key={lang.code}
+                    onClick={() => void i18n.changeLanguage(lang.code)}
+                    data-testid={`button-language-mobile-${lang.code}`}
+                  >
+                    <span className="flex-1">{lang.nativeLabel}</span>
+                    {currentLang === lang.code && <Check className="ml-2 h-4 w-4" />}
+                  </DropdownMenuItem>
+                ))}
                 <DropdownMenuSeparator />
                 {helpMenuItems}
               </DropdownMenuContent>

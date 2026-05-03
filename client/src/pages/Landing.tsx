@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { useLocation } from "wouter";
+import { useTranslation } from "react-i18next";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -25,6 +26,7 @@ function ModelCard({
   aiModelId?: string;
   highlightPrivate?: boolean;
 }) {
+  const { t } = useTranslation();
   return (
     <Card
       className="group relative overflow-hidden hover-elevate transition-all duration-300 cursor-pointer border-2 hover:border-primary/50 p-0"
@@ -56,14 +58,14 @@ function ModelCard({
           )}
           <div className="flex flex-col gap-1.5 ml-auto">
             {model.id === aiModelId && (
-              <Badge className="bg-primary/10 text-primary border-primary/20">Featured</Badge>
+              <Badge className="bg-primary/10 text-primary border-primary/20">{t('landing.featured')}</Badge>
             )}
             {model.modelClass === 'individual' && (
               <Badge
                 className="bg-primary/90 text-primary-foreground border-primary-foreground/20"
                 data-testid={`badge-individual-${model.slug}`}
               >
-                Individual
+                {t('landing.individual')}
               </Badge>
             )}
           </div>
@@ -74,14 +76,14 @@ function ModelCard({
         </h3>
 
         <p className="text-sm text-muted-foreground mb-4 line-clamp-3">
-          {model.description || "Comprehensive assessment to evaluate your organization's maturity level"}
+          {model.description || t('landing.defaultModelDescription')}
         </p>
 
         <div className="flex items-center justify-between flex-wrap gap-2">
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-1 text-sm text-muted-foreground">
               <FileText className="h-4 w-4" />
-              <span>{model.questionCount} questions</span>
+              <span>{t('landing.questions', { count: model.questionCount })}</span>
             </div>
             <div className="flex items-center gap-1 text-sm text-muted-foreground">
               <Clock className="h-4 w-4" />
@@ -94,7 +96,7 @@ function ModelCard({
             className="group-hover:text-primary"
             data-testid={`button-start-${model.slug}`}
           >
-            Start
+            {t('common.start')}
             <ArrowRight className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-1" />
           </Button>
         </div>
@@ -104,6 +106,7 @@ function ModelCard({
 }
 
 export default function Landing() {
+  const { t } = useTranslation();
   useEffect(() => {
     fetch('/api/traffic/track', {
       method: 'POST',
@@ -223,36 +226,35 @@ export default function Landing() {
               />
             </div>
             <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-4 sm:mb-6 text-white md:bg-gradient-to-r md:from-blue-400 md:via-purple-400 md:to-pink-400 md:bg-clip-text md:text-transparent">
-              Digital Transformation Maturity Models
+              {t('landing.heroTitle')}
             </h2>
             <p className="text-base sm:text-xl md:text-2xl text-white/90 max-w-4xl mx-auto mb-6 sm:mb-8">
-              Take Synozur's comprehensive assessments to identify where your organization stands on your transformation journey.
-              Receive a precise Maturity Score and personalized recommendations to advance your capabilities.
+              {t('landing.heroSubtitle')}
             </p>
             <p className="text-sm sm:text-lg text-white/80 max-w-3xl mx-auto mb-6 sm:mb-8">
-              Orion is still in beta.{' '}
+              {t('landing.betaNotice')}{' '}
               <a
                 href="https://www.synozur.com/join"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="underline hover:text-white transition-colors"
               >
-                Sign up
+                {t('landing.signUpForUpdates')}
               </a>
-              {' '}for news and updates on new features and models.
+              {t('landing.signUpSuffix')}
             </p>
 
             <div className="flex items-center justify-center gap-3 flex-wrap" data-testid="text-powered-by">
               <div className="flex items-center gap-2 px-4 py-2 rounded-md bg-white/10 backdrop-blur-sm border border-white/20">
                 <svg className="h-4 w-4" viewBox="0 0 16 16" fill="currentColor" opacity="0.9"><rect x="0" y="0" width="7" height="7" /><rect x="9" y="0" width="7" height="7" /><rect x="0" y="9" width="7" height="7" /><rect x="9" y="9" width="7" height="7" /></svg>
                 <span className="text-sm text-white/80">
-                  Built on <span className="font-semibold text-white/95">Microsoft Azure AI Foundry</span>
+                  {t('landing.builtOn')} <span className="font-semibold text-white/95">Microsoft Azure AI Foundry</span>
                 </span>
               </div>
               <div className="flex items-center gap-2 px-4 py-2 rounded-md bg-white/10 backdrop-blur-sm border border-white/20">
                 <Sparkles className="h-4 w-4 text-white/90" />
                 <span className="text-sm text-white/80">
-                  Featuring <span className="font-semibold text-white/95">GPT-5.4</span> & <span className="font-semibold text-white/95">Claude Opus 4.6</span>
+                  {t('landing.featuring')} <span className="font-semibold text-white/95">GPT-5.4</span> & <span className="font-semibold text-white/95">Claude Opus 4.6</span>
                 </span>
               </div>
             </div>
@@ -265,7 +267,7 @@ export default function Landing() {
             <div className="container mx-auto px-4">
               <div className="max-w-6xl mx-auto">
                 <Badge className="mb-6 px-4 py-1 text-sm bg-primary/10 text-primary border-primary/20">
-                  Featured Assessment
+                  {t('landing.featuredAssessment')}
                 </Badge>
 
                 <div className="text-center mb-8 sm:mb-12">
@@ -296,7 +298,7 @@ export default function Landing() {
                         <div className="flex items-center gap-6 text-sm">
                           <div className="flex items-center gap-2">
                             <FileText className="h-5 w-5 text-primary" />
-                            <span className="font-semibold">{featuredModel.questionCount} Questions</span>
+                            <span className="font-semibold">{t('landing.questionsCount', { count: featuredModel.questionCount })}</span>
                           </div>
                           <div className="flex items-center gap-2">
                             <Clock className="h-5 w-5 text-primary" />
@@ -311,7 +313,7 @@ export default function Landing() {
                     {featuredDimensions.length > 0 && (
                       <div className="mb-6">
                         <h3 className="text-sm font-semibold text-muted-foreground mb-3 uppercase tracking-wide">
-                          Assessment Dimensions
+                          {t('landing.assessmentDimensions')}
                         </h3>
                         <div className="grid grid-cols-2 gap-2">
                           {featuredDimensions.slice(0, 6).map((dimension) => (
@@ -330,7 +332,7 @@ export default function Landing() {
                       onClick={() => setLocation(`/${featuredModel.slug}`)}
                       data-testid={`button-start-featured-${featuredModel.slug}`}
                     >
-                      Start {featuredModel.name}
+                      {t('landing.startFeatured', { name: featuredModel.name })}
                       <ArrowRight className="ml-2 h-5 w-5" />
                     </Button>
                   </div>
@@ -358,16 +360,16 @@ export default function Landing() {
                       className="px-3 py-1 text-sm border-accent/30 text-accent-foreground/80"
                       data-testid="badge-tenant-featured-label"
                     >
-                      Exclusive to {tenantName}
+                      {t('landing.exclusiveTo', { tenant: tenantName })}
                     </Badge>
                   </div>
                 </div>
 
                 <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-2">
-                  Featured for {tenantName}
+                  {t('landing.featuredFor', { tenant: tenantName })}
                 </h2>
                 <p className="text-muted-foreground mb-10 max-w-2xl">
-                  These assessments have been privately configured for your organization. They are only accessible to members of {tenantName}.
+                  {t('landing.privateDescription', { tenant: tenantName })}
                 </p>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
@@ -395,14 +397,13 @@ export default function Landing() {
           <div className="container mx-auto px-4 relative z-10">
             <div className="text-center mb-10 sm:mb-16">
               <Badge className="mb-4 px-4 py-1 text-sm" variant="outline">
-                Comprehensive Assessment Suite
+                {t('landing.comprehensiveSuite')}
               </Badge>
               <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-3 sm:mb-4 text-white md:bg-gradient-to-r md:from-blue-400 md:via-purple-400 md:to-pink-400 md:bg-clip-text md:text-transparent">
-                All Maturity Models
+                {t('landing.allModels')}
               </h2>
               <p className="text-base sm:text-xl text-muted-foreground max-w-3xl mx-auto">
-                Choose from our complete collection of enterprise maturity assessments.
-                Each model provides tailored insights for your transformation journey.
+                {t('landing.allModelsDescription')}
               </p>
             </div>
 
@@ -419,9 +420,9 @@ export default function Landing() {
                   ))}
                 </div>
               }
-              emptyTitle="No Models Available"
-              emptyDescription="Check back soon for our maturity assessment models."
-              errorTitle="We couldn't load assessments"
+              emptyTitle={t('landing.noModels')}
+              emptyDescription={t('landing.noModelsDescription')}
+              errorTitle={t('landing.errorLoadingAssessments')}
             >
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 max-w-7xl mx-auto">
                 {regularModels.map((model) => (
@@ -440,9 +441,9 @@ export default function Landing() {
         {/* CTA Section */}
         <section className="py-12 sm:py-16 md:py-20 bg-primary text-white">
           <div className="container mx-auto px-4 text-center">
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4 sm:mb-6">Feeling Immature?</h2>
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4 sm:mb-6">{t('landing.ctaTitle')}</h2>
             <p className="text-base sm:text-xl text-white/90 mb-6 sm:mb-8 max-w-3xl mx-auto">
-              Join leading organizations that are using Synozur's assessment to accelerate their transformation journey
+              {t('landing.ctaSubtitle')}
             </p>
             <div className="flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4 justify-center items-center">
               <Button
@@ -452,7 +453,7 @@ export default function Landing() {
                 disabled={createAssessment.isPending || !aiModel}
                 data-testid="button-start-assessment-cta"
               >
-                Start Your Assessment
+                {t('landing.startYourAssessment')}
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
               <Button
@@ -462,14 +463,14 @@ export default function Landing() {
                 onClick={() => window.open('https://www.synozur.com', '_blank')}
                 data-testid="button-visit-synozur"
               >
-                Visit Synozur.com
+                {t('landing.visitSynozur')}
               </Button>
             </div>
 
             {regularModels.length > 0 && (
               <div className="mt-12 pt-8 border-t border-white/20">
                 <p className="text-white/80 mb-4">
-                  Can't find the assessment you're looking for?
+                  {t('landing.cantFind')}
                 </p>
                 <Button
                   variant="outline"
@@ -477,7 +478,7 @@ export default function Landing() {
                   onClick={() => window.open('https://www.synozur.com/contact', '_blank')}
                   data-testid="button-request-custom"
                 >
-                  Request Custom Assessment
+                  {t('landing.requestCustom')}
                 </Button>
               </div>
             )}

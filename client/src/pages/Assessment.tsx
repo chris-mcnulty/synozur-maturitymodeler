@@ -12,6 +12,7 @@ import { ChevronLeft, ChevronRight, AlertCircle } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useTranslation } from "react-i18next";
 import type { Assessment as AssessmentType, Question, Answer, Dimension } from "@shared/schema";
 
 interface QuestionWithAnswers extends Question {
@@ -58,6 +59,7 @@ export default function Assessment() {
   const [, params] = useRoute("/assessment/:assessmentId");
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const { t } = useTranslation();
   const assessmentId = params?.assessmentId;
 
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -238,8 +240,8 @@ export default function Assessment() {
     failedPayloadsRef.current.set(questionId, payload);
     setSaveStatus("failed");
     toast({
-      title: "Couldn't save your answer",
-      description: "We'll keep retrying. Click an answer again to retry now.",
+      title: t('assessment.cantSaveTitle'),
+      description: t('assessment.cantSaveDescription'),
       variant: "destructive",
     });
     // eslint-disable-next-line no-console
@@ -262,10 +264,10 @@ export default function Assessment() {
     onError: (error: Error) => {
       console.error('Failed to calculate results:', error);
       toast({
-        title: "Unable to complete assessment",
+        title: t('assessment.unableCompleteTitle'),
         description: error.message
-          ? `${error.message} Please ensure you have answered all questions.`
-          : "Please ensure all questions are answered.",
+          ? `${error.message} ${t('assessment.unableCompleteDescription')}`
+          : t('assessment.unableCompleteDescription'),
         variant: "destructive",
       });
     },
@@ -462,11 +464,11 @@ export default function Assessment() {
                 <div className="flex-1">
                   <h3 className="font-semibold mb-2" data-testid="text-incomplete-title">
                     {unansweredQuestions.length === 1
-                      ? "1 question still needs an answer"
-                      : `${unansweredQuestions.length} questions still need answers`}
+                      ? t('assessment.incompleteOne')
+                      : t('assessment.incompleteMany', { count: unansweredQuestions.length })}
                   </h3>
                   <p className="text-sm text-muted-foreground mb-4">
-                    Click any question below to jump to it and complete your assessment.
+                    {t('assessment.incompleteHint')}
                   </p>
                   <ul className="space-y-2">
                     {unansweredQuestions.map(({ q, index }) => (
@@ -504,8 +506,8 @@ export default function Assessment() {
               data-testid="button-previous"
             >
               <ChevronLeft className="mr-1 sm:mr-2 h-4 w-4" />
-              <span className="hidden sm:inline">Previous</span>
-              <span className="sm:hidden">Back</span>
+              <span className="hidden sm:inline">{t('common.previous')}</span>
+              <span className="sm:hidden">{t('common.back')}</span>
             </Button>
             <Button
               onClick={handleNext}
@@ -516,10 +518,10 @@ export default function Assessment() {
               data-testid="button-next"
             >
               {calculateResults.isPending
-                ? "Calculating..."
+                ? t('common.calculating')
                 : isLast
-                ? "Complete"
-                : "Next"}
+                ? t('common.complete')
+                : t('common.next')}
               <ChevronRight className="ml-1 sm:ml-2 h-4 w-4" />
             </Button>
           </div>

@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 
 interface Answer {
   key: string;
@@ -36,6 +37,7 @@ export function QuestionCard({
   onAnswer, 
   selectedAnswer 
 }: QuestionCardProps) {
+  const { t } = useTranslation();
   const [selected, setSelected] = useState<string>(typeof selectedAnswer === 'string' ? selectedAnswer : "");
   const [multiSelected, setMultiSelected] = useState<string[]>(Array.isArray(selectedAnswer) ? selectedAnswer : []);
   const [numericValue, setNumericValue] = useState(typeof selectedAnswer === 'string' ? selectedAnswer : "");
@@ -71,19 +73,19 @@ export function QuestionCard({
     // Validate the numeric value
     const numValue = parseFloat(value);
     if (value === "") {
-      setNumericError("Please enter a value");
+      setNumericError(t('assessment.valueRequired'));
       return;
     }
     if (isNaN(numValue)) {
-      setNumericError("Please enter a valid number");
+      setNumericError(t('assessment.invalidNumber'));
       return;
     }
     if (minValue !== undefined && numValue < minValue) {
-      setNumericError(`Value must be at least ${minValue}`);
+      setNumericError(t('assessment.valueAtLeast', { min: minValue }));
       return;
     }
     if (maxValue !== undefined && numValue > maxValue) {
-      setNumericError(`Value must be at most ${maxValue}`);
+      setNumericError(t('assessment.valueAtMost', { max: maxValue }));
       return;
     }
     
@@ -123,7 +125,7 @@ export function QuestionCard({
         </RadioGroup>
       ) : questionType === 'multi_select' ? (
         <div className="space-y-2 sm:space-y-3" role="group" aria-label={question}>
-          <p className="text-sm text-muted-foreground mb-3 sm:mb-4">Select all that apply</p>
+          <p className="text-sm text-muted-foreground mb-3 sm:mb-4">{t('assessment.selectAllThatApply')}</p>
           {answers.map((answer) => (
             <div
               key={answer.key}
@@ -149,7 +151,7 @@ export function QuestionCard({
           ))}
           {multiSelected.length > 0 && (
             <p className="text-sm text-muted-foreground mt-2" aria-live="polite">
-              {multiSelected.length} option{multiSelected.length !== 1 ? 's' : ''} selected
+              {t('assessment.optionSelected', { count: multiSelected.length })}
             </p>
           )}
         </div>
@@ -169,7 +171,7 @@ export function QuestionCard({
                 htmlFor="true"
                 className="flex-1 cursor-pointer font-medium text-sm sm:text-base"
               >
-                True
+                {t('assessment.true')}
               </Label>
             </div>
             <div
@@ -185,7 +187,7 @@ export function QuestionCard({
                 htmlFor="false"
                 className="flex-1 cursor-pointer font-medium text-sm sm:text-base"
               >
-                False
+                {t('assessment.false')}
               </Label>
             </div>
           </div>
@@ -195,14 +197,14 @@ export function QuestionCard({
           <Textarea
             value={selected}
             onChange={(e) => handleSelect(e.target.value)}
-            placeholder={placeholder || "Enter your answer here..."}
+            placeholder={placeholder || t('assessment.textPlaceholder')}
             className="min-h-[120px] resize-none"
             data-testid="textarea-text-answer"
             aria-label={question}
           />
           {selected.length > 0 && (
             <p className="text-sm text-muted-foreground">
-              {selected.length} characters
+              {t('assessment.characters', { count: selected.length })}
             </p>
           )}
         </div>
@@ -210,7 +212,7 @@ export function QuestionCard({
         <div className="space-y-4">
           {minValue !== undefined && maxValue !== undefined && (
             <p className="text-sm text-muted-foreground">
-              Enter a value between {minValue} and {maxValue}{unit ? ` ${unit}` : ''}
+              {t('assessment.enterValueBetween', { min: minValue, max: maxValue, unit: unit ? ` ${unit}` : '' })}
             </p>
           )}
           
@@ -222,7 +224,7 @@ export function QuestionCard({
               onBlur={(e) => handleNumericChange(e.target.value)}
               min={minValue}
               max={maxValue}
-              placeholder={`Enter value${unit ? ` in ${unit}` : ''}`}
+              placeholder={unit ? t('assessment.enterValueIn', { unit }) : t('assessment.enterValue')}
               className={`max-w-xs ${numericError ? 'border-destructive' : ''}`}
               data-testid="input-numeric-answer"
               aria-label={question}

@@ -1,5 +1,6 @@
 import { useState, useCallback, useMemo, useEffect } from "react";
 import { useRoute, useLocation, Link } from "wouter";
+import { useTranslation } from "react-i18next";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -76,6 +77,7 @@ function getMaturityLevel(score: number, maturityScale?: Array<{
 }
 
 export default function Results() {
+  const { t } = useTranslation();
   const [, params] = useRoute("/results/:assessmentId");
   const [, setLocation] = useLocation();
   const assessmentId = params?.assessmentId;
@@ -653,8 +655,8 @@ export default function Results() {
               isError={!!resultError || !result}
               error={resultError as Error | null}
               onRetry={() => refetchResult()}
-              errorTitle="Results Not Available"
-              errorDescription="We couldn't find results for this assessment. The assessment may be incomplete, missing answers, or there was an error calculating results."
+              errorTitle={t('results.notAvailableTitle')}
+              errorDescription={t('results.notAvailableDescription')}
               loading={
                 <div className="space-y-8">
                   <div className="space-y-3 text-center">
@@ -691,14 +693,14 @@ export default function Results() {
                   onClick={() => setLocation(`/assessment/${assessmentId}`)}
                   data-testid="button-return-assessment"
                 >
-                  Return to Assessment
+                  {t('results.returnToAssessment')}
                 </Button>
                 <Button
                   variant="outline"
                   onClick={() => setLocation('/')}
                   data-testid="button-home"
                 >
-                  Back to Home
+                  {t('common.backToHome')}
                 </Button>
               </div>
             )}
@@ -782,16 +784,16 @@ export default function Results() {
             data-testid="button-back"
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
-            <span className="hidden sm:inline">Back to Assessments</span>
-            <span className="sm:hidden">Back</span>
+            <span className="hidden sm:inline">{t('common.backToAssessments')}</span>
+            <span className="sm:hidden">{t('common.back')}</span>
           </Button>
 
           <div className="text-center mb-8 sm:mb-12">
             <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-3 sm:mb-4 leading-tight" data-testid="text-title">
-              {assessment?.isProxy ? `${model.name} Results` : `Your ${model.name} Results`}
+              {assessment?.isProxy ? t('results.proxyResults', { name: model.name }) : t('results.yourResults', { name: model.name })}
             </h1>
             <p className="text-base sm:text-xl text-muted-foreground">
-              Assessment completed on {new Date().toLocaleDateString()}
+              {t('results.completedOn', { date: new Date().toLocaleDateString() })}
             </p>
             
             {/* Display proxy profile information if this is a proxy assessment */}
@@ -827,7 +829,7 @@ export default function Results() {
                   <div className="text-5xl sm:text-6xl md:text-7xl font-bold text-primary mb-2" data-testid="text-score">
                     {result.overallScore}
                   </div>
-                  <div className="text-base sm:text-lg text-muted-foreground">out of {maturityMaxScore}</div>
+                  <div className="text-base sm:text-lg text-muted-foreground">{t('results.outOf', { max: maturityMaxScore })}</div>
                 </div>
                 
                 <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full ${maturityLevel.bgColor} ${maturityLevel.borderColor} border`}>
@@ -844,24 +846,24 @@ export default function Results() {
               <div>
                 {benchmark && (
                   <div className="bg-muted/30 rounded-lg p-4 sm:p-6">
-                    <h3 className="font-semibold mb-4">Industry Benchmark</h3>
+                    <h3 className="font-semibold mb-4">{t('results.industryBenchmark')}</h3>
                     <div className="space-y-3">
                       <div>
                         <div className="flex justify-between text-sm mb-1">
-                          <span>Your Score</span>
+                          <span>{t('results.yourScore')}</span>
                           <span className="font-medium">{result.overallScore}</span>
                         </div>
                         <Progress value={(result.overallScore / maturityMaxScore) * 100} className="h-2" />
                       </div>
                       <div>
                         <div className="flex justify-between text-sm mb-1">
-                          <span>Industry Average</span>
+                          <span>{t('results.industryAverage')}</span>
                           <span className="font-medium">{benchmark.meanScore}</span>
                         </div>
                         <Progress value={(benchmark.meanScore / maturityMaxScore) * 100} className="h-2" />
                       </div>
                       <p className="text-xs text-muted-foreground mt-2">
-                        Based on {benchmark.sampleSize} organizations
+                        {t('results.basedOnSample', { count: benchmark.sampleSize })}
                       </p>
                     </div>
                   </div>
@@ -878,26 +880,26 @@ export default function Results() {
                   <Sparkles className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h3 className="text-xl sm:text-2xl font-bold mb-2 text-primary">AI-Powered Insights</h3>
+                  <h3 className="text-xl sm:text-2xl font-bold mb-2 text-primary">{t('results.aiInsights')}</h3>
                   <p className="text-sm sm:text-base text-muted-foreground mb-4">
-                    Create a free account to unlock your personalized AI-powered executive summary
+                    {t('results.aiInsightsCta')}
                   </p>
                   <Alert className="bg-background/50 border-primary/30 mb-4">
                     <Lock className="h-4 w-4 text-primary" />
                     <AlertDescription>
-                      <p className="font-medium mb-2">With a free account, you'll receive:</p>
+                      <p className="font-medium mb-2">{t('results.accountBenefits')}</p>
                       <ul className="space-y-1 text-sm">
                         <li className="flex items-center gap-2">
                           <CheckCircle2 className="h-4 w-4 text-primary" />
-                          <span>Detailed analysis of your maturity level</span>
+                          <span>{t('results.benefitAnalysis')}</span>
                         </li>
                         <li className="flex items-center gap-2">
                           <CheckCircle2 className="h-4 w-4 text-primary" />
-                          <span>AI-generated insights tailored to your responses</span>
+                          <span>{t('results.benefitInsights')}</span>
                         </li>
                         <li className="flex items-center gap-2">
                           <CheckCircle2 className="h-4 w-4 text-primary" />
-                          <span>Strategic recommendations for improvement</span>
+                          <span>{t('results.benefitRecommendations')}</span>
                         </li>
                       </ul>
                     </AlertDescription>
@@ -908,14 +910,14 @@ export default function Results() {
                       data-testid="button-signup-executive"
                     >
                       <Sparkles className="mr-2 h-4 w-4" />
-                      Create Free Account
+                      {t('results.createAccount')}
                     </Button>
                     <Button 
                       variant="outline" 
                       onClick={() => setLocation(`/auth?redirect=/results/${assessmentId}&claimAssessment=${assessmentId}`)} 
                       data-testid="button-login-executive"
                     >
-                      Log In
+                      {t('common.logIn')}
                     </Button>
                   </div>
                 </div>
@@ -923,12 +925,12 @@ export default function Results() {
             </Card>
           ) : (aiContentLoading || maturitySummary) && (
             <Card className="p-5 sm:p-6 md:p-8 mb-6 sm:mb-8">
-              <h3 className="text-xl sm:text-2xl font-bold mb-4 text-primary">Executive Summary</h3>
+              <h3 className="text-xl sm:text-2xl font-bold mb-4 text-primary">{t('results.executiveSummary')}</h3>
               {aiContentLoading && !maturitySummary ? (
                 <div className="space-y-3">
                   <div className="flex items-center gap-2 text-muted-foreground">
                     <div className="h-4 w-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                    <span>Analyzing your assessment results...</span>
+                    <span>{t('results.analyzing')}</span>
                   </div>
                   <div className="space-y-2">
                     <div className="h-4 bg-muted rounded animate-pulse" />
@@ -947,7 +949,7 @@ export default function Results() {
       {/* Dimension Breakdown */}
       <section className="py-8 sm:py-12">
         <div className="container mx-auto px-4 max-w-6xl">
-          <h2 className="text-2xl sm:text-3xl font-bold mb-6 sm:mb-8 text-center text-foreground">Dimension Breakdown</h2>
+          <h2 className="text-2xl sm:text-3xl font-bold mb-6 sm:mb-8 text-center text-foreground">{t('results.dimensionBreakdown')}</h2>
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
             {dimensionScores.map(dim => (
               <Card key={dim.key} className="p-4 sm:p-6" data-testid={`card-dimension-${dim.key}`}>
@@ -968,9 +970,9 @@ export default function Results() {
         <section className="py-8 sm:py-12" data-testid="section-recommended-courses">
           <div className="container mx-auto px-4 max-w-6xl">
             <div className="text-center mb-6 sm:mb-8">
-              <h2 className="text-2xl sm:text-3xl font-bold text-foreground">Recommended Courses</h2>
+              <h2 className="text-2xl sm:text-3xl font-bold text-foreground">{t('results.recommendedCourses')}</h2>
               <p className="text-sm sm:text-base text-muted-foreground mt-2">
-                Curated learning paths based on where your scores have the most room to grow
+                {t('results.recommendedCoursesSubtitle')}
               </p>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -1025,7 +1027,7 @@ export default function Results() {
       {/* Personalized Recommendations */}
       <section className="py-8 sm:py-12 bg-muted/30">
         <div className="container mx-auto px-4 max-w-6xl">
-          <h2 className="text-2xl sm:text-3xl font-bold mb-6 sm:mb-8 text-center text-foreground">Strategic Recommendations</h2>
+          <h2 className="text-2xl sm:text-3xl font-bold mb-6 sm:mb-8 text-center text-foreground">{t('results.strategicRecommendations')}</h2>
           
           {/* AI-Generated Recommendations Summary */}
           {!user && !model?.allowAnonymousResults ? (
@@ -1035,9 +1037,9 @@ export default function Results() {
                   <Target className="h-5 w-5 sm:h-6 sm:w-6 text-secondary" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h3 className="text-base sm:text-lg font-semibold mb-2 text-secondary">Your Transformation Roadmap</h3>
+                  <h3 className="text-base sm:text-lg font-semibold mb-2 text-secondary">{t('results.roadmapTitle')}</h3>
                   <p className="text-sm sm:text-base text-muted-foreground mb-4">
-                    Create a free account to unlock your personalized transformation roadmap with AI-powered strategic recommendations
+                    {t('results.roadmapCta')}
                   </p>
                   <div className="flex flex-wrap gap-2 sm:gap-3">
                     <Button 
@@ -1046,14 +1048,14 @@ export default function Results() {
                       data-testid="button-signup-roadmap"
                     >
                       <Sparkles className="mr-2 h-4 w-4" />
-                      Create Free Account
+                      {t('results.createAccount')}
                     </Button>
                     <Button 
                       variant="outline" 
                       onClick={() => setLocation(`/auth?redirect=/results/${assessmentId}&claimAssessment=${assessmentId}`)} 
                       data-testid="button-login-roadmap"
                     >
-                      Log In
+                      {t('common.logIn')}
                     </Button>
                   </div>
                 </div>
@@ -1061,12 +1063,12 @@ export default function Results() {
             </Card>
           ) : (aiContentLoading || recommendationsSummary) && (
             <Card className="p-6 mb-8 bg-background">
-              <h3 className="text-lg font-semibold mb-4 text-primary">Your Transformation Roadmap</h3>
+              <h3 className="text-lg font-semibold mb-4 text-primary">{t('results.roadmapTitle')}</h3>
               {aiContentLoading && !recommendationsSummary ? (
                 <div className="space-y-3">
                   <div className="flex items-center gap-2 text-muted-foreground">
                     <div className="h-4 w-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                    <span>Creating your transformation roadmap...</span>
+                    <span>{t('results.creatingRoadmap')}</span>
                   </div>
                   <div className="space-y-2">
                     <div className="h-4 bg-muted rounded animate-pulse" />
@@ -1102,18 +1104,18 @@ export default function Results() {
       {improvementResources.length > 0 && (
         <section className="py-8 sm:py-12">
           <div className="container mx-auto px-4 max-w-6xl">
-            <h2 className="text-2xl sm:text-3xl font-bold mb-6 sm:mb-8 text-center text-foreground">Improvement Resources</h2>
+            <h2 className="text-2xl sm:text-3xl font-bold mb-6 sm:mb-8 text-center text-foreground">{t('results.improvementResources')}</h2>
             <div className="space-y-4">
               {improvementResources.map((resource, idx) => (
                 <Card key={idx} className="p-6" data-testid={`card-resource-${idx}`}>
                   <div className="space-y-3">
                     <div>
-                      <h4 className="font-semibold text-base text-muted-foreground">Question</h4>
+                      <h4 className="font-semibold text-base text-muted-foreground">{t('results.question')}</h4>
                       <p className="text-base">{resource.question}</p>
                     </div>
                     {resource.answer && (
                       <div>
-                        <h4 className="font-semibold text-base text-muted-foreground">Your Answer</h4>
+                        <h4 className="font-semibold text-base text-muted-foreground">{t('results.yourAnswer')}</h4>
                         <p className="text-base">{resource.answer}</p>
                       </div>
                     )}
@@ -1121,7 +1123,7 @@ export default function Results() {
                       <div className="flex items-start gap-3 bg-primary/5 p-4 rounded-lg">
                         <Lightbulb className="h-5 w-5 text-primary mt-0.5" />
                         <div className="flex-1">
-                          <h4 className="font-semibold text-base mb-1">Improvement Recommendation</h4>
+                          <h4 className="font-semibold text-base mb-1">{t('results.improvementRecommendation')}</h4>
                           <p className="text-base text-muted-foreground">{resource.improvementStatement}</p>
                         </div>
                       </div>
@@ -1156,9 +1158,9 @@ export default function Results() {
         <div className="container mx-auto px-4 max-w-6xl">
           <Card className="p-5 sm:p-6 md:p-8 bg-primary/5">
             <div className="text-center mb-6">
-              <h2 className="text-xl sm:text-2xl font-bold mb-2 text-foreground">Get Your Full Report</h2>
+              <h2 className="text-xl sm:text-2xl font-bold mb-2 text-foreground">{t('results.getFullReport')}</h2>
               <p className="text-sm sm:text-base text-muted-foreground">
-                Download your comprehensive PDF report with detailed insights and action plans
+                {t('results.getFullReportDescription')}
               </p>
             </div>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -1171,12 +1173,12 @@ export default function Results() {
                 {aiContentLoading ? (
                   <>
                     <div className="mr-2 h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                    Generating Report...
+                    {t('results.generatingReport')}
                   </>
                 ) : (
                   <>
                     <Download className="mr-2 h-4 w-4" />
-                    Download PDF Report
+                    {t('results.downloadPdf')}
                   </>
                 )}
               </Button>
@@ -1190,12 +1192,12 @@ export default function Results() {
                 {aiContentLoading ? (
                   <>
                     <div className="mr-2 h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                    Preparing...
+                    {t('results.preparing')}
                   </>
                 ) : (
                   <>
                     <Mail className="mr-2 h-4 w-4" />
-                    Email Report
+                    {t('results.emailReport')}
                   </>
                 )}
               </Button>
@@ -1206,10 +1208,10 @@ export default function Results() {
               <div className="text-center mb-4">
                 <div className="flex items-center justify-center gap-2 mb-2">
                   <Share2 className="h-5 w-5 text-primary" />
-                  <h3 className="text-lg font-semibold">Share Your Results</h3>
+                  <h3 className="text-lg font-semibold">{t('results.shareResults')}</h3>
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  Inspire others on their transformation journey
+                  {t('results.shareSubtitle')}
                 </p>
               </div>
               <div className="flex flex-wrap gap-3 justify-center">
@@ -1345,9 +1347,9 @@ export default function Results() {
       {/* CTA Section */}
       <section className="py-10 sm:py-12 md:py-16 bg-gradient-to-b from-background to-primary/5">
         <div className="container mx-auto px-4 max-w-4xl text-center">
-          <h2 className="text-2xl sm:text-3xl font-bold mb-3 sm:mb-4">Ready to Transform Your Organization?</h2>
+          <h2 className="text-2xl sm:text-3xl font-bold mb-3 sm:mb-4">{t('results.readyTransform')}</h2>
           <p className="text-base sm:text-lg text-muted-foreground mb-6 sm:mb-8">
-            Connect with our transformation experts to create a custom roadmap
+            {t('results.readyTransformSubtitle')}
           </p>
           <div className="grid sm:grid-cols-3 gap-3 sm:gap-4 mb-6 sm:mb-8">
             <Card 
@@ -1355,14 +1357,14 @@ export default function Results() {
               onClick={() => window.open('https://www.synozur.com/start', '_blank')}
             >
               <Calendar className="h-8 w-8 mx-auto mb-2 text-primary" />
-              <h3 className="font-semibold">Schedule a Workshop</h3>
+              <h3 className="font-semibold">{t('results.scheduleWorkshop')}</h3>
             </Card>
             <Card 
               className="p-4 hover-elevate cursor-pointer"
               onClick={() => window.open('https://www.synozur.com/services-overview/default', '_blank')}
             >
               <BookOpen className="h-8 w-8 mx-auto mb-2 text-primary" />
-              <h3 className="font-semibold">Learn More</h3>
+              <h3 className="font-semibold">{t('common.learnMore')}</h3>
             </Card>
             <Card 
               className="p-4 hover-elevate cursor-pointer"
@@ -1372,7 +1374,7 @@ export default function Results() {
               }}
             >
               <Phone className="h-8 w-8 mx-auto mb-2 text-primary" />
-              <h3 className="font-semibold">Contact Our Experts</h3>
+              <h3 className="font-semibold">{t('results.contactExperts')}</h3>
             </Card>
           </div>
           <Button
@@ -1380,7 +1382,7 @@ export default function Results() {
             onClick={() => window.open('https://www.synozur.com', '_blank')}
             data-testid="button-contact"
           >
-            Visit Synozur.com
+            {t('landing.visitSynozur')}
           </Button>
         </div>
       </section>
@@ -1389,7 +1391,7 @@ export default function Results() {
       {model.generalResources && model.generalResources.length > 0 && (
         <section className="py-12 bg-muted/30">
           <div className="container mx-auto px-4 max-w-6xl">
-            <h2 className="text-3xl font-bold mb-8 text-center">Additional Resources</h2>
+            <h2 className="text-3xl font-bold mb-8 text-center">{t('results.additionalResources')}</h2>
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
               {model.generalResources.map((resource) => (
                 <Card key={resource.id} className="p-6 hover-elevate">
@@ -1411,7 +1413,7 @@ export default function Results() {
                         className="w-full"
                         data-testid={`button-resource-${resource.id}`}
                       >
-                        Learn More
+                        {t('common.learnMore')}
                       </Button>
                     )}
                   </div>
