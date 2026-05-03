@@ -163,6 +163,23 @@ CREATE TABLE "benchmarks" (
 	"updated_at" timestamp DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
+CREATE TABLE "certificates" (
+	"id" varchar PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"tenant_id" varchar NOT NULL,
+	"user_id" varchar NOT NULL,
+	"source_type" text NOT NULL,
+	"source_id" varchar,
+	"model_id" varchar,
+	"title" text NOT NULL,
+	"serial_number" text NOT NULL,
+	"issued_at" timestamp DEFAULT now() NOT NULL,
+	"expires_at" timestamp,
+	"pdf_url" text,
+	"revoked_at" timestamp,
+	CONSTRAINT "certificates_serial_number_unique" UNIQUE("serial_number"),
+	CONSTRAINT "uniq_certificates_source" UNIQUE("tenant_id","user_id","source_type","source_id")
+);
+--> statement-breakpoint
 CREATE TABLE "content_embeddings" (
 	"id" varchar PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"source_url" text NOT NULL,
@@ -249,6 +266,29 @@ CREATE TABLE "dimensions" (
 	"order" integer NOT NULL
 );
 --> statement-breakpoint
+CREATE TABLE "galaxy_attestation_signatures" (
+	"id" varchar PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"attestation_id" varchar NOT NULL,
+	"user_id" varchar NOT NULL,
+	"tenant_id" varchar NOT NULL,
+	"signed_at" timestamp DEFAULT now() NOT NULL,
+	"signature_text" text,
+	"ip_address" text,
+	CONSTRAINT "galaxy_attestation_signatures_attestation_id_user_id_unique" UNIQUE("attestation_id","user_id")
+);
+--> statement-breakpoint
+CREATE TABLE "galaxy_attestations" (
+	"id" varchar PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"tenant_id" varchar NOT NULL,
+	"title" text NOT NULL,
+	"body" text NOT NULL,
+	"version" text DEFAULT '1.0' NOT NULL,
+	"status" text DEFAULT 'active' NOT NULL,
+	"audience_roles" text[],
+	"created_at" timestamp DEFAULT now() NOT NULL,
+	"updated_at" timestamp DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
 CREATE TABLE "galaxy_audit_log" (
 	"id" varchar PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"tenant_id" varchar NOT NULL,
@@ -275,6 +315,8 @@ CREATE TABLE "galaxy_exposure_policies" (
 	"expose_recommendations" boolean DEFAULT true NOT NULL,
 	"expose_insights" boolean DEFAULT true NOT NULL,
 	"expose_certificates" boolean DEFAULT false NOT NULL,
+	"expose_courses" boolean DEFAULT true NOT NULL,
+	"expose_attestations" boolean DEFAULT true NOT NULL,
 	"exposed_model_ids" text[],
 	"audience_mode" text DEFAULT 'all' NOT NULL,
 	"audience_roles" text[],
@@ -725,6 +767,9 @@ ALTER TABLE "attestation_records" ADD CONSTRAINT "attestation_records_enrollment
 ALTER TABLE "attestation_records" ADD CONSTRAINT "attestation_records_lesson_id_lessons_id_fk" FOREIGN KEY ("lesson_id") REFERENCES "public"."lessons"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "attestation_records" ADD CONSTRAINT "attestation_records_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "benchmarks" ADD CONSTRAINT "benchmarks_model_id_models_id_fk" FOREIGN KEY ("model_id") REFERENCES "public"."models"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "certificates" ADD CONSTRAINT "certificates_tenant_id_tenants_id_fk" FOREIGN KEY ("tenant_id") REFERENCES "public"."tenants"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "certificates" ADD CONSTRAINT "certificates_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "certificates" ADD CONSTRAINT "certificates_model_id_models_id_fk" FOREIGN KEY ("model_id") REFERENCES "public"."models"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "course_enrollments" ADD CONSTRAINT "course_enrollments_course_id_courses_id_fk" FOREIGN KEY ("course_id") REFERENCES "public"."courses"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "course_enrollments" ADD CONSTRAINT "course_enrollments_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "course_modules" ADD CONSTRAINT "course_modules_course_id_courses_id_fk" FOREIGN KEY ("course_id") REFERENCES "public"."courses"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
@@ -734,6 +779,10 @@ ALTER TABLE "course_tags" ADD CONSTRAINT "course_tags_created_by_users_id_fk" FO
 ALTER TABLE "course_tenants" ADD CONSTRAINT "course_tenants_course_id_courses_id_fk" FOREIGN KEY ("course_id") REFERENCES "public"."courses"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "courses" ADD CONSTRAINT "courses_created_by_users_id_fk" FOREIGN KEY ("created_by") REFERENCES "public"."users"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "dimensions" ADD CONSTRAINT "dimensions_model_id_models_id_fk" FOREIGN KEY ("model_id") REFERENCES "public"."models"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "galaxy_attestation_signatures" ADD CONSTRAINT "galaxy_attestation_signatures_attestation_id_galaxy_attestations_id_fk" FOREIGN KEY ("attestation_id") REFERENCES "public"."galaxy_attestations"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "galaxy_attestation_signatures" ADD CONSTRAINT "galaxy_attestation_signatures_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "galaxy_attestation_signatures" ADD CONSTRAINT "galaxy_attestation_signatures_tenant_id_tenants_id_fk" FOREIGN KEY ("tenant_id") REFERENCES "public"."tenants"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "galaxy_attestations" ADD CONSTRAINT "galaxy_attestations_tenant_id_tenants_id_fk" FOREIGN KEY ("tenant_id") REFERENCES "public"."tenants"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "galaxy_audit_log" ADD CONSTRAINT "galaxy_audit_log_tenant_id_tenants_id_fk" FOREIGN KEY ("tenant_id") REFERENCES "public"."tenants"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "galaxy_audit_log" ADD CONSTRAINT "galaxy_audit_log_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "galaxy_exposure_policies" ADD CONSTRAINT "galaxy_exposure_policies_tenant_id_tenants_id_fk" FOREIGN KEY ("tenant_id") REFERENCES "public"."tenants"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
@@ -787,13 +836,11 @@ CREATE INDEX "idx_ai_content_type" ON "ai_generated_content" USING btree ("type"
 CREATE INDEX "idx_ai_content_expires" ON "ai_generated_content" USING btree ("expires_at");--> statement-breakpoint
 CREATE INDEX "idx_ai_usage_user" ON "ai_usage_log" USING btree ("user_id");--> statement-breakpoint
 CREATE INDEX "idx_ai_usage_created" ON "ai_usage_log" USING btree ("created_at");--> statement-breakpoint
-CREATE INDEX "idx_answers_question_id" ON "answers" USING btree ("question_id");--> statement-breakpoint
 CREATE INDEX "idx_application_roles_app" ON "application_roles" USING btree ("application_id");--> statement-breakpoint
 CREATE INDEX "idx_applications_client_key" ON "applications" USING btree ("client_key");--> statement-breakpoint
 CREATE INDEX "idx_applications_environment" ON "applications" USING btree ("environment");--> statement-breakpoint
 CREATE INDEX "idx_assessment_course_links_model" ON "assessment_course_links" USING btree ("model_id");--> statement-breakpoint
 CREATE INDEX "idx_assessment_course_links_course" ON "assessment_course_links" USING btree ("course_id");--> statement-breakpoint
-CREATE INDEX "idx_assessment_responses_assessment_id" ON "assessment_responses" USING btree ("assessment_id");--> statement-breakpoint
 CREATE INDEX "idx_tag_assignments_assessment" ON "assessment_tag_assignments" USING btree ("assessment_id");--> statement-breakpoint
 CREATE INDEX "idx_tag_assignments_tag" ON "assessment_tag_assignments" USING btree ("tag_id");--> statement-breakpoint
 CREATE INDEX "idx_assessments_tenant_status" ON "assessments" USING btree ("tenant_id","status");--> statement-breakpoint
@@ -804,6 +851,9 @@ CREATE INDEX "idx_attestation_enrollment" ON "attestation_records" USING btree (
 CREATE INDEX "idx_attestation_user" ON "attestation_records" USING btree ("user_id");--> statement-breakpoint
 CREATE INDEX "idx_attestation_tenant" ON "attestation_records" USING btree ("tenant_id");--> statement-breakpoint
 CREATE INDEX "idx_benchmark_model_segment" ON "benchmarks" USING btree ("model_id","segment_type");--> statement-breakpoint
+CREATE INDEX "idx_certificates_tenant" ON "certificates" USING btree ("tenant_id");--> statement-breakpoint
+CREATE INDEX "idx_certificates_user" ON "certificates" USING btree ("user_id");--> statement-breakpoint
+CREATE INDEX "idx_certificates_source" ON "certificates" USING btree ("source_type","source_id");--> statement-breakpoint
 CREATE INDEX "idx_embeddings_source" ON "content_embeddings" USING btree ("source_url");--> statement-breakpoint
 CREATE INDEX "idx_enrollments_user" ON "course_enrollments" USING btree ("user_id");--> statement-breakpoint
 CREATE INDEX "idx_enrollments_course" ON "course_enrollments" USING btree ("course_id");--> statement-breakpoint
@@ -815,6 +865,10 @@ CREATE INDEX "idx_course_tenants_course" ON "course_tenants" USING btree ("cours
 CREATE INDEX "idx_course_tenants_tenant" ON "course_tenants" USING btree ("tenant_id");--> statement-breakpoint
 CREATE INDEX "idx_courses_owner_tenant" ON "courses" USING btree ("owner_tenant_id");--> statement-breakpoint
 CREATE INDEX "idx_courses_status_visibility" ON "courses" USING btree ("status","visibility");--> statement-breakpoint
+CREATE INDEX "idx_galaxy_attestation_sigs_user" ON "galaxy_attestation_signatures" USING btree ("user_id");--> statement-breakpoint
+CREATE INDEX "idx_galaxy_attestation_sigs_tenant" ON "galaxy_attestation_signatures" USING btree ("tenant_id");--> statement-breakpoint
+CREATE INDEX "idx_galaxy_attestations_tenant" ON "galaxy_attestations" USING btree ("tenant_id");--> statement-breakpoint
+CREATE INDEX "idx_galaxy_attestations_status" ON "galaxy_attestations" USING btree ("status");--> statement-breakpoint
 CREATE INDEX "idx_galaxy_audit_tenant" ON "galaxy_audit_log" USING btree ("tenant_id");--> statement-breakpoint
 CREATE INDEX "idx_galaxy_audit_created" ON "galaxy_audit_log" USING btree ("created_at");--> statement-breakpoint
 CREATE INDEX "idx_galaxy_audit_resource" ON "galaxy_audit_log" USING btree ("resource_type","resource_id");--> statement-breakpoint

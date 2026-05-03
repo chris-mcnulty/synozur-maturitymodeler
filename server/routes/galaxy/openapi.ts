@@ -27,17 +27,6 @@ export function buildGalaxyOpenApi() {
     },
   });
 
-  const stubResponse = (note: string) => ({
-    '200': {
-      description: `${note} (currently returns an empty collection — endpoint reserved for forward compatibility)`,
-      content: {
-        'application/json': {
-          schema: envelopeSchema({ type: 'array', items: { type: 'object' } }),
-        },
-      },
-    },
-  });
-
   return {
     openapi: '3.1.0',
     info: {
@@ -122,6 +111,93 @@ export function buildGalaxyOpenApi() {
           properties: {
             error: { type: 'string' },
             error_description: { type: 'string' },
+          },
+        },
+        Course: {
+          type: 'object',
+          required: ['id', 'slug', 'title', 'enrollment'],
+          properties: {
+            id: { type: 'string' },
+            slug: { type: 'string' },
+            title: { type: 'string' },
+            summary: { type: 'string', nullable: true },
+            description: { type: 'string', nullable: true },
+            estimatedMinutes: { type: 'integer', nullable: true },
+            imageUrl: { type: 'string', nullable: true },
+            createdAt: { type: 'string', format: 'date-time' },
+            updatedAt: { type: 'string', format: 'date-time' },
+            enrollment: {
+              type: 'object',
+              required: ['status', 'progressPercent'],
+              properties: {
+                status: { type: 'string', enum: ['not_started', 'in_progress', 'completed'] },
+                progressPercent: { type: 'integer', minimum: 0, maximum: 100 },
+                startedAt: { type: 'string', format: 'date-time', nullable: true },
+                completedAt: { type: 'string', format: 'date-time', nullable: true },
+              },
+            },
+          },
+        },
+        Attestation: {
+          type: 'object',
+          required: ['id', 'title', 'body', 'version', 'status', 'signed'],
+          properties: {
+            id: { type: 'string' },
+            title: { type: 'string' },
+            body: { type: 'string' },
+            version: { type: 'string' },
+            status: { type: 'string', enum: ['active', 'retired'] },
+            signed: { type: 'boolean' },
+            createdAt: { type: 'string', format: 'date-time' },
+            updatedAt: { type: 'string', format: 'date-time' },
+            signature: {
+              type: 'object',
+              nullable: true,
+              properties: {
+                signedAt: { type: 'string', format: 'date-time' },
+                signatureText: { type: 'string', nullable: true },
+              },
+            },
+          },
+        },
+        Certificate: {
+          type: 'object',
+          required: ['id', 'title', 'serialNumber', 'sourceType', 'issuedAt'],
+          properties: {
+            id: { type: 'string' },
+            title: { type: 'string' },
+            serialNumber: { type: 'string' },
+            sourceType: { type: 'string', enum: ['assessment', 'course', 'attestation', 'manual'] },
+            sourceId: { type: 'string', nullable: true },
+            modelId: { type: 'string', nullable: true },
+            issuedAt: { type: 'string', format: 'date-time' },
+            expiresAt: { type: 'string', format: 'date-time', nullable: true },
+            pdfUrl: { type: 'string', nullable: true },
+            revokedAt: { type: 'string', format: 'date-time', nullable: true },
+          },
+        },
+        CourseEnrollment: {
+          type: 'object',
+          required: ['courseId', 'userId', 'status'],
+          properties: {
+            id: { type: 'string' },
+            courseId: { type: 'string' },
+            userId: { type: 'string' },
+            status: { type: 'string', enum: ['not_started', 'in_progress', 'completed'] },
+            progressPercent: { type: 'integer' },
+            startedAt: { type: 'string', format: 'date-time', nullable: true },
+            completedAt: { type: 'string', format: 'date-time', nullable: true },
+          },
+        },
+        AttestationSignature: {
+          type: 'object',
+          required: ['attestationId', 'userId', 'signedAt'],
+          properties: {
+            id: { type: 'string' },
+            attestationId: { type: 'string' },
+            userId: { type: 'string' },
+            signedAt: { type: 'string', format: 'date-time' },
+            signatureText: { type: 'string', nullable: true },
           },
         },
         WebhookEvent: {
@@ -212,23 +288,132 @@ export function buildGalaxyOpenApi() {
       },
       '/courses': {
         get: {
-          summary: 'List available courses (forward-compat stub).',
-          description: 'Not implemented in this Orion deployment yet. See PRODUCT_BACKLOG for the deferred-endpoint list.',
-          responses: stubResponse('Courses listing'),
+          summary: "List published courses available to the current user, with the user's enrollment progress.",
+          description: 'Returns courses the user is allowed to see (tenant-scoped, gated by per-resource audienceRoles). Each course is augmented with the user\'s enrollment status and progress.',
+          parameters: [
+            { name: 'limit', in: 'query', schema: { type: 'integer', maximum: 200, default: 50 } },
+            { name: 'after', in: 'query', schema: { type: 'string' } },
+          ],
+          responses: {
+            '200': {
+              description: 'OK',
+              content: {
+                'application/json': {
+                  schema: envelopeSchema({ type: 'array', items: { $ref: '#/components/schemas/Course' } }),
+                },
+              },
+            },
+          },
+        },
+      },
+      '/courses/{id}/progress': {
+        post: {
+          summary: 'Record course progress for the current user.',
+          description: 'Upserts the (course, user) enrollment with the provided status/progressPercent. A transition to `completed` triggers the `course.completed` Galaxy webhook event.',
+          parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+          requestBody: {
+            required: true,
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    status: { type: 'string', enum: ['not_started', 'in_progress', 'completed'] },
+                    progressPercent: { type: 'integer', minimum: 0, maximum: 100 },
+                  },
+                },
+              },
+            },
+          },
+          responses: {
+            '200': {
+              description: 'OK',
+              content: {
+                'application/json': {
+                  schema: envelopeSchema({
+                    type: 'object',
+                    properties: { enrollment: { $ref: '#/components/schemas/CourseEnrollment' } },
+                  }),
+                },
+              },
+            },
+            '404': { description: 'Not found' },
+          },
         },
       },
       '/attestations': {
         get: {
-          summary: 'List attestations (forward-compat stub).',
-          description: 'Not implemented in this Orion deployment yet. See PRODUCT_BACKLOG for the deferred-endpoint list.',
-          responses: stubResponse('Attestations listing'),
+          summary: 'List active attestations applicable to the current user, with the signed flag.',
+          description: 'Returns attestations the user is allowed to see (tenant-scoped, gated by per-resource audienceRoles). Each attestation is augmented with the user\'s signature record if present.',
+          parameters: [
+            { name: 'limit', in: 'query', schema: { type: 'integer', maximum: 200, default: 50 } },
+            { name: 'after', in: 'query', schema: { type: 'string' } },
+          ],
+          responses: {
+            '200': {
+              description: 'OK',
+              content: {
+                'application/json': {
+                  schema: envelopeSchema({ type: 'array', items: { $ref: '#/components/schemas/Attestation' } }),
+                },
+              },
+            },
+          },
+        },
+      },
+      '/attestations/{id}/sign': {
+        post: {
+          summary: 'Record the current user\'s signature on an attestation.',
+          description: 'Idempotent. The first successful signature transition triggers the `attestation.signed` Galaxy webhook event.',
+          parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+          requestBody: {
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: { signatureText: { type: 'string' } },
+                },
+              },
+            },
+          },
+          responses: {
+            '200': {
+              description: 'OK',
+              content: {
+                'application/json': {
+                  schema: envelopeSchema({
+                    type: 'object',
+                    properties: {
+                      signature: { $ref: '#/components/schemas/AttestationSignature' },
+                      created: { type: 'boolean' },
+                    },
+                  }),
+                },
+              },
+            },
+            '404': { description: 'Not found' },
+            '409': { description: 'Attestation is not active' },
+          },
         },
       },
       '/certificates': {
         get: {
-          summary: 'List certificates (forward-compat stub).',
-          description: 'Not implemented in this Orion deployment yet. See PRODUCT_BACKLOG for the deferred-endpoint list.',
-          responses: stubResponse('Certificates listing'),
+          summary: "List certificates issued to the current user, gated by the tenant's exposeCertificates policy.",
+          description: 'Returns certificates the user has earned. Filtered to model exposure when policy.exposedModelIds is set. Returns an empty list if exposeCertificates is disabled for the tenant.',
+          parameters: [
+            { name: 'limit', in: 'query', schema: { type: 'integer', maximum: 200, default: 50 } },
+            { name: 'after', in: 'query', schema: { type: 'string' } },
+          ],
+          responses: {
+            '200': {
+              description: 'OK',
+              content: {
+                'application/json': {
+                  schema: envelopeSchema({ type: 'array', items: { $ref: '#/components/schemas/Certificate' } }),
+                },
+              },
+            },
+          },
         },
       },
     },
@@ -240,9 +425,7 @@ export function buildGalaxyOpenApi() {
         'POST /assessments/{id}/responses',
         'POST /assessments/{id}/complete',
         'GET /courses/{id}',
-        'POST /courses/{id}/progress',
         'POST /courses/{id}/quiz',
-        'POST /attestations/{id}/sign',
         'GET /certificates/{id}.pdf',
         'GET /admin/directory (client_credentials, requires admin.directory.read)',
       ],

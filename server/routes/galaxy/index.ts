@@ -11,9 +11,13 @@ import {
   galaxyWebhooks,
   galaxyWebhookDeliveries,
   galaxyAuditLog,
+  courses as coursesTable,
+  courseTenants,
+  galaxyAttestations as attestationsTable,
 } from '@shared/schema';
 import { galaxyAuth, galaxyCors, requireScope, writeAudit, envelope } from './middleware';
 import { buildGalaxyOpenApi } from './openapi';
+import { emitGalaxyEvent } from './webhooks';
 
 const PREFIX = '/api/galaxy/v1';
 
@@ -328,40 +332,364 @@ export function registerGalaxyRoutes(app: Express) {
     },
   );
 
-  // Forward-compatibility stubs. Courses, attestations, and certificate
-  // generation are not yet implemented in Orion. These endpoints exist so
-  // Galaxy can probe capability and so contract tests remain stable; they
-  // return `notImplemented: true` and an empty collection regardless of
-  // policy. Real implementations are tracked as follow-up work.
   app.get(
     `${PREFIX}/courses`,
     galaxyAuth,
     requireScope('courses.read'),
-    async (req, res) =>
-      res.json(envelope(req, [], { nextCursor: null, limit: 0 })),
+    async (req: Request, res: Response) => {
+      const ctx = req.galaxy!;
+      const policy = ctx.policy!;
+      const limit = Math.min(Number(req.query.limit) || 50, 200);
+      const after = (req.query.after as string) || null;
+      if (!ctx.tenantId || !policy.exposeCourses) {
+        return res.json(envelope(req, [], { nextCursor: null, limit }));
+      }
+      const courses = await storage.getCoursesForTenant(ctx.tenantId, {
+        status: 'published',
+      });
+      const enrollments = await storage.getCourseEnrollmentsByUser(ctx.user.id, ctx.tenantId);
+      const enrollByCourse = new Map(enrollments.map((e) => [e.courseId, e]));
+      // Map learning-courses EnrollmentStatus → Galaxy contract status
+      const galaxyEnrollmentStatus = (s: string): 'not_started' | 'in_progress' | 'completed' => {
+        if (s === 'completed') return 'completed';
+        if (s === 'in_progress') return 'in_progress';
+        return 'not_started';
+      };
+      const out = courses.map((c) => {
+        const e = enrollByCourse.get(c.id) ?? null;
+        return {
+          id: c.id,
+          slug: c.slug,
+          title: c.title,
+          description: c.description,
+          summary: c.summary,
+          estimatedMinutes: c.estimatedMinutes,
+          imageUrl: c.imageUrl,
+          createdAt: c.createdAt,
+          updatedAt: c.updatedAt,
+          enrollment: e
+            ? {
+                status: galaxyEnrollmentStatus(e.status),
+                progressPercent: e.progressPercent,
+                startedAt: e.startedAt,
+                completedAt: e.completedAt,
+              }
+            : { status: 'not_started' as const, progressPercent: 0, startedAt: null, completedAt: null },
+        };
+      });
+      const { slice, nextCursor } = paginate(out, limit, after, (r) => r.id);
+      res.json(envelope(req, slice, { nextCursor, limit }));
+      writeAudit(req, res, 'course', null);
+    },
   );
+
   app.get(
     `${PREFIX}/attestations`,
     galaxyAuth,
     requireScope('attestations.read'),
-    async (req, res) =>
-      res.json(envelope(req, [], { nextCursor: null, limit: 0 })),
+    async (req: Request, res: Response) => {
+      const ctx = req.galaxy!;
+      const policy = ctx.policy!;
+      const limit = Math.min(Number(req.query.limit) || 50, 200);
+      const after = (req.query.after as string) || null;
+      if (!ctx.tenantId || !policy.exposeAttestations) {
+        return res.json(envelope(req, [], { nextCursor: null, limit }));
+      }
+      const atts = await storage.getAttestationsForTenant(ctx.tenantId, {
+        status: 'active',
+        userRole: ctx.user.role ?? null,
+      });
+      const sigs = await storage.getAttestationSignaturesByUser(ctx.user.id, ctx.tenantId);
+      const sigByAtt = new Map(sigs.map((s) => [s.attestationId, s]));
+      const out = atts.map((a) => {
+        const s = sigByAtt.get(a.id) ?? null;
+        return {
+          id: a.id,
+          title: a.title,
+          body: a.body,
+          version: a.version,
+          status: a.status,
+          createdAt: a.createdAt,
+          updatedAt: a.updatedAt,
+          signature: s
+            ? { signedAt: s.signedAt, signatureText: s.signatureText }
+            : null,
+          signed: s !== null,
+        };
+      });
+      const { slice, nextCursor } = paginate(out, limit, after, (r) => r.id);
+      res.json(envelope(req, slice, { nextCursor, limit }));
+      writeAudit(req, res, 'attestation', null);
+    },
   );
+
   app.get(
     `${PREFIX}/certificates`,
     galaxyAuth,
     requireScope('artifacts.read'),
-    async (req, res) => {
-      const policy = req.galaxy!.policy!;
-      if (!policy.exposeCertificates) return res.json(envelope(req, []));
-      res.json(envelope(req, [], { nextCursor: null, limit: 0 }));
+    async (req: Request, res: Response) => {
+      const ctx = req.galaxy!;
+      const policy = ctx.policy!;
+      const limit = Math.min(Number(req.query.limit) || 50, 200);
+      const after = (req.query.after as string) || null;
+      if (!policy.exposeCertificates || !ctx.tenantId) {
+        return res.json(envelope(req, [], { nextCursor: null, limit }));
+      }
+      const allowed = modelExposureFilter(policy);
+      // Empty allowlist means "no models exposed". Match the assessments
+      // / results behavior and short-circuit so non-model-bound
+      // certificates do not leak through the gate.
+      if (allowed && allowed.length === 0) {
+        return res.json(envelope(req, [], { nextCursor: null, limit }));
+      }
+      let rows = await storage.getCertificatesByUser(ctx.user.id, ctx.tenantId);
+      if (allowed) {
+        const allowedSet = new Set(allowed);
+        rows = rows.filter((c) => !c.modelId || allowedSet.has(c.modelId));
+      }
+      const out = rows.map((c) => ({
+        id: c.id,
+        title: c.title,
+        serialNumber: c.serialNumber,
+        sourceType: c.sourceType,
+        sourceId: c.sourceId,
+        modelId: c.modelId,
+        issuedAt: c.issuedAt,
+        expiresAt: c.expiresAt,
+        pdfUrl: c.pdfUrl,
+        revokedAt: c.revokedAt,
+      }));
+      const { slice, nextCursor } = paginate(out, limit, after, (r) => r.id);
+      res.json(envelope(req, slice, { nextCursor, limit }));
+      writeAudit(req, res, 'certificate', null);
+    },
+  );
+
+  // Galaxy mutating endpoints for course progress, attestation signature,
+  // and certificate issuance. These transitions are what trigger the
+  // course.completed / attestation.signed / certificate.issued webhook
+  // events for downstream Galaxy listeners.
+
+  app.post(
+    `${PREFIX}/courses/:id/progress`,
+    galaxyAuth,
+    requireScope('courses.write'),
+    async (req: Request, res: Response) => {
+      const ctx = req.galaxy!;
+      const policy = ctx.policy!;
+      if (!ctx.tenantId) return res.status(400).json({ error: 'no_tenant' });
+      if (!policy.exposeCourses) {
+        return res.status(403).json({ error: 'courses_not_exposed' });
+      }
+      const body = req.body as {
+        status?: 'not_started' | 'in_progress' | 'completed';
+        progressPercent?: number;
+      };
+      const status = body.status ?? 'in_progress';
+      if (!['not_started', 'in_progress', 'completed'].includes(status)) {
+        return res.status(400).json({ error: 'invalid_status' });
+      }
+      // Course visibility gate: must be public, owned by tenant, or shared
+      // with tenant via courseTenants.
+      const [course] = await db
+        .select()
+        .from(coursesTable)
+        .where(eq(coursesTable.id, req.params.id))
+        .limit(1);
+      if (!course) return res.status(404).json({ error: 'not_found' });
+      // Match GET /courses: only published courses are exposed via Galaxy.
+      if (course.status !== 'published') {
+        return res.status(404).json({ error: 'not_found' });
+      }
+      const isPublic = course.visibility === 'public';
+      const isOwned = course.ownerTenantId === ctx.tenantId;
+      let isShared = false;
+      if (!isPublic && !isOwned) {
+        const [share] = await db
+          .select({ id: courseTenants.id })
+          .from(courseTenants)
+          .where(and(
+            eq(courseTenants.courseId, course.id),
+            eq(courseTenants.tenantId, ctx.tenantId),
+          ))
+          .limit(1);
+        isShared = !!share;
+      }
+      if (!isPublic && !isOwned && !isShared) {
+        return res.status(404).json({ error: 'not_found' });
+      }
+
+      const { enrollment, transitionedToCompleted } = await storage.upsertCourseProgress({
+        courseId: course.id,
+        userId: ctx.user.id,
+        tenantId: ctx.tenantId,
+        status,
+        progressPercent: body.progressPercent,
+      });
+
+      if (transitionedToCompleted) {
+        try {
+          await emitGalaxyEvent(ctx.tenantId, 'course.completed', {
+            courseId: course.id,
+            courseTitle: course.title,
+            userId: ctx.user.id,
+            completedAt: enrollment.completedAt,
+          });
+        } catch (err) {
+          // eslint-disable-next-line no-console
+          console.error('[galaxy] course.completed emit failed', err);
+        }
+        // Auto-issue a certificate when the course has it enabled. This
+        // emits certificate.issued for the same transition.
+        if (course.certificateEnabled) {
+          try {
+            await issueCertificateAndEmit({
+              tenantId: ctx.tenantId,
+              userId: ctx.user.id,
+              sourceType: 'course',
+              sourceId: course.id,
+              title: `${course.title} — Certificate of Completion`,
+            });
+          } catch (err) {
+            // eslint-disable-next-line no-console
+            console.error('[galaxy] certificate auto-issue failed', err);
+          }
+        }
+      }
+
+      // Normalize the enrollment status back to the Galaxy contract
+      // values so the response shape matches GET /courses and OpenAPI.
+      const galaxyStatus: 'not_started' | 'in_progress' | 'completed' =
+        enrollment.status === 'completed'
+          ? 'completed'
+          : enrollment.status === 'in_progress'
+            ? 'in_progress'
+            : 'not_started';
+      res.json(envelope(req, {
+        enrollment: {
+          id: enrollment.id,
+          courseId: enrollment.courseId,
+          userId: enrollment.userId,
+          status: galaxyStatus,
+          progressPercent: enrollment.progressPercent,
+          startedAt: enrollment.startedAt,
+          completedAt: enrollment.completedAt,
+        },
+      }));
+      writeAudit(req, res, 'course', course.id);
+    },
+  );
+
+  app.post(
+    `${PREFIX}/attestations/:id/sign`,
+    galaxyAuth,
+    requireScope('attestations.write'),
+    async (req: Request, res: Response) => {
+      const ctx = req.galaxy!;
+      const policy = ctx.policy!;
+      if (!ctx.tenantId) return res.status(400).json({ error: 'no_tenant' });
+      if (!policy.exposeAttestations) {
+        return res.status(403).json({ error: 'attestations_not_exposed' });
+      }
+      const body = req.body as { signatureText?: string };
+      const [att] = await db
+        .select()
+        .from(attestationsTable)
+        .where(and(eq(attestationsTable.id, req.params.id), eq(attestationsTable.tenantId, ctx.tenantId)))
+        .limit(1);
+      if (!att) return res.status(404).json({ error: 'not_found' });
+      // Per-resource audience role gate. Match GET /attestations: when
+      // an attestation declares audienceRoles, the caller's role must be
+      // included. Return 404 (not 403) so we don't leak existence to
+      // out-of-audience users, mirroring how the list endpoint hides it.
+      const audienceRoles = att.audienceRoles ?? null;
+      if (audienceRoles && audienceRoles.length > 0) {
+        const userRole = ctx.user.role ?? null;
+        if (!userRole || !audienceRoles.includes(userRole)) {
+          return res.status(404).json({ error: 'not_found' });
+        }
+      }
+      if (att.status !== 'active') return res.status(409).json({ error: 'attestation_not_active' });
+
+      const ipRaw = (req.ip || (req.headers['x-forwarded-for'] as string) || '').toString();
+      const { signature, created } = await storage.signAttestation({
+        attestationId: att.id,
+        userId: ctx.user.id,
+        tenantId: ctx.tenantId,
+        signatureText: body.signatureText ?? null,
+        ipAddress: ipRaw ? ipRaw.slice(0, 64) : null,
+      });
+
+      if (created) {
+        try {
+          await emitGalaxyEvent(ctx.tenantId, 'attestation.signed', {
+            attestationId: att.id,
+            attestationTitle: att.title,
+            attestationVersion: att.version,
+            userId: ctx.user.id,
+            signedAt: signature.signedAt,
+          });
+        } catch (err) {
+          // eslint-disable-next-line no-console
+          console.error('[galaxy] attestation.signed emit failed', err);
+        }
+      }
+
+      res.json(envelope(req, { signature, created }));
+      writeAudit(req, res, 'attestation', att.id);
     },
   );
 }
 
+// Internal helper used by admin/issuance flows to mint a certificate and
+// emit the corresponding Galaxy webhook. Exported so other services
+// (admin routes, future automation) can issue certificates without
+// duplicating event-emission logic.
+export async function issueCertificateAndEmit(input: {
+  tenantId: string;
+  userId: string;
+  sourceType: 'assessment' | 'course' | 'attestation' | 'manual';
+  sourceId?: string | null;
+  modelId?: string | null;
+  title: string;
+  expiresAt?: Date | null;
+  pdfUrl?: string | null;
+}): Promise<{ certificate: import('@shared/schema').Certificate }> {
+  const { certificate, created } = await storage.issueCertificate({
+    tenantId: input.tenantId,
+    userId: input.userId,
+    sourceType: input.sourceType,
+    sourceId: input.sourceId ?? null,
+    modelId: input.modelId ?? null,
+    title: input.title,
+    expiresAt: input.expiresAt ?? null,
+    pdfUrl: input.pdfUrl ?? null,
+  });
+  // Only emit certificate.issued the first time the certificate is
+  // minted; duplicate auto-issue calls are now no-ops and must not
+  // produce additional webhooks.
+  if (!created) return { certificate };
+  try {
+    await emitGalaxyEvent(input.tenantId, 'certificate.issued', {
+      certificateId: certificate.id,
+      serialNumber: certificate.serialNumber,
+      title: certificate.title,
+      sourceType: certificate.sourceType,
+      sourceId: certificate.sourceId,
+      modelId: certificate.modelId,
+      userId: certificate.userId,
+      issuedAt: certificate.issuedAt,
+    });
+  } catch (err) {
+    // eslint-disable-next-line no-console
+    console.error('[galaxy] certificate.issued emit failed', err);
+  }
+  return { certificate };
+}
+
 import { ensureAnyAdmin } from '../../auth';
 import { galaxyPolicyUpdateSchema, galaxyWebhookUpdateSchema } from '@shared/schema';
-import { generateWebhookSecret, emitGalaxyEvent, redeliverGalaxyEvent, validateWebhookUrl } from './webhooks';
+import { generateWebhookSecret, redeliverGalaxyEvent, validateWebhookUrl } from './webhooks';
 
 export function registerGalaxyAdminRoutes(app: Express) {
   function resolveTenantId(req: Request, res: Response): string | null {

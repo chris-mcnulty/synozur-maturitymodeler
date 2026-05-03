@@ -1,5 +1,5 @@
 import { db, pool } from "./db";
-import { eq, and, desc, sql, inArray, type SQL } from "drizzle-orm";
+import { eq, and, or, desc, sql, inArray, type SQL } from "drizzle-orm";
 import * as schema from "@shared/schema";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
@@ -142,6 +142,32 @@ export interface IStorage {
   // Support Ticket Reply methods
   createSupportTicketReply(reply: schema.InsertSupportTicketReply): Promise<schema.SupportTicketReply>;
   getSupportTicketReplies(ticketId: string): Promise<schema.SupportTicketReply[]>;
+
+  // Galaxy: Course methods (over the existing learning-courses schema)
+  getCoursesForTenant(tenantId: string, opts?: { status?: string }): Promise<schema.Course[]>;
+  getCourseEnrollmentsByUser(userId: string, tenantId: string): Promise<schema.CourseEnrollment[]>;
+  upsertCourseProgress(input: {
+    courseId: string;
+    userId: string;
+    tenantId: string;
+    status: 'not_started' | 'in_progress' | 'completed';
+    progressPercent?: number;
+  }): Promise<{ enrollment: schema.CourseEnrollment; transitionedToCompleted: boolean }>;
+
+  // Galaxy: Attestation methods
+  getAttestationsForTenant(tenantId: string, opts?: { status?: string; userRole?: string | null }): Promise<schema.GalaxyAttestation[]>;
+  getAttestationSignaturesByUser(userId: string, tenantId: string): Promise<schema.GalaxyAttestationSignature[]>;
+  signAttestation(input: {
+    attestationId: string;
+    userId: string;
+    tenantId: string;
+    signatureText?: string | null;
+    ipAddress?: string | null;
+  }): Promise<{ signature: schema.GalaxyAttestationSignature; created: boolean }>;
+
+  // Galaxy: Certificate methods
+  getCertificatesByUser(userId: string, tenantId: string): Promise<schema.Certificate[]>;
+  issueCertificate(input: schema.InsertCertificate & { serialNumber?: string }): Promise<{ certificate: schema.Certificate; created: boolean }>;
 
   // Support Ticket Planner Sync methods
   createSupportTicketPlannerSync(sync: schema.InsertSupportTicketPlannerSync): Promise<schema.SupportTicketPlannerSync>;
@@ -855,6 +881,240 @@ export class DatabaseStorage implements IStorage {
   async updateSupportTicketPlannerSync(id: string, data: Partial<schema.SupportTicketPlannerSync>): Promise<schema.SupportTicketPlannerSync | undefined> {
     const [updated] = await db.update(schema.supportTicketPlannerSync).set(data).where(eq(schema.supportTicketPlannerSync.id, id)).returning();
     return updated;
+  }
+
+  // ========== Galaxy: Courses (over learning-courses schema) ==========
+  async getCoursesForTenant(tenantId: string, opts?: { status?: string }): Promise<schema.Course[]> {
+    // A course is visible to a tenant when:
+    //   - it is public, or
+    //   - it is owned by the tenant, or
+    //   - it is shared with the tenant via courseTenants.
+    const sharedRows = await db
+      .select({ courseId: schema.courseTenants.courseId })
+      .from(schema.courseTenants)
+      .where(eq(schema.courseTenants.tenantId, tenantId));
+    const sharedIds = sharedRows.map((r) => r.courseId);
+
+    const visibilityConds: SQL[] = [
+      eq(schema.courses.visibility, 'public'),
+      eq(schema.courses.ownerTenantId, tenantId),
+    ];
+    if (sharedIds.length > 0) {
+      visibilityConds.push(inArray(schema.courses.id, sharedIds));
+    }
+    const conds: SQL[] = [or(...visibilityConds) as SQL];
+    if (opts?.status) {
+      conds.push(eq(schema.courses.status, opts.status));
+    }
+    return db
+      .select()
+      .from(schema.courses)
+      .where(and(...conds))
+      .orderBy(desc(schema.courses.createdAt));
+  }
+
+  async getCourseEnrollmentsByUser(userId: string, tenantId: string): Promise<schema.CourseEnrollment[]> {
+    return db
+      .select()
+      .from(schema.courseEnrollments)
+      .where(and(
+        eq(schema.courseEnrollments.userId, userId),
+        eq(schema.courseEnrollments.tenantId, tenantId),
+      ));
+  }
+
+  async upsertCourseProgress(input: {
+    courseId: string;
+    userId: string;
+    tenantId: string;
+    status: 'not_started' | 'in_progress' | 'completed';
+    progressPercent?: number;
+  }): Promise<{ enrollment: schema.CourseEnrollment; transitionedToCompleted: boolean }> {
+    // Map Galaxy status onto the existing learning-courses EnrollmentStatus.
+    const mapStatus = (s: 'not_started' | 'in_progress' | 'completed'): schema.EnrollmentStatus =>
+      s === 'not_started' ? 'enrolled' : s;
+
+    const [existing] = await db
+      .select()
+      .from(schema.courseEnrollments)
+      .where(and(
+        eq(schema.courseEnrollments.courseId, input.courseId),
+        eq(schema.courseEnrollments.userId, input.userId),
+      ))
+      .limit(1);
+
+    const now = new Date();
+    const isCompleting = input.status === 'completed';
+    const wasCompleted = existing?.status === 'completed';
+
+    if (existing) {
+      // Course completion is monotonic: once an enrollment is
+      // completed it stays completed. Galaxy clients cannot regress
+      // the status back to in_progress / not_started, which keeps
+      // course.completed and certificate.issued events idempotent.
+      const finalStatus: schema.EnrollmentStatus = wasCompleted
+        ? 'completed'
+        : mapStatus(input.status);
+      const finalProgress = wasCompleted
+        ? existing.progressPercent
+        : input.progressPercent ?? (isCompleting ? 100 : existing.progressPercent);
+      const [updated] = await db
+        .update(schema.courseEnrollments)
+        .set({
+          status: finalStatus,
+          progressPercent: finalProgress,
+          startedAt: existing.startedAt ?? (input.status !== 'not_started' ? now : null),
+          completedAt: isCompleting ? (existing.completedAt ?? now) : existing.completedAt,
+        })
+        .where(eq(schema.courseEnrollments.id, existing.id))
+        .returning();
+      return { enrollment: updated, transitionedToCompleted: isCompleting && !wasCompleted };
+    }
+    const targetStatus = mapStatus(input.status);
+
+    const [created] = await db
+      .insert(schema.courseEnrollments)
+      .values({
+        courseId: input.courseId,
+        userId: input.userId,
+        tenantId: input.tenantId,
+        status: targetStatus,
+        progressPercent: input.progressPercent ?? (isCompleting ? 100 : 0),
+        startedAt: input.status !== 'not_started' ? now : null,
+        completedAt: isCompleting ? now : null,
+      })
+      .returning();
+    return { enrollment: created, transitionedToCompleted: isCompleting };
+  }
+
+  // ========== Galaxy: Attestations ==========
+  async getAttestationsForTenant(tenantId: string, opts?: { status?: string; userRole?: string | null }): Promise<schema.GalaxyAttestation[]> {
+    const conds: SQL[] = [eq(schema.galaxyAttestations.tenantId, tenantId)];
+    if (opts?.status) {
+      conds.push(eq(schema.galaxyAttestations.status, opts.status));
+    }
+    const rows = await db
+      .select()
+      .from(schema.galaxyAttestations)
+      .where(and(...conds))
+      .orderBy(desc(schema.galaxyAttestations.createdAt));
+    if (!opts?.userRole) return rows;
+    return rows.filter((r) => {
+      const roles = r.audienceRoles ?? null;
+      if (!roles || roles.length === 0) return true;
+      return roles.includes(opts.userRole as string);
+    });
+  }
+
+  async getAttestationSignaturesByUser(userId: string, tenantId: string): Promise<schema.GalaxyAttestationSignature[]> {
+    return db
+      .select()
+      .from(schema.galaxyAttestationSignatures)
+      .where(and(
+        eq(schema.galaxyAttestationSignatures.userId, userId),
+        eq(schema.galaxyAttestationSignatures.tenantId, tenantId),
+      ));
+  }
+
+  async signAttestation(input: {
+    attestationId: string;
+    userId: string;
+    tenantId: string;
+    signatureText?: string | null;
+    ipAddress?: string | null;
+  }): Promise<{ signature: schema.GalaxyAttestationSignature; created: boolean }> {
+    // Idempotent under concurrency: rely on the (attestation_id, user_id)
+    // unique constraint with ON CONFLICT DO NOTHING so two simultaneous
+    // sign requests cannot raise a unique-violation error. If the insert
+    // is a no-op we re-read the existing row and return created=false.
+    const inserted = await db
+      .insert(schema.galaxyAttestationSignatures)
+      .values({
+        attestationId: input.attestationId,
+        userId: input.userId,
+        tenantId: input.tenantId,
+        signatureText: input.signatureText ?? null,
+        ipAddress: input.ipAddress ?? null,
+      })
+      .onConflictDoNothing({
+        target: [
+          schema.galaxyAttestationSignatures.attestationId,
+          schema.galaxyAttestationSignatures.userId,
+        ],
+      })
+      .returning();
+    if (inserted.length > 0) {
+      return { signature: inserted[0], created: true };
+    }
+    const [existing] = await db
+      .select()
+      .from(schema.galaxyAttestationSignatures)
+      .where(and(
+        eq(schema.galaxyAttestationSignatures.attestationId, input.attestationId),
+        eq(schema.galaxyAttestationSignatures.userId, input.userId),
+      ))
+      .limit(1);
+    return { signature: existing, created: false };
+  }
+
+  // ========== Galaxy: Certificates ==========
+  async getCertificatesByUser(userId: string, tenantId: string): Promise<schema.Certificate[]> {
+    return db
+      .select()
+      .from(schema.certificates)
+      .where(and(
+        eq(schema.certificates.userId, userId),
+        eq(schema.certificates.tenantId, tenantId),
+      ))
+      .orderBy(desc(schema.certificates.issuedAt));
+  }
+
+  async issueCertificate(input: schema.InsertCertificate & { serialNumber?: string }): Promise<{ certificate: schema.Certificate; created: boolean }> {
+    // Idempotent for sourced certs (assessment/course/attestation): the
+    // (tenant_id, user_id, source_type, source_id) unique constraint
+    // means a duplicate auto-issue collapses to the existing row.
+    if (input.sourceId) {
+      const [existing] = await db
+        .select()
+        .from(schema.certificates)
+        .where(and(
+          eq(schema.certificates.tenantId, input.tenantId),
+          eq(schema.certificates.userId, input.userId),
+          eq(schema.certificates.sourceType, input.sourceType),
+          eq(schema.certificates.sourceId, input.sourceId),
+        ))
+        .limit(1);
+      if (existing) return { certificate: existing, created: false };
+    }
+    const serial = input.serialNumber ?? `CERT-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
+    const { serialNumber: _ignore, ...rest } = input;
+    const inserted = await db
+      .insert(schema.certificates)
+      .values({ ...rest, serialNumber: serial })
+      .onConflictDoNothing({
+        target: [
+          schema.certificates.tenantId,
+          schema.certificates.userId,
+          schema.certificates.sourceType,
+          schema.certificates.sourceId,
+        ],
+      })
+      .returning();
+    if (inserted.length > 0) return { certificate: inserted[0], created: true };
+    // Race with a concurrent issuer — re-read the canonical row.
+    const [existing] = await db
+      .select()
+      .from(schema.certificates)
+      .where(and(
+        eq(schema.certificates.tenantId, input.tenantId),
+        eq(schema.certificates.userId, input.userId),
+        eq(schema.certificates.sourceType, input.sourceType),
+        input.sourceId
+          ? eq(schema.certificates.sourceId, input.sourceId)
+          : sql`${schema.certificates.sourceId} IS NULL`,
+      ))
+      .limit(1);
+    return { certificate: existing, created: false };
   }
 }
 

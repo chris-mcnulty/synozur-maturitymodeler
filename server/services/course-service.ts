@@ -425,6 +425,8 @@ export async function recalculateEnrollment(enrollmentId: string): Promise<Cours
   if (progressPercent >= 100) status = "completed";
   else if (progressPercent > 0) status = "in_progress";
 
+  const wasCompleted = enr.status === "completed";
+
   const updates: any = { progressPercent, status };
   const wasAlreadyCompleted = !!enr.completedAt;
   if (status === "completed" && !enr.completedAt) updates.completedAt = new Date();
@@ -433,16 +435,51 @@ export async function recalculateEnrollment(enrollmentId: string): Promise<Cours
   const [row] = await db.update(schema.courseEnrollments)
     .set(updates).where(eq(schema.courseEnrollments.id, enrollmentId)).returning();
 
-  // Fire certificate generation on the FIRST transition to completed.
+  // First transition to completed: run both flows.
+  // 1. Local certificate PDF generation, which stamps certificateUrl on
+  //    the enrollment row (legacy/local course module behavior).
+  // 2. Galaxy webhook fanout: course.completed (always) and
+  //    certificate.issued when the course has certificateEnabled. Webhook
+  //    delivery is best-effort; failures are logged but not surfaced.
+  let finalRow = row;
   if (row && status === "completed" && !wasAlreadyCompleted && !row.certificateUrl) {
     try {
       const updated = await maybeIssueCertificate(row);
-      if (updated) return updated;
+      if (updated) finalRow = updated;
     } catch (err) {
       console.error("[certificate] generation failed for enrollment", enrollmentId, err);
     }
   }
-  return row;
+
+  if (status === "completed" && !wasCompleted && row.tenantId) {
+    try {
+      const [course] = await db.select().from(schema.courses)
+        .where(eq(schema.courses.id, row.courseId)).limit(1);
+      const { emitGalaxyEvent } = await import("../routes/galaxy/webhooks");
+      const { issueCertificateAndEmit } = await import("../routes/galaxy");
+      await emitGalaxyEvent(row.tenantId, "course.completed", {
+        courseId: row.courseId,
+        courseTitle: course?.title,
+        userId: row.userId,
+        completedAt: row.completedAt,
+      });
+      if (course?.certificateEnabled) {
+        await issueCertificateAndEmit({
+          tenantId: row.tenantId,
+          userId: row.userId,
+          sourceType: "course",
+          sourceId: row.courseId,
+          title: `${course.title} — Certificate of Completion`,
+          pdfUrl: finalRow?.certificateUrl ?? null,
+        });
+      }
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error("[course-service] galaxy event emit failed", err);
+    }
+  }
+
+  return finalRow;
 }
 
 /**

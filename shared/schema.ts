@@ -1031,6 +1031,8 @@ export const galaxyExposurePolicies = pgTable("galaxy_exposure_policies", {
   exposeRecommendations: boolean("expose_recommendations").notNull().default(true),
   exposeInsights: boolean("expose_insights").notNull().default(true),
   exposeCertificates: boolean("expose_certificates").notNull().default(false),
+  exposeCourses: boolean("expose_courses").notNull().default(true),
+  exposeAttestations: boolean("expose_attestations").notNull().default(true),
   // Per-artifact selection: explicit allowlist of model IDs the tenant has
   // chosen to expose. Empty array = "no models exposed"; null = "all
   // tenant-visible models exposed".
@@ -1138,6 +1140,8 @@ export const galaxyPolicyUpdateSchema = z.object({
   exposeRecommendations: z.boolean().optional(),
   exposeInsights: z.boolean().optional(),
   exposeCertificates: z.boolean().optional(),
+  exposeCourses: z.boolean().optional(),
+  exposeAttestations: z.boolean().optional(),
   exposedModelIds: z.array(z.string()).nullable().optional(),
   audienceMode: z.enum(['all', 'roles']).optional(),
   audienceRoles: z.array(z.string()).nullable().optional(),
@@ -1180,9 +1184,101 @@ export const GALAXY_EVENT_TYPES = [
   'assessment.completed',
   'course.completed',
   'attestation.signed',
+  'certificate.issued',
   'recommendation.created',
 ] as const;
 export type GalaxyEventType = typeof GALAXY_EVENT_TYPES[number];
+
+// ========== GALAXY: ATTESTATIONS, CERTIFICATES ==========
+//
+// Galaxy reuses the existing learning-courses module (see below) for course
+// data and enrollments. The entities defined here are Galaxy-specific:
+//   - galaxyAttestations / galaxyAttestationSignatures: standalone tenant
+//     statements that users in the Galaxy audience sign (policy acks, code
+//     of conduct, etc). This is distinct from per-lesson `attestationRecords`
+//     used inside a course.
+//   - certificates: cross-source proof-of-completion artefacts (assessment,
+//     course, attestation, or manual issuance) surfaced to Galaxy.
+
+export const galaxyAttestations = pgTable("galaxy_attestations", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").notNull().references(() => tenants.id, { onDelete: "cascade" }),
+  title: text("title").notNull(),
+  body: text("body").notNull(),
+  version: text("version").notNull().default("1.0"),
+  // 'active' | 'retired'
+  status: text("status").notNull().default("active"),
+  // Optional per-resource audience gate. null/empty = visible to the whole
+  // tenant audience (subject to galaxyExposurePolicies.audienceRoles).
+  audienceRoles: text("audience_roles").array(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => ({
+  tenantIdx: index("idx_galaxy_attestations_tenant").on(table.tenantId),
+  statusIdx: index("idx_galaxy_attestations_status").on(table.status),
+}));
+
+export const galaxyAttestationSignatures = pgTable("galaxy_attestation_signatures", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  attestationId: varchar("attestation_id").notNull().references(() => galaxyAttestations.id, { onDelete: "cascade" }),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  tenantId: varchar("tenant_id").notNull().references(() => tenants.id, { onDelete: "cascade" }),
+  signedAt: timestamp("signed_at").defaultNow().notNull(),
+  signatureText: text("signature_text"),
+  ipAddress: text("ip_address"),
+}, (table) => ({
+  uniqueAttestationUser: unique().on(table.attestationId, table.userId),
+  userIdx: index("idx_galaxy_attestation_sigs_user").on(table.userId),
+  tenantIdx: index("idx_galaxy_attestation_sigs_tenant").on(table.tenantId),
+}));
+
+export const certificates = pgTable("certificates", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").notNull().references(() => tenants.id, { onDelete: "cascade" }),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  // 'assessment' | 'course' | 'attestation' | 'manual'
+  sourceType: text("source_type").notNull(),
+  sourceId: varchar("source_id"),
+  modelId: varchar("model_id").references(() => models.id, { onDelete: "set null" }),
+  title: text("title").notNull(),
+  serialNumber: text("serial_number").notNull().unique(),
+  issuedAt: timestamp("issued_at").defaultNow().notNull(),
+  expiresAt: timestamp("expires_at"),
+  pdfUrl: text("pdf_url"),
+  revokedAt: timestamp("revoked_at"),
+}, (table) => ({
+  tenantIdx: index("idx_certificates_tenant").on(table.tenantId),
+  userIdx: index("idx_certificates_user").on(table.userId),
+  sourceIdx: index("idx_certificates_source").on(table.sourceType, table.sourceId),
+  // Idempotency: at most one certificate per (tenant, user, sourceType,
+  // sourceId). Postgres treats NULL as distinct, so 'manual' rows with
+  // sourceId=null are unaffected.
+  uniqSource: unique("uniq_certificates_source").on(
+    table.tenantId, table.userId, table.sourceType, table.sourceId,
+  ),
+}));
+
+export const insertGalaxyAttestationSchema = createInsertSchema(galaxyAttestations).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+export const insertGalaxyAttestationSignatureSchema = createInsertSchema(galaxyAttestationSignatures).omit({
+  id: true,
+  signedAt: true,
+});
+export const insertCertificateSchema = createInsertSchema(certificates).omit({
+  id: true,
+  issuedAt: true,
+  serialNumber: true,
+});
+
+export type GalaxyAttestation = typeof galaxyAttestations.$inferSelect;
+export type InsertGalaxyAttestation = z.infer<typeof insertGalaxyAttestationSchema>;
+export type GalaxyAttestationSignature = typeof galaxyAttestationSignatures.$inferSelect;
+export type InsertGalaxyAttestationSignature = z.infer<typeof insertGalaxyAttestationSignatureSchema>;
+export type Certificate = typeof certificates.$inferSelect;
+export type InsertCertificate = z.infer<typeof insertCertificateSchema>;
 
 // ========== SUPPORT TICKET SYSTEM ==========
 
