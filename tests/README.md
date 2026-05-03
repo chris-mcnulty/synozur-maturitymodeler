@@ -20,7 +20,8 @@ tests/
 │   ├── og-routes.test.ts      ← OpenGraph share pages
 │   └── …                      ← assessment-flow, auth-change-password, admin-models
 └── e2e/                       ← Playwright smoke suite (requires running app)
-    └── smoke.spec.ts          ← signup → assessment → results → admin edit
+    ├── smoke.spec.ts          ← signup → assessment → results → admin edit
+    └── mobile-layouts.spec.ts ← mobile-layout regression at 375/414/768
 ```
 
 The Galaxy contract suite (`integration/galaxy-api.test.ts`) exercises every
@@ -79,6 +80,7 @@ The canonical entry point is `npm test`. The following scripts are wired up in
 | `npm run test:unit` | `vitest run` |
 | `npm run test:watch` | `vitest` (watch mode) |
 | `npm run test:e2e` | `playwright test` |
+| `npm run test:mobile-layouts` | `playwright test mobile-layouts` |
 
 The underlying CLIs are still available via `npx vitest` / `npx playwright` if
 you need flags or filters that the npm scripts don't forward.
@@ -115,6 +117,31 @@ npx playwright show-report
 
 The smoke test signs up a fresh user with a unique username on each run, so it
 is safe to re-run repeatedly against the same database.
+
+#### Mobile layout regression
+
+The mobile-layout suite (`tests/e2e/mobile-layouts.spec.ts`) is the recurring
+guard for the mobile-first pass. It loads `/`, `/auth`, the public
+`/results/:id` error surface, and the authenticated assessment + real results
+pages (after signing up a fresh user and submitting an assessment) at three
+viewports (375x812, 414x896, 768x1024) and asserts:
+
+  - the document never horizontally overflows,
+  - the route's primary CTA is visible without scrolling,
+  - the mobile-only landmarks (`mobile-value-prop`, `mobile-disclaimer`,
+    `button-mobile-overflow`, `text-question`, `text-score`) are still
+    rendered.
+
+Run it via the dedicated npm script:
+
+```bash
+npm run test:mobile-layouts
+```
+
+(equivalent to `npx playwright test mobile-layouts`; the
+`scripts/test-mobile-layouts.sh` wrapper accepts extra Playwright flags such
+as `--headed`). The same script runs in CI on every PR via the
+`mobile-layouts` job in `.github/workflows/test.yml`.
 
 #### Admin step (required for full coverage)
 

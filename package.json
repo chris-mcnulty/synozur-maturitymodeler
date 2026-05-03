@@ -12,7 +12,8 @@
     "test": "vitest run",
     "test:unit": "vitest run",
     "test:watch": "vitest",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "test:mobile-layouts": "playwright test mobile-layouts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.69.0",
