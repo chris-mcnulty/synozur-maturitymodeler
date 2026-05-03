@@ -331,7 +331,7 @@ export function ModelCreationWizard({
         />
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <Label>Model Class</Label>
           <Select value={modelClass} onValueChange={(v) => setModelClass(v as any)}>
@@ -357,7 +357,7 @@ export function ModelCreationWizard({
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <Label>Estimated Time</Label>
           <Input
@@ -483,7 +483,7 @@ export function ModelCreationWizard({
             rows={2}
             data-testid="wiz-input-question-text"
           />
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <Select value={newQType} onValueChange={(v) => setNewQType(v as any)}>
               <SelectTrigger>
                 <SelectValue />
@@ -605,7 +605,7 @@ export function ModelCreationWizard({
             <Card key={level.id} className="p-4">
               <div className="flex gap-3">
                 <div className="flex-1 space-y-3">
-                  <div className="grid grid-cols-3 gap-3">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                     <div className="col-span-1">
                       <Label className="text-xs">Level Name</Label>
                       <Input
@@ -695,7 +695,7 @@ export function ModelCreationWizard({
         Review your model before publishing. You can always edit it later from the Admin Console.
       </p>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <Card className="p-4 text-center">
           <div className="text-2xl font-bold">{dimensions.length}</div>
           <div className="text-sm text-muted-foreground">Dimensions</div>

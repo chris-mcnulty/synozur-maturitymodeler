@@ -415,7 +415,7 @@ Thank you for your help!`;
             </div>
           }
         >
-          <Table>
+          <Table className="sticky-first-col">
             <TableHeader>
               <TableRow>
                 <TableHead>Name</TableHead>
@@ -647,7 +647,7 @@ Thank you for your help!`;
                   data-testid="input-tenant-logo"
                 />
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="primaryColor">Primary Color</Label>
                   <div className="flex gap-2">
@@ -754,7 +754,7 @@ Thank you for your help!`;
                   <p className="text-sm font-medium">Directory Defaults</p>
                   <p className="text-xs text-muted-foreground mt-0.5">Pre-fill profile fields for new SSO users from this tenant. Users can update them later.</p>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="defaultCompany">Company Name</Label>
                     <Input

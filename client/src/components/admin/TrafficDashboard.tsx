@@ -396,7 +396,7 @@ export function TrafficDashboard() {
           <CardDescription>Last 100 visits matching the current filters</CardDescription>
         </CardHeader>
         <CardContent>
-          <Table>
+          <Table className="sticky-first-col">
             <TableHeader>
               <TableRow>
                 <TableHead>Date & Time</TableHead>

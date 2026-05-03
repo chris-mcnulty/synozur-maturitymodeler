@@ -237,7 +237,7 @@ ${req.organizationName}`;
         </Card>
       ) : (
         <Card>
-          <Table>
+          <Table className="sticky-first-col">
             <TableHeader>
               <TableRow>
                 <TableHead>Requestor</TableHead>

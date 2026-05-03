@@ -202,7 +202,7 @@ export function OAuthApplications() {
             <p className="text-sm mt-2">Create your first OAuth client to enable external applications to authenticate via Orion</p>
           </div>
         ) : (
-          <Table>
+          <Table className="sticky-first-col">
             <TableHeader>
               <TableRow>
                 <TableHead>Name</TableHead>

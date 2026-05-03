@@ -103,9 +103,9 @@ export function ProxyAssessmentDialog({ models }: ProxyAssessmentDialogProps) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button data-testid="button-create-proxy-assessment">
-          <UserPlus className="h-4 w-4 mr-2" />
-          Create Proxy Assessment
+        <Button aria-label="Create Proxy Assessment" data-testid="button-create-proxy-assessment">
+          <UserPlus className="h-4 w-4 sm:mr-2" />
+          <span className="hidden sm:inline">Create Proxy Assessment</span>
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[500px]">

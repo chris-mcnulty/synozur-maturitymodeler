@@ -466,7 +466,7 @@ function BenchmarksByModel() {
                 {benchmarks.length} benchmark segment{benchmarks.length !== 1 ? 's' : ''} calculated
               </p>
             </div>
-            <Table>
+            <Table className="sticky-first-col">
               <TableHeader>
                 <TableRow>
                   <TableHead>Segment Type</TableHead>
@@ -2706,36 +2706,38 @@ export default function Admin() {
         </Sidebar>
 
         <div className="flex flex-col flex-1 overflow-hidden">
-          <header className="flex items-center justify-between p-4 border-b flex-shrink-0">
-            <div className="flex items-center gap-4">
+          <header className="flex items-center justify-between gap-2 p-3 sm:p-4 border-b flex-shrink-0">
+            <div className="flex items-center gap-2 sm:gap-4 min-w-0">
               <SidebarTrigger data-testid="button-sidebar-toggle" />
-              <h1 className="text-2xl font-bold">Admin Console</h1>
+              <h1 className="text-lg sm:text-2xl font-bold truncate">Admin Console</h1>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
               <ProxyAssessmentDialog models={models} />
               <Button 
                 variant="outline" 
+                aria-label="Import or export"
                 data-testid="button-import-export"
                 onClick={() => {
                   setImportExportModel(selectedModelId ? models.find(m => m.id === selectedModelId) || null : null);
                   setIsImportExportOpen(true);
                 }}
               >
-                <FileSpreadsheet className="mr-2 h-4 w-4" />
-                Import/Export
+                <FileSpreadsheet className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">Import/Export</span>
               </Button>
               <Button 
                 variant="outline" 
+                aria-label="Settings"
                 data-testid="button-settings"
                 onClick={() => setIsSettingsDialogOpen(true)}
               >
-                <Settings className="mr-2 h-4 w-4" />
-                Settings
+                <Settings className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">Settings</span>
               </Button>
             </div>
           </header>
 
-          <main className="flex-1 overflow-y-auto overflow-x-hidden p-6">
+          <main className="flex-1 overflow-y-auto overflow-x-hidden p-3 sm:p-6">
             <div className="w-full max-w-7xl mx-auto space-y-6">
               <Suspense fallback={<SectionFallback />}>
               {activeSection === 'models' && (
@@ -3164,7 +3166,7 @@ export default function Admin() {
               {/* Keep old table code temporarily for reference but hide it */}
               {false && activeSection === 'models-old' && (
               <Card className="p-6">
-                <Table>
+                <Table className="sticky-first-col">
                   <TableHeader>
                     <TableRow>
                       <TableHead>Name</TableHead>
@@ -3432,8 +3434,100 @@ export default function Admin() {
                 ) : filteredUsers.length === 0 ? (
                   <div className="py-8 text-center text-muted-foreground">No users found</div>
                 ) : (
-                  <div className="rounded-md border overflow-x-auto">
-                    <Table>
+                  <>
+                    {/* Mobile stacked cards */}
+                    <div className="md:hidden space-y-3">
+                      {filteredUsers.map((user) => (
+                        <Card key={`mobile-${user.id}`} className="p-4" data-testid={`card-user-${user.id}`}>
+                          <div className="flex items-start justify-between gap-2 mb-2">
+                            <div className="min-w-0 flex-1">
+                              <div className="font-medium truncate">{user.username}</div>
+                              {user.name && <div className="text-sm text-muted-foreground truncate">{user.name}</div>}
+                            </div>
+                            <Badge variant={user.role === 'admin' ? 'default' : 'secondary'}>{user.role || 'user'}</Badge>
+                          </div>
+                          <div className="flex flex-wrap items-center gap-2 text-xs mb-2">
+                            {user.emailVerified ? (
+                              <Badge variant="secondary" className="bg-green-500/10 text-green-600 dark:text-green-400">
+                                <CheckCircle2 className="h-3 w-3 mr-1" /> Verified
+                              </Badge>
+                            ) : (
+                              <Badge variant="secondary" className="bg-orange-500/10 text-orange-600 dark:text-orange-400">
+                                <XCircle className="h-3 w-3 mr-1" /> Unverified
+                              </Badge>
+                            )}
+                            {user.tenantId && (
+                              <Badge variant="secondary">{tenants.find((t: any) => t.id === user.tenantId)?.name || 'Unknown'}</Badge>
+                            )}
+                          </div>
+                          {(user.company || user.jobTitle) && (
+                            <div className="text-sm text-muted-foreground space-y-0.5 mb-2">
+                              {user.company && <div className="truncate">{user.company}</div>}
+                              {user.jobTitle && <div className="truncate">{user.jobTitle}</div>}
+                            </div>
+                          )}
+                          <div className="flex items-center justify-between gap-2 pt-1">
+                            <span className="text-xs text-muted-foreground">
+                              {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : ''}
+                            </span>
+                            <div className="flex gap-1">
+                              {!user.emailVerified && (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => {
+                                    if (confirm(`Manually verify email for "${user.username}"?`)) {
+                                      verifyUserEmail.mutate(user.id);
+                                    }
+                                  }}
+                                  aria-label={`Verify email for ${user.username}`}
+                                  data-testid={`verify-email-mobile-${user.id}`}
+                                >
+                                  <CheckCircle2 className="h-4 w-4 text-green-600" />
+                                </Button>
+                              )}
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => {
+                                  setEditingUser(user);
+                                  setIsCreatingUser(false);
+                                  setUserForm({
+                                    role: normalizeRole(user.role),
+                                    username: user.username,
+                                    email: user.email || '',
+                                    newPassword: '',
+                                    tenantId: user.tenantId || null,
+                                  });
+                                  setIsUserDialogOpen(true);
+                                }}
+                                aria-label={`Edit user ${user.username}`}
+                                data-testid={`edit-user-mobile-${user.id}`}
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => {
+                                  if (confirm(`Are you sure you want to delete user "${user.username}"?`)) {
+                                    deleteUser.mutate(user.id);
+                                  }
+                                }}
+                                aria-label={`Delete user ${user.username}`}
+                                data-testid={`delete-user-mobile-${user.id}`}
+                              >
+                                <Trash className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        </Card>
+                      ))}
+                    </div>
+
+                    {/* Desktop table */}
+                    <div className="hidden md:block rounded-md border overflow-x-auto">
+                    <Table className="sticky-first-col">
                       <TableHeader>
                         <TableRow>
                           <TableHead>Username</TableHead>
@@ -3559,7 +3653,8 @@ export default function Admin() {
                         ))}
                       </TableBody>
                     </Table>
-                  </div>
+                    </div>
+                  </>
                 )}
               </Card>
               )}
@@ -3703,7 +3798,61 @@ export default function Admin() {
                   </div>
                 </div>
                 
-                <Table>
+                {/* Mobile stacked cards */}
+                <div className="md:hidden space-y-3">
+                  {resultsLoading ? (
+                    Array.from({ length: 3 }).map((_, i) => (
+                      <Card key={`mobile-loading-${i}`} className="p-4 space-y-2">
+                        <Skeleton className="h-4 w-32" />
+                        <Skeleton className="h-3 w-48" />
+                        <Skeleton className="h-3 w-24" />
+                      </Card>
+                    ))
+                  ) : results.length === 0 ? (
+                    <div className="py-8 text-center text-muted-foreground">No results found</div>
+                  ) : (
+                    results.map((result) => (
+                      <Card key={`mobile-${result.assessmentId}`} className="p-4" data-testid={`card-result-${result.assessmentId}`}>
+                        <div className="flex items-start justify-between gap-2 mb-2">
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="font-medium truncate">{result.isProxy ? result.proxyName : (result.userName || 'Anonymous')}</span>
+                              {result.isProxy && (
+                                <Badge variant="secondary" className="text-xs">Proxy</Badge>
+                              )}
+                            </div>
+                            <div className="text-sm text-muted-foreground truncate">{result.modelName}</div>
+                            {(result.isProxy ? result.proxyCompany : result.company) && (
+                              <div className="text-xs text-muted-foreground truncate">{result.isProxy ? result.proxyCompany : result.company}</div>
+                            )}
+                          </div>
+                          <div className="text-right flex-shrink-0">
+                            <div className="text-xl font-bold">{result.overallScore}</div>
+                            <Badge variant={result.status === 'completed' ? 'default' : 'secondary'} className="text-xs">
+                              {result.status || result.label}
+                            </Badge>
+                          </div>
+                        </div>
+                        <div className="mb-2">
+                          <AssessmentTagSelector assessmentId={result.assessmentId} />
+                        </div>
+                        <div className="flex items-center justify-between gap-2 pt-1">
+                          <span className="text-xs text-muted-foreground">
+                            {new Date(result.date || Date.now()).toLocaleDateString()} {new Date(result.date || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                          <div className="flex gap-1">
+                            <Button variant="ghost" size="sm" onClick={() => setReviewAssessmentId(result.assessmentId)} data-testid={`button-review-result-mobile-${result.assessmentId}`}>Review</Button>
+                            <Button variant="ghost" size="sm" onClick={() => window.open(`/results/${result.assessmentId}`, '_blank')} data-testid={`button-view-result-mobile-${result.assessmentId}`}>View</Button>
+                          </div>
+                        </div>
+                      </Card>
+                    ))
+                  )}
+                </div>
+
+                {/* Desktop table */}
+                <div className="hidden md:block">
+                <Table className="sticky-first-col">
                   <TableHeader>
                     <TableRow>
                       <TableHead>Date</TableHead>
@@ -3812,6 +3961,7 @@ export default function Admin() {
                     )}
                   </TableBody>
                 </Table>
+                </div>
               </Card>
               </div>
               )}
@@ -4153,7 +4303,7 @@ export default function Admin() {
                         <p className="text-sm mt-2">Upload your first document above</p>
                       </div>
                     ) : (
-                      <Table>
+                      <Table className="sticky-first-col">
                         <TableHeader>
                           <TableRow>
                             <TableHead>Name</TableHead>

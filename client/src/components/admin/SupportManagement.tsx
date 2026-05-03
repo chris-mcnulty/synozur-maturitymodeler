@@ -675,44 +675,75 @@ export function SupportManagement() {
           </CardContent>
         </Card>
       ) : (
-        <Card>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>#</TableHead>
-                <TableHead>Subject</TableHead>
-                <TableHead>Category</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Priority</TableHead>
-                <TableHead>Created</TableHead>
-                <TableHead></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredTickets.map((ticket) => (
-                <TableRow key={ticket.id} className="cursor-pointer" onClick={() => setSelectedTicketId(ticket.id)} data-testid={`row-ticket-${ticket.id}`}>
-                  <TableCell className="font-mono text-sm">{ticket.ticketNumber}</TableCell>
-                  <TableCell className="font-medium max-w-xs truncate">{ticket.subject}</TableCell>
-                  <TableCell>
-                    <Badge variant="outline" className="text-xs">{TICKET_CATEGORY_LABELS[ticket.category] || ticket.category}</Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Badge className={`text-xs ${getStatusColor(ticket.status)}`}>{TICKET_STATUS_LABELS[ticket.status] || ticket.status}</Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Badge className={`text-xs ${getPriorityColor(ticket.priority)}`}>{TICKET_PRIORITY_LABELS[ticket.priority] || ticket.priority}</Badge>
-                  </TableCell>
-                  <TableCell className="text-sm text-muted-foreground">{new Date(ticket.createdAt).toLocaleDateString()}</TableCell>
-                  <TableCell>
-                    <Button size="icon" variant="ghost" aria-label="View ticket" data-testid={`button-view-ticket-${ticket.id}`}>
-                      <ExternalLink className="h-4 w-4" />
-                    </Button>
-                  </TableCell>
+        <>
+          {/* Mobile stacked cards */}
+          <div className="md:hidden space-y-3">
+            {filteredTickets.map((ticket) => (
+              <Card
+                key={ticket.id}
+                className="p-4 cursor-pointer hover-elevate"
+                onClick={() => setSelectedTicketId(ticket.id)}
+                data-testid={`card-ticket-${ticket.id}`}
+              >
+                <div className="flex items-start justify-between gap-2 mb-2">
+                  <div className="min-w-0 flex-1">
+                    <div className="font-mono text-xs text-muted-foreground">{ticket.ticketNumber}</div>
+                    <div className="font-medium truncate">{ticket.subject}</div>
+                  </div>
+                  <Button size="icon" variant="ghost" aria-label="View ticket" data-testid={`button-view-ticket-mobile-${ticket.id}`}>
+                    <ExternalLink className="h-4 w-4" />
+                  </Button>
+                </div>
+                <div className="flex flex-wrap items-center gap-2 text-xs">
+                  <Badge variant="outline" className="text-xs">{TICKET_CATEGORY_LABELS[ticket.category] || ticket.category}</Badge>
+                  <Badge className={`text-xs ${getStatusColor(ticket.status)}`}>{TICKET_STATUS_LABELS[ticket.status] || ticket.status}</Badge>
+                  <Badge className={`text-xs ${getPriorityColor(ticket.priority)}`}>{TICKET_PRIORITY_LABELS[ticket.priority] || ticket.priority}</Badge>
+                  <span className="text-muted-foreground ml-auto">{new Date(ticket.createdAt).toLocaleDateString()}</span>
+                </div>
+              </Card>
+            ))}
+          </div>
+
+          {/* Desktop table */}
+          <Card className="hidden md:block">
+            <Table className="sticky-first-col">
+              <TableHeader>
+                <TableRow>
+                  <TableHead>#</TableHead>
+                  <TableHead>Subject</TableHead>
+                  <TableHead>Category</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Priority</TableHead>
+                  <TableHead>Created</TableHead>
+                  <TableHead></TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </Card>
+              </TableHeader>
+              <TableBody>
+                {filteredTickets.map((ticket) => (
+                  <TableRow key={ticket.id} className="cursor-pointer" onClick={() => setSelectedTicketId(ticket.id)} data-testid={`row-ticket-${ticket.id}`}>
+                    <TableCell className="font-mono text-sm">{ticket.ticketNumber}</TableCell>
+                    <TableCell className="font-medium max-w-xs truncate">{ticket.subject}</TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className="text-xs">{TICKET_CATEGORY_LABELS[ticket.category] || ticket.category}</Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge className={`text-xs ${getStatusColor(ticket.status)}`}>{TICKET_STATUS_LABELS[ticket.status] || ticket.status}</Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge className={`text-xs ${getPriorityColor(ticket.priority)}`}>{TICKET_PRIORITY_LABELS[ticket.priority] || ticket.priority}</Badge>
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">{new Date(ticket.createdAt).toLocaleDateString()}</TableCell>
+                    <TableCell>
+                      <Button size="icon" variant="ghost" aria-label="View ticket" data-testid={`button-view-ticket-${ticket.id}`}>
+                        <ExternalLink className="h-4 w-4" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </Card>
+        </>
       )}
     </div>
   );

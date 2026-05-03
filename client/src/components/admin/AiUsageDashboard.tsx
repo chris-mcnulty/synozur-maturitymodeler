@@ -284,7 +284,7 @@ export function AiUsageDashboard() {
           {/* Recent Activity Table */}
           <Card className="p-6">
             <h3 className="text-lg font-semibold mb-4">Recent AI Generations</h3>
-            <Table>
+            <Table className="sticky-first-col">
               <TableHeader>
                 <TableRow>
                   <TableHead>Time</TableHead>

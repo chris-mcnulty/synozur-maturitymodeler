@@ -293,6 +293,28 @@
   .no-default-hover-elevate {}
   .no-default-active-elevate {}
 
+  /* Make the first column of an admin table sticky on horizontal scroll.
+     Only kicks in when the table actually overflows (e.g. on phones).
+     Apply on the wrapping <Table> via a className.
+   */
+  .sticky-first-col tr > th:first-child,
+  .sticky-first-col tr > td:first-child {
+    position: sticky;
+    left: 0;
+    background-color: hsl(var(--card));
+    z-index: 1;
+  }
+  .sticky-first-col tr > th:first-child {
+    z-index: 2;
+  }
+  @media (min-width: 768px) {
+    .sticky-first-col tr > th:first-child,
+    .sticky-first-col tr > td:first-child {
+      position: static;
+      background-color: transparent;
+    }
+  }
+
   .toggle-elevate::before,
   .toggle-elevate-2::before {
     content: "";
