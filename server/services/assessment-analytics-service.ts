@@ -72,6 +72,22 @@ export async function calculateAssessmentResults(assessmentId: string) {
     completedAt: new Date(),
   } as any);
 
+  // Galaxy webhook emission. Best-effort; never blocks completion.
+  try {
+    if (assessment.tenantId) {
+      const { emitGalaxyEvent } = await import('../routes/galaxy/webhooks');
+      await emitGalaxyEvent(assessment.tenantId, 'assessment.completed', {
+        assessmentId,
+        modelId: assessment.modelId,
+        userId: assessment.userId,
+        score: scoringResult.overallScore,
+        label: scoringResult.label,
+      });
+    }
+  } catch (err) {
+    console.error('[galaxy] webhook emission failed', err);
+  }
+
   return result;
 }
 

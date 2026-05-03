@@ -11,6 +11,7 @@ import { registerAssessmentRoutes } from "./routes/assessment-routes";
 import { registerAiRoutes } from "./routes/ai-routes";
 import { registerAdminRoutes } from "./routes/admin-routes";
 import { registerOgRoutes } from "./routes/og-routes";
+import { registerGalaxyRoutes, registerGalaxyAdminRoutes } from "./routes/galaxy";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Set up authentication routes (includes session setup)
@@ -33,6 +34,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   registerAiRoutes(app);
   registerAdminRoutes(app);
   registerOgRoutes(app);
+  registerGalaxyRoutes(app);
+  registerGalaxyAdminRoutes(app);
 
   const httpServer = createServer(app);
   return httpServer;

@@ -6,6 +6,24 @@ This changelog documents new features, improvements, and fixes in Orion. Updates
 
 ---
 
+## May 2026
+
+### May 2, 2026 - Galaxy Client Portal API
+
+**New Features**
+- **Galaxy Client Portal API** (`/api/galaxy/v1/...`): OAuth-protected, versioned API exposing Orion assessments, results, and insights to the Galaxy client portal. Endpoints: `/me`, `/artifacts`, `/assessments`, `/assessments/:id`, `/insights/me`, plus stubs for `/courses`, `/attestations`, `/certificates` (returning empty collections until those entities exist in Orion).
+- **OAuth scopes for Galaxy**: `galaxy_portal` (required), `artifacts.read/write`, `assessments.read/write`, `courses.read/write`, `attestations.read/write`, `insights.read`, `admin.directory.read`. Advertised in `/.well-known/openid-configuration`.
+- **Per-tenant Exposure Policy**: Master enable + per-artifact toggles (assessments, results, recommendations, insights, certificates), explicit model allowlist, audience scope (all/roles/tags), allowed origins, per-tenant rate limit. Stored in `galaxy_exposure_policies`.
+- **Outbound webhooks**: HMAC-SHA256 signing (`x-galaxy-signature: sha256=…` over `{timestamp}.{body}`), per-tenant signing secret with rotate-once-visible UX, delivery log with status & response codes.
+- **Galaxy audit log**: Append-only record of sensitive Galaxy reads (`galaxy_audit_log`).
+- **OpenAPI 3.1 spec**: `/api/galaxy/v1/openapi.json` (public, cacheable).
+- **Admin UI**: New "Galaxy Portal" section in Admin sidebar with Policy / Webhook / Activity / API tabs. Tenant admins manage their own tenant; global admins can switch tenants via `?tenantId=`.
+- **Per-tenant rate limiting**: Configurable `req/min/user` (default 120), enforced in-process with `x-ratelimit-*` response headers.
+- **Structured logs**: Every authenticated Galaxy call emits a JSON log line with `requestId`, `tenantId`, `userId`, `clientId`, status. `x-request-id` returned/echoed.
+
+**Tests**
+- Unit tests for the webhook signer (`tests/unit/galaxy-webhooks.test.ts`).
+
 ## February 2026
 
 ### February 14, 2026 - Version 2.0

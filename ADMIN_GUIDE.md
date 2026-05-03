@@ -1121,6 +1121,36 @@ The current implementation (Phase 1) provides the foundation. Future phases will
 
 ---
 
+## Galaxy Client Portal
+
+Orion exposes a tenant-scoped, OAuth-protected API at `/api/galaxy/v1/*` so the Galaxy customer portal can read assessments, results, and insights for users in your tenant. Galaxy access is **opt-in per tenant** and is disabled by default.
+
+### Where to configure
+**Admin → Galaxy Portal** (sidebar). The page has four tabs:
+
+1. **Policy** — master `Enable Galaxy` switch plus per-artifact toggles (Assessments, Results, Recommendations, Insights, Certificates), audience scope (all tenant users / specific roles / specific tags), and a per-tenant rate limit (`req/min/user`, default 120).
+2. **Webhook** — register an HTTPS URL to receive signed events. Use **Rotate** to mint a new signing secret (shown once — copy it immediately) and **Send test event** to deliver a synthetic `assessment.completed` payload.
+3. **Activity** — recent webhook delivery attempts (status, response code, timestamp) and the API audit log of sensitive Galaxy reads.
+4. **API** — link to the OpenAPI 3.1 spec at `/api/galaxy/v1/openapi.json`.
+
+### How Galaxy authenticates
+Galaxy obtains an OAuth 2.1 access token from Orion using the standard authorization-code-with-PKCE flow. The token must include the `galaxy_portal` scope plus per-resource scopes (`artifacts.read`, `assessments.read`, `insights.read`, etc.). Without `galaxy_portal` the API responds `403 insufficient_scope`. Without an enabled exposure policy for the user's tenant the API responds `403 tenant_disabled`.
+
+### Webhook signing
+Each event is delivered with these headers:
+
+```
+x-galaxy-event:     assessment.completed
+x-galaxy-event-id:  <uuid>
+x-galaxy-timestamp: <unix seconds>
+x-galaxy-signature: sha256=<hex>
+```
+
+The signature is `HMAC-SHA256(signing_secret, "{timestamp}.{raw_body}")`. Verify the timestamp is recent (≤5 minutes old) before trusting the signature.
+
+### What is NOT yet exposed
+This release includes endpoint stubs for `/courses`, `/attestations`, and `/certificates` because those entities don't yet exist in Orion. They return empty collections regardless of policy, and will be wired up when those features land.
+
 ## Conclusion
 
 The Orion platform provides comprehensive tools for creating, managing, and analyzing maturity assessments. As an admin, you have the power to:

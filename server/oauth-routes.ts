@@ -424,7 +424,12 @@ router.post('/oauth/token', express.json(), express.urlencoded({ extended: true 
     const config = getOAuthConfig();
     const accessToken = generateToken(32);
     const newRefreshToken = generateToken(32);
-    const expiresIn = config.tokenLifetimes.accessToken;
+    // Galaxy clients get short-lived (15-minute) access tokens regardless
+    // of the deployment-wide default, per the Galaxy security profile.
+    const galaxyAllowlist = (process.env.GALAXY_OAUTH_CLIENT_IDS || '')
+      .split(',').map((s) => s.trim()).filter(Boolean);
+    const isGalaxyClient = galaxyAllowlist.includes(client.clientId);
+    const expiresIn = isGalaxyClient ? 15 * 60 : config.tokenLifetimes.accessToken;
     
     // Store new tokens
     await db.insert(oauthTokens).values({

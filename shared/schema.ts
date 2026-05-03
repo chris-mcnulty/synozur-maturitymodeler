@@ -1009,6 +1009,165 @@ export const insertSsoAuthStateSchema = createInsertSchema(ssoAuthStates).omit({
 export type SsoAuthState = typeof ssoAuthStates.$inferSelect;
 export type InsertSsoAuthState = z.infer<typeof insertSsoAuthStateSchema>;
 
+// ========== GALAXY CLIENT PORTAL ==========
+
+// Per-tenant policy controlling what Galaxy can see/do for a tenant.
+// Stored as a single row per tenant (master toggle + per-type toggles +
+// per-artifact selection + audience scope). Webhook configuration lives in
+// galaxyWebhooks; per-API-call records live in galaxyAuditLog.
+export const galaxyExposurePolicies = pgTable("galaxy_exposure_policies", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").notNull().unique().references(() => tenants.id, { onDelete: "cascade" }),
+  enabled: boolean("enabled").notNull().default(false),
+  // Per-artifact-type toggles
+  exposeAssessments: boolean("expose_assessments").notNull().default(true),
+  exposeResults: boolean("expose_results").notNull().default(true),
+  exposeRecommendations: boolean("expose_recommendations").notNull().default(true),
+  exposeInsights: boolean("expose_insights").notNull().default(true),
+  exposeCertificates: boolean("expose_certificates").notNull().default(false),
+  // Per-artifact selection: explicit allowlist of model IDs the tenant has
+  // chosen to expose. Empty array = "no models exposed"; null = "all
+  // tenant-visible models exposed".
+  exposedModelIds: text("exposed_model_ids").array(),
+  // Audience scope: 'all' = every user in tenant, 'roles' = userRoles[].
+  audienceMode: text("audience_mode").notNull().default("all"),
+  audienceRoles: text("audience_roles").array(),
+  audienceTags: text("audience_tags").array(),
+  // Allowed CORS origins for the Galaxy app talking to this tenant
+  allowedOrigins: text("allowed_origins").array(),
+  // Per-tenant rate limit (requests/minute per user). 0 = use default.
+  rateLimitPerMinute: integer("rate_limit_per_minute").notNull().default(120),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => ({
+  tenantIdx: index("idx_galaxy_policy_tenant").on(table.tenantId),
+}));
+
+// Outbound webhook registrations. One row per tenant; secret rotation
+// produces a new value but reuses the same row.
+export const galaxyWebhooks = pgTable("galaxy_webhooks", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").notNull().unique().references(() => tenants.id, { onDelete: "cascade" }),
+  url: text("url").notNull(),
+  signingSecret: text("signing_secret").notNull(),
+  active: boolean("active").notNull().default(true),
+  // Subscribed event keys, e.g. ['assessment.completed','attestation.signed']
+  events: text("events").array(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => ({
+  tenantIdx: index("idx_galaxy_webhooks_tenant").on(table.tenantId),
+}));
+
+// Each attempt to deliver a Galaxy event to a tenant's webhook.
+// Used to power the "Galaxy Activity" admin view and the redeliver action.
+export const galaxyWebhookDeliveries = pgTable("galaxy_webhook_deliveries", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").notNull().references(() => tenants.id, { onDelete: "cascade" }),
+  webhookId: varchar("webhook_id").references(() => galaxyWebhooks.id, { onDelete: "cascade" }),
+  eventType: text("event_type").notNull(),
+  payload: json("payload").notNull(),
+  status: text("status").notNull().default("pending"), // pending, delivered, failed
+  attemptCount: integer("attempt_count").notNull().default(0),
+  responseStatus: integer("response_status"),
+  responseBody: text("response_body"),
+  lastError: text("last_error"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  deliveredAt: timestamp("delivered_at"),
+}, (table) => ({
+  tenantIdx: index("idx_galaxy_deliveries_tenant").on(table.tenantId),
+  statusIdx: index("idx_galaxy_deliveries_status").on(table.status),
+  createdIdx: index("idx_galaxy_deliveries_created").on(table.createdAt),
+}));
+
+// Immutable audit log of sensitive Galaxy reads (assessment results,
+// certificates, attestations). Append-only; never updated.
+export const galaxyAuditLog = pgTable("galaxy_audit_log", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").notNull().references(() => tenants.id, { onDelete: "cascade" }),
+  userId: varchar("user_id").references(() => users.id, { onDelete: "set null" }),
+  clientId: varchar("client_id"), // OAuth client id string (e.g. 'galaxy')
+  requestId: text("request_id"),
+  method: text("method").notNull(),
+  path: text("path").notNull(),
+  scopes: text("scopes").array(),
+  resourceType: text("resource_type"), // 'assessment','result','certificate', etc.
+  resourceId: text("resource_id"),
+  status: integer("status").notNull(),
+  ipAddress: text("ip_address"),
+  userAgent: text("user_agent"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  tenantIdx: index("idx_galaxy_audit_tenant").on(table.tenantId),
+  createdIdx: index("idx_galaxy_audit_created").on(table.createdAt),
+  resourceIdx: index("idx_galaxy_audit_resource").on(table.resourceType, table.resourceId),
+}));
+
+export const insertGalaxyExposurePolicySchema = createInsertSchema(galaxyExposurePolicies).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertGalaxyWebhookSchema = createInsertSchema(galaxyWebhooks).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const galaxyPolicyUpdateSchema = z.object({
+  enabled: z.boolean().optional(),
+  exposeAssessments: z.boolean().optional(),
+  exposeResults: z.boolean().optional(),
+  exposeRecommendations: z.boolean().optional(),
+  exposeInsights: z.boolean().optional(),
+  exposeCertificates: z.boolean().optional(),
+  exposedModelIds: z.array(z.string()).nullable().optional(),
+  audienceMode: z.enum(['all', 'roles']).optional(),
+  audienceRoles: z.array(z.string()).nullable().optional(),
+  audienceTags: z.array(z.string()).nullable().optional(),
+  allowedOrigins: z.array(z.string().url()).nullable().optional(),
+  rateLimitPerMinute: z.number().int().min(0).max(10000).optional(),
+});
+
+export const galaxyWebhookUpdateSchema = z.object({
+  url: z.string().url(),
+  events: z.array(z.string()).optional(),
+  active: z.boolean().optional(),
+});
+
+export type GalaxyExposurePolicy = typeof galaxyExposurePolicies.$inferSelect;
+export type InsertGalaxyExposurePolicy = z.infer<typeof insertGalaxyExposurePolicySchema>;
+export type GalaxyWebhook = typeof galaxyWebhooks.$inferSelect;
+export type InsertGalaxyWebhook = z.infer<typeof insertGalaxyWebhookSchema>;
+export type GalaxyWebhookDelivery = typeof galaxyWebhookDeliveries.$inferSelect;
+export type GalaxyAuditLog = typeof galaxyAuditLog.$inferSelect;
+
+// Galaxy OAuth scope constants. Source of truth for both the IdP and the
+// Galaxy API middleware.
+export const GALAXY_SCOPES = [
+  'galaxy_portal',
+  'artifacts.read',
+  'artifacts.write',
+  'assessments.read',
+  'assessments.write',
+  'courses.read',
+  'courses.write',
+  'attestations.read',
+  'attestations.write',
+  'insights.read',
+  'admin.directory.read',
+] as const;
+export type GalaxyScope = typeof GALAXY_SCOPES[number];
+
+export const GALAXY_EVENT_TYPES = [
+  'assessment.completed',
+  'course.completed',
+  'attestation.signed',
+  'recommendation.created',
+] as const;
+export type GalaxyEventType = typeof GALAXY_EVENT_TYPES[number];
+
 // ========== SUPPORT TICKET SYSTEM ==========
 
 export const TICKET_CATEGORIES = ['bug', 'feature_request', 'question', 'feedback'] as const;

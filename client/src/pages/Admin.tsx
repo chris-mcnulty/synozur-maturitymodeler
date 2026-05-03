@@ -28,6 +28,10 @@ import { ImportBatches } from "@/components/admin/ImportBatches";
 import { ProxyAssessmentDialog } from "@/components/admin/ProxyAssessmentDialog";
 import { TenantManagement } from "@/components/admin/TenantManagement";
 import { OAuthApplications } from "@/components/admin/OAuthApplications";
+import { lazy, Suspense } from "react";
+const GalaxyIntegration = lazy(() =>
+  import("@/components/admin/GalaxyIntegration").then((m) => ({ default: m.GalaxyIntegration })),
+);
 import { ImportExportPanel } from "@/components/admin/ImportExportPanel";
 import { ModelBuilder } from "@/components/admin/ModelBuilder";
 import { ModelCreationWizard } from "@/components/admin/ModelCreationWizard";
@@ -2604,6 +2608,17 @@ export default function Admin() {
                       </SidebarMenuButton>
                     </SidebarMenuItem>
                     <SidebarMenuItem>
+                      <SidebarMenuButton
+                        onClick={() => setActiveSection('galaxy')}
+                        isActive={activeSection === 'galaxy'}
+                        data-testid="tab-galaxy"
+                        tooltip="Galaxy Client Portal"
+                      >
+                        <ExternalLink className="h-4 w-4" />
+                        <span className="group-data-[collapsible=icon]:hidden">Galaxy Portal</span>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                    <SidebarMenuItem>
                       <SidebarMenuButton 
                         onClick={() => setActiveSection('access-requests')}
                         isActive={activeSection === 'access-requests'}
@@ -4238,6 +4253,12 @@ export default function Admin() {
               )}
 
               {activeSection === 'oauth-applications' && <OAuthApplications />}
+
+              {activeSection === 'galaxy' && (
+                <Suspense fallback={<div className="text-sm text-muted-foreground">Loading…</div>}>
+                  <GalaxyIntegration />
+                </Suspense>
+              )}
 
               {activeSection === 'access-requests' && (
                 <AccessRequestsSection

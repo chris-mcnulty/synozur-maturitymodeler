@@ -466,6 +466,24 @@ Following Vega's pattern:
 
 ---
 
+## Galaxy Client Portal API — Deferred Endpoints
+
+Task #40 shipped the v1 Galaxy contract (OAuth + per-tenant exposure policy + signed webhooks + audit log + admin UI + OpenAPI 3.1) covering everything Orion already has the underlying data model for: `/me`, `/artifacts`, `/assessments`, `/assessments/:id`, `/insights/me`. The endpoints below are intentionally deferred because the underlying entities or workflows do not exist in Orion yet. They are tracked here so they can be picked up without breaking the v1 contract.
+
+| Endpoint | Reason deferred | Unblocked when |
+|----------|-----------------|----------------|
+| `POST /assessments` | Galaxy assessment-creation flow not yet defined; current Orion flow is in-app only. | Cross-product assessment-launch story is approved. |
+| `POST /assessments/:id/responses` | Same as above. | — |
+| `POST /assessments/:id/complete` | Same as above. | — |
+| `GET /courses/:id`, `POST /courses/:id/progress`, `POST /courses/:id/quiz` | No `courses` table or progress tracking in Orion. | Learning module ships in Orion. |
+| `POST /attestations/:id/sign` | No `attestations` table. | Attestation feature ships. |
+| `GET /certificates/:id.pdf` | No certificate generator/storage. | Certificate generation feature ships. |
+| `GET /admin/directory` (client_credentials) | Galaxy admin sync not yet scoped; client_credentials grant flow not exposed for this surface. | Admin directory sync story approved. |
+
+The OpenAPI document at `/api/galaxy/v1/openapi.json` lists these under `x-deferred-endpoints`.
+
+---
+
 ## RELEASE SCHEDULE
 
 | Quarter | Focus |

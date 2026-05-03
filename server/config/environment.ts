@@ -117,6 +117,18 @@ export function getOAuthConfig(): OAuthConfig {
         'nebula:write', // Write access to Nebula data
         'vega:read', // Read access to Vega data
         'vega:write', // Write access to Vega data
+        // Galaxy Client Portal scopes (see /api/galaxy/v1/openapi.json)
+        'galaxy_portal',
+        'artifacts.read',
+        'artifacts.write',
+        'assessments.read',
+        'assessments.write',
+        'courses.read',
+        'courses.write',
+        'attestations.read',
+        'attestations.write',
+        'insights.read',
+        'admin.directory.read',
       ],
     },
   };
