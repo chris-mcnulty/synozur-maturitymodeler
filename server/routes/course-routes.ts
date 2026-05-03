@@ -22,6 +22,7 @@ import { ensureAuthenticated, ensureAdminOrModeler } from "../auth";
 import { getAccessibleTenantIds, checkIsGlobalAdmin, canManageModels } from "../permissions";
 import * as courseSvc from "../services/course-service";
 import * as scormSvc from "../services/scorm-service";
+import * as courseIE from "../services/course-import-export";
 import * as schema from "@shared/schema";
 import { db } from "../db";
 import { eq } from "drizzle-orm";
@@ -967,6 +968,71 @@ export function registerCourseRoutes(app: Express) {
       }
     },
   );
+
+  // ── JSON export / import ────────────────────────────────────────────────────
+
+  // Export a course as a portable .orion-course.json file.
+  // The file includes all metadata, modules, and lessons (full content
+  // payloads). Enrollment data and SCORM binaries are excluded.
+  app.get("/api/courses/:id/export/json", ensureAdminOrModeler, async (req, res) => {
+    try {
+      const course = await requireManageCourse(req, res, req.params.id);
+      if (!course) return;
+      const doc = await courseIE.exportCourse(course.id);
+      if (!doc) return res.status(404).json({ error: "Course not found" });
+      const safeName = course.slug.replace(/[^a-z0-9-]/g, "-");
+      res.set({
+        "Content-Type": "application/json",
+        "Content-Disposition": `attachment; filename="${safeName}.orion-course.json"`,
+      });
+      res.json(doc);
+    } catch (err: any) {
+      console.error("course json export error", err);
+      if (!res.headersSent) res.status(500).json({ error: err.message ?? "Failed to export" });
+    }
+  });
+
+  // Import a course from a .orion-course.json file.
+  // Accepts the parsed JSON as the request body.
+  // Always imports as status="draft". Slug is deduped automatically.
+  app.post("/api/courses/import/json", ensureAdminOrModeler, async (req, res) => {
+    try {
+      const user = req.user as schema.User;
+      const isGlobal = checkIsGlobalAdmin(user);
+
+      // Validate the document shape
+      let doc: courseIE.CourseExportDoc;
+      try {
+        courseIE.validateCourseExportDoc(req.body);
+        doc = req.body as courseIE.CourseExportDoc;
+      } catch (err: any) {
+        return res.status(400).json({ error: err.message ?? "Invalid course file" });
+      }
+
+      // Determine owner tenant (same rules as course creation)
+      const ownerTenantId = isGlobal
+        ? (req.query.ownerTenantId as string | undefined ?? null)
+        : (user.tenantId ?? null);
+      if (!isGlobal && !user.tenantId) {
+        return res.status(403).json({ error: "Tenant admins must be assigned to a tenant" });
+      }
+
+      const result = await courseIE.importCourse(doc, {
+        ownerTenantId,
+        createdBy: user.id,
+      });
+
+      res.status(201).json({
+        course: result.course,
+        moduleCount: result.moduleCount,
+        lessonCount: result.lessonCount,
+        tagCount: result.tagCount,
+      });
+    } catch (err: any) {
+      console.error("course json import error", err);
+      res.status(500).json({ error: err.message ?? "Failed to import" });
+    }
+  });
 
   // Export a course as a SCORM 1.2 package.
   app.get("/api/courses/:id/scorm/export", ensureAdminOrModeler, async (req, res) => {

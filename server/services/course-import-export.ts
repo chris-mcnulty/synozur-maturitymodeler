@@ -192,7 +192,7 @@ export async function importCourse(doc: CourseExportDoc, opts: ImportOptions = {
         tagIds.push(existing.id);
       } else {
         const [created] = await db.insert(schema.courseTags)
-          .values({ name: trimmed, color: null } as any)
+          .values({ name: trimmed } as any)
           .returning();
         tagIds.push(created.id);
       }

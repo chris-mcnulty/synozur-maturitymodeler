@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -41,6 +41,8 @@ export function CourseManagement() {
   const { toast } = useToast();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const importFileRef = useRef<HTMLInputElement>(null);
 
   const { data: courses, isLoading } = useQuery<CourseListItem[]>({
     queryKey: ["/api/courses?manageable=true"],
@@ -54,20 +56,82 @@ export function CourseManagement() {
     },
   });
 
+  const importMutation = useMutation({
+    mutationFn: async (doc: unknown) =>
+      apiRequest("/api/courses/import/json", "POST", doc),
+    onSuccess: (result: any) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/courses"] });
+      toast({
+        title: "Course imported",
+        description: `"${result.course.title}" created as draft with ${result.moduleCount} modules and ${result.lessonCount} lessons.`,
+      });
+      setEditingId(result.course.id);
+    },
+    onError: (err: any) => {
+      toast({ title: "Import failed", description: err.message ?? "Could not import course file.", variant: "destructive" });
+    },
+  });
+
+  function handleExport(courseId: string, slug: string) {
+    const a = document.createElement("a");
+    a.href = `/api/courses/${courseId}/export/json`;
+    a.download = `${slug}.orion-course.json`;
+    a.click();
+  }
+
+  async function handleImportFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = "";
+    setImporting(true);
+    try {
+      const text = await file.text();
+      const doc = JSON.parse(text);
+      importMutation.mutate(doc);
+    } catch {
+      toast({ title: "Invalid file", description: "Could not read the selected file as JSON.", variant: "destructive" });
+    } finally {
+      setImporting(false);
+    }
+  }
+
   if (editingId) {
     return <CourseBuilder courseId={editingId} onClose={() => setEditingId(null)} />;
   }
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between gap-2">
+      {/* Hidden file input for import */}
+      <input
+        ref={importFileRef}
+        type="file"
+        accept=".json,.orion-course.json"
+        className="hidden"
+        onChange={handleImportFile}
+        data-testid="input-import-course-file"
+      />
+
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <h2 className="text-2xl font-bold" data-testid="text-courses-admin-heading">Learning Courses</h2>
           <p className="text-muted-foreground text-sm">Author courses, modules, and lessons.</p>
         </div>
-        <Button onClick={() => setCreating(true)} data-testid="button-new-course">
-          <Plus className="h-4 w-4 mr-1" /> New course
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            onClick={() => importFileRef.current?.click()}
+            disabled={importing || importMutation.isPending}
+            data-testid="button-import-course"
+          >
+            {importing || importMutation.isPending
+              ? <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+              : <Upload className="h-4 w-4 mr-1" />}
+            Import
+          </Button>
+          <Button onClick={() => setCreating(true)} data-testid="button-new-course">
+            <Plus className="h-4 w-4 mr-1" /> New course
+          </Button>
+        </div>
       </div>
 
       {isLoading && <Skeleton className="h-32 w-full" />}
@@ -101,6 +165,15 @@ export function CourseManagement() {
                 <div className="flex gap-2">
                   <Button size="sm" variant="outline" onClick={() => setEditingId(c.id)} data-testid={`button-edit-course-${c.id}`}>
                     <Edit className="h-3 w-3 mr-1" /> Edit
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => handleExport(c.id, c.slug)}
+                    data-testid={`button-export-course-json-${c.id}`}
+                    title="Export as .orion-course.json"
+                  >
+                    <Download className="h-3 w-3" />
                   </Button>
                   <Button
                     size="sm"
