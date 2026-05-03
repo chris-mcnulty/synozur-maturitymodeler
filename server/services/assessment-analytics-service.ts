@@ -60,12 +60,21 @@ export async function calculateAssessmentResults(assessmentId: string) {
     maturityScale: model.maturityScale ?? null,
   });
 
-  const result = await storage.createResult({
-    assessmentId,
-    overallScore: scoringResult.overallScore,
-    label: scoringResult.label,
-    dimensionScores: scoringResult.dimensionScores,
-  });
+  // Upsert: regenerating an already-scored assessment must update the
+  // existing row rather than violating the unique(assessment_id) index.
+  const existingResult = await storage.getResult(assessmentId);
+  const result = existingResult
+    ? (await storage.updateResult(existingResult.id, {
+        overallScore: scoringResult.overallScore,
+        label: scoringResult.label,
+        dimensionScores: scoringResult.dimensionScores,
+      })) ?? existingResult
+    : await storage.createResult({
+        assessmentId,
+        overallScore: scoringResult.overallScore,
+        label: scoringResult.label,
+        dimensionScores: scoringResult.dimensionScores,
+      });
 
   await storage.updateAssessment(assessmentId, {
     status: "completed",
