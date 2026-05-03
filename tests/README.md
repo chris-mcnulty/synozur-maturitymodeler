@@ -8,13 +8,28 @@ end-to-end journey — and is meant to grow alongside new features.
 
 ```
 tests/
-├── README.md            ← you are here
-├── unit/                ← Vitest unit tests (node env, no DB, no network)
-│   ├── scoring.test.ts  ← scoring engine: 100/500-point scales, edge cases
-│   └── registry.test.ts ← AI provider registry: selection + fallback
-└── e2e/                 ← Playwright smoke suite (requires running app)
-    └── smoke.spec.ts    ← signup → assessment → results → admin edit
+├── README.md                  ← you are here
+├── unit/                      ← Vitest unit tests (node env, no DB, no network)
+│   ├── scoring.test.ts        ← scoring engine: 100/500-point scales, edge cases
+│   ├── registry.test.ts       ← AI provider registry: selection + fallback
+│   └── galaxy-webhooks.test.ts← galaxy HMAC signer + secret generator
+├── integration/               ← Vitest integration tests (mocked db, supertest)
+│   ├── helpers/               ← shared test app + galaxy fake-db helper
+│   ├── galaxy-api.test.ts     ← Galaxy /api/galaxy/v1/* contract + webhook E2E
+│   ├── oauth-clients.test.ts  ← OAuth admin CRUD
+│   ├── og-routes.test.ts      ← OpenGraph share pages
+│   └── …                      ← assessment-flow, auth-change-password, admin-models
+└── e2e/                       ← Playwright smoke suite (requires running app)
+    └── smoke.spec.ts          ← signup → assessment → results → admin edit
 ```
+
+The Galaxy contract suite (`integration/galaxy-api.test.ts`) exercises every
+`/api/galaxy/v1/*` endpoint with valid + invalid bearer tokens, missing
+scopes, disabled tenants, audience-role exclusion, exposure-policy filtering,
+and rate-limit overflow. It also verifies webhook delivery and HMAC signatures
+end-to-end against a local `http.createServer` listener (with
+`GALAXY_WEBHOOK_ALLOW_PRIVATE=true`). It runs in CI on every PR via
+`.github/workflows/test.yml`.
 
 The pure scoring engine under test lives at
 `server/services/scoring.ts` and is invoked from
