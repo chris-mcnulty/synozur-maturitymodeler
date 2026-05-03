@@ -36,6 +36,38 @@ The pure scoring engine under test lives at
 `server/routes.ts` (`POST /api/assessments/:id/calculate`). The provider
 registry under test lives at `server/services/ai-providers/registry.ts`.
 
+## Continuous integration
+
+Both suites run automatically on every pull request and on every push to
+`main` via the [`Tests` workflow](../.github/workflows/test.yml):
+
+- The **`vitest`** job spins up an isolated Postgres 16 service, applies the
+  Drizzle schema with `npx drizzle-kit push --force`, and runs
+  `npx vitest run --reporter=default`.
+- The **`playwright`** job runs after Vitest passes. It installs the
+  Chromium browser, seeds the minimal published "individual" model the
+  smoke suite needs via
+  [`scripts/seed-e2e-fixtures.mjs`](../scripts/seed-e2e-fixtures.mjs),
+  provisions a non-production admin account from the
+  `E2E_ADMIN_USERNAME` / `E2E_ADMIN_PASSWORD` repository secrets (via
+  [`scripts/provision-e2e-admin.mjs`](../scripts/provision-e2e-admin.mjs)),
+  starts the app via Playwright's `webServer` (with a CI-only
+  `SESSION_SECRET`), and runs `npx playwright test`. On failure the HTML
+  report and traces are uploaded as workflow artifacts
+  (`playwright-report`, `playwright-traces`).
+
+To exercise the full smoke suite (including the admin "edit question" leg)
+in CI, configure two repository (or organization) secrets pointing at a
+dedicated, non-production admin account:
+
+| Secret | Purpose |
+| --- | --- |
+| `E2E_ADMIN_USERNAME` | Username of the QA admin account. |
+| `E2E_ADMIN_PASSWORD` | Password for that account. |
+
+If either secret is missing, the admin leg is skipped automatically and the
+job still runs the public signup → assessment → results journey.
+
 ## Running tests
 
 The canonical entry point is `npm test`. The following scripts are wired up in
@@ -105,7 +137,7 @@ Example:
 ```bash
 E2E_ADMIN_USERNAME=qa-admin \
 E2E_ADMIN_PASSWORD=*** \
-npm run test:e2e
+npx playwright test
 ```
 
 ## What new code is expected to test

@@ -15,7 +15,8 @@ import { test, expect, Page, request as pwRequest } from '@playwright/test';
  * answers each question deterministically based on the question type.
  *
  * Required env (optional but recommended):
- *   - E2E_ADMIN_USERNAME / E2E_ADMIN_PASSWORD: enables the admin edit step.
+ *   - E2E_ADMIN_USERNAME / E2E_ADMIN_PASSWORD: enables the admin edit step
+ *     (used as `npx playwright test` env, not `npm run test:e2e`).
  *   - E2E_BASE_URL: defaults to http://localhost:5000.
  */
 
@@ -31,7 +32,9 @@ type ApiQuestion = {
   id: string;
   key: string;
   text: string;
-  type: 'single_choice' | 'multi_select' | 'boolean' | 'text' | 'numeric';
+  // Matches the values stored by the app (see shared/schema.ts: questions.type):
+  //   multiple_choice | multi_select | numeric | true_false | text
+  type: 'multiple_choice' | 'multi_select' | 'true_false' | 'text' | 'numeric';
   dimensionId: string | null;
   minValue: number | null;
   maxValue: number | null;
@@ -76,7 +79,7 @@ async function fetchModelQuestions(baseURL: string, modelId: string) {
     const questions = (await qRes.json()) as ApiQuestion[];
     const answersByQuestion: Record<string, ApiAnswer[]> = {};
     for (const q of questions) {
-      if (q.type === 'single_choice' || q.type === 'multi_select') {
+      if (q.type === 'multiple_choice' || q.type === 'multi_select') {
         const aRes = await ctx.get(`/api/answers/${q.id}`);
         if (aRes.ok()) {
           answersByQuestion[q.id] = (await aRes.json()) as ApiAnswer[];
@@ -95,19 +98,21 @@ async function answerCurrentQuestion(
   answers: ApiAnswer[] | undefined,
 ) {
   switch (question.type) {
-    case 'single_choice': {
+    case 'multiple_choice': {
       const first = answers?.[0];
-      if (!first) throw new Error(`No answers seeded for single_choice question ${question.id}`);
-      await page.getByTestId(`answer-option-${first.key}`).click();
+      if (!first) throw new Error(`No answers seeded for multiple_choice question ${question.id}`);
+      // The QuestionCard maps API answer.id -> rendered key, so the rendered
+      // testid is `answer-option-${answer.id}` (see client/src/pages/Assessment.tsx).
+      await page.getByTestId(`answer-option-${first.key ?? first.id}`).click();
       break;
     }
     case 'multi_select': {
       const first = answers?.[0];
       if (!first) throw new Error(`No answers seeded for multi_select question ${question.id}`);
-      await page.getByTestId(`answer-option-${first.key}`).click();
+      await page.getByTestId(`answer-option-${first.key ?? first.id}`).click();
       break;
     }
-    case 'boolean': {
+    case 'true_false': {
       await page.getByTestId('answer-option-true').click();
       break;
     }
@@ -195,28 +200,44 @@ test.describe('Orion smoke journey', () => {
     await page.getByTestId('tab-models').click();
     await page.getByTestId(`button-edit-${model.id}`).click();
 
-    // ModelBuilder Structure tab is the canonical question editor surface.
-    // We expand the first question card (UnifiedQuestionEditor) and update its
-    // text. Test IDs in that component follow `input-question-text-${id}` and
-    // `button-save-question-${id}`; we fall back to a more permissive
-    // discovery pattern if those exact IDs are not present so the test can
-    // adapt to minor naming changes.
+    // ModelBuilder opens on the "overview" tab by default; switch to the
+    // "structure" tab where dimensions and questions are editable.
+    await page.getByTestId('tab-structure').click();
+
+    // Expand the first dimension accordion to reveal its questions. The
+    // accordion items expose `accordion-dimension-${id}` test IDs; the
+    // clickable trigger is the AccordionTrigger inside that container.
+    const firstDimension = page.locator('[data-testid^="accordion-dimension-"]').first();
+    await expect(firstDimension).toBeVisible({ timeout: 30_000 });
+    await firstDimension.locator('button').first().click();
+
+    // Each question renders a UnifiedQuestionEditor card with testid
+    // `unified-question-${id}`. The card is collapsed by default; clicking
+    // the card header expands it and reveals `input-question-text-${id}`.
+    const firstQuestionCard = page.locator('[data-testid^="unified-question-"]').first();
+    await expect(firstQuestionCard).toBeVisible({ timeout: 15_000 });
+    await firstQuestionCard.locator('div').first().click();
+
     const firstQuestionInput = page.locator('[data-testid^="input-question-text-"]').first();
-    await expect(firstQuestionInput).toBeVisible({ timeout: 30_000 });
+    await expect(firstQuestionInput).toBeVisible({ timeout: 15_000 });
     const original = (await firstQuestionInput.inputValue()).trim();
     const edited = `${original} [smoke ${uniqueSuffix()}]`;
 
     await firstQuestionInput.fill(edited);
-    const saveBtn = page.locator('[data-testid^="button-save-question-"]').first();
-    if (await saveBtn.isVisible().catch(() => false)) {
-      await saveBtn.click();
-    } else {
-      // No explicit save button: editor uses on-blur autosave.
-      await firstQuestionInput.blur();
-    }
+    // UnifiedQuestionEditor autosaves the question text on blur. Trigger
+    // blur and give the network mutation a moment to flush.
+    await firstQuestionInput.blur();
+    await page.waitForTimeout(1_000);
 
-    // Reload and confirm the change persisted.
+    // Reload, re-open the same question, and confirm the change persisted.
     await page.reload();
+    await page.getByTestId('tab-structure').click();
+    const reloadedDim = page.locator('[data-testid^="accordion-dimension-"]').first();
+    await expect(reloadedDim).toBeVisible({ timeout: 30_000 });
+    await reloadedDim.locator('button').first().click();
+    const reloadedCard = page.locator('[data-testid^="unified-question-"]').first();
+    await expect(reloadedCard).toBeVisible({ timeout: 15_000 });
+    await reloadedCard.locator('div').first().click();
     const reloaded = page.locator('[data-testid^="input-question-text-"]').first();
     await expect(reloaded).toHaveValue(edited, { timeout: 15_000 });
   });
