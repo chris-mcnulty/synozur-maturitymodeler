@@ -724,6 +724,53 @@ export function registerAdminRoutes(app: Express) {
     }
   });
 
+  // Bulk update monthly digest opt-out for all users or a specific tenant.
+  // optOut=true  => disable digest for those users
+  // optOut=false => re-enable digest for those users
+  app.post("/api/admin/users/bulk-digest-setting", ensureGlobalAdmin, async (req, res) => {
+    try {
+      const schema2 = z.object({
+        optOut: z.boolean(),
+        tenantId: z.string().optional().nullable(), // null/undefined = all users
+      });
+      const parsed = schema2.safeParse(req.body);
+      if (!parsed.success) return res.status(400).json({ error: 'Invalid payload', details: parsed.error.issues });
+      const { optOut, tenantId } = parsed.data;
+
+      const condition = tenantId
+        ? eq(schema.users.tenantId, tenantId)
+        : undefined; // no filter = all users
+
+      const result = condition
+        ? await db.update(schema.users).set({ monthlyDigestOptOut: optOut }).where(condition)
+        : await db.update(schema.users).set({ monthlyDigestOptOut: optOut });
+
+      const count = (result as any).rowCount ?? 0;
+      res.json({ updated: count, optOut, tenantId: tenantId ?? 'all' });
+    } catch (error) {
+      console.error('Failed to bulk update digest setting:', error);
+      res.status(500).json({ error: 'Failed to update digest settings' });
+    }
+  });
+
+  // Get digest opt-out stats (counts per state).
+  app.get("/api/admin/users/digest-stats", ensureGlobalAdmin, async (req, res) => {
+    try {
+      const rows = await db
+        .select({
+          optOut: schema.users.monthlyDigestOptOut,
+          count: sql<number>`count(*)::int`,
+        })
+        .from(schema.users)
+        .groupBy(schema.users.monthlyDigestOptOut);
+      const optedIn = rows.find(r => r.optOut === false)?.count ?? 0;
+      const optedOut = rows.find(r => r.optOut === true)?.count ?? 0;
+      res.json({ optedIn, optedOut, total: optedIn + optedOut });
+    } catch (error) {
+      res.status(500).json({ error: 'Failed to get digest stats' });
+    }
+  });
+
   // Personal insights for the logged-in user
   app.get("/api/insights/user", ensureAuthenticated, async (req, res) => {
     try {

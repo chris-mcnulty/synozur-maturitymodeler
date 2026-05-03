@@ -26,7 +26,7 @@ export const users = pgTable("users", {
   tenantId: varchar("tenant_id"),
   lastDismissedChangelogVersion: text("last_dismissed_changelog_version"),
   // Email notification preferences
-  monthlyDigestOptOut: boolean("monthly_digest_opt_out").notNull().default(false),
+  monthlyDigestOptOut: boolean("monthly_digest_opt_out").notNull().default(true),
   lastMonthlyDigestSentAt: timestamp("last_monthly_digest_sent_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 }, (table) => ({

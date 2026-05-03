@@ -25,6 +25,37 @@ function escapeHtml(s: string): string {
     .replace(/'/g, '&#39;');
 }
 
+/**
+ * Convert a plain markdown string to simple HTML safe for email clients.
+ * Handles: **bold**, *italic*, # headings (h3), bullet lists, and paragraph breaks.
+ * Everything is HTML-escaped first so injected content is safe.
+ */
+function markdownToEmailHtml(md: string): string {
+  const escaped = escapeHtml(md);
+  return escaped
+    // Headings: # Heading → <h3>
+    .replace(/^###? (.+)$/gm, '<h3 style="font-size:14px;font-weight:600;margin:12px 0 4px;">$1</h3>')
+    .replace(/^## (.+)$/gm, '<h3 style="font-size:15px;font-weight:600;margin:12px 0 4px;">$1</h3>')
+    .replace(/^# (.+)$/gm, '<h3 style="font-size:16px;font-weight:600;margin:12px 0 4px;">$1</h3>')
+    // Bold+italic: ***text*** or **_text_**
+    .replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>')
+    // Bold: **text**
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    // Italic: *text* or _text_
+    .replace(/\*(.+?)\*/g, '<em>$1</em>')
+    .replace(/_(.+?)_/g, '<em>$1</em>')
+    // Bullet lists: lines starting with - or *
+    .replace(/^[-*] (.+)$/gm, '<li style="margin:2px 0;">$1</li>')
+    .replace(/(<li[^>]*>.*<\/li>\n?)+/g, '<ul style="padding-left:18px;margin:6px 0;">$&</ul>')
+    // Paragraph breaks: double newline → paragraph
+    .replace(/\n\n+/g, '</p><p style="margin:8px 0;">')
+    // Single newlines
+    .replace(/\n/g, '<br />')
+    // Wrap in a paragraph
+    .replace(/^/, '<p style="margin:8px 0;">')
+    .replace(/$/, '</p>');
+}
+
 function currentMonthKey(date = new Date()): string {
   return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}`;
 }
@@ -182,7 +213,7 @@ To stop receiving these emails: ${unsubscribeUrl}
     table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 14px; }
     .button { display: inline-block; background: #810FFB; color: #ffffff !important; padding: 12px 22px; text-decoration: none; border-radius: 6px; font-weight: 600; }
     .footer { padding: 24px 28px; background: #f9f9f9; color: #666; font-size: 12px; text-align: center; }
-    .narrative { background: #faf7ff; border-left: 3px solid #810FFB; padding: 14px 16px; border-radius: 4px; margin-top: 8px; white-space: pre-wrap; font-size: 14px; }
+    .narrative { background: #faf7ff; border-left: 3px solid #810FFB; padding: 14px 16px; border-radius: 4px; margin-top: 8px; font-size: 14px; line-height: 1.6; }
     .pillrow { display: flex; gap: 10px; flex-wrap: wrap; }
     .pill { padding: 8px 12px; border-radius: 4px; font-size: 13px; }
     .pill-strength { background: #ecfdf5; color: #065f46; }
@@ -213,7 +244,7 @@ To stop receiving these emails: ${unsubscribeUrl}
         </div>` : ''}
 
         <h2>What it means</h2>
-        <div class="narrative">${escapeHtml(narrative)}</div>
+        <div class="narrative">${markdownToEmailHtml(narrative)}</div>
 
         <p style="margin-top: 28px; text-align: center;">
           <a href="${baseUrl}/insights" class="button">Open full Insights</a>

@@ -14,7 +14,7 @@ import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Download, Plus, Edit, Trash, FileSpreadsheet, Eye, EyeOff, BarChart3, Settings, FileDown, FileUp, ListOrdered, Users, Star, Upload, X, Sparkles, CheckCircle2, XCircle, Database, FileText, Brain, BookOpen, ClipboardList, Home, Building2, ChevronDown, Shield, Tag, Activity, Copy, Archive, ArchiveRestore, KeyRound, Clock, ExternalLink, Building, Ticket, Palette, GraduationCap } from "lucide-react";
+import { Download, Plus, Edit, Trash, FileSpreadsheet, Eye, EyeOff, BarChart3, Settings, FileDown, FileUp, ListOrdered, Users, Star, Upload, X, Sparkles, CheckCircle2, XCircle, Database, FileText, Brain, BookOpen, ClipboardList, Home, Building2, ChevronDown, Shield, Tag, Activity, Copy, Archive, ArchiveRestore, KeyRound, Clock, ExternalLink, Building, Ticket, Palette, GraduationCap, Bell, BellOff } from "lucide-react";
 import type { Model, Result, Assessment, Dimension, Question, Answer, User, AssessmentTag } from "@shared/schema";
 import { USER_ROLES, type UserRole } from "@shared/constants";
 import { useAuth } from "@/hooks/use-auth";
@@ -904,6 +904,23 @@ export default function Admin() {
   const { data: tenants = [] } = useQuery<any[]>({
     queryKey: ['/api/tenants'],
     enabled: isAdminUser(currentUser),
+  });
+
+  // Monthly digest opt-out stats
+  const { data: digestStats, refetch: refetchDigestStats } = useQuery<{ optedIn: number; optedOut: number; total: number }>({
+    queryKey: ['/api/admin/users/digest-stats'],
+    enabled: isAdminUser(currentUser),
+  });
+
+  const bulkDigestMutation = useMutation({
+    mutationFn: ({ optOut, tenantId }: { optOut: boolean; tenantId?: string | null }) =>
+      apiRequest('/api/admin/users/bulk-digest-setting', 'POST', { optOut, tenantId: tenantId ?? null }),
+    onSuccess: (data: any) => {
+      toast({ title: 'Digest settings updated', description: `${data.updated ?? 'All'} users updated.` });
+      refetchDigestStats();
+      queryClient.invalidateQueries({ queryKey: ['/api/users'] });
+    },
+    onError: () => toast({ title: 'Error', description: 'Failed to update digest settings.', variant: 'destructive' }),
   });
 
   // Filter users by tenant
@@ -3413,6 +3430,67 @@ export default function Admin() {
                       <Plus className="mr-2 h-4 w-4" />
                       Create User
                     </Button>
+                  </div>
+                </div>
+
+                {/* Monthly digest bulk controls */}
+                <div className="mb-5 rounded-md border bg-muted/30 p-4" data-testid="panel-digest-settings">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-medium">Monthly Insights Digest</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        {digestStats
+                          ? `${digestStats.optedIn} of ${digestStats.total} users currently opted in`
+                          : 'Loading stats…'}
+                      </p>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        data-testid="button-digest-opt-out-all"
+                        disabled={bulkDigestMutation.isPending}
+                        onClick={() => {
+                          if (confirm('Opt ALL users out of the monthly digest? Users can re-enable this on their profile page.')) {
+                            bulkDigestMutation.mutate({ optOut: true, tenantId: null });
+                          }
+                        }}
+                      >
+                        <BellOff className="mr-1.5 h-3.5 w-3.5" />
+                        Opt everyone out
+                      </Button>
+                      {selectedTenantFilter !== 'all' && selectedTenantFilter !== 'none' && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          data-testid="button-digest-opt-out-tenant"
+                          disabled={bulkDigestMutation.isPending}
+                          onClick={() => {
+                            const t = tenants.find((x: any) => x.id === selectedTenantFilter);
+                            if (confirm(`Opt out all users in "${t?.name ?? selectedTenantFilter}"?`)) {
+                              bulkDigestMutation.mutate({ optOut: true, tenantId: selectedTenantFilter });
+                            }
+                          }}
+                        >
+                          <BellOff className="mr-1.5 h-3.5 w-3.5" />
+                          Opt out this tenant
+                        </Button>
+                      )}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        data-testid="button-digest-opt-in-all"
+                        disabled={bulkDigestMutation.isPending}
+                        onClick={() => {
+                          if (confirm('Opt ALL users IN to the monthly digest? Only use this if users have explicitly agreed.')) {
+                            bulkDigestMutation.mutate({ optOut: false, tenantId: null });
+                          }
+                        }}
+                      >
+                        <Bell className="mr-1.5 h-3.5 w-3.5" />
+                        Opt everyone in
+                      </Button>
+                    </div>
                   </div>
                 </div>
 
