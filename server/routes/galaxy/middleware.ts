@@ -8,6 +8,7 @@ import {
   users,
   galaxyExposurePolicies,
   galaxyAuditLog,
+  galaxyRateLimits,
   type GalaxyScope,
 } from '@shared/schema';
 import { storage } from '../../storage';
@@ -39,13 +40,17 @@ function jsonError(res: Response, status: number, error: string, description: st
   return res.status(status).json({ error, error_description: description });
 }
 
-const RATE_BUCKETS: Map<string, { count: number; resetAt: number }> = new Map();
-function checkRateLimit(key: string, limit: number): { allowed: boolean; remaining: number; resetAt: number } {
+// In-memory fallback used only when the shared Postgres store is unreachable
+// (e.g. transient DB outage). The cluster-wide counter below is always the
+// preferred path; this map exists so a database hiccup degrades gracefully
+// to single-process limiting instead of failing requests outright.
+const RATE_BUCKETS_FALLBACK: Map<string, { count: number; resetAt: number }> = new Map();
+function checkRateLimitInMemory(key: string, limit: number): { allowed: boolean; remaining: number; resetAt: number } {
   const now = Date.now();
-  const bucket = RATE_BUCKETS.get(key);
+  const bucket = RATE_BUCKETS_FALLBACK.get(key);
   if (!bucket || bucket.resetAt < now) {
     const fresh = { count: 1, resetAt: now + 60_000 };
-    RATE_BUCKETS.set(key, fresh);
+    RATE_BUCKETS_FALLBACK.set(key, fresh);
     return { allowed: true, remaining: Math.max(0, limit - 1), resetAt: fresh.resetAt };
   }
   bucket.count += 1;
@@ -54,6 +59,47 @@ function checkRateLimit(key: string, limit: number): { allowed: boolean; remaini
     remaining: Math.max(0, limit - bucket.count),
     resetAt: bucket.resetAt,
   };
+}
+
+// Cluster-wide rate-limit check backed by Postgres. Uses a single atomic
+// INSERT ... ON CONFLICT DO UPDATE so concurrent requests across multiple
+// app instances see a consistent counter and `x-ratelimit-*` headers reflect
+// the true remaining quota for the active window. Falls back to the in-memory
+// limiter if the shared store is unavailable.
+async function checkRateLimit(
+  key: string,
+  limit: number,
+): Promise<{ allowed: boolean; remaining: number; resetAt: number }> {
+  try {
+    const rows = await db.execute<{ count: number; reset_at: Date }>(sql`
+      INSERT INTO ${galaxyRateLimits} (key, count, reset_at)
+      VALUES (${key}, 1, now() + interval '60 seconds')
+      ON CONFLICT (key) DO UPDATE SET
+        count = CASE
+          WHEN ${galaxyRateLimits.resetAt} < now() THEN 1
+          ELSE ${galaxyRateLimits.count} + 1
+        END,
+        reset_at = CASE
+          WHEN ${galaxyRateLimits.resetAt} < now() THEN now() + interval '60 seconds'
+          ELSE ${galaxyRateLimits.resetAt}
+        END
+      RETURNING count, reset_at
+    `);
+    const row = (rows as unknown as { rows: Array<{ count: number; reset_at: Date | string }> }).rows?.[0]
+      ?? (Array.isArray(rows) ? (rows as Array<{ count: number; reset_at: Date | string }>)[0] : undefined);
+    if (!row) throw new Error('rate-limit upsert returned no row');
+    const count = Number(row.count);
+    const resetAtMs = new Date(row.reset_at).getTime();
+    return {
+      allowed: count <= limit,
+      remaining: Math.max(0, limit - count),
+      resetAt: resetAtMs,
+    };
+  } catch (err) {
+    // eslint-disable-next-line no-console
+    console.warn('[galaxy] rate-limit shared store unavailable, falling back to in-memory', err);
+    return checkRateLimitInMemory(key, limit);
+  }
 }
 
 function galaxyClientAllowlist(): string[] {
@@ -174,7 +220,7 @@ export async function galaxyAuth(req: Request, res: Response, next: NextFunction
     }
 
     const limit = policy.rateLimitPerMinute && policy.rateLimitPerMinute > 0 ? policy.rateLimitPerMinute : 120;
-    const rl = checkRateLimit(`${tenantId}:${user.id}`, limit);
+    const rl = await checkRateLimit(`${tenantId}:${user.id}`, limit);
     res.setHeader('x-ratelimit-limit', String(limit));
     res.setHeader('x-ratelimit-remaining', String(rl.remaining));
     res.setHeader('x-ratelimit-reset', String(Math.ceil(rl.resetAt / 1000)));

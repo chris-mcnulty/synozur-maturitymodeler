@@ -1103,6 +1103,16 @@ export const galaxyAuditLog = pgTable("galaxy_audit_log", {
   resourceIdx: index("idx_galaxy_audit_resource").on(table.resourceType, table.resourceId),
 }));
 
+// Cluster-wide rate-limit counters for the Galaxy API. Each row represents
+// one fixed-window bucket keyed by `key` (typically `${tenantId}:${userId}`).
+// Counters are incremented atomically via INSERT ... ON CONFLICT DO UPDATE so
+// the limit is enforced consistently across multiple Orion app instances.
+export const galaxyRateLimits = pgTable("galaxy_rate_limits", {
+  key: text("key").primaryKey(),
+  count: integer("count").notNull().default(0),
+  resetAt: timestamp("reset_at").notNull(),
+});
+
 export const insertGalaxyExposurePolicySchema = createInsertSchema(galaxyExposurePolicies).omit({
   id: true,
   createdAt: true,
