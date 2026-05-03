@@ -396,6 +396,12 @@ export async function upsertLessonProgress(
 /**
  * Recalculate enrollment progress percent + status from lesson progress rows.
  * Returns the updated enrollment.
+ *
+ * On the first transition to "completed" (i.e. there was no prior
+ * `completedAt`) on a course that has `certificateEnabled = true`, this
+ * also generates a branded PDF certificate, stores it in private object
+ * storage, and stamps `certificateUrl` on the enrollment row. Failures
+ * during PDF generation are logged but do not roll back the completion.
  */
 export async function recalculateEnrollment(enrollmentId: string): Promise<CourseEnrollment | null> {
   const [enr] = await db.select().from(schema.courseEnrollments)
@@ -420,12 +426,64 @@ export async function recalculateEnrollment(enrollmentId: string): Promise<Cours
   else if (progressPercent > 0) status = "in_progress";
 
   const updates: any = { progressPercent, status };
+  const wasAlreadyCompleted = !!enr.completedAt;
   if (status === "completed" && !enr.completedAt) updates.completedAt = new Date();
   if (status === "in_progress" && !enr.startedAt) updates.startedAt = new Date();
 
   const [row] = await db.update(schema.courseEnrollments)
     .set(updates).where(eq(schema.courseEnrollments.id, enrollmentId)).returning();
+
+  // Fire certificate generation on the FIRST transition to completed.
+  if (row && status === "completed" && !wasAlreadyCompleted && !row.certificateUrl) {
+    try {
+      const updated = await maybeIssueCertificate(row);
+      if (updated) return updated;
+    } catch (err) {
+      console.error("[certificate] generation failed for enrollment", enrollmentId, err);
+    }
+  }
   return row;
+}
+
+/**
+ * If the enrollment's course has `certificateEnabled = true`, generate
+ * the PDF, persist it, stamp `certificateUrl`, and return the updated row.
+ * Returns null if no certificate is required or generation fails.
+ */
+export async function maybeIssueCertificate(enrollment: CourseEnrollment): Promise<CourseEnrollment | null> {
+  const [course] = await db.select().from(schema.courses)
+    .where(eq(schema.courses.id, enrollment.courseId)).limit(1);
+  if (!course || !course.certificateEnabled) return null;
+
+  const [user] = await db.select().from(schema.users)
+    .where(eq(schema.users.id, enrollment.userId)).limit(1);
+  if (!user) return null;
+
+  // Average score across graded (quiz) lessons, if any.
+  const lp = await getLessonProgressForEnrollment(enrollment.id);
+  const scored = lp.filter(p => typeof p.score === "number");
+  const avgScore = scored.length > 0
+    ? Math.round(scored.reduce((s, p) => s + (p.score ?? 0), 0) / scored.length)
+    : null;
+
+  const learnerName = (user.name && user.name.trim())
+    || (user.email && user.email.split("@")[0])
+    || user.username;
+
+  // Lazy-load to avoid pulling pdf-lib into the main module graph at boot.
+  const { generateAndStoreCertificate } = await import("./certificate-pdf");
+  const url = await generateAndStoreCertificate({
+    courseTitle: course.title,
+    learnerName,
+    completedAt: enrollment.completedAt ?? new Date(),
+    score: avgScore,
+  }, enrollment.userId);
+
+  const [updated] = await db.update(schema.courseEnrollments)
+    .set({ certificateUrl: url } as any)
+    .where(eq(schema.courseEnrollments.id, enrollment.id))
+    .returning();
+  return updated ?? null;
 }
 
 // ----- Tags -----

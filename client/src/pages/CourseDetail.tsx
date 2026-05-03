@@ -13,7 +13,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Loader2, BookOpen, CheckCircle2, Clock, PlayCircle, FileText, Music, Lock, Award, ChevronLeft, ChevronRight } from "lucide-react";
+import { Loader2, BookOpen, CheckCircle2, Clock, PlayCircle, FileText, Music, Lock, Award, ChevronLeft, ChevronRight, Download } from "lucide-react";
 import DOMPurify from "dompurify";
 import type { Course, CourseModule, Lesson, CourseEnrollment, LessonProgress, CourseTag } from "@shared/schema";
 
@@ -87,9 +87,23 @@ export default function CourseDetail() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/courses", course?.id, "my-progress"] });
       queryClient.invalidateQueries({ queryKey: ["/api/courses", slug] });
+      queryClient.invalidateQueries({ queryKey: ["/api/me/courses"] });
       toast({ title: "Enrolled", description: "You can now start the course." });
     },
     onError: (err: Error) => toast({ title: "Failed to enroll", description: err.message, variant: "destructive" }),
+  });
+
+  const reissueCertMutation = useMutation({
+    mutationFn: async () => {
+      if (!course) return;
+      return await apiRequest(`/api/courses/${course.id}/certificate`, "POST");
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/courses", course?.id, "my-progress"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/me/courses"] });
+      toast({ title: "Certificate ready", description: "Your certificate has been generated." });
+    },
+    onError: (err: Error) => toast({ title: "Could not generate certificate", description: err.message, variant: "destructive" }),
   });
 
   if (isLoading) {
@@ -218,11 +232,40 @@ export default function CourseDetail() {
       {isEnrolled && enrollment && (
         <Card className="mb-6">
           <CardContent className="pt-6">
-            <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center justify-between mb-2 gap-2 flex-wrap">
               <span className="font-medium" data-testid="text-enrollment-status">Status: {enrollment.status}</span>
               <span className="text-sm text-muted-foreground" data-testid="text-progress-percent">{enrollment.progressPercent}% complete</span>
             </div>
             <Progress value={enrollment.progressPercent} />
+            {enrollment.status === "completed" && course.certificateEnabled && (
+              <div className="mt-4 flex items-center justify-between gap-2 flex-wrap">
+                <div className="flex items-center gap-2 text-sm">
+                  <Award className="h-4 w-4 text-muted-foreground" />
+                  <span>Course completed — your certificate is ready.</span>
+                </div>
+                {enrollment.certificateUrl ? (
+                  <a
+                    href={enrollment.certificateUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    download
+                  >
+                    <Button data-testid="button-download-certificate">
+                      <Download className="h-4 w-4 mr-2" /> Download certificate
+                    </Button>
+                  </a>
+                ) : (
+                  <Button
+                    onClick={() => reissueCertMutation.mutate()}
+                    disabled={reissueCertMutation.isPending}
+                    data-testid="button-generate-certificate"
+                  >
+                    {reissueCertMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                    Generate certificate
+                  </Button>
+                )}
+              </div>
+            )}
           </CardContent>
         </Card>
       )}
@@ -319,6 +362,7 @@ function CoursePlayer({ course, lesson, currentIndex, total, progress, onPrev, o
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/courses", course.id, "my-progress"] });
       queryClient.invalidateQueries({ queryKey: ["/api/courses", course.slug] });
+      queryClient.invalidateQueries({ queryKey: ["/api/me/courses"] });
       if (data?.progress) {
         setSubmittedStatus(data.progress.status);
         setSubmittedScore(data.progress.score ?? null);
@@ -334,6 +378,7 @@ function CoursePlayer({ course, lesson, currentIndex, total, progress, onPrev, o
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/courses", course.id, "my-progress"] });
       queryClient.invalidateQueries({ queryKey: ["/api/courses", course.slug] });
+      queryClient.invalidateQueries({ queryKey: ["/api/me/courses"] });
       setSubmittedStatus("completed");
       toast({ title: "Attestation recorded" });
     },

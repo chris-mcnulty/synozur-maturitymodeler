@@ -197,6 +197,29 @@ export function registerCourseRoutes(app: Express) {
     }
   });
 
+  // Re-issue (or first-issue) the certificate for the current user's enrollment.
+  // Useful when generation initially failed, or when the course's
+  // `certificateEnabled` flag was flipped on after the learner already
+  // completed the course.
+  app.post("/api/courses/:id/certificate", ensureAuthenticated, async (req, res) => {
+    try {
+      const user = req.user as schema.User;
+      const enrollment = await courseSvc.getEnrollment(req.params.id, user.id);
+      if (!enrollment) return res.status(404).json({ error: "Not enrolled" });
+      if (enrollment.status !== "completed") {
+        return res.status(400).json({ error: "Course is not completed" });
+      }
+      const updated = await courseSvc.maybeIssueCertificate(enrollment);
+      if (!updated) {
+        return res.status(400).json({ error: "Certificate is not enabled for this course" });
+      }
+      res.json(updated);
+    } catch (err: any) {
+      console.error("certificate error", err);
+      res.status(500).json({ error: err.message ?? "Failed to issue certificate" });
+    }
+  });
+
   app.get("/api/courses/:id/my-progress", ensureAuthenticated, async (req, res) => {
     try {
       const user = req.user as schema.User;

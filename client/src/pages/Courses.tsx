@@ -98,11 +98,16 @@ export default function Courses() {
         <title>Learning Courses | Orion</title>
         <meta name="description" content="Browse Synozur learning courses on AI maturity, transformation, and leadership." />
       </Helmet>
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2" data-testid="text-courses-heading">Learning Courses</h1>
-        <p className="text-muted-foreground">
-          Build your skills with curated learning paths from The Synozur Alliance.
-        </p>
+      <div className="mb-8 flex items-end justify-between gap-2 flex-wrap">
+        <div>
+          <h1 className="text-3xl font-bold mb-2" data-testid="text-courses-heading">Learning Courses</h1>
+          <p className="text-muted-foreground">
+            Build your skills with curated learning paths from The Synozur Alliance.
+          </p>
+        </div>
+        <Link href="/my-courses">
+          <Button variant="outline" data-testid="button-my-courses">My Courses</Button>
+        </Link>
       </div>
 
       {suggested.length > 0 && (
