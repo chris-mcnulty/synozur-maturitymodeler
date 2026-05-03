@@ -79,7 +79,7 @@ export function UnifiedQuestionEditor({
   // Fetch answers for this question (only when expanded to avoid N+1 on load)
   const { data: answers = [], refetch: refetchAnswers } = useQuery<Answer[]>({
     queryKey: ["/api/answers", question.id],
-    queryFn: () => apiRequest<Answer[]>(`/api/answers/${question.id}`),
+    queryFn: async (): Promise<Answer[]> => apiRequest(`/api/answers/${question.id}`, "GET"),
     staleTime: 30000,
     enabled: isExpanded,
   });

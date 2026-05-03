@@ -265,7 +265,7 @@ router.get('/api/support/tickets/:id', ensureAuthenticated, async (req, res) => 
     const ticketUser = await storage.getUser(ticket.userId);
     const authorName = ticketUser?.name || ticketUser?.username || 'Unknown';
 
-    const replyUserIds = [...new Set(replies.map(r => r.userId))];
+    const replyUserIds = Array.from(new Set(replies.map(r => r.userId)));
     const allUsers = await storage.getAllUsers();
     const userMap = new Map(allUsers.map(u => [u.id, { name: u.name || u.username || 'Unknown', role: u.role }]));
 

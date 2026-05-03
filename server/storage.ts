@@ -326,12 +326,19 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createModel(insertModel: InsertModel): Promise<Model> {
-    const [model] = await db.insert(schema.models).values(insertModel).returning();
+    const [model] = await db
+      .insert(schema.models)
+      .values(insertModel as typeof schema.models.$inferInsert)
+      .returning();
     return model;
   }
 
   async updateModel(id: string, modelData: Partial<InsertModel>): Promise<Model | undefined> {
-    const [model] = await db.update(schema.models).set({ ...modelData, updatedAt: new Date() }).where(eq(schema.models.id, id)).returning();
+    const [model] = await db
+      .update(schema.models)
+      .set({ ...modelData, updatedAt: new Date() } as Partial<typeof schema.models.$inferInsert>)
+      .where(eq(schema.models.id, id))
+      .returning();
     return model;
   }
 
@@ -812,7 +819,10 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createSupportTicket(ticket: schema.InsertSupportTicket & { ticketNumber: number }): Promise<schema.SupportTicket> {
-    const [created] = await db.insert(schema.supportTickets).values(ticket).returning();
+    const [created] = await db
+      .insert(schema.supportTickets)
+      .values(ticket as typeof schema.supportTickets.$inferInsert)
+      .returning();
     return created;
   }
 
@@ -904,7 +914,7 @@ export class DatabaseStorage implements IStorage {
     }
     const conds: SQL[] = [or(...visibilityConds) as SQL];
     if (opts?.status) {
-      conds.push(eq(schema.courses.status, opts.status));
+      conds.push(eq(schema.courses.status, opts.status as schema.CourseStatus));
     }
     return db
       .select()

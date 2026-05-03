@@ -319,7 +319,7 @@ router.post('/oauth/token', express.json(), express.urlencoded({ extended: true 
       }
       
       // Verify client secret
-      const validSecret = await bcrypt.compare(client_secret, client.clientSecretHash);
+      const validSecret = await bcrypt.compare(client_secret, client.clientSecretHash!);
       if (!validSecret) {
         return res.status(401).json({
           error: 'invalid_client',

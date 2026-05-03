@@ -126,13 +126,13 @@ export function ModelCreationWizard({
 
   const { data: dimensions = [], refetch: refetchDimensions } = useQuery<Dimension[]>({
     queryKey: ["/api/dimensions", modelId],
-    queryFn: () => apiRequest(`/api/dimensions/${modelId}`),
+    queryFn: () => apiRequest(`/api/dimensions/${modelId}`, "GET"),
     enabled: !!modelId,
   });
 
   const { data: questions = [], refetch: refetchQuestions } = useQuery<Question[]>({
     queryKey: ["/api/questions", modelId],
-    queryFn: () => apiRequest(`/api/questions?modelId=${modelId}`),
+    queryFn: () => apiRequest(`/api/questions?modelId=${modelId}`, "GET"),
     enabled: !!modelId,
   });
 
@@ -446,7 +446,7 @@ export function ModelCreationWizard({
                 size="icon"
                 className="h-7 w-7 text-muted-foreground hover:text-destructive"
                 onClick={() => deleteDimension.mutate(dim.id)}
-                aria-label={`Delete dimension ${dim.name}`}
+                aria-label={`Delete dimension ${dim.label}`}
               >
                 <Trash className="h-3.5 w-3.5" />
               </Button>

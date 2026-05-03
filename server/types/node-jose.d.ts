@@ -1,15 +1,17 @@
 declare module 'node-jose' {
-  export interface KeyStore {
-    add(key: string | Buffer, format: string): Promise<any>;
-    get(kid: string): any;
-    all(): any[];
+  namespace jose {
+    namespace JWK {
+      interface KeyStore {
+        add(key: string | Buffer, format: string): Promise<any>;
+        get(kid: string): any;
+        all(): any[];
+      }
+
+      function createKeyStore(): KeyStore;
+      function createKey(kty: string, size: number, props?: any): Promise<any>;
+      function asKey(key: string | Buffer, form: string): Promise<any>;
+    }
   }
-  
-  export interface JWK {
-    createKeyStore(): KeyStore;
-    createKey(kty: string, size: number, props?: any): Promise<any>;
-    asKey(key: string | Buffer, form: string): Promise<any>;
-  }
-  
-  export const JWK: JWK;
+
+  export = jose;
 }

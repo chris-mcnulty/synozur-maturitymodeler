@@ -51,10 +51,13 @@ export class DocumentExtractionService {
   private async extractPdfText(buffer: Buffer): Promise<string> {
     try {
       // Dynamic import for CommonJS pdf-parse module
-      const pdfParseModule = await import('pdf-parse');
-      // Try default export first, then the module itself
-      const pdfParse = pdfParseModule.default || pdfParseModule;
-      const data = await (pdfParse as any)(buffer);
+      type PdfParseFn = (buf: Buffer) => Promise<{ text: string }>;
+      const pdfParseModule = (await import('pdf-parse')) as unknown as
+        & { default?: PdfParseFn }
+        & PdfParseFn;
+      // Try default export first, then the module itself (CJS interop)
+      const pdfParse: PdfParseFn = pdfParseModule.default ?? pdfParseModule;
+      const data = await pdfParse(buffer);
       return data.text;
     } catch (error) {
       console.error('PDF parsing error:', error);
