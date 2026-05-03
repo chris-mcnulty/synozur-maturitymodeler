@@ -18,9 +18,11 @@
 import type { Express, Request, Response } from "express";
 import { z } from "zod";
 import { ensureAuthenticated, ensureAdminOrModeler } from "../auth";
-import { getAccessibleTenantIds, checkIsGlobalAdmin } from "../permissions";
+import { getAccessibleTenantIds, checkIsGlobalAdmin, canManageModels } from "../permissions";
 import * as courseSvc from "../services/course-service";
 import * as schema from "@shared/schema";
+import { db } from "../db";
+import { eq } from "drizzle-orm";
 
 /**
  * Redact authoritative grading data from quiz lessons before sending to a
@@ -553,27 +555,80 @@ export function registerCourseRoutes(app: Express) {
     } catch (err: any) { res.status(500).json({ error: err.message ?? "Failed" }); }
   });
 
+  // ----- Recommended courses (driven by assessment_course_links) -----
+  app.get("/api/assessments/:id/recommended-courses", async (req, res) => {
+    try {
+      const user = req.user as schema.User | undefined;
+      const recs = await courseSvc.recommendCoursesForAssessment(req.params.id, user);
+      res.json(recs);
+    } catch (err: any) {
+      console.error("recommend courses error", err);
+      res.status(500).json({ error: err.message ?? "Failed to fetch recommendations" });
+    }
+  });
+
+  app.get("/api/me/recommended-courses", ensureAuthenticated, async (req, res) => {
+    try {
+      const user = req.user as schema.User;
+      const latest = await courseSvc.getLatestAssessmentWithResult(user.id);
+      if (!latest) return res.json({ assessmentId: null, courses: [] });
+      const recs = await courseSvc.recommendCoursesForAssessment(latest.assessmentId, user);
+      res.json({ assessmentId: latest.assessmentId, courses: recs });
+    } catch (err: any) {
+      console.error("recommend my courses error", err);
+      res.status(500).json({ error: err.message ?? "Failed to fetch recommendations" });
+    }
+  });
+
   // ----- Assessment ↔ course links (global admin only) -----
-  app.get("/api/models/:id/course-links", ensureAuthenticated, async (req, res) => {
-    try { res.json(await courseSvc.listLinksForModel(req.params.id)); }
-    catch (err: any) { res.status(500).json({ error: err.message ?? "Failed" }); }
+  // Allow whoever can manage the underlying model to manage its course links.
+  async function requireManageLinkModel(req: Request, res: Response, modelId: string): Promise<schema.Model | null> {
+    const [model] = await db.select().from(schema.models).where(eq(schema.models.id, modelId)).limit(1);
+    if (!model) { res.status(404).json({ error: "Model not found" }); return null; }
+    const user = req.user as schema.User;
+    if (!canManageModels(user, model.ownerTenantId ?? null)) {
+      res.status(403).json({ error: "You do not have permission to manage links for this model" });
+      return null;
+    }
+    return model;
+  }
+
+  app.get("/api/models/:id/course-links", ensureAdminOrModeler, async (req, res) => {
+    try {
+      const model = await requireManageLinkModel(req, res, req.params.id);
+      if (!model) return;
+      res.json(await courseSvc.listLinksForModel(req.params.id));
+    } catch (err: any) { res.status(500).json({ error: err.message ?? "Failed" }); }
   });
   app.post("/api/models/:id/course-links", ensureAdminOrModeler, async (req, res) => {
     try {
-      const user = req.user as schema.User;
-      if (!checkIsGlobalAdmin(user)) {
-        return res.status(403).json({ error: "Only global admins can manage assessment-course links" });
-      }
+      const model = await requireManageLinkModel(req, res, req.params.id);
+      if (!model) return;
       const parsed = schema.insertAssessmentCourseLinkSchema.parse({ ...req.body, modelId: req.params.id });
       res.json(await courseSvc.createLink(parsed));
     } catch (err: any) { res.status(400).json({ error: err.message ?? "Failed" }); }
   });
+  app.patch("/api/course-links/:id", ensureAdminOrModeler, async (req, res) => {
+    try {
+      const link = await courseSvc.getLink(req.params.id);
+      if (!link) return res.status(404).json({ error: "Link not found" });
+      const model = await requireManageLinkModel(req, res, link.modelId);
+      if (!model) return;
+      const patchSchema = schema.insertAssessmentCourseLinkSchema.partial().pick({
+        dimensionId: true, courseId: true, scoreThreshold: true, priority: true,
+      });
+      const patch = patchSchema.parse(req.body);
+      const updated = await courseSvc.updateLink(req.params.id, patch);
+      if (!updated) return res.status(404).json({ error: "Link not found" });
+      res.json(updated);
+    } catch (err: any) { res.status(400).json({ error: err.message ?? "Failed" }); }
+  });
   app.delete("/api/course-links/:id", ensureAdminOrModeler, async (req, res) => {
     try {
-      const user = req.user as schema.User;
-      if (!checkIsGlobalAdmin(user)) {
-        return res.status(403).json({ error: "Only global admins can manage assessment-course links" });
-      }
+      const link = await courseSvc.getLink(req.params.id);
+      if (!link) return res.status(404).json({ error: "Link not found" });
+      const model = await requireManageLinkModel(req, res, link.modelId);
+      if (!model) return;
       await courseSvc.deleteLink(req.params.id);
       res.json({ success: true });
     } catch (err: any) { res.status(500).json({ error: err.message ?? "Failed" }); }

@@ -1,13 +1,26 @@
 import { useState, useCallback, useMemo, useEffect } from "react";
-import { useRoute, useLocation } from "wouter";
+import { useRoute, useLocation, Link } from "wouter";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
 import { Download, Mail, ArrowLeft, ChevronRight, Users, Target, TrendingUp, Award, BookOpen, Calendar, Phone, ExternalLink, Lightbulb, Share2, Sparkles, Lock, CheckCircle2 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import type { Result, Assessment, Model, Dimension, User, Question, Answer } from "@shared/schema";
+import type { Result, Assessment, Model, Dimension, User, Question, Answer, Course, CourseTag } from "@shared/schema";
+
+interface RecommendedCourse extends Course {
+  moduleCount: number;
+  lessonCount: number;
+  enrollmentCount: number;
+  tags: CourseTag[];
+  matchedDimensionId: string | null;
+  matchedDimensionLabel: string | null;
+  matchedScore: number;
+  threshold: number;
+  priority: number;
+}
 import { SiLinkedin, SiX, SiThreads, SiFacebook, SiInstagram, SiBluesky } from "react-icons/si";
 import {
   Dialog,
@@ -107,6 +120,11 @@ export default function Results() {
   });
 
   // Fetch model with dimensions
+  const { data: recommendedCourses = [] } = useQuery<RecommendedCourse[]>({
+    queryKey: ['/api/assessments', assessmentId, 'recommended-courses'],
+    enabled: !!assessmentId,
+  });
+
   const { data: model } = useQuery<Model & { dimensions: Dimension[] }>({
     queryKey: ['/api/models', 'by-id', assessment?.modelId],
     queryFn: async () => {
@@ -941,6 +959,65 @@ export default function Results() {
           </div>
         </div>
       </section>
+
+      {/* Recommended Courses (driven by dimension scores) */}
+      {recommendedCourses.length > 0 && (
+        <section className="py-8 sm:py-12" data-testid="section-recommended-courses">
+          <div className="container mx-auto px-4 max-w-6xl">
+            <div className="text-center mb-6 sm:mb-8">
+              <h2 className="text-2xl sm:text-3xl font-bold text-foreground">Recommended Courses</h2>
+              <p className="text-sm sm:text-base text-muted-foreground mt-2">
+                Curated learning paths based on where your scores have the most room to grow
+              </p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {recommendedCourses.map(c => (
+                <Link key={c.id} href={`/courses/${c.slug}`}>
+                  <Card
+                    className="h-full p-5 hover-elevate cursor-pointer flex flex-col gap-3"
+                    data-testid={`card-recommended-course-${c.id}`}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className="p-2 rounded-md bg-primary/10 text-primary flex-shrink-0">
+                        <BookOpen className="h-5 w-5" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-semibold leading-tight" data-testid={`text-course-title-${c.id}`}>
+                          {c.title}
+                        </h3>
+                        {c.summary && (
+                          <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{c.summary}</p>
+                        )}
+                      </div>
+                    </div>
+                    {c.matchedDimensionLabel && (
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <span>Suggested for</span>
+                        <Badge variant="secondary" data-testid={`badge-match-${c.id}`}>
+                          {c.matchedDimensionLabel}
+                        </Badge>
+                        <span>· score {c.matchedScore}/100</span>
+                      </div>
+                    )}
+                    <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground mt-auto">
+                      <span className="flex items-center gap-1">
+                        <BookOpen className="h-3.5 w-3.5" />
+                        {c.lessonCount} lesson{c.lessonCount === 1 ? "" : "s"}
+                      </span>
+                      {c.estimatedMinutes != null && (
+                        <span className="flex items-center gap-1">
+                          <Calendar className="h-3.5 w-3.5" />
+                          {c.estimatedMinutes} min
+                        </span>
+                      )}
+                    </div>
+                  </Card>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Personalized Recommendations */}
       <section className="py-8 sm:py-12 bg-muted/30">

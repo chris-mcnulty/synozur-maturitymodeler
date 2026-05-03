@@ -472,8 +472,180 @@ export async function createLink(data: InsertAssessmentCourseLink): Promise<Asse
   const [row] = await db.insert(schema.assessmentCourseLinks).values(data).returning();
   return row;
 }
+export async function updateLink(
+  id: string,
+  patch: Partial<Pick<schema.AssessmentCourseLink, "dimensionId" | "courseId" | "scoreThreshold" | "priority">>,
+): Promise<schema.AssessmentCourseLink | null> {
+  const [row] = await db.update(schema.assessmentCourseLinks)
+    .set(patch)
+    .where(eq(schema.assessmentCourseLinks.id, id))
+    .returning();
+  return row ?? null;
+}
 export async function deleteLink(id: string): Promise<void> {
   await db.delete(schema.assessmentCourseLinks).where(eq(schema.assessmentCourseLinks.id, id));
+}
+export async function getLink(id: string): Promise<schema.AssessmentCourseLink | null> {
+  const [row] = await db.select().from(schema.assessmentCourseLinks)
+    .where(eq(schema.assessmentCourseLinks.id, id)).limit(1);
+  return row ?? null;
+}
+
+export interface RecommendedCourse extends CourseWithMeta {
+  matchedDimensionId: string | null;
+  matchedDimensionLabel: string | null;
+  matchedScore: number;
+  threshold: number;
+  priority: number;
+}
+
+/**
+ * Recommend courses for a completed assessment by joining the per-dimension
+ * normalized scores against the model's `assessment_course_links`.
+ *
+ * - Dimension scores are normalized to 0-100 using the model's maturity scale.
+ *   (For 500-point legacy models the raw dim score is divided by the same
+ *   max; for 100-point models it is already on the right scale.)
+ * - A link triggers when the relevant score is at or below the link's
+ *   `scoreThreshold`. A link with a null `dimensionId` matches the overall
+ *   normalized score instead of a specific dimension.
+ * - Results respect course visibility (public + tenant-owned/shared) for the
+ *   passed-in user. Anonymous callers see only published, public courses.
+ */
+export async function recommendCoursesForAssessment(
+  assessmentId: string,
+  user?: schema.User,
+): Promise<RecommendedCourse[]> {
+  const [assessment] = await db.select().from(schema.assessments)
+    .where(eq(schema.assessments.id, assessmentId)).limit(1);
+  if (!assessment) return [];
+  const [result] = await db.select().from(schema.results)
+    .where(eq(schema.results.assessmentId, assessmentId)).limit(1);
+  if (!result) return [];
+
+  const [model] = await db.select().from(schema.models)
+    .where(eq(schema.models.id, assessment.modelId)).limit(1);
+  if (!model) return [];
+
+  const scale = Array.isArray(model.maturityScale) ? (model.maturityScale as any[]) : [];
+  const maxMaturityScore = scale.length > 0
+    ? Math.max(...scale.map(l => Number(l.maxScore) || 0))
+    : 500;
+  const dimensionMaxScore = maxMaturityScore <= 100 ? 100 : maxMaturityScore;
+
+  const dims = await db.select().from(schema.dimensions)
+    .where(eq(schema.dimensions.modelId, assessment.modelId));
+
+  const rawScores = (result.dimensionScores ?? {}) as Record<string, number>;
+  const normalizedById = new Map<string, { score: number; label: string }>();
+  for (const d of dims) {
+    const raw = rawScores[d.key] ?? 0;
+    const normalized = dimensionMaxScore > 0
+      ? Math.round((raw / dimensionMaxScore) * 100)
+      : 0;
+    normalizedById.set(d.id, { score: normalized, label: d.label });
+  }
+  const overallNormalized = maxMaturityScore > 0
+    ? Math.round((result.overallScore / maxMaturityScore) * 100)
+    : 0;
+
+  const links = await db.select().from(schema.assessmentCourseLinks)
+    .where(eq(schema.assessmentCourseLinks.modelId, assessment.modelId));
+
+  // Best-priority triggered link per courseId
+  const triggered = new Map<string, {
+    priority: number; threshold: number; score: number;
+    dimensionId: string | null; dimensionLabel: string | null;
+  }>();
+  for (const l of links) {
+    let score: number;
+    let dimensionLabel: string | null = null;
+    if (l.dimensionId) {
+      const entry = normalizedById.get(l.dimensionId);
+      if (!entry) continue;
+      score = entry.score;
+      dimensionLabel = entry.label;
+    } else {
+      score = overallNormalized;
+    }
+    if (score > l.scoreThreshold) continue;
+    const existing = triggered.get(l.courseId);
+    if (!existing || l.priority > existing.priority) {
+      triggered.set(l.courseId, {
+        priority: l.priority,
+        threshold: l.scoreThreshold,
+        score,
+        dimensionId: l.dimensionId ?? null,
+        dimensionLabel,
+      });
+    }
+  }
+  if (triggered.size === 0) return [];
+
+  // Visibility: anonymous => public only; tenant users => their tenants;
+  // global admins => all.
+  let tenantIds: string[] | null;
+  if (!user) {
+    tenantIds = [];
+  } else if (user.role === "global_admin") {
+    tenantIds = null;
+  } else {
+    tenantIds = user.tenantId ? [user.tenantId] : [];
+  }
+
+  const candidateIds = Array.from(triggered.keys());
+  const courseRows = await db.select().from(schema.courses)
+    .where(and(
+      inArray(schema.courses.id, candidateIds),
+      eq(schema.courses.status, "published"),
+    ));
+
+  // Filter for visibility per-course (public or owned/shared with user's tenant)
+  const visible: Course[] = [];
+  for (const c of courseRows) {
+    if (c.visibility === "public") { visible.push(c); continue; }
+    if (tenantIds === null) { visible.push(c); continue; }
+    if (tenantIds.length === 0) continue;
+    if (c.ownerTenantId && tenantIds.includes(c.ownerTenantId)) {
+      visible.push(c); continue;
+    }
+    const [shared] = await db.select().from(schema.courseTenants)
+      .where(and(
+        eq(schema.courseTenants.courseId, c.id),
+        inArray(schema.courseTenants.tenantId, tenantIds),
+      )).limit(1);
+    if (shared) visible.push(c);
+  }
+  if (visible.length === 0) return [];
+
+  const enriched = await enrichCourseList(visible);
+  const out: RecommendedCourse[] = enriched.map(c => {
+    const t = triggered.get(c.id)!;
+    return {
+      ...c,
+      matchedDimensionId: t.dimensionId,
+      matchedDimensionLabel: t.dimensionLabel,
+      matchedScore: t.score,
+      threshold: t.threshold,
+      priority: t.priority,
+    };
+  });
+  out.sort((a, b) => b.priority - a.priority || a.matchedScore - b.matchedScore);
+  return out;
+}
+
+/**
+ * Find the user's most recent completed assessment that has a result row.
+ * Used to power the "Suggested for you" section on /courses.
+ */
+export async function getLatestAssessmentWithResult(userId: string): Promise<{ assessmentId: string } | null> {
+  const [row] = await db.select({ id: schema.assessments.id })
+    .from(schema.assessments)
+    .innerJoin(schema.results, eq(schema.results.assessmentId, schema.assessments.id))
+    .where(eq(schema.assessments.userId, userId))
+    .orderBy(desc(schema.assessments.completedAt))
+    .limit(1);
+  return row ? { assessmentId: row.id } : null;
 }
 
 /** Score a quiz lesson — returns score 0-100 and pass/fail. */

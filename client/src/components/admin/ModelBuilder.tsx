@@ -11,11 +11,366 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Plus, Edit, Trash, GripVertical, ChevronRight, Upload, X, ChevronDown, Copy, Check, Link, QrCode } from "lucide-react";
+import { Plus, Edit, Trash, GripVertical, ChevronRight, Upload, X, ChevronDown, Copy, Check, Link, QrCode, BookOpen } from "lucide-react";
 import { ObjectUploader } from "@/components/ObjectUploader";
 import { QRCodeSVG } from "qrcode.react";
 import { UnifiedQuestionEditor } from "@/components/admin/UnifiedQuestionEditor";
-import type { Model, Dimension, Question } from "@shared/schema";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import type { Model, Dimension, Question, AssessmentCourseLink, Course, CourseTag } from "@shared/schema";
+
+interface CourseListItem extends Course {
+  moduleCount: number;
+  lessonCount: number;
+  enrollmentCount: number;
+  tags: CourseTag[];
+}
+
+function CourseLinksTab({ modelId, dimensions }: { modelId: string; dimensions: Dimension[] }) {
+  const { toast } = useToast();
+  const [dimensionId, setDimensionId] = useState<string>("__overall__");
+  const [courseId, setCourseId] = useState<string>("");
+  const [scoreThreshold, setScoreThreshold] = useState<string>("60");
+  const [priority, setPriority] = useState<string>("0");
+
+  const { data: links = [], isLoading: linksLoading } = useQuery<AssessmentCourseLink[]>({
+    queryKey: ["/api/models", modelId, "course-links"],
+    queryFn: async () => {
+      const res = await fetch(`/api/models/${modelId}/course-links`, { credentials: "include" });
+      if (!res.ok) throw new Error("Failed to load links");
+      return res.json();
+    },
+  });
+
+  const { data: courses = [] } = useQuery<CourseListItem[]>({
+    queryKey: ["/api/courses"],
+  });
+
+  const createMutation = useMutation({
+    mutationFn: async (body: { dimensionId: string | null; courseId: string; scoreThreshold: number; priority: number }) =>
+      apiRequest(`/api/models/${modelId}/course-links`, "POST", body),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/models", modelId, "course-links"] });
+      toast({ title: "Course link added" });
+      setCourseId("");
+      setScoreThreshold("60");
+      setPriority("0");
+      setDimensionId("__overall__");
+    },
+    onError: (err: any) => {
+      toast({ title: "Failed to add link", description: err?.message ?? "Try again", variant: "destructive" });
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => apiRequest(`/api/course-links/${id}`, "DELETE"),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/models", modelId, "course-links"] });
+      toast({ title: "Course link removed" });
+    },
+    onError: (err: any) => {
+      toast({ title: "Failed to remove link", description: err?.message ?? "Try again", variant: "destructive" });
+    },
+  });
+
+  const handleAdd = () => {
+    if (!courseId) {
+      toast({ title: "Select a course", variant: "destructive" });
+      return;
+    }
+    const threshold = Math.max(0, Math.min(100, parseInt(scoreThreshold || "0", 10) || 0));
+    const prio = parseInt(priority || "0", 10) || 0;
+    createMutation.mutate({
+      dimensionId: dimensionId === "__overall__" ? null : dimensionId,
+      courseId,
+      scoreThreshold: threshold,
+      priority: prio,
+    });
+  };
+
+  const dimById = new Map(dimensions.map(d => [d.id, d]));
+  const courseById = new Map(courses.map(c => [c.id, c]));
+
+  return (
+    <div className="space-y-4">
+      <Card className="p-6">
+        <div className="flex items-start gap-3 mb-4">
+          <div className="p-2 rounded-md bg-primary/10 text-primary">
+            <BookOpen className="h-5 w-5" />
+          </div>
+          <div>
+            <h3 className="text-lg font-semibold">Course Recommendations</h3>
+            <p className="text-sm text-muted-foreground">
+              When a learner's normalized score (0-100) for a dimension is at or below the
+              threshold, the linked course is suggested. Higher priority links surface first.
+              Use "Overall" to trigger on the overall maturity score.
+            </p>
+          </div>
+        </div>
+
+        <div className="grid gap-3 md:grid-cols-12 items-end">
+          <div className="md:col-span-3">
+            <Label htmlFor="link-dimension">Dimension</Label>
+            <Select value={dimensionId} onValueChange={setDimensionId}>
+              <SelectTrigger id="link-dimension" data-testid="select-link-dimension">
+                <SelectValue placeholder="Select dimension" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__overall__">Overall score</SelectItem>
+                {dimensions.sort((a, b) => a.order - b.order).map(d => (
+                  <SelectItem key={d.id} value={d.id}>{d.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="md:col-span-4">
+            <Label htmlFor="link-course">Course</Label>
+            <Select value={courseId} onValueChange={setCourseId}>
+              <SelectTrigger id="link-course" data-testid="select-link-course">
+                <SelectValue placeholder="Select course" />
+              </SelectTrigger>
+              <SelectContent>
+                {courses.map(c => (
+                  <SelectItem key={c.id} value={c.id}>{c.title}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="md:col-span-2">
+            <Label htmlFor="link-threshold">Threshold (≤)</Label>
+            <Input
+              id="link-threshold"
+              type="number"
+              min={0}
+              max={100}
+              value={scoreThreshold}
+              onChange={(e) => setScoreThreshold(e.target.value)}
+              data-testid="input-link-threshold"
+            />
+          </div>
+          <div className="md:col-span-1">
+            <Label htmlFor="link-priority">Priority</Label>
+            <Input
+              id="link-priority"
+              type="number"
+              value={priority}
+              onChange={(e) => setPriority(e.target.value)}
+              data-testid="input-link-priority"
+            />
+          </div>
+          <div className="md:col-span-2">
+            <Button
+              onClick={handleAdd}
+              disabled={createMutation.isPending}
+              className="w-full"
+              data-testid="button-add-course-link"
+            >
+              <Plus className="h-4 w-4 mr-1" /> Add link
+            </Button>
+          </div>
+        </div>
+      </Card>
+
+      <Card className="p-6">
+        <h3 className="font-semibold mb-3">Existing links</h3>
+        {linksLoading ? (
+          <p className="text-sm text-muted-foreground">Loading…</p>
+        ) : links.length === 0 ? (
+          <p className="text-sm text-muted-foreground" data-testid="text-no-links">
+            No course recommendations are configured yet.
+          </p>
+        ) : (
+          <div className="space-y-2">
+            {links
+              .slice()
+              .sort((a, b) => b.priority - a.priority)
+              .map(link => (
+                <CourseLinkRow
+                  key={link.id}
+                  link={link}
+                  modelId={modelId}
+                  dimensions={dimensions}
+                  courses={courses}
+                  courseLabel={courseById.get(link.courseId)?.title}
+                  onDelete={() => deleteMutation.mutate(link.id)}
+                  isDeleting={deleteMutation.isPending}
+                />
+              ))}
+          </div>
+        )}
+      </Card>
+    </div>
+  );
+}
+
+function CourseLinkRow({
+  link, modelId, dimensions, courses, courseLabel, onDelete, isDeleting,
+}: {
+  link: AssessmentCourseLink;
+  modelId: string;
+  dimensions: Dimension[];
+  courses: CourseListItem[];
+  courseLabel: string | undefined;
+  onDelete: () => void;
+  isDeleting: boolean;
+}) {
+  const { toast } = useToast();
+  const [editing, setEditing] = useState(false);
+  const [dimensionId, setDimensionId] = useState<string>(link.dimensionId ?? "__overall__");
+  const [courseId, setCourseId] = useState<string>(link.courseId);
+  const [scoreThreshold, setScoreThreshold] = useState<string>(String(link.scoreThreshold));
+  const [priority, setPriority] = useState<string>(String(link.priority));
+
+  const updateMutation = useMutation({
+    mutationFn: async (body: { dimensionId: string | null; courseId: string; scoreThreshold: number; priority: number }) =>
+      apiRequest(`/api/course-links/${link.id}`, "PATCH", body),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/models", modelId, "course-links"] });
+      toast({ title: "Course link updated" });
+      setEditing(false);
+    },
+    onError: (err: any) => {
+      toast({ title: "Failed to update link", description: err?.message ?? "Try again", variant: "destructive" });
+    },
+  });
+
+  const handleSave = () => {
+    if (!courseId) {
+      toast({ title: "Select a course", variant: "destructive" });
+      return;
+    }
+    const threshold = Math.max(0, Math.min(100, parseInt(scoreThreshold || "0", 10) || 0));
+    const prio = parseInt(priority || "0", 10) || 0;
+    updateMutation.mutate({
+      dimensionId: dimensionId === "__overall__" ? null : dimensionId,
+      courseId,
+      scoreThreshold: threshold,
+      priority: prio,
+    });
+  };
+
+  const handleCancel = () => {
+    setDimensionId(link.dimensionId ?? "__overall__");
+    setCourseId(link.courseId);
+    setScoreThreshold(String(link.scoreThreshold));
+    setPriority(String(link.priority));
+    setEditing(false);
+  };
+
+  if (editing) {
+    return (
+      <div
+        className="grid gap-2 md:grid-cols-12 items-end rounded-md border border-border p-3"
+        data-testid={`row-course-link-${link.id}`}
+      >
+        <div className="md:col-span-3">
+          <Label className="text-xs">Dimension</Label>
+          <Select value={dimensionId} onValueChange={setDimensionId}>
+            <SelectTrigger data-testid={`select-edit-dim-${link.id}`}>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__overall__">Overall score</SelectItem>
+              {dimensions.sort((a, b) => a.order - b.order).map(d => (
+                <SelectItem key={d.id} value={d.id}>{d.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="md:col-span-4">
+          <Label className="text-xs">Course</Label>
+          <Select value={courseId} onValueChange={setCourseId}>
+            <SelectTrigger data-testid={`select-edit-course-${link.id}`}>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {courses.map(c => (
+                <SelectItem key={c.id} value={c.id}>{c.title}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="md:col-span-2">
+          <Label className="text-xs">Threshold (≤)</Label>
+          <Input
+            type="number" min={0} max={100}
+            value={scoreThreshold}
+            onChange={(e) => setScoreThreshold(e.target.value)}
+            data-testid={`input-edit-threshold-${link.id}`}
+          />
+        </div>
+        <div className="md:col-span-1">
+          <Label className="text-xs">Priority</Label>
+          <Input
+            type="number"
+            value={priority}
+            onChange={(e) => setPriority(e.target.value)}
+            data-testid={`input-edit-priority-${link.id}`}
+          />
+        </div>
+        <div className="md:col-span-2 flex gap-2">
+          <Button
+            size="sm"
+            onClick={handleSave}
+            disabled={updateMutation.isPending}
+            data-testid={`button-save-link-${link.id}`}
+          >
+            <Check className="h-4 w-4 mr-1" /> Save
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={handleCancel}
+            disabled={updateMutation.isPending}
+            data-testid={`button-cancel-link-${link.id}`}
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  const dim = link.dimensionId ? dimensions.find(d => d.id === link.dimensionId) : null;
+
+  return (
+    <div
+      className="flex items-center justify-between gap-3 rounded-md border border-border p-3"
+      data-testid={`row-course-link-${link.id}`}
+    >
+      <div className="flex flex-wrap items-center gap-2 min-w-0">
+        <Badge variant="outline">{dim ? dim.label : "Overall"}</Badge>
+        <span className="text-sm text-muted-foreground">≤ {link.scoreThreshold}</span>
+        <ChevronRight className="h-4 w-4 text-muted-foreground" />
+        <span className="font-medium truncate" data-testid={`text-link-course-${link.id}`}>
+          {courseLabel ?? "(course not visible)"}
+        </span>
+        {link.priority !== 0 && (
+          <Badge variant="secondary">priority {link.priority}</Badge>
+        )}
+      </div>
+      <div className="flex items-center gap-1">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => setEditing(true)}
+          data-testid={`button-edit-link-${link.id}`}
+        >
+          <Edit className="h-4 w-4" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={onDelete}
+          disabled={isDeleting}
+          data-testid={`button-delete-link-${link.id}`}
+        >
+          <Trash className="h-4 w-4" />
+        </Button>
+      </div>
+    </div>
+  );
+}
 
 interface Tenant {
   id: string;
@@ -335,7 +690,7 @@ export function ModelBuilder({
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="overview" data-testid="tab-overview">
             Overview
           </TabsTrigger>
@@ -347,6 +702,9 @@ export function ModelBuilder({
           </TabsTrigger>
           <TabsTrigger value="maturity-scale" data-testid="tab-maturity-scale">
             Maturity Scale
+          </TabsTrigger>
+          <TabsTrigger value="course-links" data-testid="tab-course-links">
+            Course Links
           </TabsTrigger>
         </TabsList>
 
@@ -1020,6 +1378,10 @@ export function ModelBuilder({
               ))}
             </div>
           )}
+        </TabsContent>
+
+        <TabsContent value="course-links" className="space-y-4">
+          <CourseLinksTab modelId={model.id} dimensions={dimensions} />
         </TabsContent>
       </Tabs>
     </div>
