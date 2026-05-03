@@ -162,6 +162,9 @@ export function Header() {
             <Link href="/" className="text-sm font-medium hover:text-primary transition-colors" data-testid="link-home">
               Home
             </Link>
+            <Link href="/courses" className="text-sm font-medium hover:text-primary transition-colors" data-testid="link-courses">
+              Courses
+            </Link>
             {user && (
               <>
                 {canManageModels(user) && (
@@ -275,6 +278,12 @@ export function Header() {
                     <Link href="/me">
                       <User className="mr-2 h-4 w-4" />
                       Profile
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/courses" data-testid="link-courses-mobile">
+                      <BookOpen className="mr-2 h-4 w-4" />
+                      Courses
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
