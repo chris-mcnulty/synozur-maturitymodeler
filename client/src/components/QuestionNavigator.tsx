@@ -31,6 +31,7 @@ export function QuestionNavigator({
         className="flex flex-wrap gap-1.5"
         role="list"
         aria-label="Question navigator"
+        title="Tip: use ← and → to move between questions. Hold Alt and press a digit (1–9, 0 for 10) to jump."
       >
         {Array.from({ length: total }).map((_, i) => {
           const isCurrent = i === currentIndex;
@@ -59,6 +60,15 @@ export function QuestionNavigator({
           );
         })}
       </div>
+      <p
+        className="hidden sm:block text-xs text-muted-foreground mt-2"
+        data-testid="text-navigator-shortcuts-hint"
+      >
+        Tip: use <kbd className="px-1 py-0.5 rounded border bg-muted text-[10px] font-mono">←</kbd>{" "}
+        <kbd className="px-1 py-0.5 rounded border bg-muted text-[10px] font-mono">→</kbd> to move between questions,{" "}
+        <kbd className="px-1 py-0.5 rounded border bg-muted text-[10px] font-mono">Enter</kbd> to advance, or hold{" "}
+        <kbd className="px-1 py-0.5 rounded border bg-muted text-[10px] font-mono">Alt</kbd> + a digit to jump.
+      </p>
     </div>
   );
 }

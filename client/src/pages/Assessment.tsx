@@ -355,6 +355,121 @@ export default function Assessment() {
     }
   };
 
+  // Keyboard shortcuts: ←/→ to move between questions, Enter to advance,
+  // Alt+digit to jump. Shortcuts are disabled only while focus is in a
+  // text-entry context (input/textarea/select/contentEditable or a widget
+  // with role=textbox/searchbox/spinbutton/combobox) so we don't intercept
+  // normal typing. Enter mirrors the Next button's eligibility rules so it
+  // can't bypass the unanswered-question gate, and is suppressed when focus
+  // is on interactive controls (buttons, links, etc.) so they activate
+  // themselves.
+  useEffect(() => {
+    if (!questions.length) return;
+
+    const TYPING_TAGS = new Set(["INPUT", "TEXTAREA", "SELECT"]);
+    const TYPING_ROLES = new Set(["textbox", "searchbox", "spinbutton", "combobox"]);
+    const INTERACTIVE_TAGS = new Set([
+      "BUTTON",
+      "A",
+      "INPUT",
+      "TEXTAREA",
+      "SELECT",
+      "OPTION",
+      "DETAILS",
+      "SUMMARY",
+    ]);
+    const INTERACTIVE_ROLES = new Set([
+      "button",
+      "link",
+      "menuitem",
+      "menuitemcheckbox",
+      "menuitemradio",
+      "option",
+      "tab",
+      "switch",
+      "checkbox",
+      "radio",
+    ]);
+
+    const isTypingTarget = (el: EventTarget | null) => {
+      if (!(el instanceof HTMLElement)) return false;
+      if (TYPING_TAGS.has(el.tagName)) return true;
+      if (el.isContentEditable) return true;
+      const role = el.getAttribute("role");
+      if (role && TYPING_ROLES.has(role)) return true;
+      return false;
+    };
+
+    const isInteractiveTarget = (el: EventTarget | null) => {
+      if (!(el instanceof HTMLElement)) return false;
+      if (INTERACTIVE_TAGS.has(el.tagName)) return true;
+      if (el.isContentEditable) return true;
+      const role = el.getAttribute("role");
+      if (role && INTERACTIVE_ROLES.has(role)) return true;
+      if (el.closest('button, a, [role="button"], [role="link"], [role="tab"], [role="menuitem"], [role="option"], [role="switch"], [role="checkbox"], [role="radio"]')) {
+        return true;
+      }
+      return false;
+    };
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.defaultPrevented) return;
+      if (e.ctrlKey || e.metaKey) return;
+
+      const typing = isTypingTarget(e.target);
+
+      // Alt+digit jump: never intercept while typing so digits still go to
+      // the input.
+      if (e.altKey && /^[0-9]$/.test(e.key)) {
+        if (typing) return;
+        const digit = parseInt(e.key, 10);
+        // 1-9 -> indexes 0-8; 0 -> index 9 (10th question), if it exists
+        const targetIndex = digit === 0 ? 9 : digit - 1;
+        if (targetIndex >= 0 && targetIndex < questions.length) {
+          e.preventDefault();
+          handleJump(targetIndex);
+        }
+        return;
+      }
+
+      if (e.altKey || e.shiftKey) return;
+
+      // Don't hijack normal typing in text/numeric entry contexts. Per task:
+      // arrow keys move between questions whenever focus is not inside an
+      // input/textarea (etc.), even when focus is on answer widgets.
+      if (typing) return;
+
+      if (e.key === "ArrowRight") {
+        if (currentQuestionIndex < questions.length - 1) {
+          e.preventDefault();
+          setCurrentQuestionIndex(currentQuestionIndex + 1);
+        }
+      } else if (e.key === "ArrowLeft") {
+        if (currentQuestionIndex > 0) {
+          e.preventDefault();
+          setCurrentQuestionIndex(currentQuestionIndex - 1);
+        }
+      } else if (e.key === "Enter") {
+        // Don't hijack Enter on focused buttons/links/widgets — they should
+        // activate themselves.
+        if (isInteractiveTarget(e.target)) return;
+        // Mirror Next button eligibility: don't advance past an unanswered
+        // non-final question, and don't fire while results are calculating.
+        const last = currentQuestionIndex === questions.length - 1;
+        const q = questions[currentQuestionIndex];
+        const answered = q ? isAnswerComplete(q, selectedAnswers[q.id]) : false;
+        if (calculateResults.isPending) return;
+        if (!last && !answered) return;
+        e.preventDefault();
+        void handleNext();
+      }
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentQuestionIndex, questions, selectedAnswers, calculateResults.isPending]);
+
   const initialError = assessmentIsError || questionsIsError;
   const initialLoading = !initialError && (assessmentLoading || (!!assessment && isLoading) || (!assessment && !!assessmentId));
   if (initialLoading || initialError || !questions.length) {
