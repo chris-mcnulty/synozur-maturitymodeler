@@ -2,10 +2,7 @@ import jsPDF from 'jspdf';
 import type { Result, Model, Dimension } from '@shared/schema';
 // @ts-ignore
 import logoImage from '@assets/SA-Logo-Horizontal-color_1760530252980.png';
-// @ts-ignore - Font files as base64 strings
-import avenirRegularFont from './avenir-regular-font.txt?raw';
-// @ts-ignore
-import avenirBoldFont from './avenir-bold-font.txt?raw';
+import { loadAvenirFonts, applyAvenirFonts } from './pdfFonts';
 
 interface PDFData {
   result: Result;
@@ -32,10 +29,17 @@ interface PDFData {
   };
 }
 
-export function generateAssessmentPDF(data: PDFData): jsPDF {
+// Kick off font loading as soon as this module is imported so the network
+// fetch happens in parallel with the rest of the chunk being parsed/executed.
+const avenirFontsPromise = loadAvenirFonts();
+
+export async function generateAssessmentPDF(data: PDFData): Promise<jsPDF> {
   const { result, model, benchmark, recommendations = [], improvementResources = [], 
           maturitySummary, recommendationsSummary, userContext } = data;
-  
+
+  // Wait for the font files (loaded in parallel with this module's chunk).
+  const fonts = await avenirFontsPromise.catch(() => null);
+
   // Create new PDF document
   const doc = new jsPDF({
     orientation: 'portrait',
@@ -43,21 +47,8 @@ export function generateAssessmentPDF(data: PDFData): jsPDF {
     format: 'a4'
   });
 
-  // Add Avenir Next LT Pro fonts
-  try {
-    // Add regular font
-    doc.addFileToVFS('AvenirNextLTPro-Regular.ttf', avenirRegularFont);
-    doc.addFont('AvenirNextLTPro-Regular.ttf', 'Avenir', 'normal');
-    
-    // Add bold font
-    doc.addFileToVFS('AvenirNextLTPro-Bold.ttf', avenirBoldFont);
-    doc.addFont('AvenirNextLTPro-Bold.ttf', 'Avenir', 'bold');
-    
-    // Set Avenir as default font
-    doc.setFont('Avenir', 'normal');
-  } catch (error) {
-    console.error('Error loading Avenir fonts, falling back to default:', error);
-    // If fonts fail to load, jsPDF will use its default font
+  if (fonts) {
+    applyAvenirFonts(doc, fonts);
   }
 
   // Define colors (using RGB)

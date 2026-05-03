@@ -458,7 +458,7 @@ function InsightsContent({
       setDownloading(true);
       const { generateInsightsPDF } = await import("@/services/insightsPdfGenerator");
       const tenantData = data.scope === "tenant" ? (data as TenantInsightsResponse) : null;
-      const pdf = generateInsightsPDF({
+      const pdf = await generateInsightsPDF({
         scope,
         tenantName: tenantData?.tenantName,
         cohortSize: tenantData?.cohortSize,

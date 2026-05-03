@@ -443,7 +443,7 @@ export default function Results() {
       }
 
       const { generateAssessmentPDF } = await import("@/services/pdfGenerator");
-      const pdf = generateAssessmentPDF({
+      const pdf = await generateAssessmentPDF({
         result,
         model,
         benchmark: benchmark || undefined,
@@ -522,7 +522,7 @@ export default function Results() {
 
       // Generate PDF (jsPDF is loaded on demand via dynamic import)
       const { generateAssessmentPDF } = await import("@/services/pdfGenerator");
-      const pdf = generateAssessmentPDF({
+      const pdf = await generateAssessmentPDF({
         result,
         model,
         benchmark: benchmark || undefined,

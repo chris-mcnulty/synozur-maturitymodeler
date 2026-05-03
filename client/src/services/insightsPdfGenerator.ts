@@ -1,10 +1,7 @@
 import jsPDF from "jspdf";
 // @ts-ignore
 import logoImage from "@assets/SA-Logo-Horizontal-color_1760530252980.png";
-// @ts-ignore
-import avenirRegularFont from "./avenir-regular-font.txt?raw";
-// @ts-ignore
-import avenirBoldFont from "./avenir-bold-font.txt?raw";
+import { loadAvenirFonts, applyAvenirFonts } from "./pdfFonts";
 
 interface ModelInsightLite {
   modelId: string;
@@ -75,17 +72,16 @@ function stripMarkdown(md: string): string {
     .replace(/\r\n/g, "\n");
 }
 
-export function generateInsightsPDF(data: InsightsPDFData): jsPDF {
+// Start fetching font assets as soon as this module is loaded so the network
+// requests run in parallel with the rest of the chunk being parsed/executed.
+const avenirFontsPromise = loadAvenirFonts();
+
+export async function generateInsightsPDF(data: InsightsPDFData): Promise<jsPDF> {
+  const fonts = await avenirFontsPromise.catch(() => null);
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
 
-  try {
-    doc.addFileToVFS("AvenirNextLTPro-Regular.ttf", avenirRegularFont);
-    doc.addFont("AvenirNextLTPro-Regular.ttf", "Avenir", "normal");
-    doc.addFileToVFS("AvenirNextLTPro-Bold.ttf", avenirBoldFont);
-    doc.addFont("AvenirNextLTPro-Bold.ttf", "Avenir", "bold");
-    doc.setFont("Avenir", "normal");
-  } catch (err) {
-    console.error("Avenir font load failed, using default:", err);
+  if (fonts) {
+    applyAvenirFonts(doc, fonts);
   }
 
   let y = 15;
