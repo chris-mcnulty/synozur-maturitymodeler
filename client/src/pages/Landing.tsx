@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { ArrowRight, Clock, FileText, BarChart3, CheckCircle, Building2, Lock, Sparkles } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { DataState } from "@/components/DataState";
 import type { Model, Assessment, Dimension } from "@shared/schema";
 
 type ModelWithQuestionCount = Model & { questionCount: number };
@@ -113,7 +114,7 @@ export default function Landing() {
 
   const [, setLocation] = useLocation();
 
-  const { data: models = [], isLoading } = useQuery<ModelWithQuestionCount[]>({
+  const { data: models = [], isLoading, isError, error, refetch } = useQuery<ModelWithQuestionCount[]>({
     queryKey: ['/api/models'],
   });
 
@@ -399,19 +400,23 @@ export default function Landing() {
               </p>
             </div>
 
-            {isLoading ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 max-w-7xl mx-auto">
-                {[...Array(4)].map((_, i) => (
-                  <Card key={i} className="h-64 animate-pulse bg-muted" />
-                ))}
-              </div>
-            ) : regularModels.length === 0 ? (
-              <Card className="max-w-2xl mx-auto p-12 text-center">
-                <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-xl font-semibold mb-2">No Models Available</h3>
-                <p className="text-muted-foreground">Check back soon for our maturity assessment models.</p>
-              </Card>
-            ) : (
+            <DataState
+              isLoading={isLoading}
+              isError={isError}
+              error={error as Error | null}
+              isEmpty={regularModels.length === 0}
+              onRetry={() => refetch()}
+              loading={
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 max-w-7xl mx-auto">
+                  {[...Array(4)].map((_, i) => (
+                    <Card key={i} className="h-64 animate-pulse bg-muted" />
+                  ))}
+                </div>
+              }
+              emptyTitle="No Models Available"
+              emptyDescription="Check back soon for our maturity assessment models."
+              errorTitle="We couldn't load assessments"
+            >
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 max-w-7xl mx-auto">
                 {regularModels.map((model) => (
                   <ModelCard
@@ -422,7 +427,7 @@ export default function Landing() {
                   />
                 ))}
               </div>
-            )}
+            </DataState>
           </div>
         </section>
 

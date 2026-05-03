@@ -15,6 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Plus, Edit, Trash, Globe, CheckCircle, XCircle, Shield, ShieldCheck, ShieldX, Copy, ExternalLink, Mail, CheckCircle2 } from "lucide-react";
+import { DataState } from "@/components/DataState";
 
 interface Tenant {
   id: string;
@@ -178,7 +179,7 @@ Thank you for your help!`;
   };
 
   // Fetch all tenants
-  const { data: tenants = [], isLoading } = useQuery<Tenant[]>({
+  const { data: tenants = [], isLoading, isError, error, refetch } = useQuery<Tenant[]>({
     queryKey: ['/api/tenants'],
   });
 
@@ -392,23 +393,28 @@ Thank you for your help!`;
           </Button>
         </div>
 
-        {isLoading ? (
-          <div className="space-y-3 py-4" data-testid="loading-tenants">
-            {Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="flex items-center gap-4 p-3 border rounded-md">
-                <Skeleton className="h-4 w-32" />
-                <Skeleton className="h-4 w-40" />
-                <Skeleton className="h-4 w-32" />
-                <Skeleton className="h-4 w-24" />
-                <Skeleton className="h-4 w-20" />
-              </div>
-            ))}
-          </div>
-        ) : tenants.length === 0 ? (
-          <div className="text-center py-8 text-muted-foreground">
-            No tenants found. Create your first tenant to get started.
-          </div>
-        ) : (
+        <DataState
+          isLoading={isLoading}
+          isError={isError}
+          error={error as Error | null}
+          isEmpty={!isLoading && tenants.length === 0}
+          onRetry={() => refetch()}
+          emptyTitle="No tenants found"
+          emptyDescription="Create your first tenant to get started."
+          loading={
+            <div className="space-y-3 py-4" data-testid="loading-tenants">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className="flex items-center gap-4 p-3 border rounded-md">
+                  <Skeleton className="h-4 w-32" />
+                  <Skeleton className="h-4 w-40" />
+                  <Skeleton className="h-4 w-32" />
+                  <Skeleton className="h-4 w-24" />
+                  <Skeleton className="h-4 w-20" />
+                </div>
+              ))}
+            </div>
+          }
+        >
           <Table>
             <TableHeader>
               <TableRow>
@@ -601,7 +607,7 @@ Thank you for your help!`;
               ))}
             </TableBody>
           </Table>
-        )}
+        </DataState>
       </Card>
 
       {/* Create/Edit Tenant Dialog */}

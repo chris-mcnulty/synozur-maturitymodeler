@@ -10,6 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ArrowRight, CheckCircle2, Target, TrendingUp, ArrowLeft, Sparkles, Save, Archive, Home } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { DataState } from "@/components/DataState";
 import type { Model, Dimension, Assessment, User } from "@shared/schema";
 import openingGraphic from '@assets/generated_images/Opening_graphic_AI_transformation_bf033f89.png';
 import { PrivateAccessGate } from "@/components/PrivateAccessGate";
@@ -23,7 +24,7 @@ export default function ModelHome() {
   const [privateModelInfo, setPrivateModelInfo] = useState<{ name?: string; description?: string } | null>(null);
 
   // Fetch model data from API based on modelSlug
-  const { data: model, isLoading, error } = useQuery<Model & { dimensions: Dimension[] }>({
+  const { data: model, isLoading, error, isError, refetch } = useQuery<Model & { dimensions: Dimension[] }>({
     queryKey: ['/api/models', modelSlug],
     enabled: !!modelSlug,
     retry: (failureCount, error: any) => {
@@ -97,31 +98,40 @@ export default function ModelHome() {
     return (
       <div className="min-h-screen flex flex-col" data-testid="loading-model">
         <main className="flex-1">
-          <section className="relative min-h-[400px] flex items-center overflow-hidden bg-primary/10">
-            <div className="container relative z-10 mx-auto px-4 py-16">
-              <div className="max-w-4xl space-y-4">
-                <Skeleton className="h-6 w-24" />
-                <Skeleton className="h-12 w-3/4" />
-                <Skeleton className="h-5 w-2/3" />
-                <Skeleton className="h-5 w-1/2" />
-                <Skeleton className="h-12 w-48 mt-4" />
-              </div>
-            </div>
-          </section>
-          <section className="py-16">
-            <div className="container mx-auto px-4 max-w-6xl">
-              <Skeleton className="h-8 w-64 mx-auto mb-8" />
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {Array.from({ length: 4 }).map((_, i) => (
-                  <Card key={i} className="p-6 space-y-3">
-                    <Skeleton className="h-6 w-1/2" />
-                    <Skeleton className="h-4 w-full" />
-                    <Skeleton className="h-4 w-3/4" />
-                  </Card>
-                ))}
-              </div>
-            </div>
-          </section>
+          <DataState
+            isLoading
+            loading={
+              <>
+                <section className="relative min-h-[400px] flex items-center overflow-hidden bg-primary/10">
+                  <div className="container relative z-10 mx-auto px-4 py-16">
+                    <div className="max-w-4xl space-y-4">
+                      <Skeleton className="h-6 w-24" />
+                      <Skeleton className="h-12 w-3/4" />
+                      <Skeleton className="h-5 w-2/3" />
+                      <Skeleton className="h-5 w-1/2" />
+                      <Skeleton className="h-12 w-48 mt-4" />
+                    </div>
+                  </div>
+                </section>
+                <section className="py-16">
+                  <div className="container mx-auto px-4 max-w-6xl">
+                    <Skeleton className="h-8 w-64 mx-auto mb-8" />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {Array.from({ length: 4 }).map((_, i) => (
+                        <Card key={i} className="p-6 space-y-3">
+                          <Skeleton className="h-6 w-1/2" />
+                          <Skeleton className="h-4 w-full" />
+                          <Skeleton className="h-4 w-3/4" />
+                        </Card>
+                      ))}
+                    </div>
+                  </div>
+                </section>
+              </>
+            }
+          >
+            <div />
+          </DataState>
         </main>
         <Footer />
       </div>
@@ -188,15 +198,28 @@ export default function ModelHome() {
   }
 
   if (!model) {
+    const hasGenericError = isError && !isArchived && !isPrivateGated;
     return (
       <div className="min-h-screen flex flex-col">
         <main className="flex-1 flex items-center justify-center">
-          <div className="text-center">
-            <div className="text-lg text-muted-foreground mb-4">Model not found</div>
-            <Button onClick={() => setLocation('/')}>
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Assessments
-            </Button>
+          <div className="container mx-auto px-4 max-w-md">
+            <DataState
+              isError={hasGenericError}
+              error={error as Error | null}
+              onRetry={() => refetch()}
+              isEmpty={!hasGenericError}
+              emptyTitle="Model not found"
+              emptyDescription="We couldn't find this assessment. It may have been removed or the link may be incorrect."
+              errorTitle="We couldn't load this assessment"
+            >
+              <div />
+            </DataState>
+            <div className="flex justify-center mt-4">
+              <Button onClick={() => setLocation('/')} data-testid="button-back-assessments">
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Back to Assessments
+              </Button>
+            </div>
           </div>
         </main>
         <Footer />

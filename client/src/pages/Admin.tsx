@@ -21,6 +21,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { ObjectUploader } from "@/components/ObjectUploader";
 import { ProxyAssessmentDialog } from "@/components/admin/ProxyAssessmentDialog";
 import { AssessmentTagSelector } from "@/components/admin/AssessmentTagSelector";
+import { DataState } from "@/components/DataState";
 const GalaxyIntegration = lazy(() =>
   import("@/components/admin/GalaxyIntegration").then((m) => ({ default: m.GalaxyIntegration })),
 );
@@ -179,7 +180,7 @@ function BenchmarkConfig() {
     includeAnonymous: false,
   });
 
-  const { data: config, isLoading } = useQuery<typeof configForm>({
+  const { data: config, isLoading, isError, error, refetch } = useQuery<typeof configForm>({
     queryKey: ['/api/benchmarks/config'],
   });
 
@@ -196,19 +197,29 @@ function BenchmarkConfig() {
     },
   });
 
-  if (isLoading) {
+  if (isLoading || isError) {
     return (
-      <div className="space-y-4" data-testid="loading-benchmark-config">
-        <div className="grid grid-cols-2 gap-4">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="p-4 border rounded-md space-y-2">
-              <Skeleton className="h-4 w-32" />
-              <Skeleton className="h-8 w-16" />
-              <Skeleton className="h-3 w-24" />
+      <DataState
+        isLoading={isLoading}
+        isError={isError}
+        error={error as Error | null}
+        onRetry={() => refetch()}
+        loading={
+          <div className="space-y-4" data-testid="loading-benchmark-config">
+            <div className="grid grid-cols-2 gap-4">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="p-4 border rounded-md space-y-2">
+                  <Skeleton className="h-4 w-32" />
+                  <Skeleton className="h-8 w-16" />
+                  <Skeleton className="h-3 w-24" />
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
-      </div>
+          </div>
+        }
+      >
+        <div />
+      </DataState>
     );
   }
 
@@ -368,7 +379,7 @@ function BenchmarksByModel() {
     refetchOnReconnect: false,
   });
 
-  const { data: benchmarks, isLoading: benchmarksLoading } = useQuery<any[]>({
+  const { data: benchmarks, isLoading: benchmarksLoading, isError: benchmarksIsError, error: benchmarksError, refetch: refetchBenchmarks } = useQuery<any[]>({
     queryKey: ['/api/benchmarks', selectedModelId, 'all'],
     enabled: !!selectedModelId,
     queryFn: async () => {
@@ -424,29 +435,29 @@ function BenchmarksByModel() {
         </div>
       </div>
 
-      {selectedModelId && benchmarksLoading && (
-        <Card className="p-6 space-y-3" data-testid="loading-benchmarks">
-          <Skeleton className="h-5 w-1/3" />
-          <Skeleton className="h-4 w-1/2" />
-          <Skeleton className="h-32 w-full" />
-        </Card>
+      {selectedModelId && (benchmarksLoading || benchmarksIsError || !benchmarks || benchmarks.length === 0) && (
+        <DataState
+          isLoading={benchmarksLoading}
+          isError={benchmarksIsError}
+          error={benchmarksError as Error | null}
+          onRetry={() => refetchBenchmarks()}
+          isEmpty={!benchmarksLoading && !benchmarksIsError && (!benchmarks || benchmarks.length === 0)}
+          emptyTitle="No Benchmarks Available"
+          emptyDescription='No benchmarks have been calculated for this model yet. Click "Calculate Benchmarks" above to generate them from existing assessment data.'
+          errorTitle="We couldn't load benchmarks"
+          loading={
+            <Card className="p-6 space-y-3" data-testid="loading-benchmarks">
+              <Skeleton className="h-5 w-1/3" />
+              <Skeleton className="h-4 w-1/2" />
+              <Skeleton className="h-32 w-full" />
+            </Card>
+          }
+        >
+          <div />
+        </DataState>
       )}
 
-      {selectedModelId && !benchmarksLoading && (!benchmarks || benchmarks.length === 0) && (
-        <Card className="p-6">
-          <div className="text-center space-y-4">
-            <BarChart3 className="h-12 w-12 mx-auto text-muted-foreground" />
-            <div>
-              <h3 className="font-semibold mb-2">No Benchmarks Available</h3>
-              <p className="text-muted-foreground text-sm">
-                No benchmarks have been calculated for this model yet. Click "Calculate Benchmarks" above to generate them from existing assessment data.
-              </p>
-            </div>
-          </div>
-        </Card>
-      )}
-
-      {selectedModelId && !benchmarksLoading && benchmarks && benchmarks.length > 0 && (
+      {selectedModelId && !benchmarksLoading && !benchmarksIsError && benchmarks && benchmarks.length > 0 && (
         <div className="space-y-4">
           <Card className="p-6">
             <div className="mb-4">

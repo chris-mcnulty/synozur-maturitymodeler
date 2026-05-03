@@ -16,6 +16,7 @@ import { useState, useEffect, useMemo } from "react";
 import { CheckCircle2, AlertCircle, Mail, Lock, Trash2, TrendingUp, TrendingDown, Minus, BarChart3, Shield, ShieldCheck, Copy, Bell } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import type { User } from "@shared/schema";
+import { DataState } from "@/components/DataState";
 import { JOB_ROLES, INDUSTRIES, COUNTRIES } from "@/lib/constants";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
@@ -161,7 +162,7 @@ Thank you!`;
     }
   }, [user]);
 
-  const { data: assessmentHistory = [], isLoading: historyLoading } = useQuery<AssessmentHistoryItem[]>({
+  const { data: assessmentHistory = [], isLoading: historyLoading, isError: historyIsError, error: historyError, refetch: refetchHistory } = useQuery<AssessmentHistoryItem[]>({
     queryKey: ['/api/user/assessment-history'],
     enabled: !authLoading && !!user,
   });
@@ -844,17 +845,37 @@ Thank you!`;
                 </Card>
               )}
 
-              {historyLoading ? (
-                <div className="space-y-4" data-testid="loading-history">
-                  {Array.from({ length: 3 }).map((_, i) => (
-                    <Card key={i} className="p-6 space-y-3">
-                      <Skeleton className="h-5 w-1/3" />
-                      <Skeleton className="h-4 w-1/2" />
-                      <Skeleton className="h-4 w-1/4" />
-                    </Card>
-                  ))}
-                </div>
-              ) : filteredHistory.length > 0 ? (
+              <DataState
+                isLoading={historyLoading}
+                isError={historyIsError}
+                error={historyError as Error | null}
+                onRetry={() => refetchHistory()}
+                isEmpty={!historyLoading && !historyIsError && filteredHistory.length === 0}
+                errorTitle="We couldn't load your assessment history"
+                loading={
+                  <div className="space-y-4" data-testid="loading-history">
+                    {Array.from({ length: 3 }).map((_, i) => (
+                      <Card key={i} className="p-6 space-y-3">
+                        <Skeleton className="h-5 w-1/3" />
+                        <Skeleton className="h-4 w-1/2" />
+                        <Skeleton className="h-4 w-1/4" />
+                      </Card>
+                    ))}
+                  </div>
+                }
+                empty={
+                  <Card className="p-8 text-center">
+                    <p className="text-muted-foreground mb-4">
+                      {selectedModelFilter !== 'all'
+                        ? 'No assessments found for this model'
+                        : 'No assessments completed yet'}
+                    </p>
+                    <Button onClick={() => setLocation('/')}>
+                      Browse Assessments
+                    </Button>
+                  </Card>
+                }
+              >
                 <div className="space-y-4" data-testid="results-history">
                   {filteredHistory.map((item) => {
                     const date = item.completedAt || item.startedAt;
@@ -933,18 +954,7 @@ Thank you!`;
                     );
                   })}
                 </div>
-              ) : (
-                <Card className="p-8 text-center">
-                  <p className="text-muted-foreground mb-4">
-                    {selectedModelFilter !== 'all'
-                      ? 'No assessments found for this model'
-                      : 'No assessments completed yet'}
-                  </p>
-                  <Button onClick={() => setLocation('/')}>
-                    Browse Assessments
-                  </Button>
-                </Card>
-              )}
+              </DataState>
             </div>
           </div>
         </div>

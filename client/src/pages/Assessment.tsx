@@ -72,13 +72,13 @@ export default function Assessment() {
   const didResumeRef = useRef(false);
 
   // Fetch assessment
-  const { data: assessment } = useQuery<AssessmentType>({
+  const { data: assessment, isLoading: assessmentLoading, isError: assessmentIsError, error: assessmentError, refetch: refetchAssessment } = useQuery<AssessmentType>({
     queryKey: ['/api/assessments', assessmentId],
     enabled: !!assessmentId,
   });
 
   // Fetch model with questions
-  const { data: questions = [], isLoading } = useQuery<QuestionWithAnswers[]>({
+  const { data: questions = [], isLoading, isError: questionsIsError, error: questionsError, refetch: refetchQuestions } = useQuery<QuestionWithAnswers[]>({
     queryKey: ['/api/models', assessment?.modelId, 'questions'],
     enabled: !!assessment?.modelId,
     queryFn: async () => {
@@ -353,30 +353,51 @@ export default function Assessment() {
     }
   };
 
-  if (isLoading || !questions.length) {
+  const initialError = assessmentIsError || questionsIsError;
+  const initialLoading = !initialError && (assessmentLoading || (!!assessment && isLoading) || (!assessment && !!assessmentId));
+  if (initialLoading || initialError || !questions.length) {
     return (
       <div className="min-h-screen flex flex-col">
         <main className="flex-1 py-12">
           <div className="container mx-auto px-4 max-w-4xl" data-testid="loading-assessment">
-            <div className="mb-8 space-y-2">
-              <Skeleton className="h-4 w-32" />
-              <Skeleton className="h-3 w-full" />
-            </div>
-            <Card className="p-8 space-y-6">
-              <div className="space-y-3">
-                <Skeleton className="h-6 w-3/4" />
-                <Skeleton className="h-4 w-1/2" />
-              </div>
-              <div className="space-y-3">
-                {Array.from({ length: 4 }).map((_, i) => (
-                  <Skeleton key={i} className="h-12 w-full" />
-                ))}
-              </div>
-            </Card>
-            <div className="flex justify-between mt-8">
-              <Skeleton className="h-10 w-28" />
-              <Skeleton className="h-10 w-28" />
-            </div>
+            <DataState
+              isLoading={initialLoading}
+              isError={initialError}
+              error={(assessmentError || questionsError) as Error | null}
+              onRetry={() => {
+                if (assessmentIsError) refetchAssessment();
+                if (questionsIsError) refetchQuestions();
+              }}
+              isEmpty={!initialLoading && !initialError && questions.length === 0}
+              emptyTitle="No questions available"
+              emptyDescription="This assessment doesn't have any questions yet. Please check back later."
+              errorTitle="We couldn't load this assessment"
+              loading={
+                <>
+                  <div className="mb-8 space-y-2">
+                    <Skeleton className="h-4 w-32" />
+                    <Skeleton className="h-3 w-full" />
+                  </div>
+                  <Card className="p-8 space-y-6">
+                    <div className="space-y-3">
+                      <Skeleton className="h-6 w-3/4" />
+                      <Skeleton className="h-4 w-1/2" />
+                    </div>
+                    <div className="space-y-3">
+                      {Array.from({ length: 4 }).map((_, i) => (
+                        <Skeleton key={i} className="h-12 w-full" />
+                      ))}
+                    </div>
+                  </Card>
+                  <div className="flex justify-between mt-8">
+                    <Skeleton className="h-10 w-28" />
+                    <Skeleton className="h-10 w-28" />
+                  </div>
+                </>
+              }
+            >
+              <div />
+            </DataState>
           </div>
         </main>
         <Footer />

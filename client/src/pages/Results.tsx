@@ -8,6 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Download, Mail, ArrowLeft, ChevronRight, Users, Target, TrendingUp, Award, BookOpen, Calendar, Phone, ExternalLink, Lightbulb, Share2, Sparkles, Lock, CheckCircle2 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
+import { DataState } from "@/components/DataState";
 import type { Result, Assessment, Model, Dimension, User, Question, Answer, Course, CourseTag } from "@shared/schema";
 
 interface RecommendedCourse extends Course {
@@ -92,7 +93,7 @@ export default function Results() {
   });
 
   // Fetch result
-  const { data: result, isLoading: resultLoading, error: resultError } = useQuery<Result>({
+  const { data: result, isLoading: resultLoading, error: resultError, refetch: refetchResult } = useQuery<Result>({
     queryKey: ['/api/results', assessmentId],
     enabled: !!assessmentId,
     retry: false,
@@ -642,72 +643,65 @@ export default function Results() {
     }
   }, [pdfAction, generateAndDownloadPDF, sendPdfEmail]);
 
-  if (resultLoading) {
+  if (resultLoading || resultError || !result) {
     return (
       <div className="min-h-screen flex flex-col" data-testid="loading-results">
         <main className="flex-1 py-12">
-          <div className="container mx-auto px-4 max-w-6xl space-y-8">
-            <div className="space-y-3 text-center">
-              <Skeleton className="h-10 w-2/3 mx-auto" />
-              <Skeleton className="h-5 w-1/2 mx-auto" />
-            </div>
-            <Card className="p-8">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {Array.from({ length: 3 }).map((_, i) => (
-                  <div key={i} className="space-y-3 text-center">
-                    <Skeleton className="h-24 w-24 rounded-full mx-auto" />
-                    <Skeleton className="h-4 w-32 mx-auto" />
+          <div className="container mx-auto px-4 max-w-6xl">
+            <DataState
+              isLoading={resultLoading}
+              isError={!!resultError || !result}
+              error={resultError as Error | null}
+              onRetry={() => refetchResult()}
+              errorTitle="Results Not Available"
+              errorDescription="We couldn't find results for this assessment. The assessment may be incomplete, missing answers, or there was an error calculating results."
+              loading={
+                <div className="space-y-8">
+                  <div className="space-y-3 text-center">
+                    <Skeleton className="h-10 w-2/3 mx-auto" />
+                    <Skeleton className="h-5 w-1/2 mx-auto" />
                   </div>
-                ))}
+                  <Card className="p-8">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                      {Array.from({ length: 3 }).map((_, i) => (
+                        <div key={i} className="space-y-3 text-center">
+                          <Skeleton className="h-24 w-24 rounded-full mx-auto" />
+                          <Skeleton className="h-4 w-32 mx-auto" />
+                        </div>
+                      ))}
+                    </div>
+                  </Card>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {Array.from({ length: 4 }).map((_, i) => (
+                      <Card key={i} className="p-6 space-y-3">
+                        <Skeleton className="h-5 w-1/3" />
+                        <Skeleton className="h-3 w-full" />
+                        <Skeleton className="h-3 w-3/4" />
+                      </Card>
+                    ))}
+                  </div>
+                </div>
+              }
+            >
+              <div />
+            </DataState>
+            {(resultError || !result) && !resultLoading && (
+              <div className="flex flex-col sm:flex-row gap-3 justify-center mt-6 max-w-md mx-auto">
+                <Button
+                  onClick={() => setLocation(`/assessment/${assessmentId}`)}
+                  data-testid="button-return-assessment"
+                >
+                  Return to Assessment
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => setLocation('/')}
+                  data-testid="button-home"
+                >
+                  Back to Home
+                </Button>
               </div>
-            </Card>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {Array.from({ length: 4 }).map((_, i) => (
-                <Card key={i} className="p-6 space-y-3">
-                  <Skeleton className="h-5 w-1/3" />
-                  <Skeleton className="h-3 w-full" />
-                  <Skeleton className="h-3 w-3/4" />
-                </Card>
-              ))}
-            </div>
-          </div>
-        </main>
-        <Footer />
-      </div>
-    );
-  }
-
-  if (resultError || !result) {
-    return (
-      <div className="min-h-screen flex flex-col">
-        <main className="flex-1 flex items-center justify-center">
-          <div className="text-center max-w-md mx-auto px-4">
-            <h2 className="text-2xl font-bold mb-4" data-testid="text-error-title">Results Not Available</h2>
-            <p className="text-muted-foreground mb-6" data-testid="text-error-message">
-              We couldn't find results for this assessment. This may happen if:
-            </p>
-            <ul className="text-sm text-muted-foreground text-left mb-8 space-y-2">
-              <li>• The assessment is incomplete</li>
-              <li>• Not all questions were answered</li>
-              <li>• There was an error calculating results</li>
-            </ul>
-            <div className="space-y-4">
-              <Button
-                onClick={() => setLocation(`/assessment/${assessmentId}`)}
-                className="w-full"
-                data-testid="button-return-assessment"
-              >
-                Return to Assessment
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => setLocation('/')}
-                className="w-full"
-                data-testid="button-home"
-              >
-                Back to Home
-              </Button>
-            </div>
+            )}
           </div>
         </main>
         <Footer />
@@ -719,14 +713,23 @@ export default function Results() {
     return (
       <div className="min-h-screen flex flex-col" data-testid="loading-model-details">
         <main className="flex-1 py-12">
-          <div className="container mx-auto px-4 max-w-6xl space-y-6">
-            <Skeleton className="h-10 w-1/2" />
-            <Skeleton className="h-5 w-1/3" />
-            <Card className="p-8 space-y-4">
-              <Skeleton className="h-6 w-1/3" />
-              <Skeleton className="h-4 w-full" />
-              <Skeleton className="h-4 w-2/3" />
-            </Card>
+          <div className="container mx-auto px-4 max-w-6xl">
+            <DataState
+              isLoading
+              loading={
+                <div className="space-y-6">
+                  <Skeleton className="h-10 w-1/2" />
+                  <Skeleton className="h-5 w-1/3" />
+                  <Card className="p-8 space-y-4">
+                    <Skeleton className="h-6 w-1/3" />
+                    <Skeleton className="h-4 w-full" />
+                    <Skeleton className="h-4 w-2/3" />
+                  </Card>
+                </div>
+              }
+            >
+              <div />
+            </DataState>
           </div>
         </main>
         <Footer />
