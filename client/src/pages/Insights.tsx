@@ -30,6 +30,12 @@ import { MarkdownContent } from "@/components/MarkdownContent";
 import { apiRequest } from "@/lib/queryClient";
 import { USER_ROLES } from "@shared/constants";
 
+interface BenchmarkStat {
+  sampleSize: number;
+  meanPercent: number;
+  percentile: number;
+}
+
 interface ModelInsight {
   modelId: string;
   modelName: string;
@@ -48,6 +54,10 @@ interface ModelInsight {
     scorePercent: number;
     label: string | null;
   }>;
+  benchmarks?: {
+    global?: BenchmarkStat;
+    tenant?: BenchmarkStat;
+  };
 }
 
 interface DimensionInsight {
@@ -64,6 +74,10 @@ interface UserInsightsResponse {
   modelCount: number;
   models: ModelInsight[];
   crossModelDimensions: DimensionInsight[];
+  benchmarkRadar?: {
+    global: DimensionInsight[];
+    tenant: DimensionInsight[];
+  };
 }
 
 interface TenantInsightsResponse {
@@ -125,6 +139,43 @@ function PerModelTrendCard({ model }: { model: ModelInsight }) {
         </div>
       </div>
 
+      {(model.benchmarks?.global || model.benchmarks?.tenant) && (
+        <div className="mb-4 grid grid-cols-1 sm:grid-cols-2 gap-3" data-testid={`benchmarks-${model.modelId}`}>
+          {model.benchmarks?.global && (
+            <div className="rounded-md border border-border p-3" data-testid={`benchmark-global-${model.modelId}`}>
+              <div className="flex items-center gap-2 mb-1">
+                <Users className="h-3.5 w-3.5 text-muted-foreground" />
+                <span className="text-xs font-medium text-muted-foreground">vs. all peers</span>
+              </div>
+              <div className="flex items-baseline gap-2 flex-wrap">
+                <span className="text-2xl font-semibold" data-testid={`text-percentile-global-${model.modelId}`}>
+                  {model.benchmarks.global.percentile}<span className="text-sm font-normal text-muted-foreground">th pct</span>
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  peer avg {model.benchmarks.global.meanPercent}% · n={model.benchmarks.global.sampleSize}
+                </span>
+              </div>
+            </div>
+          )}
+          {model.benchmarks?.tenant && (
+            <div className="rounded-md border border-border p-3" data-testid={`benchmark-tenant-${model.modelId}`}>
+              <div className="flex items-center gap-2 mb-1">
+                <Target className="h-3.5 w-3.5 text-muted-foreground" />
+                <span className="text-xs font-medium text-muted-foreground">vs. your organization</span>
+              </div>
+              <div className="flex items-baseline gap-2 flex-wrap">
+                <span className="text-2xl font-semibold" data-testid={`text-percentile-tenant-${model.modelId}`}>
+                  {model.benchmarks.tenant.percentile}<span className="text-sm font-normal text-muted-foreground">th pct</span>
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  org avg {model.benchmarks.tenant.meanPercent}% · n={model.benchmarks.tenant.sampleSize}
+                </span>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       {model.assessmentCount >= 2 ? (
         <div className="h-[200px]" data-testid={`chart-model-trend-${model.modelId}`}>
           <ResponsiveContainer width="100%" height="100%">
@@ -165,16 +216,31 @@ function PerModelTrendCard({ model }: { model: ModelInsight }) {
   );
 }
 
-function CrossModelRadarCard({ dimensions, scope }: { dimensions: DimensionInsight[]; scope: "user" | "tenant" }) {
+function CrossModelRadarCard({
+  dimensions,
+  scope,
+  benchmarkRadar,
+}: {
+  dimensions: DimensionInsight[];
+  scope: "user" | "tenant";
+  benchmarkRadar?: { global: DimensionInsight[]; tenant: DimensionInsight[] };
+}) {
   const data = useMemo(() => {
+    const globalMap = new Map((benchmarkRadar?.global ?? []).map(d => [d.label, d.averagePercent]));
+    const tenantMap = new Map((benchmarkRadar?.tenant ?? []).map(d => [d.label, d.averagePercent]));
     return dimensions
       .slice(0, 12) // radar legibility
       .map(d => ({
         label: d.label,
         score: d.averagePercent,
         modelCount: d.modelCount,
+        globalBenchmark: globalMap.get(d.label),
+        tenantBenchmark: tenantMap.get(d.label),
       }));
-  }, [dimensions]);
+  }, [dimensions, benchmarkRadar]);
+
+  const hasGlobalBenchmark = scope === "user" && data.some(d => typeof d.globalBenchmark === "number");
+  const hasTenantBenchmark = scope === "user" && data.some(d => typeof d.tenantBenchmark === "number");
 
   if (data.length < 3) {
     return (
@@ -207,7 +273,30 @@ function CrossModelRadarCard({ dimensions, scope }: { dimensions: DimensionInsig
             <PolarGrid stroke="hsl(var(--border))" />
             <PolarAngleAxis dataKey="label" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }} />
             <PolarRadiusAxis domain={[0, 100]} tickCount={5} tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 10 }} />
-            <Radar name="Avg %" dataKey="score" stroke="hsl(var(--primary))" fill="hsl(var(--primary))" fillOpacity={0.3} />
+            <Radar name="You" dataKey="score" stroke="hsl(var(--primary))" fill="hsl(var(--primary))" fillOpacity={0.3} />
+            {hasTenantBenchmark && (
+              <Radar
+                name="Org avg"
+                dataKey="tenantBenchmark"
+                stroke="hsl(var(--chart-3))"
+                fill="hsl(var(--chart-3))"
+                fillOpacity={0.1}
+                strokeDasharray="4 4"
+              />
+            )}
+            {hasGlobalBenchmark && (
+              <Radar
+                name="Peer avg"
+                dataKey="globalBenchmark"
+                stroke="hsl(var(--muted-foreground))"
+                fill="hsl(var(--muted-foreground))"
+                fillOpacity={0.08}
+                strokeDasharray="3 3"
+              />
+            )}
+            {(hasGlobalBenchmark || hasTenantBenchmark) && (
+              <Legend wrapperStyle={{ fontSize: 12 }} />
+            )}
             <Tooltip
               contentStyle={{
                 backgroundColor: "hsl(var(--card))",
@@ -215,7 +304,7 @@ function CrossModelRadarCard({ dimensions, scope }: { dimensions: DimensionInsig
                 borderRadius: "6px",
                 color: "hsl(var(--foreground))",
               }}
-              formatter={(value: number) => [`${value}%`, "Avg"]}
+              formatter={(value: number, name: string) => [`${value}%`, name]}
             />
           </RadarChart>
         </ResponsiveContainer>
@@ -520,7 +609,11 @@ function InsightsContent({
       />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <CrossModelRadarCard dimensions={data.crossModelDimensions} scope={scope} />
+        <CrossModelRadarCard
+          dimensions={data.crossModelDimensions}
+          scope={scope}
+          benchmarkRadar={data.scope === "user" ? (data as UserInsightsResponse).benchmarkRadar : undefined}
+        />
         <StrengthsAndGapsCard dimensions={data.crossModelDimensions} />
       </div>
 

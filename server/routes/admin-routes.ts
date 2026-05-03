@@ -33,6 +33,12 @@ export type CompletedRow = {
   dimensionScores: any;
 };
 
+export type BenchmarkStat = {
+  sampleSize: number;
+  meanPercent: number;
+  percentile: number;
+};
+
 export type ModelInsight = {
   modelId: string;
   modelName: string;
@@ -51,6 +57,10 @@ export type ModelInsight = {
     scorePercent: number;
     label: string | null;
   }>;
+  benchmarks?: {
+    global?: BenchmarkStat;
+    tenant?: BenchmarkStat;
+  };
 };
 
 export type DimensionInsight = {
@@ -718,6 +728,7 @@ export function registerAdminRoutes(app: Express) {
   app.get("/api/insights/user", ensureAuthenticated, async (req, res) => {
     try {
       const userId = req.user!.id;
+      const userTenantId = req.user!.tenantId ?? null;
 
       const completedRows = await db
         .select({
@@ -755,6 +766,171 @@ export function registerAdminRoutes(app: Express) {
         dimensionLabelMap,
       );
 
+      // ----- Benchmark augmentation (global + tenant) -----
+      let globalBenchmarkRadar: DimensionInsight[] = [];
+      let tenantBenchmarkRadar: DimensionInsight[] = [];
+
+      if (modelIds.length > 0 && models.length > 0) {
+        const { getBenchmarkConfig } = await import('../services/benchmark-service');
+        const benchmarkConfig = await getBenchmarkConfig();
+        const minCohort = benchmarkConfig.minSampleSizeOverall;
+
+        // Pull peer rows for the user's models (exclude anonymous/proxy/imported by default)
+        type PeerRow = CompletedRow & { tenantId: string | null };
+        const peerConditions = [
+          inArray(schema.assessments.modelId, modelIds),
+          eq(schema.assessments.status, 'completed'),
+          eq(schema.assessments.isProxy, false),
+          isNotNull(schema.assessments.userId),
+          sql`${schema.assessments.importBatchId} IS NULL`,
+        ];
+
+        const peerRows: PeerRow[] = await db
+          .select({
+            assessmentId: schema.assessments.id,
+            userId: schema.assessments.userId,
+            tenantId: schema.users.tenantId,
+            modelId: schema.assessments.modelId,
+            modelName: schema.models.name,
+            modelClass: schema.models.modelClass,
+            maturityScale: schema.models.maturityScale,
+            completedAt: schema.assessments.completedAt,
+            overallScore: schema.results.overallScore,
+            label: schema.results.label,
+            dimensionScores: schema.results.dimensionScores,
+          })
+          .from(schema.assessments)
+          .innerJoin(schema.models, eq(schema.assessments.modelId, schema.models.id))
+          .innerJoin(schema.results, eq(schema.results.assessmentId, schema.assessments.id))
+          .innerJoin(schema.users, eq(schema.users.id, schema.assessments.userId))
+          .where(and(...peerConditions));
+
+        // Reduce to latest completed per (user, model)
+        const reduceLatestPerUserModel = (rows: PeerRow[]): PeerRow[] => {
+          const map = new Map<string, PeerRow>();
+          for (const r of rows) {
+            if (!r.userId) continue;
+            const key = `${r.userId}:${r.modelId}`;
+            const existing = map.get(key);
+            const t = r.completedAt ? r.completedAt.getTime() : 0;
+            const et = existing?.completedAt ? existing.completedAt.getTime() : 0;
+            if (!existing || t >= et) map.set(key, r);
+          }
+          return Array.from(map.values());
+        };
+
+        const globalLatest = reduceLatestPerUserModel(peerRows);
+        const tenantLatest = userTenantId
+          ? globalLatest.filter(r => r.tenantId === userTenantId)
+          : [];
+
+        // Compute per-model benchmark stats (sampleSize, meanPercent, user's percentile)
+        const computePerModelBenchmark = (
+          peers: PeerRow[],
+        ): Map<string, BenchmarkStat> => {
+          const out = new Map<string, BenchmarkStat>();
+          const byModel = new Map<string, PeerRow[]>();
+          for (const r of peers) {
+            const list = byModel.get(r.modelId) ?? [];
+            list.push(r);
+            byModel.set(r.modelId, list);
+          }
+          for (const m of models) {
+            const list = byModel.get(m.modelId) ?? [];
+            const sampleSize = list.length;
+            if (sampleSize < minCohort) continue;
+            const maxScore = m.maxScore || 100;
+            const meanScore = list.reduce((s, r) => s + r.overallScore, 0) / sampleSize;
+            const meanPercent = Math.round((meanScore / maxScore) * 1000) / 10;
+            const userScore = m.latestScore;
+            // Percentile rank: % of peers with score <= user (inclusive); if user is in the cohort, this is the standard percentile.
+            const atOrBelow = list.filter(r => r.overallScore <= userScore).length;
+            const percentile = Math.round((atOrBelow / sampleSize) * 100);
+            out.set(m.modelId, { sampleSize, meanPercent, percentile });
+          }
+          return out;
+        };
+
+        const globalPerModel = computePerModelBenchmark(globalLatest);
+        const tenantPerModel: Map<string, BenchmarkStat> = userTenantId
+          ? computePerModelBenchmark(tenantLatest)
+          : new Map();
+
+        for (const m of models) {
+          const g = globalPerModel.get(m.modelId);
+          const t = tenantPerModel.get(m.modelId);
+          if (g || t) {
+            m.benchmarks = {};
+            if (g) m.benchmarks.global = g;
+            if (t) m.benchmarks.tenant = t;
+          }
+        }
+
+        // Cross-model benchmark radar — average dimension percentages across ALL latest
+        // peer rows (one per user×model), gated by cohort threshold per label and
+        // restricted to dimension labels the user actually has.
+        const userLabels = new Set(crossModelDimensions.map(d => d.label));
+
+        // Pre-compute maxScore per modelId from this user's models (peers share the same models).
+        const maxScoreByModel = new Map<string, number>();
+        for (const m of models) maxScoreByModel.set(m.modelId, m.maxScore || 100);
+
+        const buildBenchmarkRadar = (peers: PeerRow[]): DimensionInsight[] => {
+          if (peers.length === 0) return [];
+          const acc = new Map<string, {
+            label: string;
+            sumPercent: number;
+            count: number;
+            users: Set<string>;
+            perModel: Map<string, { modelName: string; sumPercent: number; n: number }>;
+          }>();
+          for (const r of peers) {
+            if (!r.userId) continue;
+            const maxScore = maxScoreByModel.get(r.modelId)
+              ?? (Array.isArray(r.maturityScale) && r.maturityScale.length > 0
+                ? Math.max(...(r.maturityScale as Array<{ maxScore?: number }>).map(s => s.maxScore || 100))
+                : 100);
+            const dimScores = (r.dimensionScores ?? {}) as Record<string, number>;
+            for (const [dimKey, raw] of Object.entries(dimScores)) {
+              if (typeof raw !== 'number' || Number.isNaN(raw)) continue;
+              const label = dimensionLabelMap.get(`${r.modelId}:${dimKey}`) || dimKey;
+              if (!userLabels.has(label)) continue;
+              const pct = maxScore > 0 ? (raw / maxScore) * 100 : 0;
+              const entry = acc.get(label) ?? {
+                label,
+                sumPercent: 0,
+                count: 0,
+                users: new Set<string>(),
+                perModel: new Map<string, { modelName: string; sumPercent: number; n: number }>(),
+              };
+              entry.sumPercent += pct;
+              entry.count += 1;
+              entry.users.add(r.userId);
+              const pm = entry.perModel.get(r.modelId) ?? { modelName: r.modelName, sumPercent: 0, n: 0 };
+              pm.sumPercent += pct;
+              pm.n += 1;
+              entry.perModel.set(r.modelId, pm);
+              acc.set(label, entry);
+            }
+          }
+          return Array.from(acc.values())
+            .filter(e => e.users.size >= minCohort)
+            .map(e => ({
+              label: e.label,
+              averagePercent: Math.round((e.sumPercent / Math.max(e.count, 1)) * 10) / 10,
+              modelCount: e.perModel.size,
+              sampleSize: e.count,
+              contributingModels: Array.from(e.perModel.values()).map(pm => ({
+                modelName: pm.modelName,
+                averagePercent: Math.round((pm.sumPercent / Math.max(pm.n, 1)) * 10) / 10,
+              })),
+            }));
+        };
+
+        globalBenchmarkRadar = buildBenchmarkRadar(globalLatest);
+        if (userTenantId) tenantBenchmarkRadar = buildBenchmarkRadar(tenantLatest);
+      }
+
       const totalCompleted = completedRows.length;
       res.json({
         scope: 'user',
@@ -762,6 +938,10 @@ export function registerAdminRoutes(app: Express) {
         modelCount: models.length,
         models,
         crossModelDimensions,
+        benchmarkRadar: {
+          global: globalBenchmarkRadar,
+          tenant: tenantBenchmarkRadar,
+        },
       });
     } catch (error) {
       console.error('Failed to build user insights:', error);
