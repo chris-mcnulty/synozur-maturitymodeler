@@ -224,11 +224,15 @@ export async function exportModelAnalysis(modelSlug: string) {
     assessments: [] as any[],
   };
 
-  for (const assessment of assessments) {
-    let userData = null;
-    if (assessment.userId) {
-      const userResult = await db
+  const assessmentIds = assessments.map(a => a.id);
+  const userIds = Array.from(
+    new Set(assessments.map(a => a.userId).filter((id): id is string => !!id))
+  );
+
+  const usersList = userIds.length > 0
+    ? await db
         .select({
+          id: schema.users.id,
           name: schema.users.name,
           company: schema.users.company,
           jobTitle: schema.users.jobTitle,
@@ -237,51 +241,85 @@ export async function exportModelAnalysis(modelSlug: string) {
           country: schema.users.country,
         })
         .from(schema.users)
-        .where(eq(schema.users.id, assessment.userId))
-        .limit(1);
+        .where(inArray(schema.users.id, userIds))
+    : [];
+  const usersById = new Map(usersList.map(u => [u.id, u]));
 
-      userData = userResult[0] || null;
-    }
+  const resultsList = assessmentIds.length > 0
+    ? await db
+        .select()
+        .from(schema.results)
+        .where(inArray(schema.results.assessmentId, assessmentIds))
+    : [];
+  const resultsByAssessment = new Map(resultsList.map(r => [r.assessmentId, r]));
 
-    const resultResult = await db
-      .select()
-      .from(schema.results)
-      .where(eq(schema.results.assessmentId, assessment.id))
-      .limit(1);
+  const responsesList = assessmentIds.length > 0
+    ? await db
+        .select()
+        .from(schema.assessmentResponses)
+        .where(inArray(schema.assessmentResponses.assessmentId, assessmentIds))
+    : [];
+  const responsesByAssessment = new Map<string, typeof responsesList>();
+  for (const r of responsesList) {
+    const list = responsesByAssessment.get(r.assessmentId);
+    if (list) list.push(r);
+    else responsesByAssessment.set(r.assessmentId, [r]);
+  }
 
-    const result = resultResult[0];
+  const tagAssignmentsList = assessmentIds.length > 0
+    ? await db
+        .select({
+          assessmentId: schema.assessmentTagAssignments.assessmentId,
+          tagName: schema.assessmentTags.name,
+          tagColor: schema.assessmentTags.color,
+        })
+        .from(schema.assessmentTagAssignments)
+        .innerJoin(schema.assessmentTags, eq(schema.assessmentTagAssignments.tagId, schema.assessmentTags.id))
+        .where(inArray(schema.assessmentTagAssignments.assessmentId, assessmentIds))
+    : [];
+  const tagsByAssessment = new Map<string, typeof tagAssignmentsList>();
+  for (const t of tagAssignmentsList) {
+    const list = tagsByAssessment.get(t.assessmentId);
+    if (list) list.push(t);
+    else tagsByAssessment.set(t.assessmentId, [t]);
+  }
+
+  const questionsById = new Map(questions.map(q => [q.id, q]));
+  const answersById = new Map(allAnswers.map(a => [a.id, a]));
+
+  for (const assessment of assessments) {
+    const userData = assessment.userId
+      ? (() => {
+          const u = usersById.get(assessment.userId);
+          if (!u) return null;
+          const { id: _id, ...rest } = u;
+          return rest;
+        })()
+      : null;
+
+    const result = resultsByAssessment.get(assessment.id);
     if (!result) continue;
 
-    const responses = await db
-      .select()
-      .from(schema.assessmentResponses)
-      .where(eq(schema.assessmentResponses.assessmentId, assessment.id));
-
-    const tagAssignments = await db
-      .select({
-        tagName: schema.assessmentTags.name,
-        tagColor: schema.assessmentTags.color,
-      })
-      .from(schema.assessmentTagAssignments)
-      .innerJoin(schema.assessmentTags, eq(schema.assessmentTagAssignments.tagId, schema.assessmentTags.id))
-      .where(eq(schema.assessmentTagAssignments.assessmentId, assessment.id));
+    const responses = responsesByAssessment.get(assessment.id) ?? [];
+    const tagAssignments = tagsByAssessment.get(assessment.id) ?? [];
 
     const responseDetails = responses.map(r => {
-      const question = questions.find(q => q.id === r.questionId);
+      const question = questionsById.get(r.questionId);
       if (!question) return null;
 
       let selectedAnswers: Array<{ id: string; text: string; score: number }> = [];
 
       if (r.answerIds && r.answerIds.length > 0) {
-        selectedAnswers = allAnswers
-          .filter(a => r.answerIds!.includes(a.id))
+        selectedAnswers = r.answerIds
+          .map(id => answersById.get(id))
+          .filter((a): a is NonNullable<typeof a> => !!a)
           .map(a => ({
             id: a.id,
             text: a.text,
             score: a.score,
           }));
       } else if (r.answerId) {
-        const answer = allAnswers.find(a => a.id === r.answerId);
+        const answer = answersById.get(r.answerId);
         if (answer) {
           selectedAnswers = [{
             id: answer.id,
