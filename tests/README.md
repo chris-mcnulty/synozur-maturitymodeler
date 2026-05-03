@@ -38,16 +38,25 @@ registry under test lives at `server/services/ai-providers/registry.ts`.
 
 ## Running tests
 
-> The project's `package.json` is treated as immutable in this environment, so
-> the canonical commands invoke the bundled CLIs through `npx`. If you add an
-> `npm test` script later, point it at `vitest run`.
+The canonical entry point is `npm test`. The following scripts are wired up in
+`package.json`:
+
+| Script | What it runs |
+| --- | --- |
+| `npm test` | `vitest run` (alias for the unit/integration suite) |
+| `npm run test:unit` | `vitest run` |
+| `npm run test:watch` | `vitest` (watch mode) |
+| `npm run test:e2e` | `playwright test` |
+
+The underlying CLIs are still available via `npx vitest` / `npx playwright` if
+you need flags or filters that the npm scripts don't forward.
 
 ### Unit tests (Vitest)
 
 ```bash
-npx vitest run            # one-shot
-npx vitest                # watch mode
-npx vitest run scoring    # filter by file/name
+npm test                  # one-shot
+npm run test:watch        # watch mode
+npm test -- scoring       # filter by file/name (forwarded to vitest)
 ```
 
 Unit tests must be hermetic: no live DB, no network, no real Postgres
@@ -63,10 +72,10 @@ npx playwright install chromium
 
 # Run the smoke suite against http://localhost:5000 (Playwright will start
 # `npm run dev` automatically and reuse it if it is already running).
-npx playwright test
+npm run test:e2e
 
 # Run against a different host (e.g. a deployed preview).
-E2E_BASE_URL=https://staging.example.com E2E_NO_SERVER=1 npx playwright test
+E2E_BASE_URL=https://staging.example.com E2E_NO_SERVER=1 npm run test:e2e
 
 # Open the HTML report after a CI run.
 npx playwright show-report
