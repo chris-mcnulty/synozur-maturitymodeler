@@ -16,10 +16,12 @@
  */
 
 import type { Express, Request, Response } from "express";
+import express from "express";
 import { z } from "zod";
 import { ensureAuthenticated, ensureAdminOrModeler } from "../auth";
 import { getAccessibleTenantIds, checkIsGlobalAdmin, canManageModels } from "../permissions";
 import * as courseSvc from "../services/course-service";
+import * as scormSvc from "../services/scorm-service";
 import * as schema from "@shared/schema";
 import { db } from "../db";
 import { eq } from "drizzle-orm";
@@ -634,20 +636,333 @@ export function registerCourseRoutes(app: Express) {
     } catch (err: any) { res.status(500).json({ error: err.message ?? "Failed" }); }
   });
 
-  // ----- SCORM (stubbed for follow-up) -----
-  app.post("/api/scorm/import", ensureAdminOrModeler, async (_req, res) => {
-    res.status(501).json({
-      error: "SCORM import not yet implemented",
-      hint: "Tracked for a follow-up task. Upload .zip + parse imsmanifest.xml + create course/lesson + serve runtime.",
-    });
+  // ----- SCORM -----
+  // Import endpoint: accepts a raw .zip body (Content-Type: application/zip
+  // or application/octet-stream). Express's global JSON parser ignores
+  // these content types, so we attach a route-scoped raw parser with a
+  // generous 200MB cap to fit typical SCORM training bundles.
+  app.post(
+    "/api/scorm/import",
+    ensureAdminOrModeler,
+    express.raw({ type: ["application/zip", "application/octet-stream", "application/x-zip-compressed"], limit: "200mb" }),
+    async (req, res) => {
+      try {
+        const user = req.user as schema.User;
+        const buf: Buffer | undefined = req.body && Buffer.isBuffer(req.body) ? req.body : undefined;
+        if (!buf || buf.length === 0) {
+          return res.status(400).json({
+            error: "Empty body. POST a .zip with Content-Type: application/zip",
+          });
+        }
+        const courseId = (req.query.courseId as string | undefined) || undefined;
+        if (courseId) {
+          const c = await requireManageCourse(req, res, courseId);
+          if (!c) return;
+        }
+        const fileName = (req.query.fileName as string | undefined) || undefined;
+        const result = await scormSvc.importScormZip({
+          zip: buf,
+          uploadedBy: user.id,
+          courseId: courseId ?? null,
+          fileName,
+        });
+        res.json(result);
+      } catch (err: any) {
+        console.error("scorm import error", err);
+        res.status(400).json({ error: err.message ?? "Failed to import SCORM" });
+      }
+    },
+  );
+
+  // Resolve a SCORM package and authorize the caller against its owning
+  // course. SCORM packages without a courseId (orphan uploads) are only
+  // visible to global admins. For attached packages we delegate to the
+  // existing course access helpers so tenant scoping is preserved.
+  type ScormAccessLevel = "manage" | "view";
+  async function loadAuthorizedScormPackage(
+    req: Request,
+    res: Response,
+    pid: string,
+    level: ScormAccessLevel,
+  ): Promise<schema.ScormPackage | null> {
+    const pkg = await scormSvc.getScormPackage(pid);
+    if (!pkg) {
+      res.status(404).json({ error: "Not found" });
+      return null;
+    }
+    const user = req.user as schema.User | undefined;
+    if (!pkg.courseId) {
+      if (!user || !checkIsGlobalAdmin(user)) {
+        res.status(403).json({ error: "Forbidden" });
+        return null;
+      }
+      return pkg;
+    }
+    const course = await courseSvc.getCourseById(pkg.courseId);
+    if (!course) {
+      res.status(404).json({ error: "Course not found" });
+      return null;
+    }
+    const canManage = courseSvc.userCanManageCourse(user, course);
+    if (level === "manage") {
+      if (!canManage) {
+        res.status(403).json({ error: "Forbidden" });
+        return null;
+      }
+      return pkg;
+    }
+    // view-level: allow managers, otherwise require course visibility
+    // and an active/available course state.
+    if (!canManage) {
+      if (course.status !== "published") {
+        res.status(403).json({ error: "Course is not available" });
+        return null;
+      }
+      if (!(await courseSvc.userCanViewCourse(user, course))) {
+        res.status(403).json({ error: "Forbidden" });
+        return null;
+      }
+    }
+    return pkg;
+  }
+
+  // List SCORM packages — scoped to courses the caller can manage so
+  // the lesson editor only sees packages from its own tenant(s).
+  app.get("/api/scorm/packages", ensureAdminOrModeler, async (req, res) => {
+    try {
+      const user = req.user as schema.User;
+      const { db } = await import("../db");
+      const rows = await db.select().from(schema.scormPackages);
+      const filtered: schema.ScormPackage[] = [];
+      const courseCache = new Map<string, schema.Course | null>();
+      const isGlobal = checkIsGlobalAdmin(user);
+      for (const pkg of rows) {
+        if (!pkg.courseId) {
+          if (isGlobal) filtered.push(pkg);
+          continue;
+        }
+        let course = courseCache.get(pkg.courseId);
+        if (course === undefined) {
+          course = await courseSvc.getCourseById(pkg.courseId);
+          courseCache.set(pkg.courseId, course);
+        }
+        if (course && courseSvc.userCanManageCourse(user, course)) {
+          filtered.push(pkg);
+        }
+      }
+      res.json(filtered);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message ?? "Failed" });
+    }
   });
 
-  app.get("/api/courses/:id/scorm/export", ensureAdminOrModeler, async (req, res) => {
-    const course = await requireManageCourse(req, res, req.params.id);
-    if (!course) return;
-    res.status(501).json({
-      error: "SCORM export not yet implemented",
-      hint: "Tracked for a follow-up task.",
+  app.get("/api/scorm/packages/:pid", ensureAuthenticated, async (req, res) => {
+    const pkg = await loadAuthorizedScormPackage(req, res, req.params.pid, "view");
+    if (!pkg) return;
+    res.json(pkg);
+  });
+
+  // Authenticated asset serving for the SCORM runtime (admin/preview
+  // path). Uses session auth and is gated by course view access. The
+  // primary playback path uses /api/scorm/play/:token/* below, which
+  // is cookieless so the sandboxed iframe can load relative subresources.
+  app.get(
+    "/api/scorm/packages/:pid/assets/*",
+    ensureAuthenticated,
+    async (req, res) => {
+      const pkg = await loadAuthorizedScormPackage(req, res, req.params.pid, "view");
+      if (!pkg) return;
+      try {
+        const rest = (req.params as any)[0] || "";
+        await scormSvc.streamScormAsset(pkg.id, rest, res);
+      } catch (err: any) {
+        if (!res.headersSent) res.status(500).json({ error: err.message ?? "Failed" });
+      }
+    },
+  );
+
+  // Issue a signed launch token for a SCORM lesson. We validate course
+  // visibility + lesson membership here (cookies still flow on this
+  // POST), then return a path-bearing src that the player iframe loads.
+  // The src includes the prior cmi snapshot in the URL fragment so the
+  // SCO resumes from its persisted state on relaunch.
+  app.post(
+    "/api/courses/:id/lessons/:lid/scorm/launch",
+    ensureAuthenticated,
+    async (req, res) => {
+      try {
+        const user = req.user as schema.User;
+        const course = await courseSvc.getCourseById(req.params.id);
+        if (!course) return res.status(404).json({ error: "Course not found" });
+        if (course.status !== "published" && !courseSvc.userCanManageCourse(user, course)) {
+          return res.status(403).json({ error: "Course is not available" });
+        }
+        if (!(await courseSvc.userCanViewCourse(user, course))) {
+          return res.status(403).json({ error: "Forbidden" });
+        }
+        const lessonCtx = await courseSvc.getCourseForLesson(req.params.lid);
+        if (!lessonCtx || lessonCtx.course.id !== course.id) {
+          return res.status(400).json({ error: "Lesson does not belong to this course" });
+        }
+        if (lessonCtx.lesson.type !== "scorm") {
+          return res.status(400).json({ error: "Lesson is not a SCORM lesson" });
+        }
+        const content: any = lessonCtx.lesson.content || {};
+        if (!content.packageId) return res.status(400).json({ error: "SCORM lesson is not wired up" });
+        const pkg = await scormSvc.getScormPackage(content.packageId);
+        if (!pkg) return res.status(404).json({ error: "SCORM package missing" });
+
+        const enrollment = await courseSvc.getOrCreateEnrollment(course.id, user.id, user.tenantId ?? null);
+        // Enforce sequential gating before minting a launch token —
+        // the lesson list exposes locked lesson IDs and we don't want
+        // the launch endpoint to be a back door around isLessonUnlocked.
+        // Managers/instructors bypass for preview, matching other routes.
+        if (!courseSvc.userCanManageCourse(user, course)) {
+          const unlocked = await courseSvc.isLessonUnlocked(course.id, lessonCtx.lesson.id, enrollment.id);
+          if (!unlocked) return res.status(403).json({ error: "Lesson is locked" });
+        }
+        // Hydrate prior cmi from the user's existing lesson_progress
+        const allProgress = await courseSvc.getLessonProgressForEnrollment(enrollment.id).catch(() => [] as schema.LessonProgress[]);
+        const progress = allProgress.find((p) => p.lessonId === lessonCtx.lesson.id) || null;
+        const cmi = (progress?.data as any)?.cmi || {};
+
+        const token = scormSvc.signLaunchToken(pkg.id, user.id);
+        const entryPoint = (content.entryPoint || pkg.entryPoint || "index.html").replace(/^\/+/, "");
+        let src = `/api/scorm/play/${token}/${entryPoint}`;
+        if (cmi && Object.keys(cmi).length > 0) {
+          const enc = Buffer.from(JSON.stringify(cmi), "utf-8").toString("base64");
+          // Use base64 (not base64url) so atob() works in browsers, and
+          // keep the cmi in the URL fragment so it never reaches the
+          // server in HTTP logs.
+          src += `#cmi=${encodeURIComponent(enc)}`;
+        }
+        res.json({ src, version: pkg.scormVersion, entryPoint });
+      } catch (err: any) {
+        console.error("scorm launch error", err);
+        res.status(400).json({ error: err.message ?? "Failed" });
+      }
+    },
+  );
+
+  // Cookieless asset serving for the sandboxed player. The token in
+  // the path identifies (package, user) and is HMAC-signed with a
+  // short TTL — see signLaunchToken/verifyLaunchToken. Because the
+  // token is part of the path, every relative URL inside the package
+  // automatically resolves under the same token, which is exactly
+  // what real-world SCOs need to fetch their JSON/JS/asset siblings.
+  app.options("/api/scorm/play/:token/*", (_req, res) => {
+    res.set({
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "GET, OPTIONS",
+      "Access-Control-Max-Age": "600",
     });
+    res.status(204).end();
+  });
+  app.get("/api/scorm/play/:token/*", async (req, res) => {
+    try {
+      const claims = scormSvc.verifyLaunchToken(req.params.token);
+      if (!claims) {
+        res.set({ "Access-Control-Allow-Origin": "*" });
+        return res.status(403).json({ error: "Invalid or expired launch token" });
+      }
+      const rest = (req.params as any)[0] || "";
+      await scormSvc.streamScormAsset(claims.pid, rest, res);
+    } catch (err: any) {
+      if (!res.headersSent) res.status(500).json({ error: err.message ?? "Failed" });
+    }
+  });
+
+  // SCORM runtime progress: dedicated endpoint that bypasses the
+  // generic /progress guard which (intentionally) refuses scorm
+  // lessons. We translate cmi.* into our normalized shape.
+  const scormProgressSchema = z.object({
+    cmi: z.record(z.any()).optional(),
+    completionStatus: z.string().optional(),
+    successStatus: z.string().optional(),
+    score: z.number().optional(),
+  });
+  app.post(
+    "/api/courses/:id/lessons/:lid/scorm/progress",
+    ensureAuthenticated,
+    async (req, res) => {
+      try {
+        const user = req.user as schema.User;
+        const parsed = scormProgressSchema.parse(req.body);
+
+        const course = await courseSvc.getCourseById(req.params.id);
+        if (!course) return res.status(404).json({ error: "Course not found" });
+        if (course.status !== "published" && !courseSvc.userCanManageCourse(user, course)) {
+          return res.status(403).json({ error: "Course is not available" });
+        }
+        if (!(await courseSvc.userCanViewCourse(user, course))) {
+          return res.status(403).json({ error: "Forbidden" });
+        }
+        const lessonCtx = await courseSvc.getCourseForLesson(req.params.lid);
+        if (!lessonCtx || lessonCtx.course.id !== course.id) {
+          return res.status(400).json({ error: "Lesson does not belong to this course" });
+        }
+        if (lessonCtx.lesson.type !== "scorm") {
+          return res.status(400).json({ error: "Lesson is not a SCORM lesson" });
+        }
+        const enrollment = await courseSvc.getOrCreateEnrollment(course.id, user.id, user.tenantId ?? null);
+        if (!(await courseSvc.isLessonUnlocked(course.id, lessonCtx.lesson.id, enrollment.id))) {
+          return res.status(403).json({ error: "Previous required lessons must be completed first" });
+        }
+
+        // Normalize cmi → our status enum. SCORM 1.2 reports lesson_status
+        // (passed/completed/failed/incomplete/browsed/not attempted).
+        // SCORM 2004 splits completion_status (completed/incomplete/...)
+        // and success_status (passed/failed/unknown).
+        const cmi = parsed.cmi || {};
+        const ls = String(cmi["cmi.core.lesson_status"] ?? "").toLowerCase();
+        const cs = String(parsed.completionStatus ?? cmi["cmi.completion_status"] ?? "").toLowerCase();
+        const ss = String(parsed.successStatus ?? cmi["cmi.success_status"] ?? "").toLowerCase();
+        let status: schema.LessonProgressStatus = "in_progress";
+        if (ls === "passed" || ls === "completed" || ss === "passed" || cs === "completed") status = "completed";
+        else if (ls === "failed" || ss === "failed") status = "failed";
+
+        let score: number | undefined = parsed.score;
+        if (score == null) {
+          const raw = cmi["cmi.core.score.raw"] ?? cmi["cmi.score.raw"];
+          if (raw != null && raw !== "") {
+            const n = Number(raw);
+            if (Number.isFinite(n)) score = Math.round(n);
+          }
+        }
+        if (score != null) score = Math.max(0, Math.min(100, score));
+
+        const progress = await courseSvc.upsertLessonProgress(enrollment.id, lessonCtx.lesson.id, {
+          status,
+          score: score as any,
+          data: { cmi } as any,
+        });
+        const updated = await courseSvc.recalculateEnrollment(enrollment.id);
+        res.json({ progress, enrollment: updated });
+      } catch (err: any) {
+        console.error("scorm progress error", err);
+        res.status(400).json({ error: err.message ?? "Failed" });
+      }
+    },
+  );
+
+  // Export a course as a SCORM 1.2 package.
+  app.get("/api/courses/:id/scorm/export", ensureAdminOrModeler, async (req, res) => {
+    try {
+      const course = await requireManageCourse(req, res, req.params.id);
+      if (!course) return;
+      const full = await courseSvc.getCourseFull(course.id);
+      if (!full) return res.status(404).json({ error: "Course not found" });
+      const zipBuf = await scormSvc.buildScormExport(full);
+      const safeName = full.slug.replace(/[^a-z0-9-]/g, "-");
+      res.set({
+        "Content-Type": "application/zip",
+        "Content-Disposition": `attachment; filename="${safeName}-scorm12.zip"`,
+        "Content-Length": String(zipBuf.length),
+      });
+      res.end(zipBuf);
+    } catch (err: any) {
+      console.error("scorm export error", err);
+      if (!res.headersSent) res.status(500).json({ error: err.message ?? "Failed" });
+    }
   });
 }

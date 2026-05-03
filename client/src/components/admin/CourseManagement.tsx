@@ -12,7 +12,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Plus, Edit, Trash, Users, ChevronLeft, FileText, Save, Loader2 } from "lucide-react";
+import { Plus, Edit, Trash, Users, ChevronLeft, FileText, Save, Loader2, Upload, Download } from "lucide-react";
 import type { Course, CourseModule, Lesson, CourseTag, LessonType, CourseEnrollment } from "@shared/schema";
 
 interface CourseListItem extends Course {
@@ -34,7 +34,7 @@ const LESSON_TYPE_OPTIONS: { value: LessonType; label: string }[] = [
   { value: "audio", label: "Audio" },
   { value: "quiz", label: "Quiz" },
   { value: "attestation", label: "Attestation" },
-  { value: "scorm", label: "SCORM (stub)" },
+  { value: "scorm", label: "SCORM package" },
 ];
 
 export function CourseManagement() {
@@ -457,10 +457,21 @@ function CourseOverview({ course, onSave, saving }: { course: CourseFull; onSave
           <Switch id="cert" checked={certificateEnabled} onCheckedChange={setCertificateEnabled} data-testid="switch-overview-certificate" />
           <Label htmlFor="cert">Certificate on completion (PDF generation TBD)</Label>
         </div>
-        <Button onClick={handleSave} disabled={saving} data-testid="button-save-overview">
-          {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-          <Save className="h-4 w-4 mr-1" /> Save
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button onClick={handleSave} disabled={saving} data-testid="button-save-overview">
+            {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+            <Save className="h-4 w-4 mr-1" /> Save
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => {
+              window.location.href = `/api/courses/${course.id}/scorm/export`;
+            }}
+            data-testid="button-export-scorm"
+          >
+            <Download className="h-4 w-4 mr-1" /> Export SCORM 1.2
+          </Button>
+        </div>
       </CardContent>
     </Card>
   );
@@ -480,6 +491,42 @@ function LessonEditorDialog({
   const [type, setType] = useState<LessonType>((lesson?.type as LessonType) || "rich_text");
   const [contentJson, setContentJson] = useState(JSON.stringify(lesson?.content ?? defaultContentFor("rich_text"), null, 2));
   const [required, setRequired] = useState(lesson?.required ?? true);
+  const [scormUploading, setScormUploading] = useState(false);
+
+  const handleScormUpload = async (file: File) => {
+    setScormUploading(true);
+    try {
+      const res = await fetch(
+        `/api/scorm/import?courseId=${encodeURIComponent(courseId)}&fileName=${encodeURIComponent(file.name)}`,
+        {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/zip" },
+          body: file,
+        },
+      );
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: res.statusText }));
+        throw new Error(err.error || "Upload failed");
+      }
+      const data = await res.json();
+      // Patch the JSON content with the new package details so the
+      // lesson is wired up automatically without making the author
+      // remember the JSON shape.
+      const next = {
+        packageId: data.packageId,
+        entryPoint: data.entryPoint,
+        version: data.scormVersion,
+      };
+      setContentJson(JSON.stringify(next, null, 2));
+      if (!title && data.title) setTitle(data.title);
+      toast({ title: "SCORM package uploaded", description: `Entry point: ${data.entryPoint}` });
+    } catch (err: any) {
+      toast({ title: "Upload failed", description: err.message, variant: "destructive" });
+    } finally {
+      setScormUploading(false);
+    }
+  };
 
   const saveMutation = useMutation({
     mutationFn: async () => {
@@ -529,6 +576,31 @@ function LessonEditorDialog({
               </SelectContent>
             </Select>
           </div>
+          {type === "scorm" && (
+            <div className="rounded-md border p-3 space-y-2">
+              <Label className="text-sm">Upload SCORM package (.zip)</Label>
+              <p className="text-xs text-muted-foreground">
+                Uploads the .zip, parses imsmanifest.xml, and wires the lesson to the new package.
+                SCORM 1.2 and 2004 are both supported.
+              </p>
+              <div className="flex items-center gap-2">
+                <Input
+                  type="file"
+                  accept=".zip,application/zip,application/x-zip-compressed"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) handleScormUpload(f);
+                    e.target.value = "";
+                  }}
+                  disabled={scormUploading}
+                  data-testid="input-scorm-upload"
+                  className="max-w-md"
+                />
+                {scormUploading && <Loader2 className="h-4 w-4 animate-spin" />}
+                {!scormUploading && <Upload className="h-4 w-4 text-muted-foreground" />}
+              </div>
+            </div>
+          )}
           <div>
             <Label htmlFor="ld-content">Content (JSON)</Label>
             <Textarea
@@ -588,7 +660,7 @@ function contentHelpFor(type: LessonType): string {
     case "audio": return "Shape: { audioUrl }";
     case "quiz": return "Shape: { passingScore, questions: [{ id, text, answers: [{ id, text }], correctAnswerId }] }";
     case "attestation": return "Shape: { statement, requireTyped }";
-    case "scorm": return "Shape: { packageId, entryPoint, version }. SCORM runtime is a follow-up.";
+    case "scorm": return "Shape: { packageId, entryPoint, version }. Use the Upload SCORM package control above to populate this automatically.";
     default: return "";
   }
 }

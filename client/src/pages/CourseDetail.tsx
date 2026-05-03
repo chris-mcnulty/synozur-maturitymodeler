@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, Link } from "wouter";
 import { Helmet } from "react-helmet-async";
 import { useQuery, useMutation } from "@tanstack/react-query";
@@ -479,10 +479,16 @@ function CoursePlayer({ course, lesson, currentIndex, total, progress, onPrev, o
       }
       case "scorm":
         return (
-          <div className="text-center py-8 text-muted-foreground" data-testid="content-scorm">
-            <p>SCORM player is coming soon.</p>
-            <p className="text-sm">SCORM 1.2 / 2004 import + runtime are tracked as a follow-up.</p>
-          </div>
+          <ScormPlayer
+            courseId={course.id}
+            courseSlug={course.slug}
+            lesson={lesson}
+            initialCmi={(progress?.data as any)?.cmi || {}}
+            onComplete={(status, score) => {
+              setSubmittedStatus(status);
+              if (score != null) setSubmittedScore(score);
+            }}
+          />
         );
       default:
         return <p>Unsupported lesson type.</p>;
@@ -529,6 +535,154 @@ function CoursePlayer({ course, lesson, currentIndex, total, progress, onPrev, o
           </Button>
         </div>
       </div>
+    </div>
+  );
+}
+
+/**
+ * ScormPlayer — embeds a SCORM SCO in a *sandboxed* iframe and bridges
+ * its runtime API back to our `lesson_progress` row via `postMessage`.
+ *
+ * Security model: the iframe uses `sandbox="allow-scripts allow-forms
+ * allow-popups"` so the SCO runs in a unique opaque origin and cannot
+ * touch the host app, its cookies, or its same-origin APIs. The server
+ * injects a SCORM API shim into served HTML which buffers cmi.* writes
+ * locally and posts a `{type:"scorm-progress", cmi}` message to the
+ * parent on `LMSCommit` / `LMSFinish` (and 2004's `Commit` /
+ * `Terminate`). We accept those messages here only when they originate
+ * from this iframe's contentWindow, then forward to the dedicated
+ * `/scorm/progress` endpoint which translates cmi.* into our
+ * normalized status + score shape.
+ */
+function ScormPlayer({
+  courseId, courseSlug, lesson, onComplete,
+}: {
+  courseId: string;
+  courseSlug: string;
+  lesson: Lesson;
+  initialCmi: Record<string, any>;
+  onComplete: (status: string | null, score: number | null) => void;
+}) {
+  const content = (lesson.content as any) || {};
+  const packageId: string | undefined = content.packageId;
+  const entryPoint: string = content.entryPoint || "index.html";
+  const version: "1.2" | "2004" = content.version === "2004" ? "2004" : "1.2";
+  const iframeRef = useRef<HTMLIFrameElement | null>(null);
+  const [src, setSrc] = useState<string | null>(null);
+  const [launchError, setLaunchError] = useState<string | null>(null);
+
+  // Mint a signed launch URL on mount. The token in the URL path
+  // authorizes the cookieless asset stream so the sandboxed iframe can
+  // pull every relative subresource without losing auth, and the URL
+  // fragment carries any prior cmi snapshot for resume support.
+  useEffect(() => {
+    if (!packageId) { setSrc(null); return; }
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(`/api/courses/${courseId}/lessons/${lesson.id}/scorm/launch`, {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: "{}",
+        });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({ error: res.statusText }));
+          throw new Error(err.error || "Could not launch SCORM package");
+        }
+        const data = await res.json();
+        if (!cancelled) setSrc(data.src);
+      } catch (e: any) {
+        if (!cancelled) setLaunchError(e.message);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [packageId, courseId, lesson.id]);
+
+  useEffect(() => {
+    if (!packageId) return;
+    const onMessage = async (ev: MessageEvent) => {
+      // Origin is "null" because the iframe is sandboxed without
+      // allow-same-origin, so we cannot validate by origin string.
+      // Instead, walk the source's parent chain and accept the message
+      // only if it originated from our player iframe or any frame
+      // nested inside it. Real SCORM packages frequently load the SCO
+      // inside an internal sub-iframe, and we still need their
+      // postMessage events to land here.
+      const playerWin = iframeRef.current?.contentWindow;
+      if (!playerWin || !ev.source) return;
+      let cur: Window | null = ev.source as Window;
+      let trusted = false;
+      for (let i = 0; i < 8 && cur; i++) {
+        if (cur === playerWin) { trusted = true; break; }
+        try { cur = cur.parent === cur ? null : cur.parent; } catch { break; }
+      }
+      if (!trusted) return;
+      const data = ev.data;
+      if (!data || data.type !== "scorm-progress") return;
+      try {
+        const res = await fetch(
+          `/api/courses/${courseId}/lessons/${lesson.id}/scorm/progress`,
+          {
+            method: "POST",
+            credentials: "include",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ cmi: data.cmi || {} }),
+          },
+        );
+        if (res.ok) {
+          const out = await res.json();
+          onComplete(out.progress?.status ?? null, out.progress?.score ?? null);
+          queryClient.invalidateQueries({ queryKey: ["/api/courses", courseSlug] });
+          queryClient.invalidateQueries({ queryKey: ["/api/courses", courseId, "my-progress"] });
+        }
+      } catch {/* best-effort persistence */}
+    };
+    window.addEventListener("message", onMessage);
+    return () => window.removeEventListener("message", onMessage);
+  }, [packageId, courseId, courseSlug, lesson.id, onComplete]);
+
+  if (!packageId) {
+    return (
+      <div className="text-center py-8 text-muted-foreground" data-testid="content-scorm-empty">
+        <p>This SCORM lesson has not been wired up yet.</p>
+        <p className="text-sm">An admin can upload a package from the course builder.</p>
+      </div>
+    );
+  }
+
+  if (launchError) {
+    return (
+      <div className="text-center py-8 text-destructive" data-testid="content-scorm-error">
+        <p>SCORM player failed to load.</p>
+        <p className="text-sm">{launchError}</p>
+      </div>
+    );
+  }
+
+  if (!src) {
+    return (
+      <div className="flex items-center justify-center py-12" data-testid="content-scorm-loading">
+        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="w-full" data-testid="content-scorm">
+      <div className="text-xs text-muted-foreground mb-2">SCORM {version} · {entryPoint}</div>
+      <iframe
+        ref={iframeRef}
+        src={src}
+        title={lesson.title}
+        className="w-full rounded-md border"
+        style={{ height: "70vh" }}
+        // No allow-same-origin: the SCO runs in a unique opaque origin
+        // and cannot touch the host app, cookies, or our APIs. The
+        // injected shim communicates back via window.parent.postMessage.
+        sandbox="allow-scripts allow-forms allow-popups"
+        data-testid="iframe-scorm"
+      />
     </div>
   );
 }
