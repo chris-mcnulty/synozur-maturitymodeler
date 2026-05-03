@@ -127,7 +127,9 @@ export const answers = pgTable("answers", {
   resourceTitle: text("resource_title"),
   resourceLink: text("resource_link"),
   resourceDescription: text("resource_description"),
-});
+}, (table) => ({
+  questionIdIdx: index("idx_answers_question_id").on(table.questionId),
+}));
 
 // Import batches table for tracking data imports
 export const importBatches = pgTable("import_batches", {
@@ -181,6 +183,7 @@ export const assessmentResponses = pgTable("assessment_responses", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 }, (table) => ({
   uniqueAssessmentQuestion: unique().on(table.assessmentId, table.questionId),
+  assessmentIdIdx: index("idx_assessment_responses_assessment_id").on(table.assessmentId),
 }));
 
 // Results table
