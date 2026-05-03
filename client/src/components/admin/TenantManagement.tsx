@@ -26,6 +26,7 @@ interface Tenant {
   autoCreateUsers: boolean;
   allowUserSelfProvisioning: boolean;
   syncToHubSpot: boolean;
+  monthlyDigestEnabled: boolean;
   collectProfileData: boolean;
   defaultCompany: string | null;
   defaultIndustry: string | null;
@@ -73,6 +74,7 @@ export function TenantManagement() {
     autoCreateUsers: false,
     allowUserSelfProvisioning: true,
     syncToHubSpot: false,
+    monthlyDigestEnabled: true,
     collectProfileData: true,
     defaultCompany: '',
     defaultIndustry: '',
@@ -303,6 +305,7 @@ Thank you for your help!`;
       autoCreateUsers: false,
       allowUserSelfProvisioning: true,
       syncToHubSpot: false,
+      monthlyDigestEnabled: true,
       collectProfileData: true,
       defaultCompany: '',
       defaultIndustry: '',
@@ -337,6 +340,7 @@ Thank you for your help!`;
       autoCreateUsers: tenant.autoCreateUsers,
       allowUserSelfProvisioning: tenant.allowUserSelfProvisioning ?? true,
       syncToHubSpot: tenant.syncToHubSpot ?? false,
+      monthlyDigestEnabled: tenant.monthlyDigestEnabled ?? true,
       collectProfileData: tenant.collectProfileData ?? true,
       defaultCompany: tenant.defaultCompany || '',
       defaultIndustry: tenant.defaultIndustry || '',
@@ -731,6 +735,20 @@ Thank you for your help!`;
                   <div>
                     <Label htmlFor="syncToHubSpot">Sync new users to HubSpot</Label>
                     <p className="text-xs text-muted-foreground">When off, new accounts from this tenant are not added to HubSpot marketing lists</p>
+                  </div>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="monthlyDigestEnabled"
+                    checked={tenantForm.monthlyDigestEnabled}
+                    onCheckedChange={(checked) =>
+                      setTenantForm({ ...tenantForm, monthlyDigestEnabled: checked })
+                    }
+                    data-testid="switch-monthly-digest-enabled"
+                  />
+                  <div>
+                    <Label htmlFor="monthlyDigestEnabled">Send monthly digest emails</Label>
+                    <p className="text-xs text-muted-foreground">Master switch — when off, no users in this tenant receive the monthly digest regardless of their individual preference</p>
                   </div>
                 </div>
                 <div className="flex items-center space-x-2">

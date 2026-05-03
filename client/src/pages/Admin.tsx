@@ -589,6 +589,7 @@ export default function Admin() {
     email: '',
     newPassword: '',
     tenantId: '' as string | null,
+    monthlyDigestOptOut: true,
   });
   const [selectedTenantFilter, setSelectedTenantFilter] = useState<string>('all');
   const [isUserImportDialogOpen, setIsUserImportDialogOpen] = useState(false);
@@ -923,6 +924,23 @@ export default function Admin() {
     onError: () => toast({ title: 'Error', description: 'Failed to update digest settings.', variant: 'destructive' }),
   });
 
+  // Safe opt-in: opt in everyone EXCEPT the listed tenant IDs
+  const [safeOptInExcludeIds, setSafeOptInExcludeIds] = useState<string[]>([]);
+  const safeOptInMutation = useMutation({
+    mutationFn: ({ excludeTenantIds }: { excludeTenantIds: string[] }) =>
+      apiRequest('/api/admin/users/safe-opt-in-except', 'POST', { excludeTenantIds }),
+    onSuccess: (data: any) => {
+      const excluded = data.excludedTenantIds?.length ?? 0;
+      toast({
+        title: 'Safe opt-in complete',
+        description: `${data.updated ?? 0} users opted in${excluded ? ` (${excluded} tenant${excluded > 1 ? 's' : ''} excluded)` : ''}.`,
+      });
+      refetchDigestStats();
+      queryClient.invalidateQueries({ queryKey: ['/api/users'] });
+    },
+    onError: () => toast({ title: 'Error', description: 'Safe opt-in failed.', variant: 'destructive' }),
+  });
+
   // Filter users by tenant
   const filteredUsers = selectedTenantFilter === 'all' 
     ? users 
@@ -961,11 +979,12 @@ export default function Admin() {
 
   // Update user mutation
   const updateUser = useMutation({
-    mutationFn: async (data: { id: string; role: string; username?: string; newPassword?: string }) => {
+    mutationFn: async (data: { id: string; role: string; username?: string; newPassword?: string; monthlyDigestOptOut?: boolean }) => {
       return apiRequest(`/api/users/${data.id}`, 'PUT', { 
         role: data.role,
         username: data.username,
         newPassword: data.newPassword,
+        monthlyDigestOptOut: data.monthlyDigestOptOut,
       });
     },
     onSuccess: () => {
@@ -3422,6 +3441,7 @@ export default function Admin() {
                           email: '',
                           newPassword: '',
                           tenantId: currentUser && normalizeRole(currentUser.role) === USER_ROLES.TENANT_ADMIN ? currentUser.tenantId : null,
+                          monthlyDigestOptOut: true,
                         });
                         setIsUserDialogOpen(true);
                       }}
@@ -3490,7 +3510,53 @@ export default function Admin() {
                         <Bell className="mr-1.5 h-3.5 w-3.5" />
                         Opt everyone in
                       </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        data-testid="button-digest-safe-opt-in"
+                        disabled={safeOptInMutation.isPending}
+                        onClick={() => {
+                          const excludeNames = tenants
+                            .filter((t: any) => safeOptInExcludeIds.includes(t.id))
+                            .map((t: any) => t.name);
+                          const summary = safeOptInExcludeIds.length === 0
+                            ? 'This will opt in ALL users with no exclusions.'
+                            : `This will opt in all users EXCEPT those in: ${excludeNames.join(', ')}.`;
+                          if (confirm(`Safe opt-in: ${summary}\n\nProceed?`)) {
+                            safeOptInMutation.mutate({ excludeTenantIds: safeOptInExcludeIds });
+                          }
+                        }}
+                      >
+                        <Bell className="mr-1.5 h-3.5 w-3.5" />
+                        Safe opt-in (exclude tenants)
+                      </Button>
                     </div>
+                  </div>
+                  {/* Safe opt-in tenant exclusion selector */}
+                  <div className="mt-3 border-t pt-3">
+                    <p className="text-xs text-muted-foreground mb-2 font-medium">Tenants to exclude from safe opt-in:</p>
+                    <div className="flex flex-wrap gap-2">
+                      {tenants.map((t: any) => {
+                        const excluded = safeOptInExcludeIds.includes(t.id);
+                        return (
+                          <button
+                            key={t.id}
+                            data-testid={`exclude-tenant-${t.id}`}
+                            onClick={() => setSafeOptInExcludeIds(prev =>
+                              excluded ? prev.filter(id => id !== t.id) : [...prev, t.id]
+                            )}
+                            className={`rounded-md border px-2 py-1 text-xs transition-colors ${excluded ? 'border-destructive bg-destructive/10 text-destructive' : 'border-border text-muted-foreground hover-elevate'}`}
+                          >
+                            {excluded ? '✕ ' : '+ '}{t.name}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    {safeOptInExcludeIds.length > 0 && (
+                      <p className="text-xs text-destructive mt-1.5">
+                        {safeOptInExcludeIds.length} tenant{safeOptInExcludeIds.length > 1 ? 's' : ''} excluded — users in these tenants will not be opted in.
+                      </p>
+                    )}
                   </div>
                 </div>
 
@@ -3576,6 +3642,7 @@ export default function Admin() {
                                     email: user.email || '',
                                     newPassword: '',
                                     tenantId: user.tenantId || null,
+                                    monthlyDigestOptOut: user.monthlyDigestOptOut ?? true,
                                   });
                                   setIsUserDialogOpen(true);
                                 }}
@@ -3650,6 +3717,7 @@ export default function Admin() {
                                     email: user.email || '',
                                     newPassword: '',
                                     tenantId: user.tenantId || null,
+                                    monthlyDigestOptOut: user.monthlyDigestOptOut ?? true,
                                   });
                                   setIsUserDialogOpen(true);
                                 }}
@@ -3704,6 +3772,7 @@ export default function Admin() {
                                       email: user.email || '',
                                       newPassword: '',
                                       tenantId: user.tenantId || null,
+                                      monthlyDigestOptOut: user.monthlyDigestOptOut ?? true,
                                     });
                                     setIsUserDialogOpen(true);
                                   }}
@@ -5579,6 +5648,21 @@ ${insightsData.recommendations.map((r, i) => `${i + 1}. ${r}`).join('\n')}
                 Minimum 8 characters.
               </p>
             </div>
+
+            {!isCreatingUser && (
+              <div className="flex items-center gap-3 rounded-md border p-3">
+                <Switch
+                  id="user-digest-opt-out"
+                  checked={!userForm.monthlyDigestOptOut}
+                  onCheckedChange={(checked) => setUserForm({ ...userForm, monthlyDigestOptOut: !checked })}
+                  data-testid="switch-user-digest-opt-out"
+                />
+                <div>
+                  <Label htmlFor="user-digest-opt-out" className="text-sm font-medium">Receive monthly digest</Label>
+                  <p className="text-xs text-muted-foreground">When on, this user receives the monthly assessment digest email (subject to tenant master switch)</p>
+                </div>
+              </div>
+            )}
           </form>
 
           <DialogFooter>
@@ -5647,6 +5731,7 @@ ${insightsData.recommendations.map((r, i) => `${i + 1}. ${r}`).join('\n')}
                     role: userForm.role,
                     username: userForm.username.trim(),
                     newPassword: userForm.newPassword || undefined,
+                    monthlyDigestOptOut: userForm.monthlyDigestOptOut,
                   });
                   
                   // Update tenant assignment if changed

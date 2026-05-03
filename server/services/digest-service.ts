@@ -1,6 +1,6 @@
 import { db } from '../db';
 import * as schema from '@shared/schema';
-import { eq, and, inArray, isNotNull, sql } from 'drizzle-orm';
+import { eq, and, inArray, isNotNull, isNull, or, sql } from 'drizzle-orm';
 import type sgMail from '@sendgrid/mail';
 import { aiService } from './ai-service';
 import {
@@ -77,6 +77,9 @@ type EligibleUser = {
 };
 
 async function loadEligibleUsers(): Promise<EligibleUser[]> {
+  // Join tenants so we can honour the tenant-level master switch.
+  // Users whose tenant has monthlyDigestEnabled=false are excluded entirely,
+  // even if the user themselves has monthlyDigestOptOut=false.
   const rows = await db
     .select({
       id: schema.users.id,
@@ -89,11 +92,18 @@ async function loadEligibleUsers(): Promise<EligibleUser[]> {
       jobTitle: schema.users.jobTitle,
     })
     .from(schema.users)
+    .leftJoin(schema.tenants, eq(schema.users.tenantId, schema.tenants.id))
     .where(
       and(
         eq(schema.users.monthlyDigestOptOut, false),
         eq(schema.users.emailVerified, true),
         isNotNull(schema.users.email),
+        // Tenant master switch: skip all users whose tenant disabled the digest.
+        // Users with no tenant (tenantId IS NULL) are always eligible.
+        or(
+          isNull(schema.users.tenantId),
+          eq(schema.tenants.monthlyDigestEnabled, true),
+        ),
       ),
     );
   return rows.filter(r => !!r.email) as EligibleUser[];

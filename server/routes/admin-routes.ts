@@ -1,7 +1,7 @@
 import type { Express } from "express";
   import { storage } from "../storage";
   import { db } from "../db";
-  import { eq, inArray, desc, gte, lt, and, sql, isNotNull } from "drizzle-orm";
+  import { eq, inArray, desc, gte, lt, and, sql, isNotNull, isNull, or, notInArray } from "drizzle-orm";
   import * as schema from "@shared/schema";
   import { insertAssessmentSchema, insertAssessmentResponseSchema, insertResultSchema, insertModelSchema, insertDimensionSchema, insertQuestionSchema, insertAnswerSchema, type Answer } from "@shared/schema";
   import { ensureAuthenticated, ensureAdmin, ensureAdminOrModeler, ensureAnyAdmin, ensureGlobalAdmin } from "../auth";
@@ -750,6 +750,44 @@ export function registerAdminRoutes(app: Express) {
     } catch (error) {
       console.error('Failed to bulk update digest setting:', error);
       res.status(500).json({ error: 'Failed to update digest settings' });
+    }
+  });
+
+  // Safe bulk opt-in: sets monthlyDigestOptOut=false for ALL users EXCEPT
+  // those belonging to the specified tenant IDs.  Use this to safely opt-in
+  // all production users while leaving certain tenants untouched.
+  app.post("/api/admin/users/safe-opt-in-except", ensureGlobalAdmin, async (req, res) => {
+    try {
+      const bodySchema = z.object({
+        excludeTenantIds: z.array(z.string()).min(0),
+      });
+      const parsed = bodySchema.safeParse(req.body);
+      if (!parsed.success) return res.status(400).json({ error: 'Invalid payload', details: parsed.error.issues });
+      const { excludeTenantIds } = parsed.data;
+
+      let result;
+      if (excludeTenantIds.length === 0) {
+        // No exclusions — opt in everyone
+        result = await db.update(schema.users).set({ monthlyDigestOptOut: false });
+      } else {
+        // Opt in all users whose tenantId is NOT in the exclusion list.
+        // Users with tenantId=null (no tenant) are always opted in.
+        result = await db
+          .update(schema.users)
+          .set({ monthlyDigestOptOut: false })
+          .where(
+            or(
+              isNull(schema.users.tenantId),
+              notInArray(schema.users.tenantId, excludeTenantIds),
+            )
+          );
+      }
+
+      const count = (result as any).rowCount ?? 0;
+      res.json({ updated: count, excludedTenantIds: excludeTenantIds });
+    } catch (error) {
+      console.error('Failed to run safe opt-in:', error);
+      res.status(500).json({ error: 'Failed to perform safe opt-in' });
     }
   });
 
