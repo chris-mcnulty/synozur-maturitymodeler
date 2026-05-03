@@ -20,7 +20,7 @@ import type { Express } from "express";
 // CROSS-MODEL INSIGHTS & TRENDS (Task #11) - shared helper
 // ===========================================================================
 
-type CompletedRow = {
+export type CompletedRow = {
   assessmentId: string;
   userId: string | null;
   modelId: string;
@@ -33,7 +33,7 @@ type CompletedRow = {
   dimensionScores: any;
 };
 
-type ModelInsight = {
+export type ModelInsight = {
   modelId: string;
   modelName: string;
   modelClass: string;
@@ -53,7 +53,7 @@ type ModelInsight = {
   }>;
 };
 
-type DimensionInsight = {
+export type DimensionInsight = {
   label: string;
   averagePercent: number;
   modelCount: number;
@@ -61,7 +61,7 @@ type DimensionInsight = {
   contributingModels: Array<{ modelName: string; averagePercent: number }>;
 };
 
-function buildInsightsFromRows(
+export function buildInsightsFromRows(
   rows: CompletedRow[],
   dimensionLabelMap: Map<string, string>
 ): { models: ModelInsight[]; crossModelDimensions: DimensionInsight[] } {
@@ -699,6 +699,20 @@ export function registerAdminRoutes(app: Express) {
   // ===========================================================================
   // CROSS-MODEL INSIGHTS & TRENDS (Task #11)
   // ===========================================================================
+
+  // Manually trigger the monthly Insights digest (global admin only).
+  // Useful for testing and to recover from a missed scheduled run.
+  app.post("/api/admin/digest/run-monthly", ensureGlobalAdmin, async (req, res) => {
+    try {
+      const force = req.query.force === 'true' || req.body?.force === true;
+      const { runMonthlyDigest } = await import('../services/digest-service');
+      const summary = await runMonthlyDigest({ force });
+      res.json(summary);
+    } catch (error) {
+      console.error('Failed to run monthly digest:', error);
+      res.status(500).json({ error: 'Failed to run monthly digest' });
+    }
+  });
 
   // Personal insights for the logged-in user
   app.get("/api/insights/user", ensureAuthenticated, async (req, res) => {

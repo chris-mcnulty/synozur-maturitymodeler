@@ -129,6 +129,31 @@ export function registerAuthUsersRoutes(app: Express) {
     }
   });
 
+  // Update current user's email notification preferences
+  app.patch('/api/profile/notifications', ensureAuthenticated, async (req, res) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const bodySchema = z.object({
+        monthlyDigestOptOut: z.boolean(),
+      });
+      const parsed = bodySchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ error: "Invalid request body" });
+      }
+      const user = await storage.updateUser(req.user.id, {
+        monthlyDigestOptOut: parsed.data.monthlyDigestOptOut,
+      });
+      if (!user) return res.status(404).json({ error: "User not found" });
+      const { password, ...safeUser } = user;
+      res.json(safeUser);
+    } catch (error) {
+      console.error('Update notification prefs error:', error);
+      res.status(500).json({ error: "Failed to update notification preferences" });
+    }
+  });
+
   // Get current user's tenant information (authenticated users only)
 
   app.get('/api/user/tenant', ensureAuthenticated, async (req, res) => {

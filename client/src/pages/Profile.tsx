@@ -13,7 +13,8 @@ import { useAuth } from "@/hooks/use-auth";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect, useMemo } from "react";
-import { CheckCircle2, AlertCircle, Mail, Lock, Trash2, TrendingUp, TrendingDown, Minus, BarChart3, Shield, ShieldCheck, Copy } from "lucide-react";
+import { CheckCircle2, AlertCircle, Mail, Lock, Trash2, TrendingUp, TrendingDown, Minus, BarChart3, Shield, ShieldCheck, Copy, Bell } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 import type { User } from "@shared/schema";
 import { JOB_ROLES, INDUSTRIES, COUNTRIES } from "@/lib/constants";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -294,6 +295,28 @@ Thank you!`;
       toast({
         title: "Error",
         description: error.message || "Failed to update profile",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const updateNotifications = useMutation({
+    mutationFn: async (monthlyDigestOptOut: boolean) => {
+      return apiRequest('/api/profile/notifications', 'PATCH', { monthlyDigestOptOut });
+    },
+    onSuccess: (_, monthlyDigestOptOut) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/user'] });
+      toast({
+        title: monthlyDigestOptOut ? "Unsubscribed" : "Subscribed",
+        description: monthlyDigestOptOut
+          ? "You will no longer receive the monthly Insights digest."
+          : "You will receive the monthly Insights digest by email.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update notification preferences",
         variant: "destructive",
       });
     },
@@ -663,6 +686,28 @@ Thank you!`;
                       </Button>
                     </div>
                   ) : null}
+                </div>
+              </Card>
+
+              <Card className="p-6 mt-6">
+                <h2 className="text-xl font-bold mb-2 flex items-center gap-2">
+                  <Bell className="h-5 w-5" /> Email Notifications
+                </h2>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Choose whether you'd like a short monthly digest with your latest scores, biggest movers, and a refreshed AI narrative.
+                </p>
+                <div className="flex items-center justify-between gap-4 py-2">
+                  <div>
+                    <Label htmlFor="toggle-monthly-digest" className="text-base">Monthly Insights digest</Label>
+                    <p className="text-xs text-muted-foreground mt-1">Sent on the first of each month while you have at least one completed assessment.</p>
+                  </div>
+                  <Switch
+                    id="toggle-monthly-digest"
+                    data-testid="switch-monthly-digest"
+                    checked={!user.monthlyDigestOptOut}
+                    disabled={updateNotifications.isPending}
+                    onCheckedChange={(checked) => updateNotifications.mutate(!checked)}
+                  />
                 </div>
               </Card>
 

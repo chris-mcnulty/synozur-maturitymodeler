@@ -3,6 +3,7 @@ import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { initializeJWTService } from "./services/jwt-signing";
 import { startSsoStateCleanup } from "./services/sso-service";
+import { startMonthlyDigestSchedule } from "./services/digest-service";
 
 const app = express();
 
@@ -72,6 +73,9 @@ app.use((req, res, next) => {
   
   // Initialize SSO auth state cleanup (database-backed for production scalability)
   startSsoStateCleanup();
+
+  // Schedule the monthly Insights digest. Runs once on the 1st of each month.
+  startMonthlyDigestSchedule();
   
   const server = await registerRoutes(app);
 
