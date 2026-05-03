@@ -526,15 +526,17 @@ export function registerAuthUsersRoutes(app: Express) {
       }
 
       // Import SendGrid client
-      const { getUncachableSendGridClient } = await import('../sendgrid.js');
+      const { getUncachableSendGridClient, buildEmailFrom, getEmailBranding } = await import('../sendgrid.js');
       const { client: sgMail, fromEmail } = await getUncachableSendGridClient();
 
-      // Generate dynamic email header URL
-      const emailHeaderUrl = `${req.protocol}://${req.get('host')}/email-header.jpg`;
+      const baseUrl = `${req.protocol}://${req.get('host')}`;
+      const tenantId = req.user?.tenantId || null;
+      const from = await buildEmailFrom(fromEmail, tenantId);
+      const branding = await getEmailBranding(tenantId, baseUrl);
 
       const msg = {
         to: recipientEmail,
-        from: fromEmail,
+        from,
         subject: `Your ${modelName || 'Maturity Assessment'} Report`,
         text: `Dear ${recipientName || 'Valued User'},
 
@@ -548,7 +550,7 @@ Thank you for completing the ${modelName || 'assessment'}. Your comprehensive re
 If you have any questions, we're here to help you navigate your journey.
 
 Best regards,
-The Synozur Team`,
+The ${branding.brandName} Team`,
         html: `
           <!DOCTYPE html>
           <html>
@@ -556,18 +558,16 @@ The Synozur Team`,
             <style>
               body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; }
               .container { max-width: 600px; margin: 0 auto; background: #ffffff; }
-              .header-image { width: 100%; height: auto; display: block; }
               .content { padding: 40px 30px; background: #ffffff; }
-              .footer { text-align: center; padding: 30px; background: #f9f9f9; color: #666; font-size: 14px; }
               ul { padding-left: 20px; }
               ul li { margin: 8px 0; }
             </style>
           </head>
           <body>
             <div class="container">
-              <img src="${emailHeaderUrl}" alt="Synozur Alliance" class="header-image" />
+              ${branding.headerHtml}
               <div class="content">
-                <h2 style="color: #810FFB; margin-top: 0;">Your Assessment Report is Ready</h2>
+                <h2 style="color: ${branding.primaryColor}; margin-top: 0;">Your Assessment Report is Ready</h2>
                 <p>Dear ${recipientName || 'Valued User'},</p>
                 <p>Thank you for completing the <strong>${modelName || 'assessment'}</strong>. Your comprehensive report is attached, including:</p>
                 <ul>
@@ -578,10 +578,7 @@ The Synozur Team`,
                 </ul>
                 <p>If you have any questions, we're here to help you navigate your journey.</p>
               </div>
-              <div class="footer">
-                <p><strong>Best regards,</strong><br>The Synozur Team</p>
-                <p>© ${new Date().getFullYear()} The Synozur Alliance LLC</p>
-              </div>
+              ${branding.footerHtml}
             </div>
           </body>
           </html>
@@ -646,17 +643,20 @@ The Synozur Team`,
 
       // Send email with reset link (with defensive error handling)
       try {
-        const { getUncachableSendGridClient } = await import('../sendgrid.js');
+        const { getUncachableSendGridClient, buildEmailFrom, getEmailBranding } = await import('../sendgrid.js');
         const { client: sgMail, fromEmail } = await getUncachableSendGridClient();
 
-        const resetUrl = `${req.protocol}://${req.get('host')}/reset-password?token=${resetToken.token}`;
-        const emailHeaderUrl = `${req.protocol}://${req.get('host')}/email-header.jpg`;
+        const baseUrl = `${req.protocol}://${req.get('host')}`;
+        const tenantId = user.tenantId || null;
+        const from = await buildEmailFrom(fromEmail, tenantId);
+        const branding = await getEmailBranding(tenantId, baseUrl);
+        const resetUrl = `${baseUrl}/reset-password?token=${resetToken.token}`;
 
         const msg = {
           to: email,
-          from: fromEmail,
-          subject: 'Reset Your Password – Orion by Synozur',
-          text: `You requested a password reset for your Orion account by Synozur.
+          from,
+          subject: `Reset Your Password – Orion by ${branding.brandName}`,
+          text: `You requested a password reset for your Orion account by ${branding.brandName}.
 
 To continue your journey, click the link below to reset your password:
 
@@ -665,7 +665,7 @@ ${resetUrl}
 This link will expire in 1 hour.
 
 If you didn't request this, please ignore this email—your password will remain unchanged.
-— The Synozur Team`,
+— The ${branding.brandName} Team`,
           html: `
             <!DOCTYPE html>
             <html>
@@ -673,19 +673,17 @@ If you didn't request this, please ignore this email—your password will remain
               <style>
                 body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; }
                 .container { max-width: 600px; margin: 0 auto; background: #ffffff; }
-                .header-image { width: 100%; height: auto; display: block; }
                 .content { padding: 40px 30px; background: #ffffff; }
-                .button { display: inline-block; background: #810FFB; color: white !important; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: 600; margin: 25px 0; }
-                .footer { text-align: center; padding: 30px; background: #f9f9f9; color: #666; font-size: 14px; }
-                .link-text { color: #810FFB; word-break: break-all; }
+                .button { display: inline-block; background: ${branding.primaryColor}; color: #ffffff !important; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: 600; margin: 25px 0; }
+                .link-text { color: ${branding.primaryColor}; word-break: break-all; }
               </style>
             </head>
             <body>
               <div class="container">
-                <img src="${emailHeaderUrl}" alt="Synozur Alliance" class="header-image" />
+                ${branding.headerHtml}
                 <div class="content">
-                  <h2 style="color: #810FFB; margin-top: 0;">Reset Your Password</h2>
-                  <p>You requested a password reset for your Orion account by Synozur.</p>
+                  <h2 style="color: ${branding.primaryColor}; margin-top: 0;">Reset Your Password</h2>
+                  <p>You requested a password reset for your Orion account by ${branding.brandName}.</p>
                   <p>To continue your journey, click the button below to reset your password:</p>
                   <p style="text-align: center;">
                     <a href="${resetUrl}" class="button">Reset Password</a>
@@ -697,10 +695,7 @@ If you didn't request this, please ignore this email—your password will remain
                   <p style="font-size: 14px; color: #666;">This link will expire in <strong>1 hour</strong>.</p>
                   <p style="font-size: 14px; color: #666;">If you didn't request this password reset, please ignore this email—your password will remain unchanged.</p>
                 </div>
-                <div class="footer">
-                  <p>— The Synozur Team</p>
-                  <p>© ${new Date().getFullYear()} The Synozur Alliance LLC</p>
-                </div>
+                ${branding.footerHtml}
               </div>
             </body>
             </html>

@@ -672,28 +672,32 @@ function extractFallbackHighlights(content: string): Array<{ icon: string; title
 async function sendTicketAcknowledgement(user: schema.User, ticket: schema.SupportTicket, req: Request) {
   if (!user.email) return;
   try {
-    const { getUncachableSendGridClient, buildEmailFrom } = await import('./sendgrid.js');
+    const { getUncachableSendGridClient, buildEmailFrom, getEmailBranding } = await import('./sendgrid.js');
     const { client: sgMail, fromEmail } = await getUncachableSendGridClient();
     const from = await buildEmailFrom(fromEmail, ticket.tenantId);
     const baseUrl = `${req.protocol}://${req.get('host')}`;
+    const branding = await getEmailBranding(ticket.tenantId, baseUrl);
 
     await sgMail.send({
       to: user.email,
       from,
       subject: `Support Ticket #${ticket.ticketNumber} Received - ${escapeHtml(ticket.subject)}`,
       html: `
-        <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #810FFB;">Support Ticket Received</h2>
-          <p>Hi ${escapeHtml(user.name || user.username)},</p>
-          <p>We've received your support request and will get back to you soon.</p>
-          <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
-            <tr><td style="padding: 8px; font-weight: bold;">Ticket Number</td><td style="padding: 8px;">#${ticket.ticketNumber}</td></tr>
-            <tr><td style="padding: 8px; font-weight: bold;">Subject</td><td style="padding: 8px;">${escapeHtml(ticket.subject)}</td></tr>
-            <tr><td style="padding: 8px; font-weight: bold;">Category</td><td style="padding: 8px;">${escapeHtml(ticket.category)}</td></tr>
-            <tr><td style="padding: 8px; font-weight: bold;">Priority</td><td style="padding: 8px;">${escapeHtml(ticket.priority)}</td></tr>
-          </table>
-          <p>You can track your ticket at <a href="${baseUrl}/support">Orion Support</a>.</p>
-          <p style="color: #666; font-size: 14px;">- The Synozur Team</p>
+        <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff;">
+          ${branding.headerHtml}
+          <div style="padding: 32px 30px;">
+            <h2 style="color: ${branding.primaryColor}; margin-top: 0;">Support Ticket Received</h2>
+            <p>Hi ${escapeHtml(user.name || user.username)},</p>
+            <p>We've received your support request and will get back to you soon.</p>
+            <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+              <tr><td style="padding: 8px; font-weight: bold;">Ticket Number</td><td style="padding: 8px;">#${ticket.ticketNumber}</td></tr>
+              <tr><td style="padding: 8px; font-weight: bold;">Subject</td><td style="padding: 8px;">${escapeHtml(ticket.subject)}</td></tr>
+              <tr><td style="padding: 8px; font-weight: bold;">Category</td><td style="padding: 8px;">${escapeHtml(ticket.category)}</td></tr>
+              <tr><td style="padding: 8px; font-weight: bold;">Priority</td><td style="padding: 8px;">${escapeHtml(ticket.priority)}</td></tr>
+            </table>
+            <p>You can track your ticket at <a href="${baseUrl}/support" style="color: ${branding.primaryColor};">Orion Support</a>.</p>
+          </div>
+          ${branding.footerHtml}
         </div>
       `,
     });
@@ -704,10 +708,11 @@ async function sendTicketAcknowledgement(user: schema.User, ticket: schema.Suppo
 
 async function sendInternalNotification(user: schema.User, ticket: schema.SupportTicket, req: Request) {
   try {
-    const { getUncachableSendGridClient, buildEmailFrom } = await import('./sendgrid.js');
+    const { getUncachableSendGridClient, buildEmailFrom, getEmailBranding } = await import('./sendgrid.js');
     const { client: sgMail, fromEmail } = await getUncachableSendGridClient();
     const from = await buildEmailFrom(fromEmail, ticket.tenantId);
     const baseUrl = `${req.protocol}://${req.get('host')}`;
+    const branding = await getEmailBranding(ticket.tenantId, baseUrl);
 
     const allUsers = await storage.getAllUsers();
     const globalAdmins = allUsers.filter(u => u.role === 'global_admin' && u.email);
@@ -731,19 +736,23 @@ async function sendInternalNotification(user: schema.User, ticket: schema.Suppor
         from,
         subject: `[Orion Support] New Ticket #${ticket.ticketNumber}: ${escapeHtml(ticket.subject)}`,
         html: `
-          <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
-            <h2 style="color: #810FFB;">New Support Ticket</h2>
-            <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
-              <tr><td style="padding: 8px; font-weight: bold;">Ticket</td><td style="padding: 8px;">#${ticket.ticketNumber}</td></tr>
-              <tr><td style="padding: 8px; font-weight: bold;">Subject</td><td style="padding: 8px;">${escapeHtml(ticket.subject)}</td></tr>
-              <tr><td style="padding: 8px; font-weight: bold;">Submitted By</td><td style="padding: 8px;">${escapeHtml(user.name || user.username || 'Unknown')} (${escapeHtml(user.email || 'no email')})</td></tr>
-              <tr><td style="padding: 8px; font-weight: bold;">Tenant</td><td style="padding: 8px;">${escapeHtml(tenantName)}</td></tr>
-              <tr><td style="padding: 8px; font-weight: bold;">Category</td><td style="padding: 8px;">${escapeHtml(ticket.category)}</td></tr>
-              <tr><td style="padding: 8px; font-weight: bold;">Priority</td><td style="padding: 8px;">${escapeHtml(ticket.priority)}</td></tr>
-            </table>
-            <p><strong>Description:</strong></p>
-            <p style="background: #f5f5f5; padding: 12px; border-radius: 4px;">${escapeHtml(ticket.description)}</p>
-            <p><a href="${baseUrl}/admin">View in Admin Console</a></p>
+          <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff;">
+            ${branding.headerHtml}
+            <div style="padding: 32px 30px;">
+              <h2 style="color: ${branding.primaryColor}; margin-top: 0;">New Support Ticket</h2>
+              <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+                <tr><td style="padding: 8px; font-weight: bold;">Ticket</td><td style="padding: 8px;">#${ticket.ticketNumber}</td></tr>
+                <tr><td style="padding: 8px; font-weight: bold;">Subject</td><td style="padding: 8px;">${escapeHtml(ticket.subject)}</td></tr>
+                <tr><td style="padding: 8px; font-weight: bold;">Submitted By</td><td style="padding: 8px;">${escapeHtml(user.name || user.username || 'Unknown')} (${escapeHtml(user.email || 'no email')})</td></tr>
+                <tr><td style="padding: 8px; font-weight: bold;">Tenant</td><td style="padding: 8px;">${escapeHtml(tenantName)}</td></tr>
+                <tr><td style="padding: 8px; font-weight: bold;">Category</td><td style="padding: 8px;">${escapeHtml(ticket.category)}</td></tr>
+                <tr><td style="padding: 8px; font-weight: bold;">Priority</td><td style="padding: 8px;">${escapeHtml(ticket.priority)}</td></tr>
+              </table>
+              <p><strong>Description:</strong></p>
+              <p style="background: #f5f5f5; padding: 12px; border-radius: 4px;">${escapeHtml(ticket.description)}</p>
+              <p><a href="${baseUrl}/admin" style="color: ${branding.primaryColor};">View in Admin Console</a></p>
+            </div>
+            ${branding.footerHtml}
           </div>
         `,
       });
@@ -758,27 +767,31 @@ async function sendTicketClosedEmail(ticket: schema.SupportTicket, newStatus: st
     const ticketUser = await storage.getUser(ticket.userId);
     if (!ticketUser?.email) return;
 
-    const { getUncachableSendGridClient, buildEmailFrom } = await import('./sendgrid.js');
+    const { getUncachableSendGridClient, buildEmailFrom, getEmailBranding } = await import('./sendgrid.js');
     const { client: sgMail, fromEmail } = await getUncachableSendGridClient();
     const from = await buildEmailFrom(fromEmail, ticket.tenantId);
     const baseUrl = `${req.protocol}://${req.get('host')}`;
+    const branding = await getEmailBranding(ticket.tenantId, baseUrl);
 
     await sgMail.send({
       to: ticketUser.email,
       from,
       subject: `Support Ticket #${ticket.ticketNumber} ${newStatus === 'resolved' ? 'Resolved' : 'Closed'}`,
       html: `
-        <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #810FFB;">Ticket ${newStatus === 'resolved' ? 'Resolved' : 'Closed'}</h2>
-          <p>Hi ${escapeHtml(ticketUser.name || ticketUser.username)},</p>
-          <p>Your support ticket has been ${escapeHtml(newStatus)}.</p>
-          <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
-            <tr><td style="padding: 8px; font-weight: bold;">Ticket</td><td style="padding: 8px;">#${ticket.ticketNumber}</td></tr>
-            <tr><td style="padding: 8px; font-weight: bold;">Subject</td><td style="padding: 8px;">${escapeHtml(ticket.subject)}</td></tr>
-            <tr><td style="padding: 8px; font-weight: bold;">Status</td><td style="padding: 8px;">${escapeHtml(newStatus)}</td></tr>
-          </table>
-          <p>If you have further questions, you can reply via <a href="${baseUrl}/support">Orion Support</a>.</p>
-          <p style="color: #666; font-size: 14px;">- The Synozur Team</p>
+        <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff;">
+          ${branding.headerHtml}
+          <div style="padding: 32px 30px;">
+            <h2 style="color: ${branding.primaryColor}; margin-top: 0;">Ticket ${newStatus === 'resolved' ? 'Resolved' : 'Closed'}</h2>
+            <p>Hi ${escapeHtml(ticketUser.name || ticketUser.username)},</p>
+            <p>Your support ticket has been ${escapeHtml(newStatus)}.</p>
+            <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+              <tr><td style="padding: 8px; font-weight: bold;">Ticket</td><td style="padding: 8px;">#${ticket.ticketNumber}</td></tr>
+              <tr><td style="padding: 8px; font-weight: bold;">Subject</td><td style="padding: 8px;">${escapeHtml(ticket.subject)}</td></tr>
+              <tr><td style="padding: 8px; font-weight: bold;">Status</td><td style="padding: 8px;">${escapeHtml(newStatus)}</td></tr>
+            </table>
+            <p>If you have further questions, you can reply via <a href="${baseUrl}/support" style="color: ${branding.primaryColor};">Orion Support</a>.</p>
+          </div>
+          ${branding.footerHtml}
         </div>
       `,
     });
@@ -792,10 +805,11 @@ async function sendReplyNotificationEmail(ticket: schema.SupportTicket, replier:
     const ticketUser = await storage.getUser(ticket.userId);
     if (!ticketUser?.email) return;
 
-    const { getUncachableSendGridClient, buildEmailFrom } = await import('./sendgrid.js');
+    const { getUncachableSendGridClient, buildEmailFrom, getEmailBranding } = await import('./sendgrid.js');
     const { client: sgMail, fromEmail } = await getUncachableSendGridClient();
     const from = await buildEmailFrom(fromEmail, ticket.tenantId);
     const baseUrl = `${req.protocol}://${req.get('host')}`;
+    const branding = await getEmailBranding(ticket.tenantId, baseUrl);
 
     const replierName = replier.name || replier.username || 'Support Team';
     const truncatedMessage = replyMessage.length > 500 ? replyMessage.substring(0, 500) + '...' : replyMessage;
@@ -805,18 +819,21 @@ async function sendReplyNotificationEmail(ticket: schema.SupportTicket, replier:
       from,
       subject: `New Reply on Ticket #${ticket.ticketNumber}: ${escapeHtml(ticket.subject)}`,
       html: `
-        <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #810FFB;">New Reply on Your Ticket</h2>
-          <p>Hi ${escapeHtml(ticketUser.name || ticketUser.username)},</p>
-          <p>${escapeHtml(replierName)} has replied to your support ticket.</p>
-          <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
-            <tr><td style="padding: 8px; font-weight: bold;">Ticket</td><td style="padding: 8px;">#${ticket.ticketNumber}</td></tr>
-            <tr><td style="padding: 8px; font-weight: bold;">Subject</td><td style="padding: 8px;">${escapeHtml(ticket.subject)}</td></tr>
-          </table>
-          <p><strong>Reply:</strong></p>
-          <p style="background: #f5f5f5; padding: 12px; border-radius: 4px;">${escapeHtml(truncatedMessage)}</p>
-          <p>View the full conversation at <a href="${baseUrl}/support">Orion Support</a>.</p>
-          <p style="color: #666; font-size: 14px;">- The Synozur Team</p>
+        <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff;">
+          ${branding.headerHtml}
+          <div style="padding: 32px 30px;">
+            <h2 style="color: ${branding.primaryColor}; margin-top: 0;">New Reply on Your Ticket</h2>
+            <p>Hi ${escapeHtml(ticketUser.name || ticketUser.username)},</p>
+            <p>${escapeHtml(replierName)} has replied to your support ticket.</p>
+            <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+              <tr><td style="padding: 8px; font-weight: bold;">Ticket</td><td style="padding: 8px;">#${ticket.ticketNumber}</td></tr>
+              <tr><td style="padding: 8px; font-weight: bold;">Subject</td><td style="padding: 8px;">${escapeHtml(ticket.subject)}</td></tr>
+            </table>
+            <p><strong>Reply:</strong></p>
+            <p style="background: #f5f5f5; padding: 12px; border-radius: 4px;">${escapeHtml(truncatedMessage)}</p>
+            <p>View the full conversation at <a href="${baseUrl}/support" style="color: ${branding.primaryColor};">Orion Support</a>.</p>
+          </div>
+          ${branding.footerHtml}
         </div>
       `,
     });

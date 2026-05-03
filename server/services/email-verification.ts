@@ -29,18 +29,18 @@ export async function sendVerificationEmail(
   baseUrl: string,
   tenantId?: string | null
 ): Promise<void> {
-  const { getUncachableSendGridClient, buildEmailFrom } = await import('../sendgrid.js');
+  const { getUncachableSendGridClient, buildEmailFrom, getEmailBranding } = await import('../sendgrid.js');
   const { client: sgMail, fromEmail } = await getUncachableSendGridClient();
   const from = await buildEmailFrom(fromEmail, tenantId);
+  const branding = await getEmailBranding(tenantId, baseUrl);
 
   const verificationUrl = `${baseUrl}/verify-email?token=${token}`;
-  const emailHeaderUrl = `${baseUrl}/og-image.jpg`;
 
   const msg = {
     to: email,
     from,
-    subject: 'Welcome to Orion by Synozur – Please Verify Your Email',
-    text: `Welcome to Orion by Synozur!
+    subject: `Welcome to Orion by ${branding.brandName} – Please Verify Your Email`,
+    text: `Welcome to Orion by ${branding.brandName}!
 
 We're excited to guide you on your journey to business excellence. To unlock all features—including downloadable PDF reports—please verify your email address by clicking the link below:
 
@@ -49,7 +49,7 @@ ${verificationUrl}
 This link will expire in 24 hours.
 
 If you didn't create an account, you can safely ignore this email.
-— The Synozur Team`,
+— The ${branding.brandName} Team`,
     html: `
       <!DOCTYPE html>
       <html>
@@ -57,18 +57,16 @@ If you didn't create an account, you can safely ignore this email.
         <style>
           body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; }
           .container { max-width: 600px; margin: 0 auto; background: #ffffff; }
-          .header-image { width: 100%; height: auto; display: block; }
           .content { padding: 40px 30px; background: #ffffff; }
-          .button { display: inline-block; background: #810FFB; color: white !important; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: 600; margin: 25px 0; }
-          .footer { text-align: center; padding: 30px; background: #f9f9f9; color: #666; font-size: 14px; }
-          .link-text { color: #810FFB; word-break: break-all; }
+          .button { display: inline-block; background: ${branding.primaryColor}; color: #ffffff !important; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: 600; margin: 25px 0; }
+          .link-text { color: ${branding.primaryColor}; word-break: break-all; }
         </style>
       </head>
       <body>
         <div class="container">
-          <img src="${emailHeaderUrl}" alt="Synozur Alliance" class="header-image" />
+          ${branding.headerHtml}
           <div class="content">
-            <p>Welcome to Orion by Synozur!</p>
+            <p>Welcome to Orion by ${branding.brandName}!</p>
             <p>We're excited to guide you on your journey to business excellence. To unlock all features—including downloadable PDF reports—please verify your email address:</p>
             <p style="text-align: center;">
               <a href="${verificationUrl}" class="button">Verify Email Address</a>
@@ -80,10 +78,7 @@ If you didn't create an account, you can safely ignore this email.
             <p style="font-size: 14px; color: #666;">This link will expire in 24 hours.</p>
             <p style="font-size: 14px; color: #666;">If you didn't create an account, you can safely ignore this email.</p>
           </div>
-          <div class="footer">
-            <p>— The Synozur Team</p>
-            <p>© ${new Date().getFullYear()} The Synozur Alliance LLC</p>
-          </div>
+          ${branding.footerHtml}
         </div>
       </body>
       </html>
