@@ -82,6 +82,7 @@ function Router() {
             <Route path="/assessment/:assessmentId" component={Assessment} />
             <Route path="/results/:assessmentId" component={Results} />
             <ProtectedRoute path="/me" component={Profile} />
+            <ProtectedRoute path="/profile" component={Profile} />
             <ProtectedRoute path="/insights" component={Insights} />
             <ProtectedRoute path="/admin" component={Admin} />
             <Route path="/:modelSlug" component={ModelHome} />

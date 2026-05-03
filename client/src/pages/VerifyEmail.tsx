@@ -60,7 +60,7 @@ export default function VerifyEmail() {
               {status === 'success' && (
                 <>
                   <Button
-                    onClick={() => setLocation('/profile')}
+                    onClick={() => setLocation('/me')}
                     data-testid="button-go-to-profile"
                   >
                     Go to Profile
@@ -77,7 +77,7 @@ export default function VerifyEmail() {
               {status === 'error' && (
                 <>
                   <Button
-                    onClick={() => setLocation('/profile')}
+                    onClick={() => setLocation('/me')}
                     data-testid="button-go-to-profile-retry"
                   >
                     Go to Profile
