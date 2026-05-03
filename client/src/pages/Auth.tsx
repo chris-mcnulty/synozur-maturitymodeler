@@ -21,13 +21,15 @@ function MicrosoftIcon({ className }: { className?: string }) {
 }
 import { JOB_ROLES, INDUSTRIES, COMPANY_SIZES, COUNTRIES } from "@/lib/constants";
 import { useQuery } from "@tanstack/react-query";
-import { useDomainBranding } from "@/hooks/use-tenant-branding";
+import { useDomainBranding, useTenantBranding, useBrandingPreview } from "@/hooks/use-tenant-branding";
 
 export default function Auth() {
   const [, setLocation] = useLocation();
   const { user, loginMutation, registerMutation, isLoading, claimAssessmentAndRedirect } = useAuth();
   const { toast } = useToast();
   const trackedRef = useRef(false);
+  const { tenant: brandingTenant } = useTenantBranding();
+  const brandingPreview = useBrandingPreview();
   
   // Check if Microsoft SSO is available
   const { data: ssoStatus } = useQuery<{ microsoft: boolean }>({
@@ -67,6 +69,17 @@ export default function Auth() {
   const brandingEmail =
     activeTab === "register" ? registerForm.email : loginForm.username;
   const { branding: domainBranding } = useDomainBranding(brandingEmail);
+
+  const authLogoSrc =
+    brandingPreview?.logoUrl ??
+    brandingTenant?.logoUrl ??
+    domainBranding?.logoUrl ??
+    synozurLogo;
+  const authLogoAlt = brandingTenant?.name
+    ? `${brandingTenant.name} logo`
+    : domainBranding?.name
+      ? `${domainBranding.name} logo`
+      : "Synozur Logo";
 
   // Parse query parameters for redirect and assessment claim
   const queryParams = new URLSearchParams(window.location.search);
@@ -198,8 +211,8 @@ export default function Auth() {
             <div className="mb-6 sm:mb-8 text-center">
               <div className="flex items-center justify-center mb-4">
                 <img
-                  src={domainBranding?.logoUrl || synozurLogo}
-                  alt={domainBranding?.name ? `${domainBranding.name} logo` : "Synozur Logo"}
+                  src={authLogoSrc}
+                  alt={authLogoAlt}
                   className="w-20 h-20 sm:w-24 sm:h-24 object-contain"
                   data-testid="img-auth-tenant-logo"
                 />

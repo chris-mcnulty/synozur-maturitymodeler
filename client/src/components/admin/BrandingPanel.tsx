@@ -12,8 +12,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { ObjectUploader } from "@/components/ObjectUploader";
-import { Upload, X, Loader2 } from "lucide-react";
-import { hexToHsl } from "@/hooks/use-tenant-branding";
+import { Upload, X, Loader2, Eye, EyeOff } from "lucide-react";
+import { hexToHsl, useBrandingPreview } from "@/hooks/use-tenant-branding";
+import { setBrandingPreview, clearBrandingPreview } from "@/lib/branding-preview";
 import type { Tenant } from "@shared/schema";
 import { tenantBrandingSchema } from "@shared/schema";
 
@@ -88,6 +89,7 @@ export function BrandingPanel({ tenantId, isGlobalAdmin, availableTenants = [] }
       queryClient.invalidateQueries({ queryKey: ["/api/tenants", selectedTenantId] });
       queryClient.invalidateQueries({ queryKey: ["/api/tenants"] });
       queryClient.invalidateQueries({ queryKey: ["/api/user/tenant"] });
+      clearBrandingPreview();
     },
     onError: (err: any) => {
       toast({
@@ -111,6 +113,43 @@ export function BrandingPanel({ tenantId, isGlobalAdmin, availableTenants = [] }
 
   const onSubmit = (values: FormValues) => {
     updateMutation.mutate(values);
+  };
+
+  const activePreview = useBrandingPreview();
+  const isPreviewActive = !!activePreview;
+
+  const handleStartPreview = () => {
+    const values = form.getValues();
+    if (values.primaryColor && !hexToHsl(values.primaryColor)) {
+      toast({
+        title: "Invalid primary color",
+        description: "Enter a valid hex color before previewing.",
+        variant: "destructive",
+      });
+      return;
+    }
+    if (values.accentColor && !hexToHsl(values.accentColor)) {
+      toast({
+        title: "Invalid accent color",
+        description: "Enter a valid hex color before previewing.",
+        variant: "destructive",
+      });
+      return;
+    }
+    setBrandingPreview({
+      primaryColor: values.primaryColor || null,
+      accentColor: values.accentColor || null,
+      logoUrl: values.logoUrl ?? null,
+      faviconUrl: values.faviconUrl ?? null,
+    });
+    toast({
+      title: "Preview active",
+      description: "Only you can see these branding changes. Navigate the app to verify, then save.",
+    });
+  };
+
+  const handleExitPreview = () => {
+    clearBrandingPreview();
   };
 
   return (
@@ -371,11 +410,33 @@ export function BrandingPanel({ tenantId, isGlobalAdmin, availableTenants = [] }
               </CardContent>
             </Card>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <Button type="submit" disabled={updateMutation.isPending || !form.formState.isDirty} data-testid="button-save-branding">
                 {updateMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
                 Save branding
               </Button>
+              {isPreviewActive ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleExitPreview}
+                  data-testid="button-exit-preview"
+                >
+                  <EyeOff className="h-4 w-4 mr-2" />
+                  Exit preview
+                </Button>
+              ) : (
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={!form.formState.isDirty}
+                  onClick={handleStartPreview}
+                  data-testid="button-preview-branding"
+                >
+                  <Eye className="h-4 w-4 mr-2" />
+                  Preview
+                </Button>
+              )}
               <Button
                 type="button"
                 variant="ghost"
@@ -390,11 +451,17 @@ export function BrandingPanel({ tenantId, isGlobalAdmin, availableTenants = [] }
                       emailFromName: tenant.emailFromName ?? "",
                     });
                   }
+                  if (isPreviewActive) clearBrandingPreview();
                 }}
                 data-testid="button-discard-branding"
               >
                 Discard changes
               </Button>
+              {isPreviewActive && (
+                <span className="text-xs text-muted-foreground" data-testid="text-preview-status">
+                  Preview is active — only visible to you.
+                </span>
+              )}
             </div>
           </form>
         </Form>

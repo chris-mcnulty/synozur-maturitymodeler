@@ -495,7 +495,23 @@ function BenchmarksByModel() {
 export default function Admin() {
   const { toast } = useToast();
   const { user: currentUser } = useAuth();
-  const [activeSection, setActiveSection] = useState<string>('models');
+  const [activeSection, setActiveSection] = useState<string>(() => {
+    if (typeof window !== 'undefined' && window.location.hash) {
+      const hash = window.location.hash.slice(1);
+      if (hash) return hash;
+    }
+    return 'models';
+  });
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const onHashChange = () => {
+      const hash = window.location.hash.slice(1);
+      if (hash) setActiveSection(hash);
+    };
+    window.addEventListener('hashchange', onHashChange);
+    return () => window.removeEventListener('hashchange', onHashChange);
+  }, []);
   const [editingModel, setEditingModel] = useState<Model | null>(null);
   const [isModelDialogOpen, setIsModelDialogOpen] = useState(false);
   const [isSettingsDialogOpen, setIsSettingsDialogOpen] = useState(false);

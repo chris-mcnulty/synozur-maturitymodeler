@@ -9,6 +9,8 @@ import { ThemeProvider } from "@/components/ThemeProvider";
 import { AuthProvider } from "@/hooks/use-auth";
 import { ProtectedRoute } from "@/lib/protected-route";
 import { Header } from "@/components/Header";
+import { BrandingPreviewBanner } from "@/components/BrandingPreviewBanner";
+import { useTenantBranding } from "@/hooks/use-tenant-branding";
 import { WhatsNewModal } from "@/components/WhatsNewModal";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { Loader2 } from "lucide-react";
@@ -47,12 +49,19 @@ function RouteFallback() {
   );
 }
 
+function BrandingApplier() {
+  useTenantBranding();
+  return null;
+}
+
 function Router() {
   const [location] = useLocation();
   const showHeader = location !== "/auth" && location !== "/forgot-password" && !location.startsWith("/reset-password") && location !== "/verify-email" && location !== "/oauth/consent" && location !== "/complete-profile";
 
   return (
     <>
+      <BrandingApplier />
+      <BrandingPreviewBanner />
       {showHeader && <Header />}
       <ErrorBoundary>
         <Suspense fallback={<RouteFallback />}>

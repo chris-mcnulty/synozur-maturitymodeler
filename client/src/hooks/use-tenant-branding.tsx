@@ -1,7 +1,12 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { useQuery } from "@tanstack/react-query";
 import type { Tenant } from "@shared/schema";
 import { useAuth } from "@/hooks/use-auth";
+import {
+  getBrandingPreview,
+  subscribeBrandingPreview,
+  type BrandingPreview,
+} from "@/lib/branding-preview";
 
 /**
  * Convert a hex color string (#RRGGBB or #RGB) to "H S% L%" form
@@ -54,10 +59,11 @@ export type PublicTenantBranding = {
   accentColor: string | null;
 };
 
-type BrandingInput = Pick<
-  Tenant,
-  "primaryColor" | "accentColor" | "faviconUrl"
-> | null | undefined;
+type BrandingInput = {
+  primaryColor?: string | null;
+  accentColor?: string | null;
+  faviconUrl?: string | null;
+} | null | undefined;
 
 /**
  * Apply tenant branding (CSS variables, favicon) to the document.
@@ -104,24 +110,47 @@ function applyBranding(branding: BrandingInput): () => void {
 }
 
 /**
+ * Subscribe to the preview store; returns the current preview snapshot or null.
+ * Uses useSyncExternalStore so changes propagate to React.
+ */
+export function useBrandingPreview(): BrandingPreview | null {
+  return useSyncExternalStore(
+    subscribeBrandingPreview,
+    getBrandingPreview,
+    () => null,
+  );
+}
+
+/**
  * Apply tenant branding (CSS variables, favicon) to the document at runtime.
  * Falls back to Synozur defaults defined in index.css / index.html when no
- * tenant context exists.
+ * tenant context exists. While a preview is active in this session, preview
+ * values override the tenant values so admins can verify changes before
+ * saving them tenant-wide.
  */
 export function useTenantBranding(): {
   tenant: Tenant | null | undefined;
   isLoading: boolean;
 } {
   const { user } = useAuth();
+  const preview = useBrandingPreview();
 
   const { data: tenant, isLoading } = useQuery<Tenant | null>({
     queryKey: ["/api/user/tenant"],
     enabled: !!user,
   });
 
+  const effectivePrimary = preview?.primaryColor ?? tenant?.primaryColor ?? null;
+  const effectiveAccent = preview?.accentColor ?? tenant?.accentColor ?? null;
+  const effectiveFavicon = preview?.faviconUrl ?? tenant?.faviconUrl ?? null;
+
   useEffect(() => {
-    return applyBranding(tenant ?? null);
-  }, [tenant?.primaryColor, tenant?.accentColor, tenant?.faviconUrl]);
+    return applyBranding({
+      primaryColor: effectivePrimary,
+      accentColor: effectiveAccent,
+      faviconUrl: effectiveFavicon,
+    });
+  }, [effectivePrimary, effectiveAccent, effectiveFavicon]);
 
   return { tenant: tenant ?? null, isLoading };
 }

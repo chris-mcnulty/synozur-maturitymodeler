@@ -16,7 +16,7 @@ import {
 import synozurLogo from '@assets/SA-Logo-Horizontal-color_1759930898755.png';
 import { SynozurAppSwitcher } from "./SynozurAppSwitcher";
 import { HelpChatPanel } from "./HelpChatPanel";
-import { useTenantBranding } from "@/hooks/use-tenant-branding";
+import { useTenantBranding, useBrandingPreview } from "@/hooks/use-tenant-branding";
 
 // Helper function to check if user has admin permissions
 function isAdminUser(user: any): boolean {
@@ -43,10 +43,12 @@ export function Header() {
   const [, setLocation] = useLocation();
   const [showHelpChat, setShowHelpChat] = useState(false);
   const { tenant } = useTenantBranding();
-  const logoSrc = tenant?.logoUrl || synozurLogo;
+  const preview = useBrandingPreview();
+  const effectiveLogo = preview?.logoUrl ?? tenant?.logoUrl ?? null;
+  const logoSrc = effectiveLogo || synozurLogo;
   const logoAlt = tenant?.name || "Synozur";
-  const logoLink = tenant?.logoUrl ? "/" : "https://www.synozur.com";
-  const logoIsExternal = !tenant?.logoUrl;
+  const logoLink = effectiveLogo ? "/" : "https://www.synozur.com";
+  const logoIsExternal = !effectiveLogo;
 
   const { data: whatsNewData } = useQuery<{ showModal: boolean }>({
     queryKey: ["/api/changelog/whats-new"],
