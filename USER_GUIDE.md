@@ -540,6 +540,27 @@ The `.model` JSON format is the standard format for importing and exporting comp
 
 ---
 
+## Learning Courses
+
+Orion's Learning Courses module turns the platform into a lightweight LMS for AI-maturity, transformation, and leadership content.
+
+**Browse the catalog**
+- Visit `/courses` to see published courses available to you
+- Public courses are visible to everyone; tenant-private courses are only visible to members of the owning tenant
+- Each card shows the course summary, lesson count, estimated time, and topic tags
+
+**Take a course**
+- Click a course to see the full description, modules, and lessons
+- Sign in and click **Enroll** to start tracking your progress
+- Lessons can be rich text, slide decks, video, audio, quizzes, or signed attestations
+- Mark text/video/audio lessons complete when you've finished them; quizzes auto-grade against the passing score
+- Attestations require you to type your full name to sign — your signature is recorded with timestamp and IP for compliance
+
+**Track your progress**
+- Each enrollment tracks per-lesson status and an overall percentage
+- The course is marked **completed** when all required lessons are done
+- A "My Courses" page (`/api/me/courses` data) lists your enrollments
+
 ## Admin Guide
 
 For comprehensive administrator documentation including model management, user administration, AI content review, knowledge base management, benchmark configuration, and more, see the dedicated [Admin Guide](./ADMIN_GUIDE.md).

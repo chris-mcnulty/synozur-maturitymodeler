@@ -14,7 +14,7 @@ import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Download, Plus, Edit, Trash, FileSpreadsheet, Eye, EyeOff, BarChart3, Settings, FileDown, FileUp, ListOrdered, Users, Star, Upload, X, Sparkles, CheckCircle2, XCircle, Database, FileText, Brain, BookOpen, ClipboardList, Home, Building2, ChevronDown, Shield, Tag, Activity, Copy, Archive, ArchiveRestore, KeyRound, Clock, ExternalLink, Building, Ticket, Palette } from "lucide-react";
+import { Download, Plus, Edit, Trash, FileSpreadsheet, Eye, EyeOff, BarChart3, Settings, FileDown, FileUp, ListOrdered, Users, Star, Upload, X, Sparkles, CheckCircle2, XCircle, Database, FileText, Brain, BookOpen, ClipboardList, Home, Building2, ChevronDown, Shield, Tag, Activity, Copy, Archive, ArchiveRestore, KeyRound, Clock, ExternalLink, Building, Ticket, Palette, GraduationCap } from "lucide-react";
 import type { Model, Result, Assessment, Dimension, Question, Answer, User, AssessmentTag } from "@shared/schema";
 import { USER_ROLES, type UserRole } from "@shared/constants";
 import { useAuth } from "@/hooks/use-auth";
@@ -75,6 +75,9 @@ const SupportManagement = lazy(() =>
 );
 const BrandingPanel = lazy(() =>
   import("@/components/admin/BrandingPanel").then((m) => ({ default: m.BrandingPanel })),
+);
+const CourseManagement = lazy(() =>
+  import("@/components/admin/CourseManagement").then((m) => ({ default: m.CourseManagement })),
 );
 
 function SectionFallback() {
@@ -2505,6 +2508,17 @@ export default function Admin() {
                       )}
                     </SidebarMenuButton>
                   </SidebarMenuItem>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      onClick={() => setActiveSection('courses')}
+                      isActive={activeSection === 'courses'}
+                      data-testid="tab-courses"
+                      tooltip="Learning Courses"
+                    >
+                      <GraduationCap className="h-4 w-4" />
+                      <span className="group-data-[collapsible=icon]:hidden">Courses</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
                 </SidebarMenu>
               </SidebarGroupContent>
             </SidebarGroup>
@@ -3838,6 +3852,10 @@ export default function Admin() {
 
               {activeSection === 'ai-review' && (
                 <AiContentReviewQueue />
+              )}
+
+              {activeSection === 'courses' && (
+                <CourseManagement />
               )}
 
               {activeSection === 'ai-usage' && (

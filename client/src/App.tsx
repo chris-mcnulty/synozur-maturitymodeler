@@ -32,6 +32,8 @@ const CompleteProfile = lazy(() => import("@/pages/CompleteProfile"));
 const UserGuide = lazy(() => import("@/pages/UserGuide"));
 const Changelog = lazy(() => import("@/pages/Changelog"));
 const Support = lazy(() => import("@/pages/Support"));
+const Courses = lazy(() => import("@/pages/Courses"));
+const CourseDetail = lazy(() => import("@/pages/CourseDetail"));
 
 function RouteFallback() {
   return (
@@ -64,6 +66,8 @@ function Router() {
             <Route path="/help" component={UserGuide} />
             <Route path="/changelog" component={Changelog} />
             <ProtectedRoute path="/support" component={Support} />
+            <Route path="/courses" component={Courses} />
+            <Route path="/courses/:slug" component={CourseDetail} />
             <Route path="/assessment/:assessmentId" component={Assessment} />
             <Route path="/results/:assessmentId" component={Results} />
             <ProtectedRoute path="/me" component={Profile} />

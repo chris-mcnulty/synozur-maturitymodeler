@@ -24,6 +24,25 @@ This changelog documents new features, improvements, and fixes in Orion. Updates
 **Tests**
 - Unit tests for the webhook signer (`tests/unit/galaxy-webhooks.test.ts`).
 
+### May 2, 2026 — Learning Courses Module (MVP)
+
+**New Features**
+- **Course catalog**: New `/courses` page lists published courses with summaries, module/lesson counts, estimated time, and tags
+- **Course player**: `/courses/:slug` renders a full course with modules and lessons; supports rich text, slide decks, video, audio, quizzes, and attestation lesson types
+- **Quiz scoring**: Server-side quiz grading with per-course passing score, retry on failure, and recorded attempts
+- **Attestations**: Signed acknowledgment lessons capture user name, IP, and user-agent for compliance reporting
+- **Progress tracking**: Per-user enrollment + per-lesson progress with automatic course-level percentage and status (enrolled / in_progress / completed)
+- **Course authoring**: Admin → Content → Courses provides a builder with overview, structure (modules + lessons), and enrollments tabs; lesson editor offers per-type JSON content templates
+- **Tenant scoping**: Courses can be public or private to an owning tenant; visibility honored in the catalog API
+
+**Deferred (follow-ups)**
+- SCORM 1.2/2004 import (manifest parsing + zip ingest) and export — endpoints stubbed at 501
+- Certificate PDF generation on course completion
+- Attestation reminder/expiration emails
+- Assessment-driven course recommendations surface (data model is in place via `assessment_course_links`)
+
+---
+
 ## February 2026
 
 ### February 14, 2026 - Version 2.0

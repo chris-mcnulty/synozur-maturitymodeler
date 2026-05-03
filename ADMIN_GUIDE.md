@@ -1151,6 +1151,42 @@ The signature is `HMAC-SHA256(signing_secret, "{timestamp}.{raw_body}")`. Verify
 ### What is NOT yet exposed
 This release includes endpoint stubs for `/courses`, `/attestations`, and `/certificates` because those entities don't yet exist in Orion. They return empty collections regardless of policy, and will be wired up when those features land.
 
+## Learning Courses
+
+Authoring path: **Admin Console → Content → Courses**.
+
+**Create a course**
+1. Click **New course**, enter a title and slug, optional summary
+2. After creation you land in the builder with three tabs:
+   - **Overview** — title, summary, description, image URL, estimated minutes, status (draft/published/archived), visibility (public / tenant-private), passing score, certificate toggle
+   - **Structure** — add modules and lessons. Each lesson has a type and a JSON content payload (the editor pre-fills sensible defaults per type)
+   - **Enrollments** — see who's enrolled and their progress
+3. Set **Status = published** in Overview to make a course visible in the public catalog (admins/modelers can preview drafts)
+
+**Lesson types**
+- `rich_text` — `{ "html": "..." }`
+- `slides` — `{ "slides": [{ "title", "html", "imageUrl" }] }`
+- `video` — `{ "videoUrl", "provider": "mp4|youtube|vimeo" }`
+- `audio` — `{ "audioUrl" }`
+- `quiz` — `{ "passingScore", "questions": [{ "id", "text", "answers": [{ "id", "text" }], "correctAnswerId" }] }` (server-side scored)
+- `attestation` — `{ "statement", "requireTyped": true }` (records signedName + IP + UA)
+- `scorm` — placeholder for SCORM 1.2/2004 packages (runtime/import are follow-ups)
+
+**Visibility**
+- **Public** courses appear in the catalog for everyone
+- **Private** courses are only visible to members of the owning tenant (or global admins)
+
+**Compliance reporting**
+- The Enrollments tab shows status + progress per learner
+- Signed attestations are stored in `attestation_records` with timestamp, IP, and user-agent for audit trails
+- A bulk attestation export and reminder workflow are tracked as follow-ups
+
+**Deferred capabilities (follow-up tasks)**
+- SCORM 1.2/2004 import (zip upload + manifest parsing) and export
+- Certificate PDF generation when a course is completed
+- Reminder emails for upcoming or expired attestations
+- Surfacing assessment-driven course recommendations on the results page (the `assessment_course_links` table is in place)
+
 ## Conclusion
 
 The Orion platform provides comprehensive tools for creating, managing, and analyzing maturity assessments. As an admin, you have the power to:

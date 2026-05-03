@@ -1261,3 +1261,239 @@ export type InsertSupportTicketReply = z.infer<typeof insertSupportTicketReplySc
 
 export type SupportTicketPlannerSync = typeof supportTicketPlannerSync.$inferSelect;
 export type InsertSupportTicketPlannerSync = z.infer<typeof insertSupportTicketPlannerSyncSchema>;
+
+// ========== LEARNING COURSES MODULE (Task #39) ==========
+
+export const COURSE_STATUSES = ['draft', 'published', 'archived'] as const;
+export const COURSE_VISIBILITIES = ['public', 'private'] as const;
+export const LESSON_TYPES = ['slides', 'video', 'audio', 'rich_text', 'quiz', 'scorm', 'attestation'] as const;
+export const ENROLLMENT_STATUSES = ['enrolled', 'in_progress', 'completed', 'expired'] as const;
+export const LESSON_PROGRESS_STATUSES = ['not_started', 'in_progress', 'completed', 'failed'] as const;
+
+export type CourseStatus = typeof COURSE_STATUSES[number];
+export type CourseVisibility = typeof COURSE_VISIBILITIES[number];
+export type LessonType = typeof LESSON_TYPES[number];
+export type EnrollmentStatus = typeof ENROLLMENT_STATUSES[number];
+export type LessonProgressStatus = typeof LESSON_PROGRESS_STATUSES[number];
+
+// Courses table - top-level learning container
+export const courses = pgTable("courses", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  slug: text("slug").notNull().unique(),
+  title: text("title").notNull(),
+  description: text("description").notNull().default(""),
+  summary: text("summary"), // short blurb for catalog
+  imageUrl: text("image_url"),
+  estimatedMinutes: integer("estimated_minutes"),
+  status: text("status").notNull().$type<CourseStatus>().default("draft"),
+  visibility: text("visibility").notNull().$type<CourseVisibility>().default("public"),
+  ownerTenantId: varchar("owner_tenant_id"), // null for global/public
+  // Completion / certification
+  passingScore: integer("passing_score").notNull().default(80), // 0-100
+  certificateEnabled: boolean("certificate_enabled").notNull().default(false),
+  // Author
+  createdBy: varchar("created_by").references(() => users.id, { onDelete: "set null" }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => ({
+  ownerTenantIdx: index("idx_courses_owner_tenant").on(table.ownerTenantId),
+  statusVisibilityIdx: index("idx_courses_status_visibility").on(table.status, table.visibility),
+}));
+
+// Course tenants - junction table for sharing private courses with specific tenants
+export const courseTenants = pgTable("course_tenants", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  courseId: varchar("course_id").notNull().references(() => courses.id, { onDelete: "cascade" }),
+  tenantId: varchar("tenant_id").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  uniq: unique().on(table.courseId, table.tenantId),
+  courseIdx: index("idx_course_tenants_course").on(table.courseId),
+  tenantIdx: index("idx_course_tenants_tenant").on(table.tenantId),
+}));
+
+// Course modules - sections within a course
+export const courseModules = pgTable("course_modules", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  courseId: varchar("course_id").notNull().references(() => courses.id, { onDelete: "cascade" }),
+  title: text("title").notNull(),
+  description: text("description"),
+  order: integer("order").notNull().default(0),
+}, (table) => ({
+  courseIdx: index("idx_course_modules_course").on(table.courseId),
+}));
+
+// Lessons - individual learning units within a module
+export const lessons = pgTable("lessons", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  moduleId: varchar("module_id").notNull().references(() => courseModules.id, { onDelete: "cascade" }),
+  title: text("title").notNull(),
+  type: text("type").notNull().$type<LessonType>().default("rich_text"),
+  order: integer("order").notNull().default(0),
+  // Generic content payload — shape depends on `type`:
+  //  - rich_text: { html: string }
+  //  - slides: { slides: Array<{ title?: string; html: string; imageUrl?: string }> }
+  //  - video: { videoUrl: string; provider?: 'mp4'|'youtube'|'vimeo' }
+  //  - audio: { audioUrl: string }
+  //  - quiz: { passingScore: number; questions: Array<QuizQuestion> }
+  //  - scorm: { packageId: string; entryPoint: string; version: '1.2'|'2004' }
+  //  - attestation: { statement: string; requireTyped: boolean }
+  content: json("content").$type<Record<string, any>>().notNull().default({}),
+  estimatedMinutes: integer("estimated_minutes"),
+  required: boolean("required").notNull().default(true),
+}, (table) => ({
+  moduleIdx: index("idx_lessons_module").on(table.moduleId),
+}));
+
+// Course enrollments - learner registration in a course
+export const courseEnrollments = pgTable("course_enrollments", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  courseId: varchar("course_id").notNull().references(() => courses.id, { onDelete: "cascade" }),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  tenantId: varchar("tenant_id"), // captured at enrollment for reporting
+  status: text("status").notNull().$type<EnrollmentStatus>().default("enrolled"),
+  progressPercent: integer("progress_percent").notNull().default(0),
+  enrolledAt: timestamp("enrolled_at").defaultNow().notNull(),
+  startedAt: timestamp("started_at"),
+  completedAt: timestamp("completed_at"),
+  certificateUrl: text("certificate_url"),
+}, (table) => ({
+  uniq: unique().on(table.courseId, table.userId),
+  userIdx: index("idx_enrollments_user").on(table.userId),
+  courseIdx: index("idx_enrollments_course").on(table.courseId),
+  tenantStatusIdx: index("idx_enrollments_tenant_status").on(table.tenantId, table.status),
+}));
+
+// Lesson progress - per-lesson tracking
+export const lessonProgress = pgTable("lesson_progress", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  enrollmentId: varchar("enrollment_id").notNull().references(() => courseEnrollments.id, { onDelete: "cascade" }),
+  lessonId: varchar("lesson_id").notNull().references(() => lessons.id, { onDelete: "cascade" }),
+  status: text("status").notNull().$type<LessonProgressStatus>().default("not_started"),
+  score: integer("score"), // 0-100 for quiz/scorm
+  attempts: integer("attempts").notNull().default(0),
+  // Free-form data: quiz answers, scorm cmi data, attestation signature, etc.
+  data: json("data").$type<Record<string, any>>(),
+  startedAt: timestamp("started_at"),
+  completedAt: timestamp("completed_at"),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => ({
+  uniq: unique().on(table.enrollmentId, table.lessonId),
+  enrollmentIdx: index("idx_lesson_progress_enrollment").on(table.enrollmentId),
+}));
+
+// Course tags - reusable taxonomy for catalog filtering
+export const courseTags = pgTable("course_tags", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull().unique(),
+  color: varchar("color", { length: 7 }).notNull().default("#6366f1"),
+  description: text("description"),
+  createdBy: varchar("created_by").references(() => users.id, { onDelete: "set null" }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const courseTagAssignments = pgTable("course_tag_assignments", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  courseId: varchar("course_id").notNull().references(() => courses.id, { onDelete: "cascade" }),
+  tagId: varchar("tag_id").notNull().references(() => courseTags.id, { onDelete: "cascade" }),
+  assignedAt: timestamp("assigned_at").defaultNow().notNull(),
+}, (table) => ({
+  uniq: unique().on(table.courseId, table.tagId),
+  courseIdx: index("idx_course_tag_assignments_course").on(table.courseId),
+  tagIdx: index("idx_course_tag_assignments_tag").on(table.tagId),
+}));
+
+// Assessment ↔ course bridge - lets a model recommend courses based on dimension scores
+export const assessmentCourseLinks = pgTable("assessment_course_links", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  modelId: varchar("model_id").notNull().references(() => models.id, { onDelete: "cascade" }),
+  dimensionId: varchar("dimension_id").references(() => dimensions.id, { onDelete: "cascade" }),
+  courseId: varchar("course_id").notNull().references(() => courses.id, { onDelete: "cascade" }),
+  // Trigger condition: recommend when dimension score is at/below this threshold (0-100 normalized)
+  scoreThreshold: integer("score_threshold").notNull().default(60),
+  priority: integer("priority").notNull().default(0),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  modelIdx: index("idx_assessment_course_links_model").on(table.modelId),
+  courseIdx: index("idx_assessment_course_links_course").on(table.courseId),
+}));
+
+// Attestation records - signed acknowledgments for compliance reporting
+export const attestationRecords = pgTable("attestation_records", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  enrollmentId: varchar("enrollment_id").notNull().references(() => courseEnrollments.id, { onDelete: "cascade" }),
+  lessonId: varchar("lesson_id").notNull().references(() => lessons.id, { onDelete: "cascade" }),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  tenantId: varchar("tenant_id"),
+  statement: text("statement").notNull(),
+  signedName: text("signed_name").notNull(),
+  ipAddress: text("ip_address"),
+  userAgent: text("user_agent"),
+  signedAt: timestamp("signed_at").defaultNow().notNull(),
+}, (table) => ({
+  enrollmentIdx: index("idx_attestation_enrollment").on(table.enrollmentId),
+  userIdx: index("idx_attestation_user").on(table.userId),
+  tenantIdx: index("idx_attestation_tenant").on(table.tenantId),
+}));
+
+// SCORM packages - metadata for uploaded SCORM bundles
+export const scormPackages = pgTable("scorm_packages", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  courseId: varchar("course_id").references(() => courses.id, { onDelete: "set null" }),
+  name: text("name").notNull(),
+  scormVersion: text("scorm_version").notNull().default("1.2"), // '1.2' | '2004'
+  packageUrl: text("package_url").notNull(), // object storage URL of the .zip
+  entryPoint: text("entry_point"), // path to launch HTML inside package
+  manifest: json("manifest").$type<Record<string, any>>(), // parsed imsmanifest.xml summary
+  uploadedBy: varchar("uploaded_by").references(() => users.id, { onDelete: "set null" }),
+  uploadedAt: timestamp("uploaded_at").defaultNow().notNull(),
+});
+
+// ===== Insert schemas + types =====
+
+export const insertCourseSchema = createInsertSchema(courses).omit({
+  id: true, createdAt: true, updatedAt: true,
+}).extend({
+  slug: z.string().min(1).max(100).regex(/^[a-z0-9-]+$/, "Slug must be lowercase letters, numbers, and hyphens"),
+  title: z.string().min(1).max(255),
+  description: z.string().default(""),
+  passingScore: z.number().int().min(0).max(100).default(80),
+});
+
+export const insertCourseModuleSchema = createInsertSchema(courseModules).omit({ id: true });
+export const insertLessonSchema = createInsertSchema(lessons).omit({ id: true });
+export const insertCourseEnrollmentSchema = createInsertSchema(courseEnrollments).omit({
+  id: true, enrolledAt: true, startedAt: true, completedAt: true,
+});
+export const insertLessonProgressSchema = createInsertSchema(lessonProgress).omit({
+  id: true, updatedAt: true, startedAt: true, completedAt: true,
+});
+export const insertCourseTagSchema = createInsertSchema(courseTags).omit({ id: true, createdAt: true });
+export const insertCourseTagAssignmentSchema = createInsertSchema(courseTagAssignments).omit({ id: true, assignedAt: true });
+export const insertAssessmentCourseLinkSchema = createInsertSchema(assessmentCourseLinks).omit({ id: true, createdAt: true });
+export const insertAttestationRecordSchema = createInsertSchema(attestationRecords).omit({ id: true, signedAt: true });
+export const insertScormPackageSchema = createInsertSchema(scormPackages).omit({ id: true, uploadedAt: true });
+export const insertCourseTenantSchema = createInsertSchema(courseTenants).omit({ id: true, createdAt: true });
+
+export type Course = typeof courses.$inferSelect;
+export type InsertCourse = z.infer<typeof insertCourseSchema>;
+export type CourseModule = typeof courseModules.$inferSelect;
+export type InsertCourseModule = z.infer<typeof insertCourseModuleSchema>;
+export type Lesson = typeof lessons.$inferSelect;
+export type InsertLesson = z.infer<typeof insertLessonSchema>;
+export type CourseEnrollment = typeof courseEnrollments.$inferSelect;
+export type InsertCourseEnrollment = z.infer<typeof insertCourseEnrollmentSchema>;
+export type LessonProgress = typeof lessonProgress.$inferSelect;
+export type InsertLessonProgress = z.infer<typeof insertLessonProgressSchema>;
+export type CourseTag = typeof courseTags.$inferSelect;
+export type InsertCourseTag = z.infer<typeof insertCourseTagSchema>;
+export type CourseTagAssignment = typeof courseTagAssignments.$inferSelect;
+export type InsertCourseTagAssignment = z.infer<typeof insertCourseTagAssignmentSchema>;
+export type AssessmentCourseLink = typeof assessmentCourseLinks.$inferSelect;
+export type InsertAssessmentCourseLink = z.infer<typeof insertAssessmentCourseLinkSchema>;
+export type AttestationRecord = typeof attestationRecords.$inferSelect;
+export type InsertAttestationRecord = z.infer<typeof insertAttestationRecordSchema>;
+export type ScormPackage = typeof scormPackages.$inferSelect;
+export type InsertScormPackage = z.infer<typeof insertScormPackageSchema>;
+export type CourseTenant = typeof courseTenants.$inferSelect;
+export type InsertCourseTenant = z.infer<typeof insertCourseTenantSchema>;

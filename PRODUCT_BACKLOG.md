@@ -382,6 +382,21 @@ Following Vega's pattern:
 
 ---
 
+## LEARNING COURSES MODULE — FOLLOW-UPS
+
+The MVP slice (catalog, player, authoring, quizzes, attestations, enrollment tracking) shipped on May 2, 2026. Remaining follow-ups:
+
+1. **SCORM 1.2 / 2004 import** — accept `.zip` uploads, parse `imsmanifest.xml`, store package in object storage, serve runtime that wires `cmi.*` → `lessonProgress.data`. Endpoints stubbed at `POST /api/scorm/import` (501).
+2. **SCORM export** — generate a SCORM zip from a course's structure. Stub at `GET /api/courses/:id/scorm/export` (501).
+3. **Certificate PDF generation** — when an enrollment completes and `certificateEnabled` is true, render a branded PDF and store its URL in `certificateUrl`.
+4. **Attestation reminders/expirations** — scheduled email job (SendGrid) to nudge or re-collect expired attestations.
+5. **Assessment → course recommendation surface** — `assessment_course_links` is wired with score thresholds; need a UI on the Results page that lists recommended courses based on weak dimensions, plus a "Suggested for you" card on `/courses`.
+6. **Catalog filters/search** — by tag, completion status, duration, level.
+7. **Video transcoding/hosting** — currently stores raw URLs; consider Mux or Cloudflare Stream for adaptive playback.
+8. **xAPI (Tin Can) statements** — emit statements for richer learning analytics.
+
+---
+
 ## COMPLETED FEATURES
 
 ### February 2026
