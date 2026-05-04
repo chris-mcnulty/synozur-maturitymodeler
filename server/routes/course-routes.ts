@@ -39,12 +39,20 @@ function redactGradingKeys<T extends { modules: any[] }>(course: T): T {
       if (l.type !== "quiz") return l;
       const content = (l.content ?? {}) as any;
       const safeQuestions = (content.questions ?? []).map((q: any) => {
-        const { correctAnswerId, correctAnswerIds, explanation, ...rest } = q ?? {};
-        const answers = (q?.answers ?? []).map((a: any) => {
+        // Strip all server-side grading keys regardless of which naming
+        // convention the content author used (correctIds, correctAnswerIds,
+        // correctAnswerId). The sample-course format uses `options` for the
+        // choices array; legacy content may use `answers` — normalise to
+        // `answers` so the client only has to handle one field name.
+        const { correctAnswerId, correctAnswerIds, correctIds, explanation, ...rest } = q ?? {};
+        const rawChoices = q?.options ?? q?.answers ?? [];
+        const answers = rawChoices.map((a: any) => {
           const { isCorrect, correct, score, ...arest } = a ?? {};
           return arest;
         });
-        return { ...rest, answers };
+        // Drop `options` from rest so clients only see `answers`
+        const { options: _opts, ...safeRest } = rest;
+        return { ...safeRest, answers };
       });
       const { questions: _omit, ...restContent } = content;
       return {

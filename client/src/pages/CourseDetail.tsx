@@ -13,6 +13,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Loader2, BookOpen, CheckCircle2, Clock, PlayCircle, FileText, Music, Lock, Award, ChevronLeft, ChevronRight, Download } from "lucide-react";
 import DOMPurify from "dompurify";
 import type { Course, CourseModule, Lesson, CourseEnrollment, LessonProgress, CourseTag } from "@shared/schema";
@@ -106,6 +107,21 @@ export default function CourseDetail() {
     onError: (err: Error) => toast({ title: "Could not generate certificate", description: err.message, variant: "destructive" }),
   });
 
+  // Defense-in-depth: never render a locked lesson, even if state somehow
+  // resolves to one. Must be above early-returns to satisfy Rules of Hooks.
+  useEffect(() => {
+    if (!course) return;
+    const lessons = course.modules.flatMap(m => m.lessons);
+    const pbLesson = new Map<string, LessonProgress>(
+      (progressData?.progress ?? []).map(p => [p.lessonId, p])
+    );
+    const unlocked = computeUnlocked(lessons, pbLesson);
+    const active = activeLessonId ? lessons.find(l => l.id === activeLessonId) ?? null : null;
+    if (active && !unlocked.get(active.id)) {
+      setActiveLessonId(null);
+    }
+  }, [course, progressData, activeLessonId]);
+
   if (isLoading) {
     return (
       <div className="container mx-auto px-4 py-8 max-w-5xl">
@@ -136,15 +152,6 @@ export default function CourseDetail() {
   const activeLesson = activeLessonId
     ? allLessons.find(l => l.id === activeLessonId) ?? null
     : null;
-
-  // Defense-in-depth: never render a locked lesson, even if the URL state
-  // somehow resolves to one. The server enforces this on writes; the UI
-  // enforces it on reads so locked content cannot be opened.
-  useEffect(() => {
-    if (activeLesson && !unlockedMap.get(activeLesson.id)) {
-      setActiveLessonId(null);
-    }
-  }, [activeLesson, unlockedMap]);
 
   if (activeLesson && unlockedMap.get(activeLesson.id)) {
     const idx = allLessons.findIndex(l => l.id === activeLesson.id);
@@ -350,7 +357,7 @@ interface PlayerProps {
 function CoursePlayer({ course, lesson, currentIndex, total, progress, onPrev, onNext, nextLocked, onExit }: PlayerProps) {
   const { toast } = useToast();
   const [signedName, setSignedName] = useState("");
-  const [quizResponses, setQuizResponses] = useState<Record<string, string>>({});
+  const [quizResponses, setQuizResponses] = useState<Record<string, string[]>>({});
   const [slideIdx, setSlideIdx] = useState(0);
   const [submittedScore, setSubmittedScore] = useState<number | null>(progress?.score ?? null);
   const [submittedStatus, setSubmittedStatus] = useState<string | null>(progress?.status ?? null);
@@ -447,13 +454,20 @@ function CoursePlayer({ course, lesson, currentIndex, total, progress, onPrev, o
         const questions: any[] = c.questions || [];
         if (submittedScore !== null) {
           const passing = c.passingScore ?? 70;
+          const passed = submittedStatus === "completed";
           return (
             <div className="text-center py-8" data-testid="content-quiz-result">
-              <h3 className="text-2xl font-bold mb-2">
-                {submittedStatus === "completed" ? "Passed!" : "Try again"}
-              </h3>
-              <p className="text-lg mb-4">Score: {submittedScore} / 100 (passing: {passing})</p>
-              {submittedStatus !== "completed" && (
+              <div className="mb-3">
+                {passed
+                  ? <CheckCircle2 className="h-12 w-12 text-green-500 mx-auto" />
+                  : <div className="h-12 w-12 rounded-full border-4 border-muted mx-auto flex items-center justify-center text-muted-foreground text-xl font-bold">✕</div>
+                }
+              </div>
+              <h3 className="text-2xl font-bold mb-2">{passed ? "Passed!" : "Not quite — try again"}</h3>
+              <p className="text-lg text-muted-foreground mb-4">
+                Score: {submittedScore} / 100 &nbsp;·&nbsp; Passing: {passing}
+              </p>
+              {!passed && (
                 <Button onClick={() => { setSubmittedScore(null); setSubmittedStatus(null); setQuizResponses({}); }} data-testid="button-quiz-retry">
                   Retry
                 </Button>
@@ -461,27 +475,71 @@ function CoursePlayer({ course, lesson, currentIndex, total, progress, onPrev, o
             </div>
           );
         }
+
+        const allAnswered = questions.length > 0 &&
+          questions.every(q => (quizResponses[q.id]?.length ?? 0) > 0);
+
         return (
           <div className="space-y-6" data-testid="content-quiz">
-            {questions.map((q: any, qi: number) => (
-              <div key={q.id || qi}>
-                <p className="font-medium mb-2">{qi + 1}. {q.text}</p>
-                <RadioGroup
-                  value={quizResponses[q.id] || ""}
-                  onValueChange={v => setQuizResponses(r => ({ ...r, [q.id]: v }))}
-                >
-                  {(q.answers || []).map((a: any) => (
-                    <div key={a.id} className="flex items-center gap-2">
-                      <RadioGroupItem value={a.id} id={`${q.id}-${a.id}`} data-testid={`radio-quiz-${q.id}-${a.id}`} />
-                      <Label htmlFor={`${q.id}-${a.id}`}>{a.text}</Label>
+            {questions.map((q: any, qi: number) => {
+              // Server normalises choices to `answers`; fall back to `options`
+              // in case the lesson was loaded without the redact transform.
+              const choices: any[] = q.answers || q.options || [];
+              const isMultiple = q.type === "multiple";
+              const selected = quizResponses[q.id] ?? [];
+
+              return (
+                <div key={q.id || qi} className="space-y-2">
+                  <p className="font-medium">
+                    {qi + 1}. {q.text}
+                    {isMultiple && (
+                      <span className="ml-2 text-xs font-normal text-muted-foreground">(select all that apply)</span>
+                    )}
+                  </p>
+                  {isMultiple ? (
+                    <div className="space-y-2">
+                      {choices.map((a: any) => {
+                        const checked = selected.includes(a.id);
+                        return (
+                          <div key={a.id} className="flex items-center gap-2">
+                            <Checkbox
+                              id={`${q.id}-${a.id}`}
+                              checked={checked}
+                              onCheckedChange={on => {
+                                setQuizResponses(r => {
+                                  const prev = r[q.id] ?? [];
+                                  const next = on
+                                    ? [...prev, a.id]
+                                    : prev.filter(x => x !== a.id);
+                                  return { ...r, [q.id]: next };
+                                });
+                              }}
+                              data-testid={`checkbox-quiz-${q.id}-${a.id}`}
+                            />
+                            <Label htmlFor={`${q.id}-${a.id}`} className="cursor-pointer">{a.text}</Label>
+                          </div>
+                        );
+                      })}
                     </div>
-                  ))}
-                </RadioGroup>
-              </div>
-            ))}
+                  ) : (
+                    <RadioGroup
+                      value={selected[0] ?? ""}
+                      onValueChange={v => setQuizResponses(r => ({ ...r, [q.id]: [v] }))}
+                    >
+                      {choices.map((a: any) => (
+                        <div key={a.id} className="flex items-center gap-2">
+                          <RadioGroupItem value={a.id} id={`${q.id}-${a.id}`} data-testid={`radio-quiz-${q.id}-${a.id}`} />
+                          <Label htmlFor={`${q.id}-${a.id}`} className="cursor-pointer">{a.text}</Label>
+                        </div>
+                      ))}
+                    </RadioGroup>
+                  )}
+                </div>
+              );
+            })}
             <Button
               onClick={submitQuiz}
-              disabled={completeMutation.isPending || Object.keys(quizResponses).length < questions.length}
+              disabled={completeMutation.isPending || !allAnswered}
               data-testid="button-quiz-submit"
             >
               {completeMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}

@@ -745,19 +745,23 @@ export async function getLatestAssessmentWithResult(userId: string): Promise<{ a
 
 /** Score a quiz lesson — returns score 0-100 and pass/fail. */
 export function scoreQuiz(
-  questions: Array<{ id: string; correctAnswerIds?: string[]; correctAnswerId?: string }>,
+  questions: Array<{ id: string; correctAnswerIds?: string[]; correctAnswerId?: string; correctIds?: string[] }>,
   responses: Record<string, string | string[]>,
 ): { score: number; correct: number; total: number } {
   let correct = 0;
   for (const q of questions) {
     const r = responses[q.id];
     if (!r) continue;
-    if (q.correctAnswerIds && q.correctAnswerIds.length > 0) {
+    // Support both naming conventions: correctIds (sample format) and
+    // correctAnswerIds / correctAnswerId (legacy format).
+    const multiCorrect = q.correctIds ?? q.correctAnswerIds;
+    if (multiCorrect && multiCorrect.length > 0) {
       const arr = Array.isArray(r) ? r : [r];
       const sorted = (a: string[]) => [...a].sort().join("|");
-      if (sorted(arr) === sorted(q.correctAnswerIds)) correct++;
+      if (sorted(arr) === sorted(multiCorrect)) correct++;
     } else if (q.correctAnswerId) {
-      if (r === q.correctAnswerId) correct++;
+      const single = Array.isArray(r) ? r[0] : r;
+      if (single === q.correctAnswerId) correct++;
     }
   }
   const total = questions.length;
