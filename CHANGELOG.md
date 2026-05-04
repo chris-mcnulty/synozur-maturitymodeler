@@ -6,7 +6,7 @@ This changelog documents new features, improvements, and fixes in Orion. Updates
 
 ---
 
-## May 2026
+## May 2026 — Version 2.1
 
 ### May 2, 2026 - Galaxy Client Portal API
 

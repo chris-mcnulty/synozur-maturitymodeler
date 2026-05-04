@@ -32,8 +32,13 @@ function loadMarkdownFile(filename: string): string {
 }
 
 function detectChangelogVersion(content: string): string {
-  const match = content.match(/Version\s+([\d.]+)/);
-  return match?.[1] || '0.0';
+  // Find ALL version markers and return the highest one so unlabeled sections
+  // added before or after a "Version X.X" line don't freeze the detected version.
+  const matches = [...content.matchAll(/Version\s+([\d.]+)/g)];
+  if (!matches.length) return '0.0';
+  return matches
+    .map(m => m[1])
+    .reduce((best, v) => compareVersions(v, best) > 0 ? v : best, '0.0');
 }
 
 function compareVersions(a: string, b: string): number {
@@ -87,7 +92,10 @@ router.get('/api/changelog/whats-new', ensureAuthenticated, async (req, res) => 
       return res.json({ showModal: false, version: currentChangelogVersion });
     }
 
-    const user = req.user!;
+    // Always read fresh from DB — never rely on the session snapshot for dismissal state.
+    const user = await storage.getUser(req.user!.id);
+    if (!user) return res.json({ showModal: false, version: currentChangelogVersion });
+
     const userCreatedAt = new Date(user.createdAt);
     const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
 

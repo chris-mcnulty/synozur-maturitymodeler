@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useRef, useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/use-auth";
@@ -6,6 +6,7 @@ import { useLocation } from "wouter";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Sparkles, Shield, Zap, Users, Settings, Brain, Star } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 const ICON_MAP: Record<string, any> = {
   sparkles: Sparkles,
@@ -27,6 +28,9 @@ interface WhatsNewData {
 export function WhatsNewModal() {
   const { user } = useAuth();
   const [, setLocation] = useLocation();
+  const { toast } = useToast();
+  const [locallyDismissed, setLocallyDismissed] = useState(false);
+  const dismissedRef = useRef(false);
 
   const { data } = useQuery<WhatsNewData>({
     queryKey: ["/api/changelog/whats-new"],
@@ -40,21 +44,35 @@ export function WhatsNewModal() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/changelog/whats-new"] });
     },
+    onError: () => {
+      toast({
+        title: "Couldn't save preference",
+        description: "The update notice may reappear on your next visit.",
+        variant: "destructive",
+      });
+    },
   });
 
   if (!data?.showModal) return null;
+  if (locallyDismissed) return null;
 
   const handleDismiss = () => {
+    if (dismissedRef.current) return;
+    dismissedRef.current = true;
+    setLocallyDismissed(true);
     dismissMutation.mutate();
   };
 
   const handleViewChangelog = () => {
-    dismissMutation.mutate();
+    handleDismiss();
     setLocation("/changelog");
   };
 
   return (
-    <Dialog open={data.showModal} onOpenChange={(open) => { if (!open) handleDismiss(); }}>
+    <Dialog
+      open={!locallyDismissed && data.showModal}
+      onOpenChange={(open) => { if (!open) handleDismiss(); }}
+    >
       <DialogContent className="sm:max-w-lg" data-testid="modal-whats-new">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2" data-testid="text-whats-new-title">
