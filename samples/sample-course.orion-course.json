@@ -1,7 +1,7 @@
 {
   "format": "orion-course",
   "version": "1",
-  "exportedAt": "2026-05-03T00:00:00.000Z",
+  "exportedAt": "2026-05-04T00:00:00.000Z",
   "course": {
     "title": "Maturity Model Assessment Fundamentals",
     "slug": "maturity-model-assessment-fundamentals",
@@ -27,7 +27,7 @@
             "estimatedMinutes": 5,
             "required": true,
             "content": {
-              "html": "<h2>Why Maturity Models?</h2><p>Every organisation operates at some level of capability across the dimensions that matter to its mission. Maturity models give that level a name, a score, and — crucially — a direction.</p><p>At their core, maturity models answer three questions:</p><ol><li><strong>Where are we today?</strong> An honest baseline across the capabilities that drive performance.</li><li><strong>Where should we be?</strong> A target state grounded in strategy, peers, and best practice.</li><li><strong>How do we get there?</strong> A prioritised roadmap of investments and changes.</li></ol><p>Without a shared model, improvement conversations fragment into opinion. With one, they become structured, evidence-based, and actionable.</p><blockquote><em>\"You can't manage what you can't measure. You can't improve what you can't describe.\"</em></blockquote><p>Maturity models provide the vocabulary and the yardstick that makes both possible.</p>"
+              "html": "<img src=\"https://images.unsplash.com/photo-1552664730-d307ca884978?w=900&q=80\" alt=\"Assessment workshop in progress\" style=\"width:100%;max-height:300px;object-fit:cover;border-radius:6px;margin-bottom:1.2rem\" /><h2>Why Maturity Models?</h2><p>Every organisation operates at some level of capability across the dimensions that matter to its mission. Maturity models give that level a name, a score, and — crucially — a direction.</p><p>At their core, maturity models answer three questions:</p><ol><li><strong>Where are we today?</strong> An honest baseline across the capabilities that drive performance.</li><li><strong>Where should we be?</strong> A target state grounded in strategy, peers, and best practice.</li><li><strong>How do we get there?</strong> A prioritised roadmap of investments and changes.</li></ol><p>Without a shared model, improvement conversations fragment into opinion. With one, they become structured, evidence-based, and actionable.</p><blockquote><em>\"You can't manage what you can't measure. You can't improve what you can't describe.\"</em></blockquote><p>Maturity models provide the vocabulary and the yardstick that makes both possible.</p>"
             }
           },
           {
@@ -37,13 +37,25 @@
             "estimatedMinutes": 5,
             "required": true,
             "content": {
-              "html": "<h2>From CMM to Modern Models</h2><p>The Capability Maturity Model (CMM) was developed at Carnegie Mellon in the late 1980s to help the US Department of Defense evaluate software suppliers. It introduced the five-level progression that almost every subsequent model has inherited:</p><table style='width:100%;border-collapse:collapse'><thead><tr><th style='text-align:left;padding:8px;border-bottom:1px solid #444'>Level</th><th style='text-align:left;padding:8px;border-bottom:1px solid #444'>Name</th><th style='text-align:left;padding:8px;border-bottom:1px solid #444'>Characteristic</th></tr></thead><tbody><tr><td style='padding:8px'>1</td><td style='padding:8px'>Initial</td><td style='padding:8px'>Ad hoc, unpredictable</td></tr><tr><td style='padding:8px'>2</td><td style='padding:8px'>Managed</td><td style='padding:8px'>Reactive, project-level</td></tr><tr><td style='padding:8px'>3</td><td style='padding:8px'>Defined</td><td style='padding:8px'>Proactive, organisation-wide</td></tr><tr><td style='padding:8px'>4</td><td style='padding:8px'>Quantitatively Managed</td><td style='padding:8px'>Measured and controlled</td></tr><tr><td style='padding:8px'>5</td><td style='padding:8px'>Optimising</td><td style='padding:8px'>Continuously improving</td></tr></tbody></table><p>Modern frameworks — CMMI, ITIL, ISO, industry-specific models — all follow this pattern, adapted to their domain. The Orion platform hosts multiple models, each tuned to a specific capability area.</p>"
+              "html": "<img src=\"https://images.unsplash.com/photo-1524178232363-1fb2b075b655?w=900&q=80\" alt=\"Historic library — foundations of capability thinking\" style=\"width:100%;max-height:260px;object-fit:cover;border-radius:6px;margin-bottom:1.2rem\" /><h2>From CMM to Modern Models</h2><p>The Capability Maturity Model (CMM) was developed at Carnegie Mellon in the late 1980s to help the US Department of Defense evaluate software suppliers. It introduced the five-level progression that almost every subsequent model has inherited:</p><table style='width:100%;border-collapse:collapse'><thead><tr><th style='text-align:left;padding:8px;border-bottom:1px solid #444'>Level</th><th style='text-align:left;padding:8px;border-bottom:1px solid #444'>Name</th><th style='text-align:left;padding:8px;border-bottom:1px solid #444'>Characteristic</th></tr></thead><tbody><tr><td style='padding:8px'>1</td><td style='padding:8px'>Initial</td><td style='padding:8px'>Ad hoc, unpredictable</td></tr><tr><td style='padding:8px'>2</td><td style='padding:8px'>Managed</td><td style='padding:8px'>Reactive, project-level</td></tr><tr><td style='padding:8px'>3</td><td style='padding:8px'>Defined</td><td style='padding:8px'>Proactive, organisation-wide</td></tr><tr><td style='padding:8px'>4</td><td style='padding:8px'>Quantitatively Managed</td><td style='padding:8px'>Measured and controlled</td></tr><tr><td style='padding:8px'>5</td><td style='padding:8px'>Optimising</td><td style='padding:8px'>Continuously improving</td></tr></tbody></table><p>Modern frameworks — CMMI, ITIL, ISO, industry-specific models — all follow this pattern, adapted to their domain. The Orion platform hosts multiple models, each tuned to a specific capability area.</p>"
+            }
+          },
+          {
+            "title": "Video: How Great Organisations Improve",
+            "type": "video",
+            "order": 2,
+            "estimatedMinutes": 8,
+            "required": false,
+            "content": {
+              "videoUrl": "https://www.youtube.com/embed/qp0HIF3SfI4",
+              "provider": "youtube",
+              "description": "Simon Sinek explores how purpose-driven organisations inspire action and build lasting capability — a powerful lens for understanding why maturity improvement programmes succeed or fail."
             }
           },
           {
             "title": "Module 1 Check",
             "type": "quiz",
-            "order": 2,
+            "order": 3,
             "estimatedMinutes": 3,
             "required": true,
             "content": {
@@ -119,19 +131,32 @@
             }
           },
           {
+            "title": "Audio: Influence and the Change Conversation",
+            "type": "audio",
+            "order": 2,
+            "estimatedMinutes": 9,
+            "required": false,
+            "content": {
+              "audioUrl": "https://ia800303.us.archive.org/34/items/art_of_public_speaking_librivox/artofspeaking_01_carnegie.mp3",
+              "description": "Practitioner perspectives — listen to this excerpt from Dale Carnegie's classic on communication and influence, themes directly applicable to driving maturity improvement across teams and stakeholders. (~9 minutes)"
+            }
+          },
+          {
             "title": "Slides: The Assessment Cycle",
             "type": "slides",
-            "order": 2,
+            "order": 3,
             "estimatedMinutes": 5,
             "required": false,
             "content": {
               "slides": [
                 {
                   "title": "The Four-Phase Assessment Cycle",
+                  "imageUrl": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=900&q=80",
                   "html": "<p>Effective use of maturity assessments follows a repeatable cycle rather than a one-time event.</p><ol><li><strong>Baseline</strong> — take the initial assessment and establish your current state</li><li><strong>Prioritise</strong> — select the two or three dimensions with the highest strategic leverage</li><li><strong>Invest</strong> — run the initiatives, training, and process changes your roadmap calls for</li><li><strong>Re-assess</strong> — return to the model (typically 6–12 months later) to measure progress</li></ol>"
                 },
                 {
                   "title": "Cadence Recommendations",
+                  "imageUrl": "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=900&q=80",
                   "html": "<p>How often should you assess?</p><ul><li><strong>Annual</strong> — minimum for most organisations; aligns with planning cycles</li><li><strong>Semi-annual</strong> — appropriate for fast-moving capability areas (e.g. AI readiness, cyber)</li><li><strong>Quarterly</strong> — useful when actively running an improvement programme and tracking sprint-level progress</li></ul><p>Avoid assessing more frequently than your organisation can actually act on the results — diminishing returns and survey fatigue set in quickly.</p>"
                 },
                 {
@@ -144,7 +169,7 @@
           {
             "title": "Module 2 Check",
             "type": "quiz",
-            "order": 3,
+            "order": 4,
             "estimatedMinutes": 3,
             "required": true,
             "content": {
@@ -193,7 +218,7 @@
             "estimatedMinutes": 6,
             "required": true,
             "content": {
-              "html": "<h2>Making the Results Count</h2><p>An assessment result without a roadmap is an interesting document. An assessment result with a roadmap is a change programme.</p><h3>Step 1 — Identify your critical few</h3><p>List every dimension and its score. Then ask two questions for each:</p><ul><li>How much does this dimension affect our strategic outcomes?</li><li>How far are we from where we need to be?</li></ul><p>Plot them on a 2×2 (impact vs. gap). Focus first on high-impact, high-gap dimensions.</p><h3>Step 2 — Read the improvement statements</h3><p>For each prioritised dimension, read the improvement statement attached to your current answer. That statement describes the practices you need to build to reach the next level. It is your specification for the first initiative.</p><h3>Step 3 — Write the initiative</h3><p>For each priority dimension, define:</p><ul><li><strong>Outcome</strong> — what does 'done' look like?</li><li><strong>Owner</strong> — one named individual accountable</li><li><strong>Key activities</strong> — three to five concrete steps</li><li><strong>Timeline</strong> — start date and target completion</li><li><strong>Re-assessment trigger</strong> — the date you will return to the model to check progress</li></ul><h3>Step 4 — Get it into your planning system</h3><p>A roadmap that lives only in a slide deck will not be executed. Move it into your existing project or programme management tooling so it competes for real resources alongside other priorities.</p>"
+              "html": "<img src=\"https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=900&q=80\" alt=\"Data dashboard driving action\" style=\"width:100%;max-height:280px;object-fit:cover;border-radius:6px;margin-bottom:1.2rem\" /><h2>Making the Results Count</h2><p>An assessment result without a roadmap is an interesting document. An assessment result with a roadmap is a change programme.</p><h3>Step 1 — Identify your critical few</h3><p>List every dimension and its score. Then ask two questions for each:</p><ul><li>How much does this dimension affect our strategic outcomes?</li><li>How far are we from where we need to be?</li></ul><p>Plot them on a 2×2 (impact vs. gap). Focus first on high-impact, high-gap dimensions.</p><h3>Step 2 — Read the improvement statements</h3><p>For each prioritised dimension, read the improvement statement attached to your current answer. That statement describes the practices you need to build to reach the next level. It is your specification for the first initiative.</p><h3>Step 3 — Write the initiative</h3><p>For each priority dimension, define:</p><ul><li><strong>Outcome</strong> — what does 'done' look like?</li><li><strong>Owner</strong> — one named individual accountable</li><li><strong>Key activities</strong> — three to five concrete steps</li><li><strong>Timeline</strong> — start date and target completion</li><li><strong>Re-assessment trigger</strong> — the date you will return to the model to check progress</li></ul><h3>Step 4 — Get it into your planning system</h3><p>A roadmap that lives only in a slide deck will not be executed. Move it into your existing project or programme management tooling so it competes for real resources alongside other priorities.</p>"
             }
           },
           {

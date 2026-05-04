@@ -434,20 +434,43 @@ function CoursePlayer({ course, lesson, currentIndex, total, progress, onPrev, o
           </div>
         );
       }
-      case "video":
+      case "video": {
+        const isEmbed = c.provider === 'youtube' || c.provider === 'vimeo' ||
+          (c.videoUrl && (c.videoUrl.includes('youtube.com') || c.videoUrl.includes('youtu.be') || c.videoUrl.includes('vimeo.com')));
         return (
-          <div data-testid="content-video">
-            {c.videoUrl ? (
+          <div data-testid="content-video" className="space-y-3">
+            {c.description && (
+              <p className="text-sm text-muted-foreground">{c.description}</p>
+            )}
+            {!c.videoUrl ? (
+              <p className="text-sm text-muted-foreground">No video URL configured.</p>
+            ) : isEmbed ? (
+              <div className="relative w-full rounded-md overflow-hidden" style={{ paddingBottom: '56.25%' }}>
+                <iframe
+                  src={c.videoUrl}
+                  className="absolute inset-0 w-full h-full"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  allowFullScreen
+                  title={lesson.title}
+                />
+              </div>
+            ) : (
               <video src={c.videoUrl} controls className="w-full rounded-md" />
-            ) : <p>No video URL.</p>}
+            )}
           </div>
         );
+      }
       case "audio":
         return (
-          <div data-testid="content-audio">
+          <div data-testid="content-audio" className="space-y-3">
+            {c.description && (
+              <p className="text-sm text-muted-foreground">{c.description}</p>
+            )}
             {c.audioUrl ? (
               <audio src={c.audioUrl} controls className="w-full" />
-            ) : <p>No audio URL.</p>}
+            ) : (
+              <p className="text-sm text-muted-foreground">No audio URL configured.</p>
+            )}
           </div>
         );
       case "quiz": {
