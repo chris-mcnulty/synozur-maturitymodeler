@@ -208,7 +208,6 @@ export default function Landing() {
               className="w-full h-full object-cover opacity-60"
               loading="eager"
               decoding="async"
-              fetchPriority="high"
             />
             <div className="absolute inset-0 bg-gradient-to-b from-black/40 to-black/60" />
           </div>
@@ -221,7 +220,6 @@ export default function Landing() {
                 className="h-16 sm:h-24 md:h-[7.5rem] lg:h-36 w-auto object-contain"
                 loading="eager"
                 decoding="async"
-                fetchPriority="high"
                 data-testid="img-orion-logo"
               />
             </div>
