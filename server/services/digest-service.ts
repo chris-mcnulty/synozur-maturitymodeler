@@ -286,25 +286,42 @@ export type DigestRunSummary = {
  * Run the monthly digest. Sends one email per eligible user who has at
  * least one completed assessment. Idempotent within a calendar month —
  * users with `lastMonthlyDigestSentAt` in the current month are skipped.
+ *
+ * ## Multi-instance duplicate-prevention strategy
+ *
+ * We use TWO independent layers so that no single failure mode causes
+ * duplicate emails:
+ *
+ * 1. **Session-level advisory lock (fast path)**
+ *    `pg_try_advisory_lock` is a non-blocking, session-scoped Postgres
+ *    advisory lock.  It is a cheap short-circuit: when two instances race
+ *    at startup only one acquires the lock and the other exits immediately
+ *    without touching the settings table.
+ *    Caveat: session-level locks are silently released if the DB connection
+ *    drops (e.g. network blip or pod restart mid-run).  That is why we do
+ *    NOT rely on this lock alone.
+ *
+ * 2. **Atomic compare-and-swap upsert (durable guard)**
+ *    Before starting work, every instance performs a conditional upsert:
+ *
+ *      INSERT INTO settings (key, value)
+ *      VALUES (DIGEST_LAST_RUN_KEY, {monthKey, status:'in_progress'})
+ *      ON CONFLICT (key) DO UPDATE
+ *        SET value = EXCLUDED.value
+ *        WHERE (settings.value->>'monthKey') IS DISTINCT FROM $monthKey
+ *           OR (settings.value->>'status')   IS DISTINCT FROM 'in_progress'
+ *      RETURNING key
+ *
+ *    Postgres evaluates the WHERE inside a single atomic write.  If the
+ *    row is already 'in_progress' for the current month (set by a peer
+ *    instance milliseconds earlier) the UPDATE clause does NOT fire and
+ *    RETURNING returns 0 rows.  The instance that gets 0 rows back knows
+ *    it lost the race and exits without sending any emails.
+ *
+ *    This survives connection drops, pod restarts, and any number of
+ *    simultaneous instances because the atomicity is guaranteed by
+ *    Postgres row-level locking inside the single SQL statement.
  */
-// Postgres advisory lock key used to serialize digest runs across multiple
-// app instances. Two arbitrary 32-bit ints, hashed-style.
-const DIGEST_ADVISORY_LOCK_KEY_1 = 219734871;
-const DIGEST_ADVISORY_LOCK_KEY_2 = 1836018548;
-
-async function tryAcquireDigestLock(): Promise<boolean> {
-  const result = await db.execute(
-    sql`SELECT pg_try_advisory_lock(${DIGEST_ADVISORY_LOCK_KEY_1}::int, ${DIGEST_ADVISORY_LOCK_KEY_2}::int) AS locked`,
-  );
-  const row = (result as unknown as { rows: Array<{ locked: boolean }> }).rows?.[0];
-  return Boolean(row?.locked);
-}
-
-async function releaseDigestLock(): Promise<void> {
-  await db.execute(
-    sql`SELECT pg_advisory_unlock(${DIGEST_ADVISORY_LOCK_KEY_1}::int, ${DIGEST_ADVISORY_LOCK_KEY_2}::int)`,
-  );
-}
 
 export async function runMonthlyDigest(opts: { force?: boolean } = {}): Promise<DigestRunSummary> {
   const startedAt = new Date();
@@ -320,8 +337,16 @@ export async function runMonthlyDigest(opts: { force?: boolean } = {}): Promise<
     errors: [],
   };
 
-  // Serialize across instances. If another instance is running, bail out.
-  const gotLock = await tryAcquireDigestLock();
+  // Fast-path: session-level advisory lock. If another instance currently
+  // holds the lock we bail immediately without touching the settings table.
+  // Two arbitrary 32-bit ints used as a stable lock identity for this job.
+  const LOCK_KEY_1 = 219734871;
+  const LOCK_KEY_2 = 1836018548;
+  const lockResult = await db.execute(
+    sql`SELECT pg_try_advisory_lock(${LOCK_KEY_1}::int, ${LOCK_KEY_2}::int) AS locked`,
+  );
+  const lockRow = (lockResult as unknown as { rows: Array<{ locked: boolean }> }).rows?.[0];
+  const gotLock = Boolean(lockRow?.locked);
   if (!gotLock) {
     summary.errors.push('Another digest run is in progress (advisory lock held)');
     summary.finishedAt = new Date().toISOString();
@@ -331,7 +356,10 @@ export async function runMonthlyDigest(opts: { force?: boolean } = {}): Promise<
   try {
     return await runMonthlyDigestInner(summary, monthKey, opts);
   } finally {
-    await releaseDigestLock().catch(() => {});
+    // Release the session lock so it does not linger until connection close.
+    await db
+      .execute(sql`SELECT pg_advisory_unlock(${LOCK_KEY_1}::int, ${LOCK_KEY_2}::int)`)
+      .catch(() => {});
   }
 }
 
@@ -358,30 +386,57 @@ async function runMonthlyDigestInner(
     }
   }
 
-  // Write the "run started" marker BEFORE processing any users. If the server
-  // restarts mid-run, the next boot's tick() will see monthKey === currentMonth
-  // (status: in_progress) and skip triggering a fresh run entirely, preventing
-  // duplicate emails from repeated restarts.
-  const priorSetting = await db
-    .select()
-    .from(schema.settings)
-    .where(eq(schema.settings.key, DIGEST_LAST_RUN_KEY))
-    .limit(1)
-    .then(rows => rows[0]);
-  const priorValue = priorSetting?.value as DigestLastRunValue | undefined;
-  const priorStatus = priorValue?.status ?? 'none';
-
-  const inProgressValue: DigestLastRunValue = { monthKey, status: 'in_progress' };
-  await db
-    .insert(schema.settings)
-    .values({ key: DIGEST_LAST_RUN_KEY, value: inProgressValue })
-    .onConflictDoUpdate({
-      target: schema.settings.key,
-      set: { value: inProgressValue, updatedAt: new Date() },
-    });
-
-  const hadPriorInProgressForMonth = priorValue?.monthKey === monthKey && priorValue?.status === 'in_progress';
-  console.log('[Digest] Starting run', { monthKey, pid: process.pid, priorStatus, hadPriorInProgressForMonth });
+  // Durable guard: atomic compare-and-swap upsert.
+  //
+  // This is the second and decisive layer of multi-instance protection (the
+  // advisory lock above is the fast-path first layer, but it is session-scoped
+  // and can be silently released on connection drop).
+  //
+  // We INSERT the 'in_progress' marker with a conditional ON CONFLICT clause:
+  // the UPDATE only fires when the stored row is NOT already 'in_progress' for
+  // the current month.  Because Postgres evaluates the WHERE inside a single
+  // atomic write (using a row-level lock on the conflict target), exactly one
+  // racing instance will see a RETURNING row; all others get 0 rows back and
+  // must bail out.  This is safe across any number of simultaneous pods even
+  // after advisory lock loss.
+  //
+  // force=true bypasses this guard (admin-initiated re-runs) so that an
+  // operator can manually retrigger a digest that stalled mid-run.
+  if (!opts.force) {
+    const inProgressValue: DigestLastRunValue = { monthKey, status: 'in_progress' };
+    const cas = await db.execute(sql`
+      INSERT INTO settings (key, value, updated_at)
+      VALUES (
+        ${DIGEST_LAST_RUN_KEY},
+        ${JSON.stringify(inProgressValue)}::jsonb,
+        NOW()
+      )
+      ON CONFLICT (key) DO UPDATE
+        SET value      = EXCLUDED.value,
+            updated_at = NOW()
+        WHERE (settings.value->>'monthKey') IS DISTINCT FROM ${monthKey}
+           OR (settings.value->>'status')   IS DISTINCT FROM ${'in_progress'}
+      RETURNING key
+    `);
+    const wonRace = ((cas as unknown as { rows: unknown[] }).rows?.length ?? 0) > 0;
+    if (!wonRace) {
+      summary.errors.push(`Another instance already claimed the in_progress lock for ${monthKey} — skipping`);
+      summary.finishedAt = new Date().toISOString();
+      return summary;
+    }
+    console.log('[Digest] Starting run — acquired in_progress marker', { monthKey, pid: process.pid });
+  } else {
+    // force=true: write in_progress unconditionally so the status is visible.
+    const inProgressValue: DigestLastRunValue = { monthKey, status: 'in_progress' };
+    await db
+      .insert(schema.settings)
+      .values({ key: DIGEST_LAST_RUN_KEY, value: inProgressValue })
+      .onConflictDoUpdate({
+        target: schema.settings.key,
+        set: { value: inProgressValue, updatedAt: new Date() },
+      });
+    console.log('[Digest] Starting forced run', { monthKey, pid: process.pid });
+  }
 
   const baseUrl = getBaseUrl();
 
