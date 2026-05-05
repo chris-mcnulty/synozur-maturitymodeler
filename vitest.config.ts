@@ -10,7 +10,11 @@ export default defineConfig({
   },
   test: {
     environment: 'node',
-    include: ['tests/unit/**/*.test.ts', 'tests/integration/**/*.test.ts'],
+    include: [
+      'tests/unit/**/*.test.ts',
+      'tests/integration/**/*.test.ts',
+      'server/services/__tests__/**/*.test.ts',
+    ],
     exclude: ['tests/e2e/**', 'node_modules/**', 'dist/**'],
     globals: false,
     reporters: 'default',
