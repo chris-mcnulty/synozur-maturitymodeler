@@ -913,6 +913,26 @@ export default function Admin() {
     enabled: isAdminUser(currentUser),
   });
 
+  // Current digest run status (to detect stuck in_progress runs)
+  const { data: digestRunSetting, refetch: refetchDigestRunStatus } = useQuery<{ key: string; value: { monthKey: string; status?: string; summary?: any } }>({
+    queryKey: ['/api/settings/digest:lastRunMonth'],
+    enabled: isGlobalAdminUser(currentUser),
+    refetchInterval: 15000,
+  });
+  const digestRunStatus = digestRunSetting?.value;
+
+  const resetDigestMutation = useMutation({
+    mutationFn: () => apiRequest('/api/admin/digest/reset-status', 'POST', {}),
+    onSuccess: () => {
+      toast({ title: 'Digest run reset', description: 'The stuck in_progress marker has been cleared. The next scheduled run will proceed normally.' });
+      refetchDigestRunStatus();
+    },
+    onError: (err: any) => {
+      const msg = err?.message || 'Failed to reset digest status.';
+      toast({ title: 'Reset failed', description: msg, variant: 'destructive' });
+    },
+  });
+
   const bulkDigestMutation = useMutation({
     mutationFn: ({ optOut, tenantId }: { optOut: boolean; tenantId?: string | null }) =>
       apiRequest('/api/admin/users/bulk-digest-setting', 'POST', { optOut, tenantId: tenantId ?? null }),
@@ -3559,6 +3579,49 @@ export default function Admin() {
                     )}
                   </div>
                 </div>
+
+                {/* Digest run status — shows reset button when a run is stuck in_progress */}
+                {isGlobalAdminUser(currentUser) && digestRunStatus && (
+                  <div
+                    className={`mb-5 rounded-md border p-4 ${digestRunStatus.status === 'in_progress' ? 'border-orange-400 bg-orange-500/10' : 'bg-muted/30'}`}
+                    data-testid="panel-digest-run-status"
+                  >
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <div>
+                        <p className="text-sm font-medium">Current digest run status</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          Month key: <span className="font-mono">{digestRunStatus.monthKey}</span>
+                          {' · '}
+                          Status:{' '}
+                          <span className={`font-medium ${digestRunStatus.status === 'in_progress' ? 'text-orange-600 dark:text-orange-400' : digestRunStatus.status === 'complete' ? 'text-green-600 dark:text-green-400' : 'text-muted-foreground'}`}>
+                            {digestRunStatus.status ?? 'unknown'}
+                          </span>
+                        </p>
+                        {digestRunStatus.status === 'in_progress' && (
+                          <p className="text-xs text-orange-600 dark:text-orange-400 mt-1">
+                            This run appears stuck. Use the reset button to allow future scheduled runs to proceed.
+                          </p>
+                        )}
+                      </div>
+                      {digestRunStatus.status === 'in_progress' && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          data-testid="button-digest-reset-status"
+                          disabled={resetDigestMutation.isPending}
+                          onClick={() => {
+                            if (confirm('Reset the stuck in_progress digest marker?\n\nThis will allow the next scheduled run to proceed. No emails will be sent automatically — the next scheduled tick will trigger the run as normal.')) {
+                              resetDigestMutation.mutate();
+                            }
+                          }}
+                        >
+                          <Clock className="mr-1.5 h-3.5 w-3.5" />
+                          Reset stuck run
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                )}
 
                 {usersLoading ? (
                   <div className="rounded-md border overflow-x-auto" data-testid="loading-users">

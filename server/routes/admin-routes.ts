@@ -730,6 +730,61 @@ export function registerAdminRoutes(app: Express) {
     }
   });
 
+  // Reset a stuck 'in_progress' digest run marker (global admin only).
+  // If a digest run crashes mid-way the marker stays as 'in_progress'
+  // indefinitely, blocking all future scheduled runs for that month.
+  // This endpoint clears the marker so the next scheduled tick can proceed.
+  app.post("/api/admin/digest/reset-status", ensureGlobalAdmin, async (req, res) => {
+    try {
+      const DIGEST_LAST_RUN_KEY = 'digest:lastRunMonth';
+
+      const [setting] = await db
+        .select()
+        .from(schema.settings)
+        .where(eq(schema.settings.key, DIGEST_LAST_RUN_KEY))
+        .limit(1);
+
+      const current = setting?.value as { monthKey: string; status?: string } | undefined;
+
+      if (!current) {
+        return res.status(404).json({ error: 'No digest run record found — nothing to reset.' });
+      }
+
+      if (current.status !== 'in_progress') {
+        return res.status(409).json({
+          error: `Digest status is '${current.status ?? 'unknown'}', not 'in_progress'. No reset needed.`,
+          current,
+        });
+      }
+
+      // Reset to the month before the stuck run's recorded monthKey (not wall-clock
+      // now) so the result is correct even if this endpoint is called days later.
+      const [stuckYear, stuckMonth] = current.monthKey.split('-').map(Number);
+      const prevMonthDate = new Date(Date.UTC(stuckYear, stuckMonth - 2, 1)); // -2 because month is 1-based
+      const prevMonthKey = `${prevMonthDate.getUTCFullYear()}-${String(prevMonthDate.getUTCMonth() + 1).padStart(2, '0')}`;
+      const resetValue = { monthKey: prevMonthKey, status: 'complete' as const };
+
+      await db
+        .update(schema.settings)
+        .set({ value: resetValue, updatedAt: new Date() })
+        .where(eq(schema.settings.key, DIGEST_LAST_RUN_KEY));
+
+      const adminUser = req.user!;
+      console.log('[Digest] Stuck in_progress marker reset by admin', {
+        adminId: adminUser.id,
+        adminUsername: adminUser.username,
+        previousMonthKey: current.monthKey,
+        resetToMonthKey: prevMonthKey,
+        pid: process.pid,
+      });
+
+      res.json({ success: true, previous: current, reset: resetValue });
+    } catch (error) {
+      console.error('Failed to reset digest status:', error);
+      res.status(500).json({ error: 'Failed to reset digest status' });
+    }
+  });
+
   // Bulk update monthly digest opt-out for all users or a specific tenant.
   // optOut=true  => disable digest for those users
   // optOut=false => re-enable digest for those users
