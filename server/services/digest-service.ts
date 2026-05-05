@@ -12,7 +12,7 @@ import { getBaseUrl } from '../config/environment';
 
 type SendGridClient = typeof sgMail;
 
-type DigestLastRunValue = { monthKey: string; summary: DigestRunSummary };
+type DigestLastRunValue = { monthKey: string; status?: 'in_progress' | 'complete'; summary?: DigestRunSummary };
 
 const DIGEST_LAST_RUN_KEY = 'digest:lastRunMonth';
 
@@ -342,6 +342,8 @@ async function runMonthlyDigestInner(
 ): Promise<DigestRunSummary> {
   // Re-check the persisted month inside the lock so we never double-send if
   // a peer instance just finished while we were waiting to acquire it.
+  // Both 'in_progress' and 'complete' statuses count as already handled for
+  // this month — this prevents a restart mid-run from triggering a new run.
   if (!opts.force) {
     const [setting] = await db
       .select()
@@ -350,11 +352,36 @@ async function runMonthlyDigestInner(
       .limit(1);
     const last = setting?.value as DigestLastRunValue | undefined;
     if (last?.monthKey === monthKey) {
-      summary.errors.push(`Already ran for ${monthKey}`);
+      summary.errors.push(`Already ran for ${monthKey} (status: ${last?.status ?? 'unknown'})`);
       summary.finishedAt = new Date().toISOString();
       return summary;
     }
   }
+
+  // Write the "run started" marker BEFORE processing any users. If the server
+  // restarts mid-run, the next boot's tick() will see monthKey === currentMonth
+  // (status: in_progress) and skip triggering a fresh run entirely, preventing
+  // duplicate emails from repeated restarts.
+  const priorSetting = await db
+    .select()
+    .from(schema.settings)
+    .where(eq(schema.settings.key, DIGEST_LAST_RUN_KEY))
+    .limit(1)
+    .then(rows => rows[0]);
+  const priorValue = priorSetting?.value as DigestLastRunValue | undefined;
+  const priorStatus = priorValue?.status ?? 'none';
+
+  const inProgressValue: DigestLastRunValue = { monthKey, status: 'in_progress' };
+  await db
+    .insert(schema.settings)
+    .values({ key: DIGEST_LAST_RUN_KEY, value: inProgressValue })
+    .onConflictDoUpdate({
+      target: schema.settings.key,
+      set: { value: inProgressValue, updatedAt: new Date() },
+    });
+
+  const hadPriorInProgressForMonth = priorValue?.monthKey === monthKey && priorValue?.status === 'in_progress';
+  console.log('[Digest] Starting run', { monthKey, pid: process.pid, priorStatus, hadPriorInProgressForMonth });
 
   const baseUrl = getBaseUrl();
 
@@ -377,16 +404,18 @@ async function runMonthlyDigestInner(
 
   for (const user of users) {
     try {
-      // Skip if already sent this month (idempotency) unless forced.
-      if (!opts.force) {
-        const [u] = await db
-          .select({ last: schema.users.lastMonthlyDigestSentAt })
-          .from(schema.users)
-          .where(eq(schema.users.id, user.id))
-          .limit(1);
-        if (u?.last && currentMonthKey(u.last) === monthKey) {
-          continue;
-        }
+      // Always check per-user idempotency — force=true only bypasses the
+      // global month check above, never the per-user stamp. This prevents
+      // a mis-clicked admin force from re-blasting users already emailed
+      // this month. To re-send to a specific user, clear their
+      // lastMonthlyDigestSentAt timestamp directly in the database.
+      const [u] = await db
+        .select({ last: schema.users.lastMonthlyDigestSentAt })
+        .from(schema.users)
+        .where(eq(schema.users.id, user.id))
+        .limit(1);
+      if (u?.last && currentMonthKey(u.last) === monthKey) {
+        continue;
       }
 
       const completedRows = await loadCompletedRowsForUser(user.id);
@@ -461,20 +490,32 @@ async function runMonthlyDigestInner(
 
       const from = await buildEmailFrom(fromEmail, user.tenantId);
 
-      await sgClient.send({
-        to: user.email,
-        from,
-        subject,
-        text,
-        html,
-      });
-
+      // Stamp the user BEFORE sending. At-most-once delivery is the correct
+      // trade-off: a crash after the DB write but before the email sends
+      // causes an under-send (one missed email) rather than an over-send
+      // (duplicate emails on the next run). We do NOT roll back on send
+      // failure because rolling back would re-enable duplicates.
       await db
         .update(schema.users)
         .set({ lastMonthlyDigestSentAt: new Date() })
         .where(eq(schema.users.id, user.id));
 
-      summary.sent += 1;
+      try {
+        await sgClient.send({
+          to: user.email,
+          from,
+          subject,
+          text,
+          html,
+        });
+        summary.sent += 1;
+      } catch (sendErr) {
+        // Timestamp is already committed — do not roll back.
+        summary.failed += 1;
+        const msg = `${user.email}: send failed: ${(sendErr as Error).message}`;
+        summary.errors.push(msg);
+        console.error('[Digest] Send failed for', user.email, sendErr);
+      }
     } catch (err) {
       summary.failed += 1;
       const msg = `${user.email}: ${(err as Error).message}`;
@@ -483,7 +524,7 @@ async function runMonthlyDigestInner(
     }
   }
 
-  const lastRunValue: DigestLastRunValue = { monthKey, summary };
+  const lastRunValue: DigestLastRunValue = { monthKey, status: 'complete', summary };
   await db
     .insert(schema.settings)
     .values({ key: DIGEST_LAST_RUN_KEY, value: lastRunValue })

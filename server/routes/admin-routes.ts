@@ -712,6 +712,12 @@ export function registerAdminRoutes(app: Express) {
 
   // Manually trigger the monthly Insights digest (global admin only).
   // Useful for testing and to recover from a missed scheduled run.
+  // Trigger monthly digest. force=true bypasses the global month-level
+  // idempotency check (useful when the stored monthKey is stale), but it
+  // does NOT bypass the per-user lastMonthlyDigestSentAt guard — users who
+  // were already emailed this month are always skipped regardless of force.
+  // To re-send to a specific user, clear their lastMonthlyDigestSentAt
+  // timestamp directly in the database.
   app.post("/api/admin/digest/run-monthly", ensureGlobalAdmin, async (req, res) => {
     try {
       const force = req.query.force === 'true' || req.body?.force === true;
