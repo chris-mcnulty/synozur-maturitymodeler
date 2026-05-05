@@ -1,0 +1,187 @@
+{
+  "format": "orion-course",
+  "version": "1",
+  "exportedAt": "2026-05-05T00:00:00Z",
+  "course": {
+    "title": "AI Skills Maturity Fundamentals (SharePoint & M365)",
+    "slug": "ai-skills-maturity-fundamentals-sharepoint",
+    "description": "A practical introduction to AI skills maturity — what it means, how it applies to SharePoint and Microsoft 365, how to assess real-world capability, and how to build a credible skills uplift roadmap that supports Copilot and agent-based AI.",
+    "summary": "Learn how to assess and improve AI skills maturity across SharePoint and Microsoft 365.",
+    "imageUrl": null,
+    "estimatedMinutes": 50,
+    "status": "published",
+    "visibility": "public",
+    "passingScore": 75,
+    "certificateEnabled": true,
+    "tags": ["ai skills", "sharepoint", "copilot readiness", "microsoft 365", "maturity models"],
+    "modules": [
+      {
+        "title": "What Is AI Skills Maturity?",
+        "description": "Understand AI skills maturity and why it matters more than AI feature adoption.",
+        "order": 0,
+        "lessons": [
+          {
+            "title": "The Big Idea",
+            "type": "rich_text",
+            "order": 0,
+            "estimatedMinutes": 6,
+            "required": true,
+            "content": {
+              "html": "<h2>AI Success Is a Skills Problem</h2><p>Most organisations approach AI through tools: Copilot licenses, new features, and shiny dashboards. But sustained value from AI comes from <strong>skills and behaviours</strong>, not from access.</p><p>AI skills maturity describes how effectively people across the organisation can:</p><ul><li>Frame good questions</li><li>Work with AI-generated output critically</li><li>Apply AI safely within governance boundaries</li><li>Embed AI into everyday work patterns</li></ul><p>In SharePoint and Microsoft 365, this maturity determines whether Copilot becomes a productivity multiplier—or an expensive novelty.</p>"
+            }
+          },
+          {
+            "title": "From Digital Skills to AI Fluency",
+            "type": "rich_text",
+            "order": 1,
+            "estimatedMinutes": 5,
+            "required": true,
+            "content": {
+              "html": "<h2>The Evolution of Workplace Capability</h2><p>AI skills maturity builds on earlier capability waves:</p><ol><li><strong>Digital Literacy</strong> — using tools correctly</li><li><strong>Information Management</strong> — structuring, securing, and governing content</li><li><strong>AI Fluency</strong> — collaborating with AI systems effectively</li></ol><p>SharePoint plays a critical role because it is where organisational knowledge lives. Poor information practices directly limit AI effectiveness.</p>"
+            }
+          },
+          {
+            "title": "Module 1 Check",
+            "type": "quiz",
+            "order": 2,
+            "estimatedMinutes": 3,
+            "required": true,
+            "content": {
+              "passingScore": 67,
+              "questions": [
+                {
+                  "id": "q1",
+                  "text": "Why does AI value depend more on skills than on tools?",
+                  "type": "single",
+                  "options": [
+                    { "id": "a", "text": "AI tools work automatically without user input" },
+                    { "id": "b", "text": "Skills determine how effectively people ask, interpret, and act on AI output" },
+                    { "id": "c", "text": "AI tools only work in IT departments" },
+                    { "id": "d", "text": "Licensing determines outcomes" }
+                  ],
+                  "correctIds": ["b"],
+                  "explanation": "AI amplifies human capability. Without skills and judgement, output quality and trust collapse."
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "title": "AI Skills Maturity in SharePoint",
+        "description": "Explore what AI maturity looks like across content, people, and governance.",
+        "order": 1,
+        "lessons": [
+          {
+            "title": "The Five-Level View",
+            "type": "rich_text",
+            "order": 0,
+            "estimatedMinutes": 7,
+            "required": true,
+            "content": {
+              "html": "<h2>Typical AI Skills Maturity Levels</h2><table style='width:100%;border-collapse:collapse'><thead><tr><th>Level</th><th>Description</th></tr></thead><tbody><tr><td>Initial</td><td>Ad-hoc Copilot use; low trust; inconsistent results</td></tr><tr><td>Developing</td><td>Basic prompting skills; experimentation with guardrails</td></tr><tr><td>Defined</td><td>Shared practices; supported use cases; training in place</td></tr><tr><td>Managed</td><td>Measured adoption; role-based enablement; governance aligned</td></tr><tr><td>Optimising</td><td>Continuous learning; AI embedded in business processes</td></tr></tbody></table><p>Most organisations discover that their technical readiness is ahead of their skills maturity.</p>"
+            }
+          },
+          {
+            "title": "What SharePoint Signals About Skills",
+            "type": "rich_text",
+            "order": 1,
+            "estimatedMinutes": 6,
+            "required": true,
+            "content": {
+              "html": "<h2>Reading the Environment</h2><p>Your SharePoint environment reveals AI readiness signals:</p><ul><li>Content sprawl vs. structured knowledge</li><li>Metadata consistency and ownership</li><li>Permission hygiene and sensitivity labels</li><li>User confidence in search and discovery</li></ul><p>AI systems reason over what they can see. Skills and structure are inseparable.</p>"
+            }
+          },
+          {
+            "title": "Module 2 Check",
+            "type": "quiz",
+            "order": 2,
+            "estimatedMinutes": 3,
+            "required": true,
+            "content": {
+              "passingScore": 67,
+              "questions": [
+                {
+                  "id": "q1",
+                  "text": "Which SharePoint characteristic most directly affects Copilot output quality?",
+                  "type": "single",
+                  "options": [
+                    { "id": "a", "text": "Site branding" },
+                    { "id": "b", "text": "Metadata, permissions, and content structure" },
+                    { "id": "c", "text": "Storage quotas" },
+                    { "id": "d", "text": "Theme colors" }
+                  ],
+                  "correctIds": ["b"],
+                  "explanation": "AI depends on content quality, signals, and access—not cosmetic configuration."
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "title": "Using an Orion AI Skills Assessment",
+        "description": "Learn how to assess skills maturity honestly and turn results into action.",
+        "order": 2,
+        "lessons": [
+          {
+            "title": "Assessing Skills, Not Optimism",
+            "type": "rich_text",
+            "order": 0,
+            "estimatedMinutes": 6,
+            "required": true,
+            "content": {
+              "html": "<h2>Honest Signals Matter</h2><p>AI skills assessments should focus on <em>consistent behaviour</em>, not pilot success or isolated champions.</p><p>Score based on what most users do most of the time—not what is technically possible.</p>"
+            }
+          },
+          {
+            "title": "From Scores to Skills Roadmap",
+            "type": "rich_text",
+            "order": 1,
+            "estimatedMinutes": 6,
+            "required": true,
+            "content": {
+              "html": "<h2>Turning Insight into Action</h2><p>Effective AI skills roadmaps prioritise:</p><ul><li>High-impact roles first</li><li>Real work scenarios, not generic training</li><li>Reinforcement through governance and tooling</li></ul><p>The goal is confidence, judgement, and habit—not certification.</p>"
+            }
+          },
+          {
+            "title": "Final Assessment",
+            "type": "quiz",
+            "order": 2,
+            "estimatedMinutes": 5,
+            "required": true,
+            "content": {
+              "passingScore": 75,
+              "questions": [
+                {
+                  "id": "q1",
+                  "text": "What is the primary purpose of an AI skills maturity assessment?",
+                  "type": "single",
+                  "options": [
+                    { "id": "a", "text": "To justify Copilot licensing costs" },
+                    { "id": "b", "text": "To identify gaps and prioritise skill-building actions" },
+                    { "id": "c", "text": "To rank teams against each other" },
+                    { "id": "d", "text": "To replace governance planning" }
+                  ],
+                  "correctIds": ["b"],
+                  "explanation": "Maturity assessments exist to drive focused improvement, not comparison."
+                }
+              ]
+            }
+          },
+          {
+            "title": "Course Completion Attestation",
+            "type": "attestation",
+            "order": 3,
+            "estimatedMinutes": 1,
+            "required": true,
+            "content": {
+              "statement": "I confirm that I understand AI skills maturity in the context of SharePoint and Microsoft 365 and can apply these principles when assessing or improving AI capability in my organisation.",
+              "requireTyped": true
+            }
+          }
+        ]
+      }
+    ]
+  }
+}
