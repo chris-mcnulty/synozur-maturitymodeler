@@ -14,7 +14,7 @@ type SendGridClient = typeof sgMail;
 
 type DigestLastRunValue = { monthKey: string; status?: 'in_progress' | 'complete'; summary?: DigestRunSummary };
 
-const DIGEST_LAST_RUN_KEY = 'digest:lastRunMonth';
+export const DIGEST_LAST_RUN_KEY = 'digest:lastRunMonth';
 
 function escapeHtml(s: string): string {
   return String(s)

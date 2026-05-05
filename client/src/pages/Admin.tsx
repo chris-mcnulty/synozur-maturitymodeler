@@ -913,13 +913,37 @@ export default function Admin() {
     enabled: isAdminUser(currentUser),
   });
 
-  // Current digest run status (to detect stuck in_progress runs)
-  const { data: digestRunSetting, refetch: refetchDigestRunStatus } = useQuery<{ key: string; value: { monthKey: string; status?: string; summary?: any } }>({
-    queryKey: ['/api/settings/digest:lastRunMonth'],
+  // Digest run status
+  const { data: digestRunStatus, refetch: refetchDigestRunStatus, isLoading: digestRunStatusLoading } = useQuery<{
+    monthKey: string | null;
+    status: 'in_progress' | 'complete' | 'not_started';
+    summary: {
+      startedAt: string;
+      finishedAt: string;
+      monthKey: string;
+      candidates: number;
+      sent: number;
+      skippedNoAssessments: number;
+      failed: number;
+      errors: string[];
+    } | null;
+    updatedAt?: string;
+  }>({
+    queryKey: ['/api/admin/digest/status'],
     enabled: isGlobalAdminUser(currentUser),
-    refetchInterval: 15000,
+    refetchInterval: (query) => query.state.data?.status === 'in_progress' ? 5000 : false,
   });
-  const digestRunStatus = digestRunSetting?.value;
+
+  const runDigestMutation = useMutation({
+    mutationFn: ({ force }: { force?: boolean }) =>
+      apiRequest('/api/admin/digest/run-monthly', 'POST', { force: force ?? false }),
+    onSuccess: () => {
+      toast({ title: 'Digest run started', description: 'The monthly digest is now running. Refresh in a moment to see results.' });
+      refetchDigestRunStatus();
+      refetchDigestStats();
+    },
+    onError: () => toast({ title: 'Error', description: 'Failed to trigger the digest run.', variant: 'destructive' }),
+  });
 
   const resetDigestMutation = useMutation({
     mutationFn: () => apiRequest('/api/admin/digest/reset-status', 'POST', {}),
@@ -3580,44 +3604,129 @@ export default function Admin() {
                   </div>
                 </div>
 
-                {/* Digest run status — shows reset button when a run is stuck in_progress */}
-                {isGlobalAdminUser(currentUser) && digestRunStatus && (
+                {/* Digest run status + manual trigger + reset for stuck runs */}
+                {isGlobalAdminUser(currentUser) && (
                   <div
-                    className={`mb-5 rounded-md border p-4 ${digestRunStatus.status === 'in_progress' ? 'border-orange-400 bg-orange-500/10' : 'bg-muted/30'}`}
+                    className={`mb-5 rounded-md border p-4 ${digestRunStatus?.status === 'in_progress' ? 'border-orange-400 bg-orange-500/10' : 'bg-muted/30'}`}
                     data-testid="panel-digest-run-status"
                   >
-                    <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div className="flex flex-wrap items-start justify-between gap-3">
                       <div>
-                        <p className="text-sm font-medium">Current digest run status</p>
+                        <p className="text-sm font-medium">Digest Run Status</p>
                         <p className="text-xs text-muted-foreground mt-0.5">
-                          Month key: <span className="font-mono">{digestRunStatus.monthKey}</span>
-                          {' · '}
-                          Status:{' '}
-                          <span className={`font-medium ${digestRunStatus.status === 'in_progress' ? 'text-orange-600 dark:text-orange-400' : digestRunStatus.status === 'complete' ? 'text-green-600 dark:text-green-400' : 'text-muted-foreground'}`}>
-                            {digestRunStatus.status ?? 'unknown'}
-                          </span>
+                          Current month: <span className="font-mono">{new Date().toISOString().slice(0, 7)}</span>
                         </p>
-                        {digestRunStatus.status === 'in_progress' && (
+                        {digestRunStatus?.status === 'in_progress' && (
                           <p className="text-xs text-orange-600 dark:text-orange-400 mt-1">
                             This run appears stuck. Use the reset button to allow future scheduled runs to proceed.
                           </p>
                         )}
                       </div>
-                      {digestRunStatus.status === 'in_progress' && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          data-testid="button-digest-reset-status"
-                          disabled={resetDigestMutation.isPending}
-                          onClick={() => {
-                            if (confirm('Reset the stuck in_progress digest marker?\n\nThis will allow the next scheduled run to proceed. No emails will be sent automatically — the next scheduled tick will trigger the run as normal.')) {
-                              resetDigestMutation.mutate();
-                            }
-                          }}
-                        >
-                          <Clock className="mr-1.5 h-3.5 w-3.5" />
-                          Reset stuck run
-                        </Button>
+                      <div className="flex flex-wrap gap-2">
+                        {digestRunStatus?.status === 'in_progress' && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            data-testid="button-digest-reset-status"
+                            disabled={resetDigestMutation.isPending}
+                            onClick={() => {
+                              if (confirm('Reset the stuck in_progress digest marker?\n\nThis will allow the next scheduled run to proceed. No emails will be sent automatically — the next scheduled tick will trigger the run as normal.')) {
+                                resetDigestMutation.mutate();
+                              }
+                            }}
+                          >
+                            <Clock className="mr-1.5 h-3.5 w-3.5" />
+                            Reset stuck run
+                          </Button>
+                        )}
+                        {(() => {
+                          const currentMonth = new Date().toISOString().slice(0, 7);
+                          const isComplete = digestRunStatus?.status === 'complete' && digestRunStatus?.monthKey === currentMonth;
+                          const isRunning = digestRunStatus?.status === 'in_progress';
+                          return (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              data-testid="button-run-digest"
+                              disabled={isComplete || isRunning || runDigestMutation.isPending}
+                              onClick={() => {
+                                if (confirm('Manually trigger the monthly digest email run for all eligible users?')) {
+                                  runDigestMutation.mutate({});
+                                }
+                              }}
+                            >
+                              <Bell className="mr-1.5 h-3.5 w-3.5" />
+                              {isRunning ? 'Running…' : isComplete ? 'Already sent this month' : 'Run Digest Now'}
+                            </Button>
+                          );
+                        })()}
+                      </div>
+                    </div>
+
+                    <div className="mt-3 border-t pt-3">
+                      {digestRunStatusLoading ? (
+                        <div className="space-y-2" data-testid="loading-digest-status">
+                          <Skeleton className="h-4 w-48" />
+                          <Skeleton className="h-4 w-64" />
+                        </div>
+                      ) : !digestRunStatus || digestRunStatus.status === 'not_started' ? (
+                        <div className="flex flex-wrap items-center gap-2" data-testid="digest-status-not-started">
+                          <Badge variant="secondary" className="text-xs">Not Started</Badge>
+                          <span className="text-xs text-muted-foreground">No digest run recorded yet for any month.</span>
+                        </div>
+                      ) : (
+                        <div className="space-y-2">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="text-xs text-muted-foreground">Last run month:</span>
+                            <span className="font-mono text-xs" data-testid="text-digest-month-key">{digestRunStatus.monthKey}</span>
+                            {digestRunStatus.status === 'complete' && (
+                              <Badge variant="default" className="text-xs" data-testid="badge-digest-status-complete">Complete</Badge>
+                            )}
+                            {digestRunStatus.status === 'in_progress' && (
+                              <Badge variant="secondary" className="text-xs" data-testid="badge-digest-status-in-progress">In Progress</Badge>
+                            )}
+                          </div>
+
+                          {digestRunStatus.summary && (
+                            <div className="grid grid-cols-2 gap-x-6 gap-y-1 text-xs sm:grid-cols-4">
+                              <div data-testid="text-digest-candidates">
+                                <span className="text-muted-foreground">Candidates: </span>
+                                <span className="font-medium">{digestRunStatus.summary.candidates}</span>
+                              </div>
+                              <div data-testid="text-digest-sent">
+                                <span className="text-muted-foreground">Sent: </span>
+                                <span className="font-medium text-green-600 dark:text-green-400">{digestRunStatus.summary.sent}</span>
+                              </div>
+                              <div data-testid="text-digest-failed">
+                                <span className="text-muted-foreground">Failed: </span>
+                                <span className="font-medium text-destructive">{digestRunStatus.summary.failed}</span>
+                              </div>
+                              <div data-testid="text-digest-skipped">
+                                <span className="text-muted-foreground">Skipped: </span>
+                                <span className="font-medium">{digestRunStatus.summary.skippedNoAssessments}</span>
+                              </div>
+                            </div>
+                          )}
+
+                          {digestRunStatus.summary?.errors && digestRunStatus.summary.errors.length > 0 && (
+                            <div className="mt-2" data-testid="list-digest-errors">
+                              <p className="text-xs font-medium text-destructive mb-1">Errors ({digestRunStatus.summary.errors.length}):</p>
+                              <ul className="space-y-0.5">
+                                {digestRunStatus.summary.errors.map((err, i) => (
+                                  <li key={i} className="text-xs text-destructive bg-destructive/5 rounded px-2 py-0.5" data-testid={`digest-error-${i}`}>
+                                    {err}
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+
+                          {digestRunStatus.updatedAt && (
+                            <p className="text-xs text-muted-foreground" data-testid="text-digest-updated-at">
+                              Last updated: {new Date(digestRunStatus.updatedAt).toLocaleString()}
+                            </p>
+                          )}
+                        </div>
                       )}
                     </div>
                   </div>

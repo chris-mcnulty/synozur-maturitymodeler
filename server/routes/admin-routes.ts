@@ -710,6 +710,33 @@ export function registerAdminRoutes(app: Express) {
   // CROSS-MODEL INSIGHTS & TRENDS (Task #11)
   // ===========================================================================
 
+  // Return the current digest run state stored in the settings table.
+  // This lets admins see whether the digest has run (or is running) for the
+  // current month without querying the database directly.
+  app.get("/api/admin/digest/status", ensureGlobalAdmin, async (req, res) => {
+    try {
+      const { DIGEST_LAST_RUN_KEY } = await import('../services/digest-service');
+      const [setting] = await db
+        .select()
+        .from(schema.settings)
+        .where(eq(schema.settings.key, DIGEST_LAST_RUN_KEY))
+        .limit(1);
+      if (!setting) {
+        return res.json({ status: 'not_started', monthKey: null, summary: null });
+      }
+      const value = setting.value as { monthKey?: string; status?: string; summary?: unknown };
+      return res.json({
+        monthKey: value.monthKey ?? null,
+        status: value.status ?? 'not_started',
+        summary: value.summary ?? null,
+        updatedAt: setting.updatedAt,
+      });
+    } catch (error) {
+      console.error('Failed to fetch digest status:', error);
+      res.status(500).json({ error: 'Failed to fetch digest status' });
+    }
+  });
+
   // Manually trigger the monthly Insights digest (global admin only).
   // Useful for testing and to recover from a missed scheduled run.
   // Trigger monthly digest. force=true bypasses the global month-level
