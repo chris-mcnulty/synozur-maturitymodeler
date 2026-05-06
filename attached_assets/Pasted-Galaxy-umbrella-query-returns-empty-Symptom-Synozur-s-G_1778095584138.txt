@@ -1,0 +1,90 @@
+Galaxy umbrella query returns empty
+Symptom
+Synozur's Galaxy portal calls Nebula's umbrella endpoints with the issued umbrella key and a ?domain= parameter:
+
+GET {NEBULA_BASE_URL}/api/galaxy/reports?domain=synozur.com&limit=20
+GET {NEBULA_BASE_URL}/api/galaxy/workspaces?domain=synozur.com
+
+Both return HTTP 200 with empty data:
+
+{ "data": [], "page": 1, "limit": 20, "total": 0 }
+{ "data": [] }
+
+We confirmed:
+
+The umbrella API key authenticates fine (no 401/403).
+We tried domain=synozur.com, synozur.io, chrismcnulty.com, mcnulty.com, test.com — all return total: 0.
+A request with no domain param returns {"error":"domain_required"}, so the parameter is being read.
+The user reports that Nebula already has many workspaces defined, so this is almost certainly a filter / scoping issue on the Nebula side, not "no data."
+
+Please diagnose and report back
+Run these against the Nebula DB and paste the results:
+
+1. Are there any workspaces at all, and what state are they in?
+SELECT status, COUNT(*) AS n
+FROM workspaces
+GROUP BY status
+ORDER BY n DESC;
+
+2. Would the workspaces directory match anything for synozur.com?
+Whatever field your ?domain= filter uses on /api/galaxy/workspaces, run the equivalent of:
+
+-- adjust column / join to whatever your filter actually checks
+SELECT COUNT(*) AS workspaces_for_synozur
+FROM workspaces w
+WHERE <your domain-filter predicate for 'synozur.com'>;
+
+Then independently:
+
+-- is there ANY synozur.com email anywhere?
+SELECT COUNT(DISTINCT w.id) AS workspaces_with_synozur_participant
+FROM workspaces w
+JOIN participants p ON p.workspace_id = w.id
+WHERE lower(p.email) LIKE '%@synozur.com';
+SELECT COUNT(*) AS workspaces_owned_by_synozur
+FROM workspaces w
+JOIN users u ON u.id = w.owner_user_id
+WHERE lower(u.email) LIKE '%@synozur.com';
+
+3. Would the reports list match anything?
+-- whatever your /api/galaxy/reports query is, run it manually with domain='synozur.com'
+-- and tell us the count.
+-- Also: how many workspaces are eligible for "reports" (closed / report generated)?
+SELECT
+  COUNT(*) FILTER (WHERE status IN ('closed','reported','completed')) AS closed_or_reported,
+  COUNT(*) FILTER (WHERE report_generated_at IS NOT NULL)             AS report_generated,
+  COUNT(*) FILTER (WHERE closed_at IS NOT NULL)                       AS closed
+FROM workspaces;
+
+4. Verify the umbrella key's scope
+In your umbrella-keys / api-keys table, dump the row for the key Synozur is using (mask the secret — we just need scope/tenant fields):
+
+SELECT id, label, allowed_domains, tenant_id, allowed_workspace_ids, is_active, created_at
+FROM galaxy_umbrella_keys -- whatever the table is called
+WHERE id = '<synozur key id>';
+
+If allowed_domains is non-empty and doesn't contain synozur.com, that's the bug — the key is scoped narrower than we expect.
+
+5. Show us the exact filter your endpoint applies
+In /api/galaxy/workspaces and /api/galaxy/reports, paste the few lines where the domain query param turns into a SQL/ORM filter. Specifically we need to know:
+
+Is domain matched case-insensitively?
+Does it match against owner email, participant email, explicit workspace.client_domain column, or an org → domain join?
+Is there an additional implicit filter (e.g. is_demo = false, tenant_id = key.tenant_id, deleted_at IS NULL) that could be eliminating everything?
+What we suspect
+One of these:
+
+(A) Reports endpoint is filtering on a closed/reported status that no workspaces are actually in yet. (Plausible for reports — but workspaces directory is also empty, so probably not the only issue.)
+(B) The ?domain= filter is matching against a column that's NULL/empty on existing workspaces. E.g. you added a client_domain column for the umbrella feature but never backfilled it on legacy workspaces, so every umbrella query returns zero.
+(C) The umbrella key's allowed_domains doesn't include synozur.com. Easy to fix: add it.
+(D) The endpoint has a tenant scoping clause that excludes Synozur's workspaces from the umbrella query (e.g. an internal-tenant guard).
+(B) is the most likely cause given that every domain we tried returned zero, including ones that definitely have data.
+
+What we need back
+Once you've run the queries above, please tell us:
+
+Counts from queries 1–3.
+The umbrella-key row from query 4 (with secret masked).
+The exact filter snippet from query 5.
+Your hypothesis + the fix (data backfill, code change, key reconfig — whatever it turns out to be).
+Once Synozur workspaces show up in /api/galaxy/workspaces?domain=synozur.com, the Galaxy portal will render them automatically — no Synozur-side change required.
