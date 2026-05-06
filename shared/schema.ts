@@ -1122,6 +1122,34 @@ export const galaxyRateLimits = pgTable("galaxy_rate_limits", {
   resetAt: timestamp("reset_at").notNull(),
 });
 
+// ========== GALAXY: PORTAL KEYS ==========
+// Static API keys issued to external portals (e.g. synozur-baseline marketing site).
+// Unlike user-scoped OAuth tokens, these are domain-scoped umbrella keys that
+// expose aggregate/tenant-level data without requiring a per-user login.
+export const galaxyPortalKeys = pgTable("galaxy_portal_keys", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  label: text("label").notNull(),
+  keyHash: text("key_hash").notNull().unique(), // SHA-256 of the raw secret
+  allowedDomains: text("allowed_domains").array().notNull().default(sql`'{}'::text[]`),
+  allowedOrigins: text("allowed_origins").array().notNull().default(sql`'{}'::text[]`),
+  isActive: boolean("is_active").notNull().default(true),
+  createdBy: varchar("created_by").references(() => users.id, { onDelete: "set null" }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  lastUsedAt: timestamp("last_used_at"),
+}, (table) => ({
+  keyHashIdx: index("idx_galaxy_portal_keys_hash").on(table.keyHash),
+  activeIdx: index("idx_galaxy_portal_keys_active").on(table.isActive),
+}));
+
+export const insertGalaxyPortalKeySchema = createInsertSchema(galaxyPortalKeys).omit({
+  id: true,
+  keyHash: true,
+  createdAt: true,
+  lastUsedAt: true,
+});
+export type GalaxyPortalKey = typeof galaxyPortalKeys.$inferSelect;
+export type InsertGalaxyPortalKey = z.infer<typeof insertGalaxyPortalKeySchema>;
+
 export const insertGalaxyExposurePolicySchema = createInsertSchema(galaxyExposurePolicies).omit({
   id: true,
   createdAt: true,

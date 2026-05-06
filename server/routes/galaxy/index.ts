@@ -690,6 +690,7 @@ export async function issueCertificateAndEmit(input: {
 import { ensureAnyAdmin } from '../../auth';
 import { galaxyPolicyUpdateSchema, galaxyWebhookUpdateSchema } from '@shared/schema';
 import { generateWebhookSecret, redeliverGalaxyEvent, validateWebhookUrl } from './webhooks';
+export { registerGalaxyPortalRoutes, registerGalaxyPortalAdminRoutes } from './portal';
 
 export function registerGalaxyAdminRoutes(app: Express) {
   function resolveTenantId(req: Request, res: Response): string | null {
