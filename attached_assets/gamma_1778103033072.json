@@ -1,0 +1,87 @@
+{
+  "format": "orion-course",
+  "version": "1",
+  "exportedAt": "2026-05-05T00:00:00Z",
+  "course": {
+    "title": "Building High‑Impact Presentations with Gamma",
+    "slug": "building-presentations-with-gamma",
+    "description": "Learn how to use Gamma to rapidly create clear, compelling, and visually strong presentations—from first prompt to polished deck—while knowing when and how to hand off to PowerPoint or other tools.",
+    "summary": "Use Gamma to go from idea to presentation-ready in minutes without sacrificing narrative quality.",
+    "imageUrl": null,
+    "estimatedMinutes": 55,
+    "status": "published",
+    "visibility": "public",
+    "passingScore": 75,
+    "certificateEnabled": true,
+    "tags": [
+      "presentations",
+      "gamma",
+      "ai tools",
+      "storytelling",
+      "executive communication"
+    ],
+    "modules": [
+      {
+        "title": "Why Gamma Changes Presentation Work",
+        "description": "Understand what Gamma is optimized for—and when it outperforms traditional slide tools.",
+        "order": 0,
+        "lessons": [
+          {
+            "title": "Presentations Are a Thinking Problem",
+            "type": "rich_text",
+            "order": 0,
+            "estimatedMinutes": 6,
+            "required": true,
+            "content": {
+              "html": "<h2>From Formatting to Thinking</h2><p>Most time spent creating presentations is not strategic—it is mechanical. Layout decisions, spacing, visual cleanup, and structural reshuffling consume hours that should be spent on message clarity.</p><p>Gamma flips this model. It emphasizes <strong>idea-to-structure speed</strong>, allowing you to focus first on narrative and intent, and only then refine details.</p><blockquote><em>Great presentations are not slides—they are decisions made visible.</em></blockquote><p>Gamma is optimized for early clarity, fast iteration, and modern, scrollable storytelling rather than pixel‑perfect slide choreography.</p>"
+            }
+          },
+          {
+            "title": "Where Gamma Fits in the Toolset",
+            "type": "rich_text",
+            "order": 1,
+            "estimatedMinutes": 5,
+            "required": true,
+            "content": {
+              "html": "<h2>Gamma vs. Traditional Slides</h2><table style='width:100%;border-collapse:collapse'><thead><tr><th>Need</th><th>Best Tool</th></tr></thead><tbody><tr><td>Fast narrative framing</td><td>Gamma</td></tr><tr><td>Exploratory drafts</td><td>Gamma</td></tr><tr><td>Board‑ready precision layouts</td><td>PowerPoint</td></tr><tr><td>Data-heavy visual control</td><td>PowerPoint / Excel</td></tr><tr><td>Web-first sharing</td><td>Gamma</td></tr></tbody></table><p>High-performing teams use Gamma to think and PowerPoint to finalize—not as competing tools, but as stages in the lifecycle.</p>"
+            }
+          },
+          {
+            "title": "Module 1 Check",
+            "type": "quiz",
+            "order": 2,
+            "estimatedMinutes": 3,
+            "required": true,
+            "content": {
+              "passingScore": 67,
+              "questions": [
+                {
+                  "id": "q1",
+                  "text": "What primary problem does Gamma solve?",
+                  "type": "single",
+                  "options": [
+                    { "id": "a", "text": "Slide animation complexity" },
+                    { "id": "b", "text": "Formatting and layout speed at the expense of thinking" },
+                    { "id": "c", "text": "File storage limits" },
+                    { "id": "d", "text": "Template licensing" }
+                  ],
+                  "correctIds": ["b"],
+                  "explanation": "Gamma removes layout friction so users can focus on narrative, structure, and message clarity."
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "title": "Creating a Presentation in Gamma",
+        "description": "Learn a practical, repeatable workflow for building strong presentations in Gamma.",
+        "order": 1,
+        "lessons": [
+          {
+            "title": "Starting with a Strong Prompt",
+            "type": "rich_text",
+            "order": 0,
+            "estimatedMinutes": 7,
+            "required": true,
+            "content": {
