@@ -12,4 +12,16 @@ if (!process.env.DATABASE_URL) {
 }
 
 export const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+
+// Neon serverless kills idle WebSocket connections (PG error 57P01).
+// Without this handler Node will crash the process on the unhandled 'error' event.
+// The pool reconnects automatically on the next query, so we just log and continue.
+pool.on('error', (err: any) => {
+  if (err.code === '57P01') {
+    console.warn('[DB] Neon terminated idle connection (57P01) — pool will reconnect on next query');
+  } else {
+    console.error('[DB] Unexpected pool error:', err.message);
+  }
+});
+
 export const db = drizzle({ client: pool, schema });

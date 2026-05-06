@@ -5,6 +5,15 @@ import { initializeJWTService } from "./services/jwt-signing";
 import { startSsoStateCleanup } from "./services/sso-service";
 import { startMonthlyDigestSchedule } from "./services/digest-service";
 
+// Belt-and-suspenders: catch anything that slips past route-level error handlers.
+// Neon 57P01 is handled in db.ts, but this guards against any other stray throws.
+process.on('uncaughtException', (err: any) => {
+  console.error('[FATAL] uncaughtException — keeping process alive:', err?.message || err);
+});
+process.on('unhandledRejection', (reason: any) => {
+  console.error('[FATAL] unhandledRejection — keeping process alive:', reason?.message || reason);
+});
+
 const app = express();
 
 // Host-based redirects (must run before all other middleware/routes)
