@@ -385,8 +385,8 @@ function NarrativeCard({
         cohortSize: scope === "tenant" ? (data as TenantInsightsResponse).cohortSize : undefined,
         userContext,
       };
-      const res = await apiRequest("POST", "/api/ai/generate-portfolio-narrative", payload);
-      return (await res.json()) as { narrative: string };
+      const res = await apiRequest("/api/ai/generate-portfolio-narrative", "POST", payload);
+      return res as { narrative: string };
     },
     onSuccess: (result) => {
       setNarrative(result.narrative);
