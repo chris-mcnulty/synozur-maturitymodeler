@@ -1638,3 +1638,107 @@ export type ScormPackage = typeof scormPackages.$inferSelect;
 export type InsertScormPackage = z.infer<typeof insertScormPackageSchema>;
 export type CourseTenant = typeof courseTenants.$inferSelect;
 export type InsertCourseTenant = z.infer<typeof insertCourseTenantSchema>;
+
+// ========== ACADEMIES (Learning Sequences) ==========
+//
+// An academy is an ordered sequence of learning items. Each item is either a
+// reference to an internal `course` (Orion-authored content) or an external
+// link (LinkedIn Learning, Coursera, YouTube, etc.). Visibility & tenant
+// sharing follow the same pattern as `courses` / `courseTenants`.
+
+export const ACADEMY_STATUSES = ['draft', 'published', 'archived'] as const;
+export const ACADEMY_VISIBILITIES = ['public', 'private'] as const;
+export const ACADEMY_ITEM_TYPES = ['course', 'external'] as const;
+export const ACADEMY_EXTERNAL_PROVIDERS = [
+  'linkedin_learning',
+  'coursera',
+  'pluralsight',
+  'youtube',
+  'udemy',
+  'edx',
+  'other',
+] as const;
+
+export type AcademyStatus = typeof ACADEMY_STATUSES[number];
+export type AcademyVisibility = typeof ACADEMY_VISIBILITIES[number];
+export type AcademyItemType = typeof ACADEMY_ITEM_TYPES[number];
+export type AcademyExternalProvider = typeof ACADEMY_EXTERNAL_PROVIDERS[number];
+
+export const academies = pgTable("academies", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  slug: text("slug").notNull().unique(),
+  title: text("title").notNull(),
+  description: text("description").notNull().default(""),
+  summary: text("summary"),
+  imageUrl: text("image_url"),
+  estimatedMinutes: integer("estimated_minutes"),
+  status: text("status").notNull().$type<AcademyStatus>().default("draft"),
+  visibility: text("visibility").notNull().$type<AcademyVisibility>().default("private"),
+  ownerTenantId: varchar("owner_tenant_id"),
+  createdBy: varchar("created_by").references(() => users.id, { onDelete: "set null" }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => ({
+  ownerTenantIdx: index("idx_academies_owner_tenant").on(table.ownerTenantId),
+  statusVisibilityIdx: index("idx_academies_status_visibility").on(table.status, table.visibility),
+}));
+
+// Junction table for sharing private academies with specific tenants.
+export const academyTenants = pgTable("academy_tenants", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  academyId: varchar("academy_id").notNull().references(() => academies.id, { onDelete: "cascade" }),
+  tenantId: varchar("tenant_id").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  uniq: unique().on(table.academyId, table.tenantId),
+  academyIdx: index("idx_academy_tenants_academy").on(table.academyId),
+  tenantIdx: index("idx_academy_tenants_tenant").on(table.tenantId),
+}));
+
+// An academy item is one entry in the sequence. `itemType` is either:
+//  - 'course'   → courseId references a row in `courses`
+//  - 'external' → externalProvider/title/url/etc. populated, courseId null
+export const academyItems = pgTable("academy_items", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  academyId: varchar("academy_id").notNull().references(() => academies.id, { onDelete: "cascade" }),
+  order: integer("order").notNull().default(0),
+  itemType: text("item_type").notNull().$type<AcademyItemType>(),
+  courseId: varchar("course_id").references(() => courses.id, { onDelete: "set null" }),
+  externalProvider: text("external_provider").$type<AcademyExternalProvider>(),
+  externalTitle: text("external_title"),
+  externalUrl: text("external_url"),
+  externalDurationMinutes: integer("external_duration_minutes"),
+  externalDescription: text("external_description"),
+  required: boolean("required").notNull().default(true),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  academyIdx: index("idx_academy_items_academy").on(table.academyId),
+  courseIdx: index("idx_academy_items_course").on(table.courseId),
+}));
+
+export const insertAcademySchema = createInsertSchema(academies).omit({
+  id: true, createdAt: true, updatedAt: true,
+}).extend({
+  slug: z.string().min(1).max(100).regex(/^[a-z0-9-]+$/, "Slug must be lowercase letters, numbers, and hyphens"),
+  title: z.string().min(1).max(255),
+  description: z.string().default(""),
+});
+
+export const insertAcademyItemSchema = createInsertSchema(academyItems).omit({
+  id: true, createdAt: true,
+}).extend({
+  itemType: z.enum(ACADEMY_ITEM_TYPES),
+  externalProvider: z.enum(ACADEMY_EXTERNAL_PROVIDERS).nullable().optional(),
+  externalUrl: z.string().url().nullable().optional(),
+});
+
+export const insertAcademyTenantSchema = createInsertSchema(academyTenants).omit({
+  id: true, createdAt: true,
+});
+
+export type Academy = typeof academies.$inferSelect;
+export type InsertAcademy = z.infer<typeof insertAcademySchema>;
+export type AcademyItem = typeof academyItems.$inferSelect;
+export type InsertAcademyItem = z.infer<typeof insertAcademyItemSchema>;
+export type AcademyTenant = typeof academyTenants.$inferSelect;
+export type InsertAcademyTenant = z.infer<typeof insertAcademyTenantSchema>;

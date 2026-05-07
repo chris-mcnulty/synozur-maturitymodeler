@@ -1,0 +1,319 @@
+/**
+ * Academy routes — Academies (Learning Sequences) API.
+ *
+ * Mirrors course-routes.ts authorization model:
+ *  - Catalog read: visibility filter via academy_tenants + ownerTenantId.
+ *  - Mutations: must be global admin OR an admin/modeler in the academy's
+ *    owning tenant. Tenant-side users cannot change ownerTenantId or
+ *    visibility — only global admins can.
+ *  - Tenant share endpoints (`/api/academies/:id/tenants`) require global
+ *    admin (matches the model-tenants pattern).
+ *  - Delete is archive-by-default; ?hard=true + global admin to hard delete.
+ */
+
+import type { Express, Request, Response } from "express";
+import { z } from "zod";
+import { ensureAdminOrModeler } from "../auth";
+import { getAccessibleTenantIds, checkIsGlobalAdmin } from "../permissions";
+import * as academySvc from "../services/academy-service";
+import * as schema from "@shared/schema";
+
+async function requireManageAcademy(req: Request, res: Response, id: string): Promise<schema.Academy | null> {
+  const user = req.user as schema.User | undefined;
+  const academy = await academySvc.getAcademyById(id);
+  if (!academy) {
+    res.status(404).json({ error: "Academy not found" });
+    return null;
+  }
+  if (!academySvc.userCanManageAcademy(user, academy)) {
+    res.status(403).json({ error: "Forbidden" });
+    return null;
+  }
+  return academy;
+}
+
+export function registerAcademyRoutes(app: Express) {
+  // ---- Public/learner list ----
+  app.get("/api/academies", async (req, res) => {
+    try {
+      const user = req.user as schema.User | undefined;
+      let tenantIds: string[] | null = [];
+      let canSeeUnpublished = false;
+      if (user) {
+        if (checkIsGlobalAdmin(user)) {
+          tenantIds = null;
+          canSeeUnpublished = true;
+        } else {
+          const accessible = getAccessibleTenantIds(user) ?? [];
+          const set = new Set<string>(accessible);
+          if (user.tenantId) set.add(user.tenantId);
+          tenantIds = Array.from(set);
+          if (user.role === "tenant_admin" || user.role === "tenant_modeler") {
+            canSeeUnpublished = true;
+          }
+        }
+      }
+      const manageable = req.query.manageable === "true";
+      if (manageable) {
+        if (!user) return res.status(401).json({ error: "Unauthorized" });
+        const ownerOnly = checkIsGlobalAdmin(user) ? null : (tenantIds ?? []);
+        const includeArchived = req.query.includeArchived === "true";
+        const statuses = includeArchived
+          ? ["draft", "published", "archived"]
+          : ["draft", "published"];
+        const all = await academySvc.listAcademiesOwnedBy(ownerOnly, statuses);
+        return res.json(all);
+      }
+      const published = await academySvc.listAcademies({ tenantIds, status: "published" });
+      let payload = published;
+      if (canSeeUnpublished && user) {
+        const ownerOnly = checkIsGlobalAdmin(user) ? null : (tenantIds ?? []);
+        if (ownerOnly === null || ownerOnly.length > 0) {
+          const drafts = await academySvc.listAcademiesOwnedBy(ownerOnly, ["draft"]);
+          const seen = new Set(payload.map(a => a.id));
+          payload = [...payload, ...drafts.filter(d => !seen.has(d.id))];
+        }
+      }
+      res.json(payload);
+    } catch (err: any) {
+      console.error("list academies error", err);
+      res.status(500).json({ error: err.message ?? "Failed to list academies" });
+    }
+  });
+
+  app.get("/api/academies/:idOrSlug", async (req, res) => {
+    try {
+      const academy = await academySvc.getAcademyFull(req.params.idOrSlug);
+      if (!academy) return res.status(404).json({ error: "Academy not found" });
+      const user = req.user as schema.User | undefined;
+      const canView = await academySvc.userCanViewAcademy(user, academy);
+      if (!canView) return res.status(403).json({ error: "Forbidden" });
+      if (academy.status !== "published") {
+        if (!academySvc.userCanManageAcademy(user, academy)) {
+          return res.status(404).json({ error: "Academy not found" });
+        }
+      }
+      res.json(academy);
+    } catch (err: any) {
+      console.error("get academy error", err);
+      res.status(500).json({ error: err.message ?? "Failed to fetch academy" });
+    }
+  });
+
+  // ---- Mutations ----
+  app.post("/api/academies", ensureAdminOrModeler, async (req, res) => {
+    try {
+      const user = req.user as schema.User;
+      const isGlobal = checkIsGlobalAdmin(user);
+      const ownerTenantId = isGlobal
+        ? (req.body.ownerTenantId ?? null)
+        : (user.tenantId ?? null);
+      if (!isGlobal && !user.tenantId) {
+        return res.status(403).json({ error: "Tenant admins must be assigned to a tenant" });
+      }
+      const parsed = schema.insertAcademySchema.parse({
+        ...req.body,
+        createdBy: user.id,
+        ownerTenantId,
+      });
+      const academy = await academySvc.createAcademy(parsed);
+      res.json(academy);
+    } catch (err: any) {
+      console.error("create academy error", err);
+      res.status(400).json({ error: err.message ?? "Failed to create academy" });
+    }
+  });
+
+  app.put("/api/academies/:id", ensureAdminOrModeler, async (req, res) => {
+    try {
+      const user = req.user as schema.User;
+      const academy = await requireManageAcademy(req, res, req.params.id);
+      if (!academy) return;
+      const isGlobal = checkIsGlobalAdmin(user);
+      const { ownerTenantId, visibility, ...rest } = req.body;
+      const patch: any = { ...rest };
+      if (isGlobal) {
+        if (ownerTenantId !== undefined) patch.ownerTenantId = ownerTenantId;
+        if (visibility !== undefined) patch.visibility = visibility;
+      } else {
+        if (ownerTenantId !== undefined && ownerTenantId !== academy.ownerTenantId) {
+          return res.status(403).json({ error: "Only global admins can change an academy's owner tenant" });
+        }
+        if (visibility !== undefined && visibility !== academy.visibility) {
+          return res.status(403).json({ error: "Only global admins can change an academy's visibility" });
+        }
+      }
+      const updated = await academySvc.updateAcademy(academy.id, patch);
+      if (!updated) return res.status(404).json({ error: "Academy not found" });
+      res.json(updated);
+    } catch (err: any) {
+      res.status(400).json({ error: err.message ?? "Failed to update academy" });
+    }
+  });
+
+  app.delete("/api/academies/:id", ensureAdminOrModeler, async (req, res) => {
+    try {
+      const user = req.user as schema.User;
+      const academy = await requireManageAcademy(req, res, req.params.id);
+      if (!academy) return;
+      const hard = req.query.hard === "true";
+      if (hard) {
+        if (!checkIsGlobalAdmin(user)) {
+          return res.status(403).json({ error: "Only global admins can hard-delete an academy" });
+        }
+        await academySvc.deleteAcademy(academy.id);
+        return res.json({ success: true, deleted: true });
+      }
+      const archived = await academySvc.archiveAcademy(academy.id);
+      res.json({ success: true, archived: true, academy: archived });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message ?? "Failed" });
+    }
+  });
+
+  // ---- Image ----
+  app.put("/api/academies/:id/image", ensureAdminOrModeler, async (req, res) => {
+    try {
+      const { imageUrl } = req.body;
+      if (!imageUrl) return res.status(400).json({ error: "imageUrl is required" });
+      const academy = await requireManageAcademy(req, res, req.params.id);
+      if (!academy) return;
+      const user = req.user as schema.User;
+      const { ObjectStorageService } = await import("../objectStorage");
+      const objectStorageService = new ObjectStorageService();
+      const normalizedPath = await objectStorageService.trySetObjectEntityAclPolicy(
+        imageUrl,
+        { owner: user.id || "admin", visibility: "public" },
+      );
+      const updated = await academySvc.updateAcademy(academy.id, { imageUrl: normalizedPath } as any);
+      if (!updated) return res.status(404).json({ error: "Academy not found" });
+      res.json(updated);
+    } catch (err: any) {
+      console.error("update academy image error", err);
+      res.status(500).json({ error: err.message ?? "Failed to update academy image" });
+    }
+  });
+
+  // ---- Items ----
+  const itemBodySchema = z.object({
+    itemType: z.enum(schema.ACADEMY_ITEM_TYPES),
+    courseId: z.string().nullable().optional(),
+    externalProvider: z.enum(schema.ACADEMY_EXTERNAL_PROVIDERS).nullable().optional(),
+    externalTitle: z.string().nullable().optional(),
+    externalUrl: z.string().url().nullable().optional(),
+    externalDurationMinutes: z.number().int().min(0).nullable().optional(),
+    externalDescription: z.string().nullable().optional(),
+    required: z.boolean().optional(),
+    order: z.number().int().min(0).optional(),
+  });
+
+  app.post("/api/academies/:id/items", ensureAdminOrModeler, async (req, res) => {
+    try {
+      const academy = await requireManageAcademy(req, res, req.params.id);
+      if (!academy) return;
+      const parsed = itemBodySchema.parse(req.body);
+      if (parsed.itemType === "course" && !parsed.courseId) {
+        return res.status(400).json({ error: "courseId is required for course items" });
+      }
+      if (parsed.itemType === "external" && (!parsed.externalUrl || !parsed.externalTitle)) {
+        return res.status(400).json({ error: "externalTitle and externalUrl are required for external items" });
+      }
+      const item = await academySvc.createAcademyItem({
+        ...parsed,
+        academyId: academy.id,
+      } as any);
+      res.json(item);
+    } catch (err: any) {
+      res.status(400).json({ error: err.message ?? "Failed" });
+    }
+  });
+
+  app.put("/api/academy-items/:id", ensureAdminOrModeler, async (req, res) => {
+    try {
+      const user = req.user as schema.User;
+      const academy = await academySvc.getAcademyForItem(req.params.id);
+      if (!academy) return res.status(404).json({ error: "Item not found" });
+      if (!academySvc.userCanManageAcademy(user, academy)) return res.status(403).json({ error: "Forbidden" });
+      const parsed = itemBodySchema.partial().parse(req.body);
+      const updated = await academySvc.updateAcademyItem(req.params.id, parsed as any);
+      if (!updated) return res.status(404).json({ error: "Not found" });
+      res.json(updated);
+    } catch (err: any) {
+      res.status(400).json({ error: err.message ?? "Failed" });
+    }
+  });
+
+  app.delete("/api/academy-items/:id", ensureAdminOrModeler, async (req, res) => {
+    try {
+      const user = req.user as schema.User;
+      const academy = await academySvc.getAcademyForItem(req.params.id);
+      if (!academy) return res.status(404).json({ error: "Item not found" });
+      if (!academySvc.userCanManageAcademy(user, academy)) return res.status(403).json({ error: "Forbidden" });
+      await academySvc.deleteAcademyItem(req.params.id);
+      res.json({ success: true });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message ?? "Failed" });
+    }
+  });
+
+  app.put("/api/academies/:id/items/reorder", ensureAdminOrModeler, async (req, res) => {
+    try {
+      const academy = await requireManageAcademy(req, res, req.params.id);
+      if (!academy) return;
+      const { orderedIds } = req.body as { orderedIds?: string[] };
+      if (!Array.isArray(orderedIds)) {
+        return res.status(400).json({ error: "orderedIds must be an array" });
+      }
+      await academySvc.reorderAcademyItems(academy.id, orderedIds);
+      res.json({ success: true });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message ?? "Failed" });
+    }
+  });
+
+  // ---- Tenant share ----
+  app.get("/api/academies/:id/tenants", ensureAdminOrModeler, async (req, res) => {
+    try {
+      const academy = await requireManageAcademy(req, res, req.params.id);
+      if (!academy) return;
+      const rows = await academySvc.listAcademyTenants(academy.id);
+      res.json(rows);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message ?? "Failed" });
+    }
+  });
+
+  app.post("/api/academies/:id/tenants", ensureAdminOrModeler, async (req, res) => {
+    try {
+      const user = req.user as schema.User;
+      if (!checkIsGlobalAdmin(user)) {
+        return res.status(403).json({ error: "Only global admins can manage academy tenant access" });
+      }
+      const academy = await requireManageAcademy(req, res, req.params.id);
+      if (!academy) return;
+      const { tenantId } = req.body;
+      if (!tenantId) return res.status(400).json({ error: "tenantId is required" });
+      const row = await academySvc.addAcademyTenant(academy.id, tenantId);
+      res.status(201).json(row);
+    } catch (err: any) {
+      console.error("add academy tenant error", err);
+      res.status(500).json({ error: err.message ?? "Failed" });
+    }
+  });
+
+  app.delete("/api/academies/:id/tenants/:tenantId", ensureAdminOrModeler, async (req, res) => {
+    try {
+      const user = req.user as schema.User;
+      if (!checkIsGlobalAdmin(user)) {
+        return res.status(403).json({ error: "Only global admins can manage academy tenant access" });
+      }
+      const academy = await requireManageAcademy(req, res, req.params.id);
+      if (!academy) return;
+      const ok = await academySvc.removeAcademyTenant(academy.id, req.params.tenantId);
+      if (!ok) return res.status(404).json({ error: "Tenant assignment not found" });
+      res.json({ success: true });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message ?? "Failed" });
+    }
+  });
+}

@@ -80,6 +80,9 @@ const BrandingPanel = lazy(() =>
 const CourseManagement = lazy(() =>
   import("@/components/admin/CourseManagement").then((m) => ({ default: m.CourseManagement })),
 );
+const AcademyManagement = lazy(() =>
+  import("@/components/admin/AcademyManagement").then((m) => ({ default: m.AcademyManagement })),
+);
 
 function SectionFallback() {
   return (
@@ -2626,6 +2629,17 @@ export default function Admin() {
                       <span className="group-data-[collapsible=icon]:hidden">Courses</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      onClick={() => setActiveSection('academies')}
+                      isActive={activeSection === 'academies'}
+                      data-testid="tab-academies"
+                      tooltip="Academies"
+                    >
+                      <GraduationCap className="h-4 w-4" />
+                      <span className="group-data-[collapsible=icon]:hidden">Academies</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
                 </SidebarMenu>
               </SidebarGroupContent>
             </SidebarGroup>
@@ -4352,6 +4366,10 @@ export default function Admin() {
 
               {activeSection === 'courses' && (
                 <CourseManagement />
+              )}
+
+              {activeSection === 'academies' && (
+                <AcademyManagement />
               )}
 
               {activeSection === 'ai-usage' && (

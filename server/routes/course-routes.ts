@@ -105,11 +105,16 @@ export function registerCourseRoutes(app: Express) {
       const manageable = req.query.manageable === "true";
       if (manageable) {
         // Authoring view: courses the caller can manage. Global admins see
-        // all; tenant admins/modelers see only courses owned by their tenants
-        // (any status).
+        // all; tenant admins/modelers see only courses owned by their tenants.
+        // Archived courses are hidden by default; pass ?includeArchived=true
+        // to include them.
         if (!user) return res.status(401).json({ error: "Unauthorized" });
         const ownerOnly = checkIsGlobalAdmin(user) ? null : (tenantIds ?? []);
-        const all = await courseSvc.listCoursesOwnedBy(ownerOnly, ["draft", "published", "archived"]);
+        const includeArchived = req.query.includeArchived === "true";
+        const statuses = includeArchived
+          ? ["draft", "published", "archived"]
+          : ["draft", "published"];
+        const all = await courseSvc.listCoursesOwnedBy(ownerOnly, statuses);
         return res.json(all);
       }
       const published = await courseSvc.listCourses({ tenantIds, status: "published" });
@@ -546,6 +551,81 @@ export function registerCourseRoutes(app: Express) {
       if (!course) return;
       const enrollments = await courseSvc.listEnrollmentsForCourse(course.id);
       res.json(enrollments);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message ?? "Failed" });
+    }
+  });
+
+  // Update a course's image. The body may contain a freshly-uploaded
+  // object-storage URL; we set its ACL to public and persist the
+  // normalized path on the course row. Mirrors /api/models/:id/image.
+  app.put("/api/courses/:id/image", ensureAdminOrModeler, async (req, res) => {
+    try {
+      const { imageUrl } = req.body;
+      if (!imageUrl) return res.status(400).json({ error: "imageUrl is required" });
+      const course = await requireManageCourse(req, res, req.params.id);
+      if (!course) return;
+      const user = req.user as schema.User;
+      const { ObjectStorageService } = await import("../objectStorage");
+      const objectStorageService = new ObjectStorageService();
+      const normalizedPath = await objectStorageService.trySetObjectEntityAclPolicy(
+        imageUrl,
+        { owner: user.id || "admin", visibility: "public" },
+      );
+      const updated = await courseSvc.updateCourse(course.id, { imageUrl: normalizedPath } as any);
+      if (!updated) return res.status(404).json({ error: "Course not found" });
+      res.json(updated);
+    } catch (err: any) {
+      console.error("update course image error", err);
+      res.status(500).json({ error: err.message ?? "Failed to update course image" });
+    }
+  });
+
+  // ----- Course ↔ tenant share (private courses) -----
+  // Mirrors /api/models/:id/tenants. Manage which tenants can see a
+  // private course by maintaining the course_tenants junction.
+  app.get("/api/courses/:id/tenants", ensureAdminOrModeler, async (req, res) => {
+    try {
+      const course = await requireManageCourse(req, res, req.params.id);
+      if (!course) return;
+      const rows = await courseSvc.listCourseTenants(course.id);
+      res.json(rows);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message ?? "Failed" });
+    }
+  });
+
+  app.post("/api/courses/:id/tenants", ensureAdminOrModeler, async (req, res) => {
+    try {
+      const user = req.user as schema.User;
+      // Tenant assignment for cross-tenant access is a global-admin operation
+      // (matches the model-tenants endpoints).
+      if (!checkIsGlobalAdmin(user)) {
+        return res.status(403).json({ error: "Only global admins can manage course tenant access" });
+      }
+      const course = await requireManageCourse(req, res, req.params.id);
+      if (!course) return;
+      const { tenantId } = req.body;
+      if (!tenantId) return res.status(400).json({ error: "tenantId is required" });
+      const row = await courseSvc.addCourseTenant(course.id, tenantId);
+      res.status(201).json(row);
+    } catch (err: any) {
+      console.error("add course tenant error", err);
+      res.status(500).json({ error: err.message ?? "Failed" });
+    }
+  });
+
+  app.delete("/api/courses/:id/tenants/:tenantId", ensureAdminOrModeler, async (req, res) => {
+    try {
+      const user = req.user as schema.User;
+      if (!checkIsGlobalAdmin(user)) {
+        return res.status(403).json({ error: "Only global admins can manage course tenant access" });
+      }
+      const course = await requireManageCourse(req, res, req.params.id);
+      if (!course) return;
+      const ok = await courseSvc.removeCourseTenant(course.id, req.params.tenantId);
+      if (!ok) return res.status(404).json({ error: "Tenant assignment not found" });
+      res.json({ success: true });
     } catch (err: any) {
       res.status(500).json({ error: err.message ?? "Failed" });
     }
