@@ -243,17 +243,23 @@ export async function listCourseTenants(courseId: string): Promise<CourseTenantS
   return rows;
 }
 
-export async function addCourseTenant(courseId: string, tenantId: string): Promise<schema.CourseTenant> {
-  const [row] = await db.insert(schema.courseTenants)
+export interface AddCourseTenantResult {
+  row: schema.CourseTenant | null;
+  created: boolean;
+}
+
+export async function addCourseTenant(courseId: string, tenantId: string): Promise<AddCourseTenantResult> {
+  const [inserted] = await db.insert(schema.courseTenants)
     .values({ courseId, tenantId })
     .onConflictDoNothing()
     .returning();
-  if (row) return row;
-  // Already existed — fetch the existing row to keep the response shape consistent
+  if (inserted) return { row: inserted, created: true };
+  // Already existed — fetch the existing row. Could still be missing if a
+  // concurrent delete races, so the caller must handle null.
   const [existing] = await db.select().from(schema.courseTenants)
     .where(and(eq(schema.courseTenants.courseId, courseId), eq(schema.courseTenants.tenantId, tenantId)))
     .limit(1);
-  return existing;
+  return { row: existing ?? null, created: false };
 }
 
 export async function removeCourseTenant(courseId: string, tenantId: string): Promise<boolean> {

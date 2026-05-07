@@ -241,16 +241,28 @@ export async function listAcademyTenants(academyId: string): Promise<AcademyTena
     .where(eq(schema.academyTenants.academyId, academyId));
 }
 
-export async function addAcademyTenant(academyId: string, tenantId: string): Promise<schema.AcademyTenant> {
-  const [row] = await db.insert(schema.academyTenants)
+export interface AddAcademyTenantResult {
+  row: schema.AcademyTenant | null;
+  created: boolean;
+}
+
+export async function addAcademyTenant(academyId: string, tenantId: string): Promise<AddAcademyTenantResult> {
+  const [inserted] = await db.insert(schema.academyTenants)
     .values({ academyId, tenantId })
     .onConflictDoNothing()
     .returning();
-  if (row) return row;
+  if (inserted) return { row: inserted, created: true };
   const [existing] = await db.select().from(schema.academyTenants)
     .where(and(eq(schema.academyTenants.academyId, academyId), eq(schema.academyTenants.tenantId, tenantId)))
     .limit(1);
-  return existing;
+  return { row: existing ?? null, created: false };
+}
+
+export async function listAcademyItemIds(academyId: string): Promise<string[]> {
+  const rows = await db.select({ id: schema.academyItems.id })
+    .from(schema.academyItems)
+    .where(eq(schema.academyItems.academyId, academyId));
+  return rows.map(r => r.id);
 }
 
 export async function removeAcademyTenant(academyId: string, tenantId: string): Promise<boolean> {

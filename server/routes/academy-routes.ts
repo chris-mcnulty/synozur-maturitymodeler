@@ -111,8 +111,13 @@ export function registerAcademyRoutes(app: Express) {
       if (!isGlobal && !user.tenantId) {
         return res.status(403).json({ error: "Tenant admins must be assigned to a tenant" });
       }
+      // Visibility is a global-admin field at create time too — keeps create
+      // consistent with the PUT route, which rejects visibility changes from
+      // tenant-side users. Non-global users get the schema default ('private').
+      const { visibility: _vis, ...createBody } = req.body;
       const parsed = schema.insertAcademySchema.parse({
-        ...req.body,
+        ...createBody,
+        ...(isGlobal && _vis !== undefined ? { visibility: _vis } : {}),
         createdBy: user.id,
         ownerTenantId,
       });
@@ -261,8 +266,27 @@ export function registerAcademyRoutes(app: Express) {
       const academy = await requireManageAcademy(req, res, req.params.id);
       if (!academy) return;
       const { orderedIds } = req.body as { orderedIds?: string[] };
-      if (!Array.isArray(orderedIds)) {
-        return res.status(400).json({ error: "orderedIds must be an array" });
+      if (!Array.isArray(orderedIds) || orderedIds.some((x) => typeof x !== "string")) {
+        return res.status(400).json({ error: "orderedIds must be an array of item ids" });
+      }
+      // Reorder must be a full permutation of this academy's current items —
+      // no duplicates, no foreign IDs, no missing IDs. Otherwise the
+      // transaction silently leaves rows with stale `order` values.
+      const currentIds = await academySvc.listAcademyItemIds(academy.id);
+      if (orderedIds.length !== currentIds.length) {
+        return res.status(400).json({
+          error: "orderedIds must contain every current item exactly once",
+        });
+      }
+      const submitted = new Set(orderedIds);
+      if (submitted.size !== orderedIds.length) {
+        return res.status(400).json({ error: "orderedIds contains duplicate ids" });
+      }
+      const known = new Set(currentIds);
+      for (const id of orderedIds) {
+        if (!known.has(id)) {
+          return res.status(400).json({ error: `id '${id}' does not belong to this academy` });
+        }
       }
       await academySvc.reorderAcademyItems(academy.id, orderedIds);
       res.json({ success: true });
@@ -272,8 +296,15 @@ export function registerAcademyRoutes(app: Express) {
   });
 
   // ---- Tenant share ----
+  // All operations are global-admin only — assignments expose other tenants'
+  // names/IDs, so non-global managers (who can edit an academy they own)
+  // shouldn't see the share list. Mirrors /api/models/:id/tenants.
   app.get("/api/academies/:id/tenants", ensureAdminOrModeler, async (req, res) => {
     try {
+      const user = req.user as schema.User;
+      if (!checkIsGlobalAdmin(user)) {
+        return res.status(403).json({ error: "Only global admins can view academy tenant access" });
+      }
       const academy = await requireManageAcademy(req, res, req.params.id);
       if (!academy) return;
       const rows = await academySvc.listAcademyTenants(academy.id);
@@ -293,8 +324,10 @@ export function registerAcademyRoutes(app: Express) {
       if (!academy) return;
       const { tenantId } = req.body;
       if (!tenantId) return res.status(400).json({ error: "tenantId is required" });
-      const row = await academySvc.addAcademyTenant(academy.id, tenantId);
-      res.status(201).json(row);
+      const result = await academySvc.addAcademyTenant(academy.id, tenantId);
+      if (result.created) return res.status(201).json(result.row);
+      if (result.row) return res.status(200).json(result.row);
+      return res.status(409).json({ error: "Tenant assignment was concurrently removed" });
     } catch (err: any) {
       console.error("add academy tenant error", err);
       res.status(500).json({ error: err.message ?? "Failed" });

@@ -582,10 +582,15 @@ export function registerCourseRoutes(app: Express) {
   });
 
   // ----- Course ↔ tenant share (private courses) -----
-  // Mirrors /api/models/:id/tenants. Manage which tenants can see a
-  // private course by maintaining the course_tenants junction.
+  // Mirrors /api/models/:id/tenants. All operations are global-admin only:
+  // tenant assignments expose other tenants' names/IDs, so non-global
+  // managers (who can edit a course they own) shouldn't see the share list.
   app.get("/api/courses/:id/tenants", ensureAdminOrModeler, async (req, res) => {
     try {
+      const user = req.user as schema.User;
+      if (!checkIsGlobalAdmin(user)) {
+        return res.status(403).json({ error: "Only global admins can view course tenant access" });
+      }
       const course = await requireManageCourse(req, res, req.params.id);
       if (!course) return;
       const rows = await courseSvc.listCourseTenants(course.id);
@@ -598,8 +603,6 @@ export function registerCourseRoutes(app: Express) {
   app.post("/api/courses/:id/tenants", ensureAdminOrModeler, async (req, res) => {
     try {
       const user = req.user as schema.User;
-      // Tenant assignment for cross-tenant access is a global-admin operation
-      // (matches the model-tenants endpoints).
       if (!checkIsGlobalAdmin(user)) {
         return res.status(403).json({ error: "Only global admins can manage course tenant access" });
       }
@@ -607,8 +610,12 @@ export function registerCourseRoutes(app: Express) {
       if (!course) return;
       const { tenantId } = req.body;
       if (!tenantId) return res.status(400).json({ error: "tenantId is required" });
-      const row = await courseSvc.addCourseTenant(course.id, tenantId);
-      res.status(201).json(row);
+      const result = await courseSvc.addCourseTenant(course.id, tenantId);
+      // 201 only when the row was newly created. If the assignment already
+      // existed, return 200 with the existing row. Race deletion → 409.
+      if (result.created) return res.status(201).json(result.row);
+      if (result.row) return res.status(200).json(result.row);
+      return res.status(409).json({ error: "Tenant assignment was concurrently removed" });
     } catch (err: any) {
       console.error("add course tenant error", err);
       res.status(500).json({ error: err.message ?? "Failed" });
