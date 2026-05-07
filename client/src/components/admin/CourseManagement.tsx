@@ -12,8 +12,23 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Plus, Edit, Trash, Users, ChevronLeft, FileText, Save, Loader2, Upload, Download } from "lucide-react";
+import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Plus, Edit, Trash, Users, ChevronLeft, FileText, Save, Loader2, Upload, Download, X, ChevronDown, Share2 } from "lucide-react";
+import { ObjectUploader } from "@/components/ObjectUploader";
+import { useAuth } from "@/hooks/use-auth";
 import type { Course, CourseModule, Lesson, CourseTag, LessonType, CourseEnrollment } from "@shared/schema";
+
+interface TenantShareRow {
+  id: string;
+  tenantId: string;
+  tenantName: string;
+  createdAt: string;
+}
+
+interface TenantOption {
+  id: string;
+  name: string;
+}
 
 interface CourseListItem extends Course {
   moduleCount: number;
@@ -42,17 +57,23 @@ export function CourseManagement() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
   const [importing, setImporting] = useState(false);
+  const [showArchived, setShowArchived] = useState(false);
   const importFileRef = useRef<HTMLInputElement>(null);
 
+  const listUrl = showArchived
+    ? "/api/courses?manageable=true&includeArchived=true"
+    : "/api/courses?manageable=true";
   const { data: courses, isLoading } = useQuery<CourseListItem[]>({
-    queryKey: ["/api/courses?manageable=true"],
+    queryKey: [listUrl],
   });
 
   const archiveMutation = useMutation({
     mutationFn: async (id: string) => apiRequest(`/api/courses/${id}`, "DELETE"),
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/courses?manageable=true"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/courses?manageable=true&includeArchived=true"] });
       queryClient.invalidateQueries({ queryKey: ["/api/courses"] });
-      toast({ title: "Course archived", description: "Hidden from the catalog. Set status back to 'draft' or 'published' to restore." });
+      toast({ title: "Course archived", description: "Hidden from the catalog. Toggle 'Show archived' to see it, or set status back to 'draft' or 'published' to restore." });
     },
   });
 
@@ -60,6 +81,8 @@ export function CourseManagement() {
     mutationFn: async (doc: unknown) =>
       apiRequest("/api/courses/import/json", "POST", doc),
     onSuccess: (result: any) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/courses?manageable=true"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/courses?manageable=true&includeArchived=true"] });
       queryClient.invalidateQueries({ queryKey: ["/api/courses"] });
       toast({
         title: "Course imported",
@@ -116,7 +139,16 @@ export function CourseManagement() {
           <h2 className="text-2xl font-bold" data-testid="text-courses-admin-heading">Learning Courses</h2>
           <p className="text-muted-foreground text-sm">Author courses, modules, and lessons.</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex items-center gap-3 flex-wrap">
+          <div className="flex items-center gap-2">
+            <Switch
+              id="toggle-show-archived"
+              checked={showArchived}
+              onCheckedChange={setShowArchived}
+              data-testid="switch-show-archived-courses"
+            />
+            <Label htmlFor="toggle-show-archived" className="cursor-pointer">Show archived</Label>
+          </div>
           <Button
             variant="outline"
             onClick={() => importFileRef.current?.click()}
@@ -143,15 +175,34 @@ export function CourseManagement() {
       {!isLoading && courses && courses.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {courses.map(c => (
-            <Card key={c.id} className="hover-elevate" data-testid={`card-admin-course-${c.id}`}>
+            <Card
+              key={c.id}
+              className={`hover-elevate ${c.status === "archived" ? "opacity-60" : ""}`}
+              data-testid={`card-admin-course-${c.id}`}
+            >
+              {c.imageUrl && (
+                <div className="aspect-video w-full overflow-hidden rounded-t-md">
+                  <img
+                    src={c.imageUrl}
+                    alt={c.title}
+                    className="w-full h-full object-cover"
+                    data-testid={`img-admin-course-${c.id}`}
+                  />
+                </div>
+              )}
               <CardHeader>
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex-1 min-w-0">
                     <CardTitle className="text-base truncate" data-testid={`text-admin-course-title-${c.id}`}>{c.title}</CardTitle>
                     <p className="text-xs text-muted-foreground">/{c.slug}</p>
                   </div>
-                  <div className="flex gap-1">
-                    <Badge variant={c.status === "published" ? "default" : "secondary"}>{c.status}</Badge>
+                  <div className="flex gap-1 flex-wrap">
+                    <Badge
+                      variant={c.status === "published" ? "default" : c.status === "archived" ? "destructive" : "secondary"}
+                      data-testid={`badge-status-${c.id}`}
+                    >
+                      {c.status}
+                    </Badge>
                     <Badge variant="outline">{c.visibility}</Badge>
                   </div>
                 </div>
@@ -339,7 +390,11 @@ function CourseBuilder({ courseId, onClose }: { courseId: string; onClose: () =>
       </div>
 
       {tab === "overview" && (
-        <CourseOverview course={course} onSave={(patch) => updateCourse.mutate(patch)} saving={updateCourse.isPending} />
+        <CourseOverview
+          course={course}
+          onSave={(patch) => updateCourse.mutate(patch)}
+          saving={updateCourse.isPending}
+        />
       )}
 
       {tab === "structure" && (
@@ -456,19 +511,56 @@ function CourseBuilder({ courseId, onClose }: { courseId: string; onClose: () =>
 }
 
 function CourseOverview({ course, onSave, saving }: { course: CourseFull; onSave: (patch: any) => void; saving: boolean }) {
+  const { user } = useAuth();
+  const isGlobalAdmin = user?.role === "global_admin";
+  const { toast } = useToast();
   const [title, setTitle] = useState(course.title);
   const [summary, setSummary] = useState(course.summary || "");
   const [description, setDescription] = useState(course.description);
   const [estimatedMinutes, setEstimatedMinutes] = useState(course.estimatedMinutes?.toString() || "");
   const [status, setStatus] = useState(course.status);
   const [visibility, setVisibility] = useState(course.visibility);
-  const [imageUrl, setImageUrl] = useState(course.imageUrl || "");
   const [passingScore, setPassingScore] = useState(course.passingScore?.toString() || "80");
   const [certificateEnabled, setCertificateEnabled] = useState(course.certificateEnabled);
+  const [showTenantShare, setShowTenantShare] = useState(false);
+
+  const uploadImage = useMutation({
+    mutationFn: async (imageUrl: string) =>
+      apiRequest(`/api/courses/${course.id}/image`, "PUT", { imageUrl }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/courses", course.id] });
+      queryClient.invalidateQueries({ queryKey: ["/api/courses?manageable=true"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/courses?manageable=true&includeArchived=true"] });
+      toast({ title: "Image uploaded" });
+    },
+    onError: (err: Error) => toast({ title: "Failed", description: err.message, variant: "destructive" }),
+  });
+
+  const removeImage = useMutation({
+    mutationFn: async () => apiRequest(`/api/courses/${course.id}`, "PUT", { imageUrl: null }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/courses", course.id] });
+      queryClient.invalidateQueries({ queryKey: ["/api/courses?manageable=true"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/courses?manageable=true&includeArchived=true"] });
+      toast({ title: "Image removed" });
+    },
+    onError: (err: Error) => toast({ title: "Failed", description: err.message, variant: "destructive" }),
+  });
+
+  const handleGetUploadParameters = async () => {
+    const res = await fetch("/api/objects/upload", { method: "POST", credentials: "include" });
+    const data = await res.json();
+    return { method: "PUT" as const, url: data.uploadURL };
+  };
+
+  const handleUploadComplete = (result: any) => {
+    const url = result?.successful?.[0]?.uploadURL;
+    if (url) uploadImage.mutate(url);
+  };
 
   const handleSave = () => {
     onSave({
-      title, summary: summary || null, description, imageUrl: imageUrl || null,
+      title, summary: summary || null, description,
       estimatedMinutes: estimatedMinutes ? parseInt(estimatedMinutes, 10) : null,
       status, visibility,
       passingScore: parseInt(passingScore, 10),
@@ -478,7 +570,7 @@ function CourseOverview({ course, onSave, saving }: { course: CourseFull; onSave
 
   return (
     <Card>
-      <CardContent className="pt-6 space-y-3">
+      <CardContent className="pt-6 space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <div>
             <Label htmlFor="ov-title">Title</Label>
@@ -501,23 +593,73 @@ function CourseOverview({ course, onSave, saving }: { course: CourseFull; onSave
           </div>
           <div>
             <Label htmlFor="ov-visibility">Visibility</Label>
-            <Select value={visibility} onValueChange={v => setVisibility(v as any)}>
+            <Select
+              value={visibility}
+              onValueChange={v => setVisibility(v as any)}
+              disabled={!isGlobalAdmin}
+            >
               <SelectTrigger id="ov-visibility" data-testid="select-overview-visibility"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="public">Public</SelectItem>
                 <SelectItem value="private">Private (tenant-only)</SelectItem>
               </SelectContent>
             </Select>
+            {!isGlobalAdmin && (
+              <p className="text-xs text-muted-foreground mt-1">Only global admins can change visibility.</p>
+            )}
           </div>
           <div>
             <Label htmlFor="ov-passing">Passing score (0-100)</Label>
             <Input id="ov-passing" type="number" min={0} max={100} value={passingScore} onChange={e => setPassingScore(e.target.value)} data-testid="input-overview-passing" />
           </div>
-          <div>
-            <Label htmlFor="ov-image">Image URL</Label>
-            <Input id="ov-image" value={imageUrl} onChange={e => setImageUrl(e.target.value)} data-testid="input-overview-image" />
-          </div>
         </div>
+
+        {/* Hero image */}
+        <div>
+          <Label>Hero image</Label>
+          <p className="text-sm text-muted-foreground mb-2">
+            Upload an image for this course (recommended: 1200px+ width, 16:9 aspect ratio, under 10MB).
+          </p>
+          {course.imageUrl ? (
+            <div className="space-y-2">
+              <div className="relative rounded-lg overflow-hidden border border-border max-w-md">
+                <img src={course.imageUrl} alt={course.title} className="w-full h-48 object-cover" data-testid="img-course-hero" />
+              </div>
+              <div className="flex gap-2">
+                <ObjectUploader
+                  maxNumberOfFiles={1}
+                  maxFileSize={10485760}
+                  allowedFileTypes={["image/jpeg", "image/png", "image/webp"]}
+                  onGetUploadParameters={handleGetUploadParameters}
+                  onComplete={handleUploadComplete}
+                  buttonVariant="outline"
+                >
+                  <Upload className="h-4 w-4 mr-2" /> Replace image
+                </ObjectUploader>
+                <Button
+                  variant="outline"
+                  onClick={() => removeImage.mutate()}
+                  disabled={removeImage.isPending}
+                  data-testid="button-remove-course-image"
+                >
+                  <X className="h-4 w-4 mr-2" />
+                  {removeImage.isPending ? "Removing..." : "Remove"}
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <ObjectUploader
+              maxNumberOfFiles={1}
+              maxFileSize={10485760}
+              allowedFileTypes={["image/jpeg", "image/png", "image/webp"]}
+              onGetUploadParameters={handleGetUploadParameters}
+              onComplete={handleUploadComplete}
+            >
+              <Upload className="h-4 w-4 mr-2" /> Upload image
+            </ObjectUploader>
+          )}
+        </div>
+
         <div>
           <Label htmlFor="ov-summary">Summary (catalog blurb)</Label>
           <Textarea id="ov-summary" value={summary} onChange={e => setSummary(e.target.value)} data-testid="input-overview-summary" />
@@ -530,6 +672,32 @@ function CourseOverview({ course, onSave, saving }: { course: CourseFull; onSave
           <Switch id="cert" checked={certificateEnabled} onCheckedChange={setCertificateEnabled} data-testid="switch-overview-certificate" />
           <Label htmlFor="cert">Certificate on completion (PDF generation TBD)</Label>
         </div>
+
+        {/* Tenant share — only when private */}
+        {visibility === "private" && (
+          <div className="rounded-md border p-3 bg-muted/30">
+            <div className="flex items-center justify-between gap-2">
+              <div>
+                <p className="font-medium">Tenant access</p>
+                <p className="text-sm text-muted-foreground">
+                  Share this private course with selected customer tenants beyond its owner.
+                </p>
+              </div>
+              <Button
+                variant="outline"
+                onClick={() => setShowTenantShare(true)}
+                disabled={!isGlobalAdmin}
+                data-testid="button-manage-course-tenants"
+              >
+                <Share2 className="h-4 w-4 mr-1" /> Manage tenants
+              </Button>
+            </div>
+            {!isGlobalAdmin && (
+              <p className="text-xs text-muted-foreground mt-2">Only global admins can attach courses to other tenants.</p>
+            )}
+          </div>
+        )}
+
         <div className="flex flex-wrap gap-2">
           <Button onClick={handleSave} disabled={saving} data-testid="button-save-overview">
             {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
@@ -545,8 +713,94 @@ function CourseOverview({ course, onSave, saving }: { course: CourseFull; onSave
             <Download className="h-4 w-4 mr-1" /> Export SCORM 1.2
           </Button>
         </div>
+
+        {showTenantShare && (
+          <CourseTenantShareDialog
+            courseId={course.id}
+            onClose={() => setShowTenantShare(false)}
+          />
+        )}
       </CardContent>
     </Card>
+  );
+}
+
+function CourseTenantShareDialog({ courseId, onClose }: { courseId: string; onClose: () => void }) {
+  const { toast } = useToast();
+  const { data: assigned, isLoading } = useQuery<TenantShareRow[]>({
+    queryKey: [`/api/courses/${courseId}/tenants`],
+  });
+  const { data: tenants } = useQuery<TenantOption[]>({
+    queryKey: ["/api/model-tenants"],
+  });
+
+  const addMut = useMutation({
+    mutationFn: async (tenantId: string) =>
+      apiRequest(`/api/courses/${courseId}/tenants`, "POST", { tenantId }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/courses/${courseId}/tenants`] });
+    },
+    onError: (err: Error) => toast({ title: "Failed", description: err.message, variant: "destructive" }),
+  });
+  const removeMut = useMutation({
+    mutationFn: async (tenantId: string) =>
+      apiRequest(`/api/courses/${courseId}/tenants/${tenantId}`, "DELETE"),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/courses/${courseId}/tenants`] });
+    },
+    onError: (err: Error) => toast({ title: "Failed", description: err.message, variant: "destructive" }),
+  });
+
+  const assignedIds = new Set((assigned ?? []).map(a => a.tenantId));
+  const sortedTenants = (tenants ?? []).slice().sort((a, b) => a.name.localeCompare(b.name));
+
+  return (
+    <Dialog open onOpenChange={onClose}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Course tenant access</DialogTitle>
+          <DialogDescription>
+            Select which tenants can access this private course. Tenants here are in addition to the course's owning tenant.
+          </DialogDescription>
+        </DialogHeader>
+        {isLoading ? (
+          <Skeleton className="h-32 w-full" />
+        ) : (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="w-full justify-between" data-testid="select-course-tenants">
+                {assignedIds.size === 0
+                  ? "Select tenants"
+                  : `${assignedIds.size} tenant${assignedIds.size > 1 ? "s" : ""} selected`}
+                <ChevronDown className="ml-2 h-4 w-4 opacity-50" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-[440px]">
+              {sortedTenants.length === 0 ? (
+                <div className="p-2 text-sm text-muted-foreground">No tenants available</div>
+              ) : (
+                sortedTenants.map(t => (
+                  <DropdownMenuCheckboxItem
+                    key={t.id}
+                    checked={assignedIds.has(t.id)}
+                    onCheckedChange={(checked) => {
+                      if (checked) addMut.mutate(t.id);
+                      else removeMut.mutate(t.id);
+                    }}
+                    data-testid={`checkbox-course-tenant-${t.id}`}
+                  >
+                    {t.name}
+                  </DropdownMenuCheckboxItem>
+                ))
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
+        <DialogFooter>
+          <Button onClick={onClose}>Done</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 

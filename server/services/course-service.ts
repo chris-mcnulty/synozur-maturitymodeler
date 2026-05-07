@@ -221,6 +221,54 @@ export async function deleteCourse(id: string): Promise<void> {
   await db.delete(schema.courses).where(eq(schema.courses.id, id));
 }
 
+// ----- Course ↔ tenant share (manages course_tenants junction) -----
+export interface CourseTenantShare {
+  id: string;
+  tenantId: string;
+  tenantName: string;
+  createdAt: Date;
+}
+
+export async function listCourseTenants(courseId: string): Promise<CourseTenantShare[]> {
+  const rows = await db
+    .select({
+      id: schema.courseTenants.id,
+      tenantId: schema.courseTenants.tenantId,
+      tenantName: schema.tenants.name,
+      createdAt: schema.courseTenants.createdAt,
+    })
+    .from(schema.courseTenants)
+    .innerJoin(schema.tenants, eq(schema.courseTenants.tenantId, schema.tenants.id))
+    .where(eq(schema.courseTenants.courseId, courseId));
+  return rows;
+}
+
+export interface AddCourseTenantResult {
+  row: schema.CourseTenant | null;
+  created: boolean;
+}
+
+export async function addCourseTenant(courseId: string, tenantId: string): Promise<AddCourseTenantResult> {
+  const [inserted] = await db.insert(schema.courseTenants)
+    .values({ courseId, tenantId })
+    .onConflictDoNothing()
+    .returning();
+  if (inserted) return { row: inserted, created: true };
+  // Already existed — fetch the existing row. Could still be missing if a
+  // concurrent delete races, so the caller must handle null.
+  const [existing] = await db.select().from(schema.courseTenants)
+    .where(and(eq(schema.courseTenants.courseId, courseId), eq(schema.courseTenants.tenantId, tenantId)))
+    .limit(1);
+  return { row: existing ?? null, created: false };
+}
+
+export async function removeCourseTenant(courseId: string, tenantId: string): Promise<boolean> {
+  const rows = await db.delete(schema.courseTenants)
+    .where(and(eq(schema.courseTenants.courseId, courseId), eq(schema.courseTenants.tenantId, tenantId)))
+    .returning();
+  return rows.length > 0;
+}
+
 export async function archiveCourse(id: string): Promise<Course | null> {
   const [row] = await db.update(schema.courses)
     .set({ status: "archived", updatedAt: new Date() } as any)
