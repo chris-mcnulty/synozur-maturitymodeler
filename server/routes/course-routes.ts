@@ -122,7 +122,7 @@ export function registerCourseRoutes(app: Express) {
       if (includeDrafts && user) {
         const ownerOnly = checkIsGlobalAdmin(user) ? null : (tenantIds ?? []);
         if (ownerOnly === null || ownerOnly.length > 0) {
-          const drafts = await courseSvc.listCoursesOwnedBy(ownerOnly, ["draft", "archived"]);
+          const drafts = await courseSvc.listCoursesOwnedBy(ownerOnly, ["draft"]);
           const seen = new Set(payload.map(c => c.id));
           payload = [...payload, ...drafts.filter(d => !seen.has(d.id))];
         }
