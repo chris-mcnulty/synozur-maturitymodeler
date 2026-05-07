@@ -499,6 +499,14 @@ The OpenAPI document at `/api/galaxy/v1/openapi.json` lists these under `x-defer
 
 ---
 
+## TECH DEBT / DEFERRED ITEMS
+
+| Item | Notes |
+|------|-------|
+| Academies `estimatedMinutes` field | Hidden from the AcademyOverview admin UI to reduce clutter. The DB column and schema remain in place. Restore the input when a duration-tracking story is scoped (e.g. for learner time estimates or Galaxy Portal exposure). |
+
+---
+
 ## RELEASE SCHEDULE
 
 | Quarter | Focus |

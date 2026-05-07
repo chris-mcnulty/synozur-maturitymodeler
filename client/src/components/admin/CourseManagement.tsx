@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -322,9 +322,14 @@ function CreateCourseDialog({ onClose, onCreated }: { onClose: () => void; onCre
 
 function CourseBuilder({ courseId, onClose }: { courseId: string; onClose: () => void }) {
   const { toast } = useToast();
-  const { data: course, isLoading } = useQuery<CourseFull>({ queryKey: ["/api/courses", courseId] });
+  const { data: course, isLoading } = useQuery<CourseFull>({
+    queryKey: ["/api/courses", courseId],
+    refetchOnWindowFocus: false,
+    staleTime: 30_000,
+  });
   const { data: enrollments } = useQuery<(CourseEnrollment & { user: { name: string | null; email: string | null; username: string } })[]>({
     queryKey: ["/api/courses", courseId, "enrollments"],
+    refetchOnWindowFocus: false,
   });
   const [editingLesson, setEditingLesson] = useState<Lesson | null>(null);
   const [creatingLessonInModule, setCreatingLessonInModule] = useState<string | null>(null);
@@ -523,6 +528,17 @@ function CourseOverview({ course, onSave, saving }: { course: CourseFull; onSave
   const [passingScore, setPassingScore] = useState(course.passingScore?.toString() || "80");
   const [certificateEnabled, setCertificateEnabled] = useState(course.certificateEnabled);
   const [showTenantShare, setShowTenantShare] = useState(false);
+
+  useEffect(() => {
+    setTitle(course.title);
+    setSummary(course.summary || "");
+    setDescription(course.description);
+    setEstimatedMinutes(course.estimatedMinutes?.toString() || "");
+    setStatus(course.status);
+    setVisibility(course.visibility);
+    setPassingScore(course.passingScore?.toString() || "80");
+    setCertificateEnabled(course.certificateEnabled);
+  }, [course.id]);
 
   const uploadImage = useMutation({
     mutationFn: async (imageUrl: string) =>

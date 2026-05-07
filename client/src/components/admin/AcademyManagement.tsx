@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -252,6 +252,8 @@ function AcademyBuilder({ academyId, onClose }: { academyId: string; onClose: ()
   const isGlobalAdmin = user?.role === "global_admin";
   const { data: academy, isLoading } = useQuery<AcademyFull>({
     queryKey: [`/api/academies/${academyId}`],
+    refetchOnWindowFocus: false,
+    staleTime: 30_000,
   });
   const [tab, setTab] = useState<"overview" | "items">("overview");
   const [addingItem, setAddingItem] = useState(false);
@@ -465,9 +467,16 @@ function AcademyOverview({
   const [title, setTitle] = useState(academy.title);
   const [summary, setSummary] = useState(academy.summary || "");
   const [description, setDescription] = useState(academy.description);
-  const [estimatedMinutes, setEstimatedMinutes] = useState(academy.estimatedMinutes?.toString() || "");
   const [status, setStatus] = useState(academy.status);
   const [visibility, setVisibility] = useState(academy.visibility);
+
+  useEffect(() => {
+    setTitle(academy.title);
+    setSummary(academy.summary || "");
+    setDescription(academy.description);
+    setStatus(academy.status);
+    setVisibility(academy.visibility);
+  }, [academy.id]);
 
   const removeImage = useMutation({
     mutationFn: async () => apiRequest(`/api/academies/${academy.id}`, "PUT", { imageUrl: null }),
@@ -487,7 +496,6 @@ function AcademyOverview({
   const handleSave = () => {
     onSave({
       title, summary: summary || null, description,
-      estimatedMinutes: estimatedMinutes ? parseInt(estimatedMinutes, 10) : null,
       status, visibility,
     });
   };
@@ -499,10 +507,6 @@ function AcademyOverview({
           <div>
             <Label htmlFor="ac-title">Title</Label>
             <Input id="ac-title" value={title} onChange={e => setTitle(e.target.value)} data-testid="input-academy-title" />
-          </div>
-          <div>
-            <Label htmlFor="ac-min">Estimated minutes</Label>
-            <Input id="ac-min" type="number" value={estimatedMinutes} onChange={e => setEstimatedMinutes(e.target.value)} data-testid="input-academy-minutes" />
           </div>
           <div>
             <Label htmlFor="ac-status">Status</Label>

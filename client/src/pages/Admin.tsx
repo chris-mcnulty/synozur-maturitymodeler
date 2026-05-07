@@ -1329,6 +1329,36 @@ export default function Admin() {
     }
   }, [editingModel, uploadModelImage.mutate]);
 
+  // Stable ref so the memoized handleUpdateModel never captures a stale editingModel
+  const editingModelRef = useRef<typeof editingModel>(null);
+  useEffect(() => {
+    editingModelRef.current = editingModel;
+  }, [editingModel]);
+
+  const handleUpdateModel = useCallback((updates: Record<string, unknown>) => {
+    setEditingModel(prev => prev ? { ...prev, ...updates } : prev);
+    const current = editingModelRef.current;
+    if (!current) return;
+    const updatedModel = { ...current, ...updates };
+    updateModel.mutate({
+      id: current.id,
+      name: updatedModel.name as string,
+      slug: updatedModel.slug as string,
+      description: updatedModel.description as string,
+      version: (updatedModel.version as string) || '1.0.0',
+      estimatedTime: (updatedModel.estimatedTime as string) || '15-20 minutes',
+      status: ((updatedModel.status as string) || 'draft') as 'draft' | 'published',
+      imageUrl: (updatedModel.imageUrl as string) || '',
+      visibility: ((updatedModel.visibility as string) || 'public') as 'public' | 'private',
+      ownerTenantId: (updatedModel.ownerTenantId as string | null) || null,
+      tenantIds: [],
+      modelClass: ((updatedModel.modelClass as string) || 'organizational') as 'organizational' | 'individual',
+      allowAnonymousResults: (updatedModel.allowAnonymousResults as boolean) ?? false,
+      generalResources: (updatedModel.generalResources as any[]) || [],
+      maturityScale: (updatedModel.maturityScale as any[]) || [],
+    } as any);
+  }, [updateModel.mutate]);
+
   // Toggle featured status mutation
   const toggleFeatured = useMutation({
     mutationFn: async ({ modelId, featured }: { modelId: string; featured: boolean }) => {
@@ -3188,30 +3218,7 @@ export default function Admin() {
                         });
                       }
                     }}
-                    onUpdateModel={(updates) => {
-                      // Update local state immediately for responsive UI
-                      setEditingModel(prev => prev ? { ...prev, ...updates } : prev);
-                      // Note: Debouncing is handled at the ModelBuilder component level
-                      const updatedModel = { ...editingModel, ...updates };
-                      // Type assertion needed because ModelBuilder sends additional fields like generalResources and maturityScale
-                      updateModel.mutate({
-                        id: editingModel.id,
-                        name: updatedModel.name,
-                        slug: updatedModel.slug,
-                        description: updatedModel.description,
-                        version: updatedModel.version || '1.0.0',
-                        estimatedTime: updatedModel.estimatedTime || '15-20 minutes',
-                        status: (updatedModel.status || 'draft') as 'draft' | 'published',
-                        imageUrl: updatedModel.imageUrl || '',
-                        visibility: (updatedModel.visibility || 'public') as 'public' | 'private',
-                        ownerTenantId: updatedModel.ownerTenantId || null,
-                        tenantIds: [],
-                        modelClass: (updatedModel.modelClass || 'organizational') as 'organizational' | 'individual',
-                        allowAnonymousResults: updatedModel.allowAnonymousResults ?? false,
-                        generalResources: updatedModel.generalResources || [],
-                        maturityScale: updatedModel.maturityScale || [],
-                      } as any);
-                    }}
+                    onUpdateModel={handleUpdateModel}
                     onAddDimension={() => {
                       setSelectedModelId(editingModel.id);
                       setIsDimensionDialogOpen(true);
