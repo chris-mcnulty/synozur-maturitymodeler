@@ -40,10 +40,14 @@ function CourseLinksTab({ modelId, dimensions }: { modelId: string; dimensions: 
       if (!res.ok) throw new Error("Failed to load links");
       return res.json();
     },
+    refetchOnWindowFocus: false,
+    staleTime: 30_000,
   });
 
   const { data: courses = [] } = useQuery<CourseListItem[]>({
     queryKey: ["/api/courses"],
+    refetchOnWindowFocus: false,
+    staleTime: 30_000,
   });
 
   const createMutation = useMutation({

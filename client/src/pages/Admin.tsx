@@ -726,6 +726,8 @@ export default function Admin() {
       return response.ok ? response.json() : [];
     },
     enabled: !!editingModel?.id,
+    refetchOnWindowFocus: false,
+    staleTime: 30_000,
   });
 
   // Fetch questions for selected model
