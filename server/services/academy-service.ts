@@ -122,7 +122,7 @@ export async function getAcademyById(id: string): Promise<Academy | null> {
   return row ?? null;
 }
 
-export async function getAcademyFull(idOrSlug: string): Promise<AcademyFull | null> {
+export async function getAcademyFull(idOrSlug: string, user?: schema.User): Promise<AcademyFull | null> {
   const [academy] = await db.select().from(schema.academies)
     .where(or(eq(schema.academies.id, idOrSlug), eq(schema.academies.slug, idOrSlug)))
     .limit(1);
@@ -132,21 +132,35 @@ export async function getAcademyFull(idOrSlug: string): Promise<AcademyFull | nu
     .orderBy(schema.academyItems.order);
 
   const courseIds = items.map(i => i.courseId).filter((id): id is string => !!id);
+  // Fetch the full course row including ownerTenantId so we can apply the
+  // same per-course visibility check that the catalog/detail endpoints
+  // use. Public/shared courses pass through; courses the caller can't view
+  // are returned as `course: null` so the UI hides the link instead of
+  // exposing private metadata or producing a dead "forbidden" link.
   const courseRows = courseIds.length > 0
-    ? await db.select({
-        id: schema.courses.id,
-        slug: schema.courses.slug,
-        title: schema.courses.title,
-        summary: schema.courses.summary,
-        imageUrl: schema.courses.imageUrl,
-        estimatedMinutes: schema.courses.estimatedMinutes,
-        status: schema.courses.status,
-        visibility: schema.courses.visibility,
-      })
-        .from(schema.courses)
+    ? await db.select().from(schema.courses)
         .where(inArray(schema.courses.id, courseIds))
     : [];
-  const courseById = new Map(courseRows.map(c => [c.id, c]));
+
+  const visibleCourseIds = new Set<string>();
+  for (const c of courseRows) {
+    if (await userCanViewCourseRow(user, c)) visibleCourseIds.add(c.id);
+  }
+
+  const courseById = new Map(
+    courseRows
+      .filter(c => visibleCourseIds.has(c.id))
+      .map(c => [c.id, {
+        id: c.id,
+        slug: c.slug,
+        title: c.title,
+        summary: c.summary,
+        imageUrl: c.imageUrl,
+        estimatedMinutes: c.estimatedMinutes,
+        status: c.status,
+        visibility: c.visibility,
+      }]),
+  );
 
   const hydrated: AcademyItemHydrated[] = items.map(i => ({
     ...i,
@@ -154,6 +168,26 @@ export async function getAcademyFull(idOrSlug: string): Promise<AcademyFull | nu
   }));
 
   return { ...academy, items: hydrated };
+}
+
+// Local copy of the course-visibility check, inlined to avoid a circular
+// import between course-service and academy-service. Keep in sync with
+// `courseSvc.userCanViewCourse`.
+async function userCanViewCourseRow(user: schema.User | undefined, course: schema.Course): Promise<boolean> {
+  if (course.visibility === "public") return true;
+  if (!user) return false;
+  if (user.role === "global_admin") return true;
+  if (user.tenantId && course.ownerTenantId === user.tenantId) return true;
+  if (user.tenantId) {
+    const [shared] = await db.select().from(schema.courseTenants)
+      .where(and(
+        eq(schema.courseTenants.courseId, course.id),
+        eq(schema.courseTenants.tenantId, user.tenantId),
+      ))
+      .limit(1);
+    if (shared) return true;
+  }
+  return false;
 }
 
 export async function createAcademy(data: InsertAcademy): Promise<Academy> {
@@ -183,6 +217,12 @@ export async function deleteAcademy(id: string): Promise<void> {
 export async function createAcademyItem(data: InsertAcademyItem): Promise<AcademyItem> {
   const [row] = await db.insert(schema.academyItems).values(data as any).returning();
   return row;
+}
+
+export async function getAcademyItem(id: string): Promise<AcademyItem | null> {
+  const [row] = await db.select().from(schema.academyItems)
+    .where(eq(schema.academyItems.id, id)).limit(1);
+  return row ?? null;
 }
 
 export async function updateAcademyItem(id: string, patch: Partial<InsertAcademyItem>): Promise<AcademyItem | null> {

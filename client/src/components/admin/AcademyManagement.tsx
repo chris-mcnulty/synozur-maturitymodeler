@@ -281,6 +281,7 @@ function AcademyBuilder({ academyId, onClose }: { academyId: string; onClose: ()
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/academies/${academyId}`] });
       queryClient.invalidateQueries({ queryKey: ["/api/academies?manageable=true"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/academies?manageable=true&includeArchived=true"] });
     },
   });
 
@@ -290,6 +291,7 @@ function AcademyBuilder({ academyId, onClose }: { academyId: string; onClose: ()
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/academies/${academyId}`] });
       queryClient.invalidateQueries({ queryKey: ["/api/academies?manageable=true"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/academies?manageable=true&includeArchived=true"] });
       toast({ title: "Image uploaded" });
     },
     onError: (err: Error) => toast({ title: "Failed", description: err.message, variant: "destructive" }),
@@ -472,6 +474,7 @@ function AcademyOverview({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/academies/${academy.id}`] });
       queryClient.invalidateQueries({ queryKey: ["/api/academies?manageable=true"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/academies?manageable=true&includeArchived=true"] });
       toast({ title: "Image removed" });
     },
   });

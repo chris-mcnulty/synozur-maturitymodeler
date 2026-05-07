@@ -83,9 +83,12 @@ export function registerAcademyRoutes(app: Express) {
 
   app.get("/api/academies/:idOrSlug", async (req, res) => {
     try {
-      const academy = await academySvc.getAcademyFull(req.params.idOrSlug);
-      if (!academy) return res.status(404).json({ error: "Academy not found" });
       const user = req.user as schema.User | undefined;
+      // Pass the caller into getAcademyFull so per-item course hydration
+      // respects course visibility — private/tenant-only courses the user
+      // can't see are returned as `course: null`.
+      const academy = await academySvc.getAcademyFull(req.params.idOrSlug, user);
+      if (!academy) return res.status(404).json({ error: "Academy not found" });
       const canView = await academySvc.userCanViewAcademy(user, academy);
       if (!canView) return res.status(403).json({ error: "Forbidden" });
       if (academy.status !== "published") {
@@ -239,8 +242,50 @@ export function registerAcademyRoutes(app: Express) {
       const academy = await academySvc.getAcademyForItem(req.params.id);
       if (!academy) return res.status(404).json({ error: "Item not found" });
       if (!academySvc.userCanManageAcademy(user, academy)) return res.status(403).json({ error: "Forbidden" });
+      const existing = await academySvc.getAcademyItem(req.params.id);
+      if (!existing) return res.status(404).json({ error: "Item not found" });
       const parsed = itemBodySchema.partial().parse(req.body);
-      const updated = await academySvc.updateAcademyItem(req.params.id, parsed as any);
+      // Compute the post-update state and re-validate type/field invariants.
+      // When `itemType` flips, also clear the fields that no longer apply so
+      // a course→external switch doesn't keep a stale `courseId`, and vice
+      // versa. Without this guard the row can end up internally inconsistent
+      // (e.g. itemType='course' with no courseId, or itemType='external'
+      // missing externalUrl/title) and break the learner UI.
+      const merged: any = { ...existing, ...parsed };
+      const finalType = (parsed.itemType ?? existing.itemType) as schema.AcademyItemType;
+      const typeChanged = parsed.itemType !== undefined && parsed.itemType !== existing.itemType;
+      if (typeChanged) {
+        if (finalType === "course") {
+          merged.externalProvider = null;
+          merged.externalTitle = null;
+          merged.externalUrl = null;
+          merged.externalDurationMinutes = null;
+          merged.externalDescription = null;
+        } else if (finalType === "external") {
+          merged.courseId = null;
+        }
+      }
+      if (finalType === "course" && !merged.courseId) {
+        return res.status(400).json({ error: "courseId is required for course items" });
+      }
+      if (finalType === "external" && (!merged.externalUrl || !merged.externalTitle)) {
+        return res.status(400).json({ error: "externalTitle and externalUrl are required for external items" });
+      }
+      // Build the patch to send to the DB: anything in `parsed` plus any
+      // fields we cleared on a type change.
+      const patch: any = { ...parsed };
+      if (typeChanged) {
+        if (finalType === "course") {
+          patch.externalProvider = null;
+          patch.externalTitle = null;
+          patch.externalUrl = null;
+          patch.externalDurationMinutes = null;
+          patch.externalDescription = null;
+        } else if (finalType === "external") {
+          patch.courseId = null;
+        }
+      }
+      const updated = await academySvc.updateAcademyItem(req.params.id, patch);
       if (!updated) return res.status(404).json({ error: "Not found" });
       res.json(updated);
     } catch (err: any) {
