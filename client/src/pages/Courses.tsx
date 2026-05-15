@@ -164,12 +164,7 @@ export default function Courses() {
         if (!haystack.includes(q)) return false;
       }
       if (selectedTagIds.size > 0) {
-        const courseTagIds = new Set(c.tags.map(t => t.id));
-        let hasAny = false;
-        for (const id of selectedTagIds) {
-          if (courseTagIds.has(id)) { hasAny = true; break; }
-        }
-        if (!hasAny) return false;
+        if (!c.tags.some(t => selectedTagIds.has(t.id))) return false;
       }
       if (duration !== "any") {
         const m = c.estimatedMinutes;

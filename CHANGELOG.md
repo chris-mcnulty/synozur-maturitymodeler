@@ -8,6 +8,11 @@ This changelog documents new features, improvements, and fixes in Orion. Updates
 
 ## May 2026 — Version 2.1
 
+### May 15, 2026 — Mobile-Friendly Assessment Navigation
+
+**Improvements**
+- Assessment wizard mobile polish for the live-event critical path: on small screens the Previous/Next controls are now a sticky bottom navigation bar with large, full-width tap targets and safe-area padding for notched devices, so attendees taking an assessment on a phone always have the controls in reach. Desktop layout is unchanged.
+
 ### May 15, 2026 — Course Catalog Filters & Search
 
 **New Features**

@@ -309,13 +309,13 @@ Complete branding customization:
 
 ### 12. Mobile Applications
 
-**Status:** Not Started
+**Status:** Not Started (PWA explicitly deferred — mobile-friendly polish only)
 **Priority:** Low
 **Effort:** 8-12 weeks
 
-- Progressive Web App (PWA) first
+- Progressive Web App (PWA) — **deferred by product decision.** A PWA implementation (manifest, service worker, install prompt, offline resilience) was prototyped on May 15, 2026 but rolled back; the requirement is mobile-friendliness, not an installable/offline app. Revisit only if an installable/offline experience becomes a confirmed requirement.
+- Mobile-friendly responsive polish: in progress incrementally per surface (assessment wizard sticky bottom nav + large tap targets shipped May 15, 2026). See **UX Enhancements → Responsive Design**.
 - iOS and Android native apps (future)
-- Offline assessment capability
 
 ---
 
