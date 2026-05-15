@@ -7,6 +7,7 @@ Orion is a fullstack JavaScript application providing a multi-model maturity ass
 - Uses SendGrid for email delivery (API key method, not Replit connector)
 - Prefers seeing metrics on home pages when data is available
 - Assessment dimensions are valuable and should be emphasized
+- **On every PR merge**: inspect the diff (schema changes, new dependencies, new migrations), run post-merge setup, verify endpoint/type integrity, and confirm the app is healthy before reporting back.
 
 ## System Architecture
 The application is built with a modern fullstack architecture, prioritizing a dark-mode UI.
