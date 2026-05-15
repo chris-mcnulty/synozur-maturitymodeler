@@ -107,7 +107,7 @@ export default function Courses() {
     enabled: !!user,
   });
 
-  const { data: myEnrollments } = useQuery<EnrollmentWithCourse[]>({
+  const { data: myEnrollments, isLoading: enrollmentsLoading } = useQuery<EnrollmentWithCourse[]>({
     queryKey: ["/api/me/courses"],
     enabled: !!user,
   });
@@ -122,8 +122,18 @@ export default function Courses() {
   // courseId -> learner's bucketed completion status
   const enrollmentStatusByCourse = useMemo(() => {
     const map = new Map<string, StatusFilter>();
+    // Enrollment enum is ['enrolled','in_progress','completed','expired'].
+    // Map to learner-facing buckets: only an active "in_progress" counts as
+    // in progress; "enrolled" (never opened) and "expired" read as not
+    // started so they align with the filter's "Not started" option.
     for (const e of myEnrollments ?? []) {
-      map.set(e.courseId, e.status === "completed" ? "completed" : "in_progress");
+      const bucket: StatusFilter =
+        e.status === "completed"
+          ? "completed"
+          : e.status === "in_progress"
+            ? "in_progress"
+            : "not_started";
+      map.set(e.courseId, bucket);
     }
     return map;
   }, [myEnrollments]);
@@ -143,7 +153,11 @@ export default function Courses() {
   const toggleTag = (id: string) => {
     setSelectedTagIds(prev => {
       const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
       return next;
     });
   };
@@ -173,13 +187,16 @@ export default function Courses() {
         if (duration === "medium" && (m < 30 || m > 60)) return false;
         if (duration === "long" && m <= 60) return false;
       }
-      if (status !== "any") {
+      // Don't apply the status filter until enrollments have loaded,
+      // otherwise everything reads as "not started" for a logged-in user
+      // and the empty state flashes before the data resolves.
+      if (status !== "any" && !enrollmentsLoading) {
         const courseStatus = enrollmentStatusByCourse.get(c.id) ?? "not_started";
         if (courseStatus !== status) return false;
       }
       return true;
     });
-  }, [courses, search, selectedTagIds, duration, status, enrollmentStatusByCourse]);
+  }, [courses, search, selectedTagIds, duration, status, enrollmentStatusByCourse, enrollmentsLoading]);
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-6xl">
@@ -287,6 +304,8 @@ export default function Courses() {
                       onClick={() => toggleTag(t.id)}
                       data-testid={`filter-tag-${t.id}`}
                       aria-pressed={active}
+                      aria-label={`Filter by ${t.name}`}
+                      className="rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                     >
                       <Badge variant={active ? "default" : "outline"} className="cursor-pointer">
                         {t.name}
