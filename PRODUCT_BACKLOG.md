@@ -309,13 +309,13 @@ Complete branding customization:
 
 ### 12. Mobile Applications
 
-**Status:** Not Started
+**Status:** Not Started (PWA explicitly deferred — mobile-friendly polish only)
 **Priority:** Low
 **Effort:** 8-12 weeks
 
-- Progressive Web App (PWA) first
+- Progressive Web App (PWA) — **deferred by product decision.** A PWA implementation (manifest, service worker, install prompt, offline resilience) was prototyped on May 15, 2026 but rolled back; the requirement is mobile-friendliness, not an installable/offline app. Revisit only if an installable/offline experience becomes a confirmed requirement.
+- Mobile-friendly responsive polish: in progress incrementally per surface (assessment wizard sticky bottom nav + large tap targets shipped May 15, 2026). See **UX Enhancements → Responsive Design**.
 - iOS and Android native apps (future)
-- Offline assessment capability
 
 ---
 
@@ -388,10 +388,10 @@ The MVP slice (catalog, player, authoring, quizzes, attestations, enrollment tra
 
 1. **SCORM 1.2 / 2004 import** — accept `.zip` uploads, parse `imsmanifest.xml`, store package in object storage, serve runtime that wires `cmi.*` → `lessonProgress.data`. Endpoints stubbed at `POST /api/scorm/import` (501).
 2. **SCORM export** — generate a SCORM zip from a course's structure. Stub at `GET /api/courses/:id/scorm/export` (501).
-3. **Certificate PDF generation** — when an enrollment completes and `certificateEnabled` is true, render a branded PDF and store its URL in `certificateUrl`.
+3. ~~**Certificate PDF generation**~~ — **DONE.** `server/services/certificate-pdf.ts` renders a branded PDF via `pdf-lib`; `maybeIssueCertificate` stamps `certificateUrl` on enrollment completion. A `POST /api/courses/:id/certificate` re-issue endpoint exists for backfill.
 4. **Attestation reminders/expirations** — scheduled email job (SendGrid) to nudge or re-collect expired attestations.
-5. **Assessment → course recommendation surface** — `assessment_course_links` is wired with score thresholds; need a UI on the Results page that lists recommended courses based on weak dimensions, plus a "Suggested for you" card on `/courses`.
-6. **Catalog filters/search** — by tag, completion status, duration, level.
+5. ~~**Assessment → course recommendation surface**~~ — **DONE.** Recommended-courses card renders on the Results page (driven by weak dimension scores) and a "Suggested for you" section on `/courses`, backed by `/api/assessments/:id/recommended-courses` and `/api/me/recommended-courses`.
+6. ~~**Catalog filters/search**~~ — **DONE.** `/courses` supports keyword search (title/summary/description), tag chips, duration buckets (under 30 / 30–60 / over 60 min), and per-learner completion status (not started / in progress / completed). "Level" filter omitted — no `level` field exists on the `courses` schema; defer until a level taxonomy is scoped.
 7. **Video transcoding/hosting** — currently stores raw URLs; consider Mux or Cloudflare Stream for adaptive playback.
 8. **xAPI (Tin Can) statements** — emit statements for richer learning analytics.
 

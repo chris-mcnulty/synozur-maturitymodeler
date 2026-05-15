@@ -613,24 +613,28 @@ export default function Assessment() {
             </Card>
           )}
 
-          <div className="flex flex-wrap justify-between gap-3 mt-6 sm:mt-8">
+          <div className="sticky bottom-0 z-10 -mx-3 mt-6 flex justify-between gap-3 border-t bg-background/95 px-3 py-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] backdrop-blur supports-[backdrop-filter]:bg-background/80 sm:static sm:mx-0 sm:mt-8 sm:flex-wrap sm:border-0 sm:bg-transparent sm:p-0 sm:pb-0 sm:backdrop-blur-none">
             <Button
               variant="outline"
+              size="lg"
               onClick={handlePrevious}
               disabled={!canGoPrev}
               data-testid="button-previous"
+              className="flex-1 sm:flex-none sm:h-10"
             >
               <ChevronLeft className="mr-1 sm:mr-2 h-4 w-4" />
               <span className="hidden sm:inline">{t('common.previous')}</span>
               <span className="sm:hidden">{t('common.back')}</span>
             </Button>
             <Button
+              size="lg"
               onClick={handleNext}
               disabled={
                 calculateResults.isPending ||
                 (!isLast && !isCurrentAnswered)
               }
               data-testid="button-next"
+              className="flex-1 sm:flex-none sm:h-10"
             >
               {calculateResults.isPending
                 ? t('common.calculating')
