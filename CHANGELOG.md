@@ -8,6 +8,14 @@ This changelog documents new features, improvements, and fixes in Orion. Updates
 
 ## May 2026 — Version 2.1
 
+### May 15, 2026 — Course Catalog Filters & Search
+
+**New Features**
+- **Catalog search & filtering** on `/courses`: keyword search across course title, summary, and description; multi-select tag chips; duration buckets (under 30 min, 30–60 min, over 60 min); and a per-learner completion-status filter (not started / in progress / completed). A live result count and one-click "Clear filters" keep the catalog easy to scan as it grows.
+
+**Notes**
+- Completes the last open item in the Learning Courses MVP follow-ups. The assessment-driven recommendation surface (Results page + "Suggested for you") and certificate PDF generation were already shipped and are now reflected as complete in the backlog.
+
 ### May 2, 2026 - Galaxy Client Portal API
 
 **New Features**
