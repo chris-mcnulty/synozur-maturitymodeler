@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useEffect, lazy, Suspense } from "react";
+import { useState, useCallback, useRef, useEffect, useMemo, lazy, Suspense } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
@@ -738,6 +738,8 @@ export default function Admin() {
       return fetch(`/api/questions?modelId=${selectedModelId}`).then(r => r.json());
     },
     enabled: !!selectedModelId,
+    refetchOnWindowFocus: false,
+    staleTime: 30_000,
   });
 
   // Fetch dimensions for selected model
@@ -748,6 +750,8 @@ export default function Admin() {
       return fetch(`/api/dimensions/${selectedModelId}`).then(r => r.json());
     },
     enabled: !!selectedModelId,
+    refetchOnWindowFocus: false,
+    staleTime: 30_000,
   });
 
   // Fetch answers for selected question
@@ -1312,24 +1316,19 @@ export default function Admin() {
   }, []);
 
   const handleUploadComplete = useCallback((result: any) => {
-    console.log('Upload complete:', result);
     if (result.successful && result.successful[0]) {
       const uploadURL = result.successful[0].uploadURL;
-      console.log('Upload URL:', uploadURL);
-      console.log('Editing model:', editingModel);
-      if (uploadURL && editingModel) {
-        console.log('Calling uploadModelImage mutation');
+      const current = editingModelRef.current;
+      if (uploadURL && current) {
         uploadModelImage.mutate({
-          modelId: editingModel.id,
+          modelId: current.id,
           imageUrl: uploadURL,
         });
-      } else if (uploadURL && !editingModel) {
+      } else if (uploadURL && !current) {
         console.error('editingModel is null, cannot save image URL');
       }
-    } else {
-      console.log('Upload result missing successful files');
     }
-  }, [editingModel, uploadModelImage.mutate]);
+  }, [uploadModelImage.mutate]);
 
   // Stable ref so the memoized handleUpdateModel never captures a stale editingModel
   const editingModelRef = useRef<typeof editingModel>(null);
@@ -1360,6 +1359,64 @@ export default function Admin() {
       maturityScale: (updatedModel.maturityScale as any[]) || [],
     } as any);
   }, [updateModel.mutate]);
+
+  // Stable memoized arrays/callbacks passed to ModelBuilder so it never
+  // receives new references on unrelated Admin re-renders (prevents focus loss)
+  const modelBuilderDimensions = useMemo(
+    () => dimensions.filter(d => d.modelId === editingModel?.id),
+    [dimensions, editingModel?.id],
+  );
+  const modelBuilderQuestions = useMemo(
+    () => questions.filter(q => q.modelId === editingModel?.id),
+    [questions, editingModel?.id],
+  );
+  const modelBuilderTenantIds = useMemo(
+    () => modelTenantAssignments.map(mt => mt.tenantId),
+    [modelTenantAssignments],
+  );
+  const handleUpdateTenantAssignments = useCallback(async (tenantIds: string[]) => {
+    const current = editingModelRef.current;
+    if (!current) return;
+    const modelId = current.id;
+    const currentTenantIds = modelTenantAssignments.map(mt => mt.tenantId);
+    const tenantsToAdd = tenantIds.filter(id => !currentTenantIds.includes(id));
+    const tenantsToRemove = currentTenantIds.filter(id => !tenantIds.includes(id));
+    try {
+      for (const tenantId of tenantsToAdd) {
+        await apiRequest(`/api/models/${modelId}/tenants`, 'POST', { tenantId });
+      }
+      for (const tenantId of tenantsToRemove) {
+        await apiRequest(`/api/models/${modelId}/tenants/${tenantId}`, 'DELETE');
+      }
+      const newOwnerTenantId = tenantIds.length > 0 ? tenantIds[0] : null;
+      updateModel.mutate({
+        id: modelId,
+        name: current.name,
+        slug: current.slug,
+        description: current.description,
+        version: current.version || '1.0.0',
+        estimatedTime: current.estimatedTime || '15-20 minutes',
+        status: (current.status || 'draft') as 'draft' | 'published',
+        imageUrl: current.imageUrl || '',
+        visibility: (current.visibility || 'public') as 'public' | 'private',
+        ownerTenantId: newOwnerTenantId,
+        tenantIds: [],
+        modelClass: (current.modelClass || 'organizational') as 'organizational' | 'individual',
+        allowAnonymousResults: current.allowAnonymousResults ?? false,
+        generalResources: current.generalResources || [],
+        maturityScale: current.maturityScale || [],
+      } as any);
+      queryClient.invalidateQueries({ queryKey: ['/api/models', modelId, 'tenants'] });
+      toast({ title: "Tenant assignments updated", description: "Model access has been updated successfully" });
+    } catch (error) {
+      toast({ title: "Error", description: "Failed to update tenant assignments", variant: "destructive" });
+    }
+  }, [modelTenantAssignments, updateModel.mutate]);
+
+  const handleRemoveModelImage = useCallback(() => {
+    const current = editingModelRef.current;
+    if (current) removeModelImage.mutate(current.id);
+  }, [removeModelImage.mutate]);
 
   // Toggle featured status mutation
   const toggleFeatured = useMutation({
@@ -3160,66 +3217,11 @@ export default function Admin() {
 
                   <ModelBuilder
                     model={editingModel}
-                    dimensions={dimensions.filter(d => d.modelId === editingModel.id)}
-                    questions={questions.filter(q => q.modelId === editingModel.id)}
+                    dimensions={modelBuilderDimensions}
+                    questions={modelBuilderQuestions}
                     availableTenants={availableTenants}
-                    assignedTenantIds={modelTenantAssignments.map(mt => mt.tenantId)}
-                    onUpdateTenantAssignments={async (tenantIds) => {
-                      // Sync tenant assignments via API
-                      const modelId = editingModel.id;
-                      const currentTenantIds = modelTenantAssignments.map(mt => mt.tenantId);
-                      
-                      // Determine which tenants to add and remove
-                      const tenantsToAdd = tenantIds.filter(id => !currentTenantIds.includes(id));
-                      const tenantsToRemove = currentTenantIds.filter(id => !tenantIds.includes(id));
-                      
-                      try {
-                        // Add new tenant assignments
-                        for (const tenantId of tenantsToAdd) {
-                          await apiRequest(`/api/models/${modelId}/tenants`, 'POST', { tenantId });
-                        }
-                        
-                        // Remove old tenant assignments
-                        for (const tenantId of tenantsToRemove) {
-                          await apiRequest(`/api/models/${modelId}/tenants/${tenantId}`, 'DELETE');
-                        }
-                        
-                        // Update ownerTenantId to first selected tenant
-                        const newOwnerTenantId = tenantIds.length > 0 ? tenantIds[0] : null;
-                        updateModel.mutate({
-                          id: modelId,
-                          name: editingModel.name,
-                          slug: editingModel.slug,
-                          description: editingModel.description,
-                          version: editingModel.version || '1.0.0',
-                          estimatedTime: editingModel.estimatedTime || '15-20 minutes',
-                          status: (editingModel.status || 'draft') as 'draft' | 'published',
-                          imageUrl: editingModel.imageUrl || '',
-                          visibility: (editingModel.visibility || 'public') as 'public' | 'private',
-                          ownerTenantId: newOwnerTenantId,
-                          tenantIds: [],
-                          modelClass: (editingModel.modelClass || 'organizational') as 'organizational' | 'individual',
-                          allowAnonymousResults: editingModel.allowAnonymousResults ?? false,
-                          generalResources: editingModel.generalResources || [],
-                          maturityScale: editingModel.maturityScale || [],
-                        } as any);
-                        
-                        // Refetch tenant assignments
-                        queryClient.invalidateQueries({ queryKey: ['/api/models', modelId, 'tenants'] });
-                        
-                        toast({
-                          title: "Tenant assignments updated",
-                          description: "Model access has been updated successfully",
-                        });
-                      } catch (error) {
-                        console.error('Error updating tenant assignments:', error);
-                        toast({
-                          title: "Error",
-                          description: "Failed to update tenant assignments",
-                          variant: "destructive",
-                        });
-                      }
-                    }}
+                    assignedTenantIds={modelBuilderTenantIds}
+                    onUpdateTenantAssignments={handleUpdateTenantAssignments}
                     onUpdateModel={handleUpdateModel}
                     onAddDimension={() => {
                       setSelectedModelId(editingModel.id);
@@ -3256,11 +3258,7 @@ export default function Admin() {
                     }}
                     onGetUploadParameters={handleGetUploadParameters}
                     onUploadComplete={handleUploadComplete}
-                    onRemoveImage={() => {
-                      if (editingModel) {
-                        removeModelImage.mutate(editingModel.id);
-                      }
-                    }}
+                    onRemoveImage={handleRemoveModelImage}
                     isRemovingImage={removeModelImage.isPending}
                   />
                 </div>
