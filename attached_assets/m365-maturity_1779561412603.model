@@ -1,0 +1,1801 @@
+{
+  "formatVersion": "1.0",
+  "exportedAt": "2026-05-23T04:27:35.000Z",
+  "model": {
+    "name": "Microsoft 365 Maturity Assessment",
+    "slug": "m365-maturity",
+    "description": "An organizational maturity assessment aligned to the Maturity Model for Microsoft 365 (MM4M365) across six core competencies. Scored 100-500 (CMMI) per question; dimension and overall scores are mean averages.",
+    "version": "1.0.0",
+    "estimatedTime": "20-25 minutes",
+    "status": "draft",
+    "featured": false,
+    "allowAnonymousResults": false,
+    "imageUrl": "",
+    "maturityScale": [
+      {
+        "id": "1",
+        "name": "Initial",
+        "description": "Ad hoc M365 practices — undocumented, reactive, user-driven",
+        "minScore": 100,
+        "maxScore": 199
+      },
+      {
+        "id": "2",
+        "name": "Managed",
+        "description": "Key processes defined but not consistently applied",
+        "minScore": 200,
+        "maxScore": 299
+      },
+      {
+        "id": "3",
+        "name": "Defined",
+        "description": "Standardized, signed-off processes with organization-wide adoption",
+        "minScore": 300,
+        "maxScore": 399
+      },
+      {
+        "id": "4",
+        "name": "Predictable",
+        "description": "Quantitatively managed with metrics and demonstrated competency",
+        "minScore": 400,
+        "maxScore": 449
+      },
+      {
+        "id": "5",
+        "name": "Optimizing",
+        "description": "Continuous improvement and deliberate optimization of M365 practices",
+        "minScore": 450,
+        "maxScore": 500
+      }
+    ],
+    "generalResources": []
+  },
+  "dimensions": [
+    {
+      "key": "collaboration",
+      "label": "Collaboration",
+      "description": "",
+      "order": 1
+    },
+    {
+      "key": "communication",
+      "label": "Communication",
+      "description": "",
+      "order": 2
+    },
+    {
+      "key": "content",
+      "label": "Content & Knowledge Management",
+      "description": "",
+      "order": 3
+    },
+    {
+      "key": "governance",
+      "label": "Governance, Risk & Compliance",
+      "description": "",
+      "order": 4
+    },
+    {
+      "key": "training",
+      "label": "Staff & Training",
+      "description": "",
+      "order": 5
+    },
+    {
+      "key": "ai",
+      "label": "AI & Copilot Adoption",
+      "description": "",
+      "order": 6
+    }
+  ],
+  "questions": [
+    {
+      "dimensionKey": "collaboration",
+      "text": "How does your organization manage the creation and lifecycle of Microsoft Teams workspaces?",
+      "type": "multiple_choice",
+      "order": 0,
+      "minValue": null,
+      "maxValue": null,
+      "unit": null,
+      "placeholder": null,
+      "improvementStatement": null,
+      "resourceTitle": null,
+      "resourceLink": null,
+      "resourceDescription": null,
+      "answers": [
+        {
+          "text": "Teams are created ad hoc by anyone with no naming conventions, ownership requirements, or governance policies",
+          "score": 100,
+          "order": 0,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Informal guidelines exist but Teams proliferation and inactive workspaces are common issues",
+          "score": 200,
+          "order": 1,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "A provisioning policy exists with naming conventions, ownership requirements, and template-based creation",
+          "score": 300,
+          "order": 2,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Teams lifecycle is actively managed — inactive workspaces are reviewed and archived or deleted based on measured criteria",
+          "score": 400,
+          "order": 3,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Teams governance is fully automated with provisioning workflows, ownership enforcement, and lifecycle policies continuously optimized through usage analytics",
+          "score": 500,
+          "order": 4,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        }
+      ]
+    },
+    {
+      "dimensionKey": "collaboration",
+      "text": "How do teams across your organization use channels, tabs, and apps within Microsoft Teams?",
+      "type": "multiple_choice",
+      "order": 1,
+      "minValue": null,
+      "maxValue": null,
+      "unit": null,
+      "placeholder": null,
+      "improvementStatement": null,
+      "resourceTitle": null,
+      "resourceLink": null,
+      "resourceDescription": null,
+      "answers": [
+        {
+          "text": "Most conversations happen in the General channel; purpose-built channels, tabs, and integrated apps are rarely used",
+          "score": 100,
+          "order": 0,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Some teams create channels and add tabs, but practices vary widely with no shared standards",
+          "score": 200,
+          "order": 1,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Standard channel and tab patterns are documented and teams use purpose-built channels for defined workstreams",
+          "score": 300,
+          "order": 2,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Channel structure and app usage are templated, measured, and refined; tab adoption is validated across multiple teams",
+          "score": 400,
+          "order": 3,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Workspace design is continuously optimized based on collaboration analytics and employee feedback; best practices are proactively shared",
+          "score": 500,
+          "order": 4,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        }
+      ]
+    },
+    {
+      "dimensionKey": "collaboration",
+      "text": "How does your organization manage external collaboration — guest access in Teams and sharing in SharePoint and OneDrive?",
+      "type": "multiple_choice",
+      "order": 2,
+      "minValue": null,
+      "maxValue": null,
+      "unit": null,
+      "placeholder": null,
+      "improvementStatement": null,
+      "resourceTitle": null,
+      "resourceLink": null,
+      "resourceDescription": null,
+      "answers": [
+        {
+          "text": "External sharing is either fully unrestricted with no oversight, or fully blocked preventing legitimate collaboration",
+          "score": 100,
+          "order": 0,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "External access is permitted with some basic restrictions, but guest access reviews are infrequent and manual",
+          "score": 200,
+          "order": 1,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "External sharing policies are documented and enforced; guest access is approved through a defined process with expiry dates",
+          "score": 300,
+          "order": 2,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Guest access is reviewed on a regular automated schedule; oversharing is detected and remediated with tracked metrics",
+          "score": 400,
+          "order": 3,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "External collaboration governance is continuously improved using access intelligence, automated reviews, and policy optimization",
+          "score": 500,
+          "order": 4,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        }
+      ]
+    },
+    {
+      "dimensionKey": "collaboration",
+      "text": "When your organization runs hybrid or remote meetings in Microsoft Teams, which best describes the standard practice?",
+      "type": "multiple_choice",
+      "order": 3,
+      "minValue": null,
+      "maxValue": null,
+      "unit": null,
+      "placeholder": null,
+      "improvementStatement": null,
+      "resourceTitle": null,
+      "resourceLink": null,
+      "resourceDescription": null,
+      "answers": [
+        {
+          "text": "Meetings are unstructured; agendas are rare, recordings and transcripts are not commonly used, and follow-up is informal",
+          "score": 100,
+          "order": 0,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Some teams record meetings and share notes, but meeting practices are inconsistent across the organization",
+          "score": 200,
+          "order": 1,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Meeting norms (agendas, recordings, action item capture) are defined and applied consistently across most teams",
+          "score": 300,
+          "order": 2,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Meeting effectiveness is tracked; Copilot or AI-generated summaries are adopted; action items are systematically captured and followed up",
+          "score": 400,
+          "order": 3,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Meeting culture is continuously improved using analytics; meeting overload is actively managed and reduced organizationally",
+          "score": 500,
+          "order": 4,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        }
+      ]
+    },
+    {
+      "dimensionKey": "collaboration",
+      "text": "How does your organization handle real-time co-authoring and file collaboration within Microsoft 365?",
+      "type": "multiple_choice",
+      "order": 4,
+      "minValue": null,
+      "maxValue": null,
+      "unit": null,
+      "placeholder": null,
+      "improvementStatement": null,
+      "resourceTitle": null,
+      "resourceLink": null,
+      "resourceDescription": null,
+      "answers": [
+        {
+          "text": "Staff primarily share files via email attachments; co-authoring in Teams or SharePoint is not standard practice",
+          "score": 100,
+          "order": 0,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Co-authoring is used by some teams but version conflicts and emailed attachments remain common",
+          "score": 200,
+          "order": 1,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Co-authoring in Teams and SharePoint is the documented standard; file attachment by email is actively discouraged",
+          "score": 300,
+          "order": 2,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Co-authoring adoption is measured; training reinforces the practice and adoption metrics show consistent improvement",
+          "score": 400,
+          "order": 3,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "File collaboration patterns are continuously analyzed and optimized; best practices are shared across the organization proactively",
+          "score": 500,
+          "order": 4,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        }
+      ]
+    },
+    {
+      "dimensionKey": "communication",
+      "text": "How does your organization distribute organization-wide communications and announcements to employees?",
+      "type": "multiple_choice",
+      "order": 5,
+      "minValue": null,
+      "maxValue": null,
+      "unit": null,
+      "placeholder": null,
+      "improvementStatement": null,
+      "resourceTitle": null,
+      "resourceLink": null,
+      "resourceDescription": null,
+      "answers": [
+        {
+          "text": "Org-wide communications rely primarily on mass email; SharePoint news, Viva Connections, and Viva Engage are not used",
+          "score": 100,
+          "order": 0,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "SharePoint news or Viva Connections is used by some teams but there is no consistent publishing strategy or governance",
+          "score": 200,
+          "order": 1,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "An organizational communication strategy is defined; channels (SharePoint news, Viva Engage, email) are used purposefully for different audiences",
+          "score": 300,
+          "order": 2,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Channel selection is based on audience data; reach and engagement are tracked; communication effectiveness is evidenced with metrics",
+          "score": 400,
+          "order": 3,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Communication strategy is continuously improved using analytics, employee feedback, and AI-assisted content recommendations",
+          "score": 500,
+          "order": 4,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        }
+      ]
+    },
+    {
+      "dimensionKey": "communication",
+      "text": "How does your organization govern who can publish communications and what content standards apply?",
+      "type": "multiple_choice",
+      "order": 6,
+      "minValue": null,
+      "maxValue": null,
+      "unit": null,
+      "placeholder": null,
+      "improvementStatement": null,
+      "resourceTitle": null,
+      "resourceLink": null,
+      "resourceDescription": null,
+      "answers": [
+        {
+          "text": "Anyone can publish to any channel with no approval process, content standards, or role definition",
+          "score": 100,
+          "order": 0,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Some informal guidance exists but inconsistent content quality and unauthorized publishing are common issues",
+          "score": 200,
+          "order": 1,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Publishing roles, approval workflows, and content standards are documented and applied to major communication channels",
+          "score": 300,
+          "order": 2,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Communication governance includes metrics on content quality, reach, and timeliness; owners are accountable to defined KPIs",
+          "score": 400,
+          "order": 3,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Communication governance is continuously refined; automation handles routine publishing workflows and content lifecycle",
+          "score": 500,
+          "order": 4,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        }
+      ]
+    },
+    {
+      "dimensionKey": "communication",
+      "text": "How does your organization maintain an up-to-date intranet or digital workplace for employee information?",
+      "type": "multiple_choice",
+      "order": 7,
+      "minValue": null,
+      "maxValue": null,
+      "unit": null,
+      "placeholder": null,
+      "improvementStatement": null,
+      "resourceTitle": null,
+      "resourceLink": null,
+      "resourceDescription": null,
+      "answers": [
+        {
+          "text": "The intranet is rarely updated; employees rely on email or shared drives for organizational information",
+          "score": 100,
+          "order": 0,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "An intranet exists but content is stale; ownership is unclear and updates are sporadic",
+          "score": 200,
+          "order": 1,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Content owners are assigned, pages have defined review cycles, and navigation is structured and maintained",
+          "score": 300,
+          "order": 2,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Intranet health is tracked (page views, content age, broken links); improvements are evidence-based and actioned regularly",
+          "score": 400,
+          "order": 3,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "The intranet is continuously evolved using usage analytics, employee feedback, and AI-assisted content recommendations",
+          "score": 500,
+          "order": 4,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        }
+      ]
+    },
+    {
+      "dimensionKey": "communication",
+      "text": "How does your organization use Microsoft Viva Engage or community tools to foster employee connection and knowledge sharing?",
+      "type": "multiple_choice",
+      "order": 8,
+      "minValue": null,
+      "maxValue": null,
+      "unit": null,
+      "placeholder": null,
+      "improvementStatement": null,
+      "resourceTitle": null,
+      "resourceLink": null,
+      "resourceDescription": null,
+      "answers": [
+        {
+          "text": "Viva Engage is not used or has very low adoption; communities are not actively facilitated",
+          "score": 100,
+          "order": 0,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Viva Engage exists but engagement is low; a few communities are active while most are dormant",
+          "score": 200,
+          "order": 1,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Key communities are defined, moderated, and linked to business purposes; leadership participates visibly",
+          "score": 300,
+          "order": 2,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Community engagement is measured; active communities drive measurable outcomes such as knowledge sharing and cross-team problem solving",
+          "score": 400,
+          "order": 3,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Community strategy is continuously optimized; AI surfaces relevant conversations and expertise to employees proactively",
+          "score": 500,
+          "order": 4,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        }
+      ]
+    },
+    {
+      "dimensionKey": "content",
+      "text": "How does your organization structure and govern SharePoint sites, hubs, and document libraries?",
+      "type": "multiple_choice",
+      "order": 9,
+      "minValue": null,
+      "maxValue": null,
+      "unit": null,
+      "placeholder": null,
+      "improvementStatement": null,
+      "resourceTitle": null,
+      "resourceLink": null,
+      "resourceDescription": null,
+      "answers": [
+        {
+          "text": "SharePoint sites are created ad hoc with no information architecture plan, naming standards, or hub structure",
+          "score": 100,
+          "order": 0,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Some site templates or guidelines exist but are inconsistently applied; duplicate sites and content sprawl are common",
+          "score": 200,
+          "order": 1,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "An information architecture plan is documented and applied to new provisioning; metadata standards and hub associations are defined",
+          "score": 300,
+          "order": 2,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Information architecture compliance is measured; sprawl is actively identified and remediated; content findability is tracked",
+          "score": 400,
+          "order": 3,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Information architecture is continuously optimized based on search analytics, usage patterns, and AI-generated insights",
+          "score": 500,
+          "order": 4,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        }
+      ]
+    },
+    {
+      "dimensionKey": "content",
+      "text": "How does your organization manage document and content lifecycle — including retention, archiving, and deletion?",
+      "type": "multiple_choice",
+      "order": 10,
+      "minValue": null,
+      "maxValue": null,
+      "unit": null,
+      "placeholder": null,
+      "improvementStatement": null,
+      "resourceTitle": null,
+      "resourceLink": null,
+      "resourceDescription": null,
+      "answers": [
+        {
+          "text": "No formal retention or lifecycle policies exist; old content accumulates indefinitely with no cleanup",
+          "score": 100,
+          "order": 0,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Some manual archiving is done but policies are not consistently applied; most content is retained indefinitely by default",
+          "score": 200,
+          "order": 1,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Retention policies are defined in Microsoft Purview and applied to major content stores; lifecycle owners are assigned",
+          "score": 300,
+          "order": 2,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Retention coverage and effectiveness are measured; auto-classification is used for key content types; compliance is evidenced",
+          "score": 400,
+          "order": 3,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Content lifecycle is fully automated with continuous policy refinement based on regulatory changes and compliance analytics",
+          "score": 500,
+          "order": 4,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        }
+      ]
+    },
+    {
+      "dimensionKey": "content",
+      "text": "How does your organization classify and protect sensitive information stored across Microsoft 365?",
+      "type": "multiple_choice",
+      "order": 11,
+      "minValue": null,
+      "maxValue": null,
+      "unit": null,
+      "placeholder": null,
+      "improvementStatement": null,
+      "resourceTitle": null,
+      "resourceLink": null,
+      "resourceDescription": null,
+      "answers": [
+        {
+          "text": "No sensitivity labels or data classification policies are applied; sensitive content is not systematically identified",
+          "score": 100,
+          "order": 0,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Sensitivity labels exist but adoption is low and application is manual and inconsistent across teams",
+          "score": 200,
+          "order": 1,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "A sensitivity labeling taxonomy is defined and published; labels are applied to major content types with user guidance and training",
+          "score": 300,
+          "order": 2,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Auto-labeling and DLP policies enforce classification consistently; labeling coverage and accuracy are measured and reported",
+          "score": 400,
+          "order": 3,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Data classification is continuously improved with AI-assisted labeling, anomaly detection, and policy optimization",
+          "score": 500,
+          "order": 4,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        }
+      ]
+    },
+    {
+      "dimensionKey": "content",
+      "text": "How do employees in your organization find content and expertise using Microsoft Search?",
+      "type": "multiple_choice",
+      "order": 12,
+      "minValue": null,
+      "maxValue": null,
+      "unit": null,
+      "placeholder": null,
+      "improvementStatement": null,
+      "resourceTitle": null,
+      "resourceLink": null,
+      "resourceDescription": null,
+      "answers": [
+        {
+          "text": "Employees rely on asking colleagues or browsing email; Microsoft Search is not configured or widely used",
+          "score": 100,
+          "order": 0,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Microsoft Search is available but has not been configured with bookmarks, Q&A, or curated content sources",
+          "score": 200,
+          "order": 1,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Microsoft Search is configured with curated bookmarks, acronyms, and Q&A for common queries; search analytics are reviewed",
+          "score": 300,
+          "order": 2,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Search effectiveness is measured (zero-result queries, top searches); content is optimized based on findability metrics",
+          "score": 400,
+          "order": 3,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Knowledge discovery is AI-enhanced; Copilot surfaces relevant content proactively; search optimization is a continuous practice",
+          "score": 500,
+          "order": 4,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        }
+      ]
+    },
+    {
+      "dimensionKey": "content",
+      "text": "How does your organization capture and share expertise and institutional knowledge across teams?",
+      "type": "multiple_choice",
+      "order": 13,
+      "minValue": null,
+      "maxValue": null,
+      "unit": null,
+      "placeholder": null,
+      "improvementStatement": null,
+      "resourceTitle": null,
+      "resourceLink": null,
+      "resourceDescription": null,
+      "answers": [
+        {
+          "text": "Knowledge is siloed in individuals or email threads; no systematic knowledge management approach exists",
+          "score": 100,
+          "order": 0,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Some knowledge bases or wikis exist but are poorly maintained and inconsistently used across teams",
+          "score": 200,
+          "order": 1,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "A defined knowledge management strategy uses SharePoint, Viva Topics, or structured wikis with designated content owners",
+          "score": 300,
+          "order": 2,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Knowledge effectiveness is measured; subject matter experts are identified and connected to seekers through organizational tools",
+          "score": 400,
+          "order": 3,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Knowledge management is continuously improved with AI-driven content curation, expertise mapping, and proactive knowledge surfacing",
+          "score": 500,
+          "order": 4,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        }
+      ]
+    },
+    {
+      "dimensionKey": "governance",
+      "text": "How does your organization govern Microsoft 365 tenant settings, admin roles, and privileged access?",
+      "type": "multiple_choice",
+      "order": 14,
+      "minValue": null,
+      "maxValue": null,
+      "unit": null,
+      "placeholder": null,
+      "improvementStatement": null,
+      "resourceTitle": null,
+      "resourceLink": null,
+      "resourceDescription": null,
+      "answers": [
+        {
+          "text": "Tenant settings remain at default; there is no formal review of admin roles or privileged access",
+          "score": 100,
+          "order": 0,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Some admin roles are assigned with basic documentation but least-privilege principles are not consistently applied",
+          "score": 200,
+          "order": 1,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Admin roles and tenant settings are documented, reviewed on a schedule, and governed by a defined policy",
+          "score": 300,
+          "order": 2,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Admin access is audited regularly; Privileged Identity Management (PIM) or equivalent just-in-time controls are in place",
+          "score": 400,
+          "order": 3,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Governance controls are continuously reviewed and optimized using security analytics and benchmarked against industry standards",
+          "score": 500,
+          "order": 4,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        }
+      ]
+    },
+    {
+      "dimensionKey": "governance",
+      "text": "How does your organization manage Microsoft 365 service updates and communicate platform changes to users?",
+      "type": "multiple_choice",
+      "order": 15,
+      "minValue": null,
+      "maxValue": null,
+      "unit": null,
+      "placeholder": null,
+      "improvementStatement": null,
+      "resourceTitle": null,
+      "resourceLink": null,
+      "resourceDescription": null,
+      "answers": [
+        {
+          "text": "Service updates are applied automatically with no review, impact assessment, or user communication",
+          "score": 100,
+          "order": 0,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "IT staff review the Message Center but there is no formal process to assess impact or communicate changes to users",
+          "score": 200,
+          "order": 1,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "A defined change management process reviews Message Center items, assesses user impact, and communicates significant changes",
+          "score": 300,
+          "order": 2,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Change management effectiveness is measured; update impact is tracked; rollback procedures are tested and documented",
+          "score": 400,
+          "order": 3,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Change management is optimized with automated monitoring, impact prediction, and proactive user communication workflows",
+          "score": 500,
+          "order": 4,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        }
+      ]
+    },
+    {
+      "dimensionKey": "governance",
+      "text": "How does your organization address regulatory compliance requirements within Microsoft 365 using tools such as Microsoft Purview?",
+      "type": "multiple_choice",
+      "order": 16,
+      "minValue": null,
+      "maxValue": null,
+      "unit": null,
+      "placeholder": null,
+      "improvementStatement": null,
+      "resourceTitle": null,
+      "resourceLink": null,
+      "resourceDescription": null,
+      "answers": [
+        {
+          "text": "Compliance requirements are addressed reactively; eDiscovery, audit logs, and Purview tools are not regularly used",
+          "score": 100,
+          "order": 0,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Some compliance controls exist but coverage is incomplete; eDiscovery is used only when legally required",
+          "score": 200,
+          "order": 1,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Compliance requirements are mapped to Microsoft Purview controls; policies cover the organization's major regulatory obligations",
+          "score": 300,
+          "order": 2,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Compliance posture is measured using Compliance Manager scores; controls are regularly tested and remediated based on evidence",
+          "score": 400,
+          "order": 3,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Compliance management is continuously optimized; AI-assisted review flags emerging risks; Compliance Manager scores improve over time",
+          "score": 500,
+          "order": 4,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        }
+      ]
+    },
+    {
+      "dimensionKey": "governance",
+      "text": "How does your organization manage Microsoft 365 licensing, cost governance, and usage optimization?",
+      "type": "multiple_choice",
+      "order": 17,
+      "minValue": null,
+      "maxValue": null,
+      "unit": null,
+      "placeholder": null,
+      "improvementStatement": null,
+      "resourceTitle": null,
+      "resourceLink": null,
+      "resourceDescription": null,
+      "answers": [
+        {
+          "text": "License assignments are ad hoc with no process to reclaim unused licenses or align assignments to roles",
+          "score": 100,
+          "order": 0,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "License usage is reviewed occasionally but there is no formal governance or optimization process",
+          "score": 200,
+          "order": 1,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "License governance is defined; regular reviews identify unused licenses and assignments are aligned to role requirements",
+          "score": 300,
+          "order": 2,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "License utilization is tracked with metrics; optimization recommendations are implemented on a scheduled cadence",
+          "score": 400,
+          "order": 3,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "License governance is continuously optimized using telemetry, automated reclamation workflows, and cost-outcome analysis",
+          "score": 500,
+          "order": 4,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        }
+      ]
+    },
+    {
+      "dimensionKey": "training",
+      "text": "How does your organization deliver Microsoft 365 adoption programs and end-user training?",
+      "type": "multiple_choice",
+      "order": 18,
+      "minValue": null,
+      "maxValue": null,
+      "unit": null,
+      "placeholder": null,
+      "improvementStatement": null,
+      "resourceTitle": null,
+      "resourceLink": null,
+      "resourceDescription": null,
+      "answers": [
+        {
+          "text": "Training is minimal or nonexistent; users learn by trial and error or informal peer instruction",
+          "score": 100,
+          "order": 0,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Some training materials exist but are not consistently delivered, updated, or linked to roles",
+          "score": 200,
+          "order": 1,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "A structured adoption program is in place using Microsoft 365 Learning Pathways or equivalent; training is role-based and updated regularly",
+          "score": 300,
+          "order": 2,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Training effectiveness is measured; completion rates and skill improvements are tracked; content gaps are identified and closed",
+          "score": 400,
+          "order": 3,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Training is continuously personalized using analytics; AI surfaces relevant learning recommendations for individual employees",
+          "score": 500,
+          "order": 4,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        }
+      ]
+    },
+    {
+      "dimensionKey": "training",
+      "text": "How does your organization support and develop Microsoft 365 champions or power users?",
+      "type": "multiple_choice",
+      "order": 19,
+      "minValue": null,
+      "maxValue": null,
+      "unit": null,
+      "placeholder": null,
+      "improvementStatement": null,
+      "resourceTitle": null,
+      "resourceLink": null,
+      "resourceDescription": null,
+      "answers": [
+        {
+          "text": "No champion or power user program exists; adoption communication is entirely IT-led",
+          "score": 100,
+          "order": 0,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Informal champions exist in some teams but are not formally recognized, resourced, or connected to each other",
+          "score": 200,
+          "order": 1,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "A formal champions program is established with defined roles, resources, and recognition; champions meet and coordinate regularly",
+          "score": 300,
+          "order": 2,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Champion program effectiveness is measured; champions are linked to adoption outcomes and tracked against KPIs",
+          "score": 400,
+          "order": 3,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "The champions community is self-sustaining; contributions are continuously recognized and amplified organizationally",
+          "score": 500,
+          "order": 4,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        }
+      ]
+    },
+    {
+      "dimensionKey": "training",
+      "text": "How does your organization manage change adoption when significant new Microsoft 365 features or products are rolled out?",
+      "type": "multiple_choice",
+      "order": 20,
+      "minValue": null,
+      "maxValue": null,
+      "unit": null,
+      "placeholder": null,
+      "improvementStatement": null,
+      "resourceTitle": null,
+      "resourceLink": null,
+      "resourceDescription": null,
+      "answers": [
+        {
+          "text": "Features are enabled with no communication or training; user awareness and adoption are left to chance",
+          "score": 100,
+          "order": 0,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Basic communications are sent about new features, but adoption follow-through and feedback collection are inconsistent",
+          "score": 200,
+          "order": 1,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "A defined adoption playbook is used for major rollouts covering awareness, training, feedback collection, and success criteria",
+          "score": 300,
+          "order": 2,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Adoption metrics are tracked for each rollout; feedback is actioned and shared; outcomes are compared to pre-defined success criteria",
+          "score": 400,
+          "order": 3,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Adoption processes are continuously improved; analytics predict adoption challenges before rollout and guide proactive intervention",
+          "score": 500,
+          "order": 4,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        }
+      ]
+    },
+    {
+      "dimensionKey": "training",
+      "text": "How does your organization measure and communicate the business value and ROI of Microsoft 365 to leadership?",
+      "type": "multiple_choice",
+      "order": 21,
+      "minValue": null,
+      "maxValue": null,
+      "unit": null,
+      "placeholder": null,
+      "improvementStatement": null,
+      "resourceTitle": null,
+      "resourceLink": null,
+      "resourceDescription": null,
+      "answers": [
+        {
+          "text": "No metrics are tracked; Microsoft 365 usage and business outcomes are not connected or reported",
+          "score": 100,
+          "order": 0,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Basic usage statistics (active users, storage) are reviewed but are not linked to business outcomes",
+          "score": 200,
+          "order": 1,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Key adoption metrics are defined and presented to leadership; usage is linked to specific business outcomes in regular reports",
+          "score": 300,
+          "order": 2,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "ROI is evidenced with quantified outcomes; Microsoft Viva Insights or equivalent analytics are used to measure productivity gains",
+          "score": 400,
+          "order": 3,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Business value measurement is continuous; AI-driven analytics surface new optimization opportunities and inform future investment decisions",
+          "score": 500,
+          "order": 4,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        }
+      ]
+    },
+    {
+      "dimensionKey": "ai",
+      "text": "How has your organization adopted Microsoft 365 Copilot or AI-assisted capabilities across the workforce?",
+      "type": "multiple_choice",
+      "order": 22,
+      "minValue": null,
+      "maxValue": null,
+      "unit": null,
+      "placeholder": null,
+      "improvementStatement": null,
+      "resourceTitle": null,
+      "resourceLink": null,
+      "resourceDescription": null,
+      "answers": [
+        {
+          "text": "Copilot is not deployed or is available to only a handful of users with no structured rollout, training, or governance",
+          "score": 100,
+          "order": 0,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Copilot is deployed to a pilot group but there is no adoption program, use case definition, or governance framework",
+          "score": 200,
+          "order": 1,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Copilot is rolled out with defined personas, prioritized use cases, and training; a governance framework addresses data readiness",
+          "score": 300,
+          "order": 2,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Copilot adoption is measured by persona; business outcomes are tracked; data quality is actively managed to improve AI accuracy",
+          "score": 400,
+          "order": 3,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Copilot adoption is continuously optimized; new capabilities are systematically evaluated, piloted, and scaled organization-wide",
+          "score": 500,
+          "order": 4,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        }
+      ]
+    },
+    {
+      "dimensionKey": "ai",
+      "text": "How does your organization ensure data quality and readiness for AI tools such as Microsoft Copilot?",
+      "type": "multiple_choice",
+      "order": 23,
+      "minValue": null,
+      "maxValue": null,
+      "unit": null,
+      "placeholder": null,
+      "improvementStatement": null,
+      "resourceTitle": null,
+      "resourceLink": null,
+      "resourceDescription": null,
+      "answers": [
+        {
+          "text": "No data readiness assessment has been conducted; oversharing, stale content, and incorrect permissions are common",
+          "score": 100,
+          "order": 0,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "A data readiness review has started but remediation is incomplete; known issues are not systematically addressed",
+          "score": 200,
+          "order": 1,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "A data readiness plan is in place covering sensitivity labels, access governance, and content cleanup; remediation is actively underway",
+          "score": 300,
+          "order": 2,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Data quality metrics are tracked; oversharing and stale content are remediated with measurable progress reported regularly",
+          "score": 400,
+          "order": 3,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Data quality for AI is continuously managed with automated detection, remediation workflows, and ongoing governance optimization",
+          "score": 500,
+          "order": 4,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        }
+      ]
+    },
+    {
+      "dimensionKey": "ai",
+      "text": "How does your organization govern the use of AI tools, Copilot, and AI agents within Microsoft 365?",
+      "type": "multiple_choice",
+      "order": 24,
+      "minValue": null,
+      "maxValue": null,
+      "unit": null,
+      "placeholder": null,
+      "improvementStatement": null,
+      "resourceTitle": null,
+      "resourceLink": null,
+      "resourceDescription": null,
+      "answers": [
+        {
+          "text": "No AI governance policies exist; AI tool usage is unmonitored and ungoverned across the organization",
+          "score": 100,
+          "order": 0,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Basic acceptable-use policies mention AI but specific controls for Copilot, agents, or AI-generated content are absent",
+          "score": 200,
+          "order": 1,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "An AI governance framework is defined covering approved tools, acceptable use, data handling, and accountability for AI outputs",
+          "score": 300,
+          "order": 2,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "AI governance is enforced with technical controls; usage patterns are monitored; policy exceptions are tracked and reviewed",
+          "score": 400,
+          "order": 3,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "AI governance is continuously improved; emerging risks are proactively addressed; governance is benchmarked against industry standards",
+          "score": 500,
+          "order": 4,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        }
+      ]
+    },
+    {
+      "dimensionKey": "ai",
+      "text": "How does your organization use Copilot agents, Power Automate, or AI-assisted workflows to streamline business processes?",
+      "type": "multiple_choice",
+      "order": 25,
+      "minValue": null,
+      "maxValue": null,
+      "unit": null,
+      "placeholder": null,
+      "improvementStatement": null,
+      "resourceTitle": null,
+      "resourceLink": null,
+      "resourceDescription": null,
+      "answers": [
+        {
+          "text": "No Copilot agents or automated workflows are in use for business processes; Power Automate adoption is minimal",
+          "score": 100,
+          "order": 0,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Some Power Automate flows exist but were built ad hoc without governance; Copilot agents are not yet deployed",
+          "score": 200,
+          "order": 1,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "A defined set of business processes have been automated using Power Automate or Copilot agents with IT oversight and documentation",
+          "score": 300,
+          "order": 2,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Automation ROI is measured; agents and flows are reviewed regularly for effectiveness, security, and maintenance requirements",
+          "score": 400,
+          "order": 3,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Automation and agent capability is continuously expanded and governed; reliability and security are ensured at scale",
+          "score": 500,
+          "order": 4,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        }
+      ]
+    },
+    {
+      "dimensionKey": "ai",
+      "text": "How does your organization measure and communicate the business impact of AI and Copilot adoption to leadership?",
+      "type": "multiple_choice",
+      "order": 26,
+      "minValue": null,
+      "maxValue": null,
+      "unit": null,
+      "placeholder": null,
+      "improvementStatement": null,
+      "resourceTitle": null,
+      "resourceLink": null,
+      "resourceDescription": null,
+      "answers": [
+        {
+          "text": "No metrics are captured for AI or Copilot usage; leadership has no visibility into adoption or business outcomes",
+          "score": 100,
+          "order": 0,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Basic usage statistics (seat utilization) are available but are not framed as business outcomes for leadership",
+          "score": 200,
+          "order": 1,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "AI adoption metrics are defined and reported to leadership on a regular cadence; early business outcomes are documented",
+          "score": 300,
+          "order": 2,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "AI ROI is quantified using measurable outcomes such as productivity gains, time savings, and risk reduction",
+          "score": 400,
+          "order": 3,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "AI impact measurement is embedded in organizational reporting; predictive analytics guide future investment and capability decisions",
+          "score": 500,
+          "order": 4,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        }
+      ]
+    },
+    {
+      "dimensionKey": "ai",
+      "text": "How does your organization approach the responsible and ethical use of AI within Microsoft 365?",
+      "type": "multiple_choice",
+      "order": 27,
+      "minValue": null,
+      "maxValue": null,
+      "unit": null,
+      "placeholder": null,
+      "improvementStatement": null,
+      "resourceTitle": null,
+      "resourceLink": null,
+      "resourceDescription": null,
+      "answers": [
+        {
+          "text": "No responsible AI principles or guidelines have been established; AI outputs are not reviewed for accuracy or bias",
+          "score": 100,
+          "order": 0,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Responsible AI is acknowledged in policy but not operationalized; employees have no training on AI accuracy, bias, or verification",
+          "score": 200,
+          "order": 1,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Responsible AI principles are documented and communicated; employees are trained to verify AI outputs before use",
+          "score": 300,
+          "order": 2,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Responsible AI practices are monitored; AI-generated content undergoes human review in high-stakes workflows; accountability is clear",
+          "score": 400,
+          "order": 3,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Responsible AI is embedded in organizational culture; practices are continuously reviewed against emerging standards and regulatory guidance",
+          "score": 500,
+          "order": 4,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        }
+      ]
+    }
+  ]
+}
