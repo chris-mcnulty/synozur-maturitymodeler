@@ -54,6 +54,7 @@ export const models = pgTable("models", {
   status: text("status").notNull().default("draft"), // draft, published, archived
   featured: boolean("featured").notNull().default(false), // Whether model appears in featured section on homepage
   allowAnonymousResults: boolean("allow_anonymous_results").notNull().default(false), // Whether to allow viewing results without login
+  hideScoreAndNarratives: boolean("hide_score_and_narratives").notNull().default(false), // When true, results show only the maturity level name — no numeric score or narrative interpretations
   imageUrl: text("image_url"),
   // Maturity scale configuration (JSONB array of levels)
   // scoringMethod: 'average' (default) averages answer scores, 'sum' adds them
@@ -729,6 +730,7 @@ export const modelExportFormatSchema = z.object({
     status: z.string(),
     featured: z.boolean().optional().default(false),
     allowAnonymousResults: z.boolean().optional().default(false),
+    hideScoreAndNarratives: z.boolean().optional().default(false),
     imageUrl: z.string().nullable().optional(),
     maturityScale: z.array(z.object({
       id: z.union([z.string(), z.number()]).transform(v => String(v)),

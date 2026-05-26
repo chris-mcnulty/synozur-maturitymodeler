@@ -134,6 +134,7 @@ export async function exportModelDefinition(modelId: string) {
       status: model.status,
       featured: model.featured,
       allowAnonymousResults: model.allowAnonymousResults,
+      hideScoreAndNarratives: model.hideScoreAndNarratives,
       imageUrl: model.imageUrl,
       maturityScale: model.maturityScale as any,
       generalResources: model.generalResources as any,

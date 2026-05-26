@@ -747,6 +747,7 @@ export default function Results() {
     : undefined;
   
   const maturityLevel = getMaturityLevel(result.overallScore, parsedMaturityScale);
+  const hideScoreAndNarratives = !!(model as any).hideScoreAndNarratives;
   
   // Calculate max score from model's maturity scale (or default to 500 for legacy models)
   const maturityMaxScore = parsedMaturityScale && parsedMaturityScale.length > 0
@@ -825,12 +826,14 @@ export default function Results() {
           <Card className="p-5 sm:p-6 md:p-8 mb-6 sm:mb-8">
             <div className="grid md:grid-cols-2 gap-6 sm:gap-8 items-center">
               <div className="text-center md:text-left">
-                <div className="mb-4 sm:mb-6">
-                  <div className="text-5xl sm:text-6xl md:text-7xl font-bold text-primary mb-2" data-testid="text-score">
-                    {result.overallScore}
+                {!hideScoreAndNarratives && (
+                  <div className="mb-4 sm:mb-6">
+                    <div className="text-5xl sm:text-6xl md:text-7xl font-bold text-primary mb-2" data-testid="text-score">
+                      {result.overallScore}
+                    </div>
+                    <div className="text-base sm:text-lg text-muted-foreground">{t('results.outOf', { max: maturityMaxScore })}</div>
                   </div>
-                  <div className="text-base sm:text-lg text-muted-foreground">{t('results.outOf', { max: maturityMaxScore })}</div>
-                </div>
+                )}
                 
                 <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full ${maturityLevel.bgColor} ${maturityLevel.borderColor} border`}>
                   <span className={`text-lg sm:text-xl font-bold ${maturityLevel.color}`}>
@@ -838,42 +841,46 @@ export default function Results() {
                   </span>
                 </div>
                 
-                <p className="mt-3 sm:mt-4 text-sm sm:text-base text-muted-foreground">
-                  {maturityLevel.description}
-                </p>
-              </div>
-
-              <div>
-                {benchmark && (
-                  <div className="bg-muted/30 rounded-lg p-4 sm:p-6">
-                    <h3 className="font-semibold mb-4">{t('results.industryBenchmark')}</h3>
-                    <div className="space-y-3">
-                      <div>
-                        <div className="flex justify-between text-sm mb-1">
-                          <span>{t('results.yourScore')}</span>
-                          <span className="font-medium">{result.overallScore}</span>
-                        </div>
-                        <Progress value={(result.overallScore / maturityMaxScore) * 100} className="h-2" />
-                      </div>
-                      <div>
-                        <div className="flex justify-between text-sm mb-1">
-                          <span>{t('results.industryAverage')}</span>
-                          <span className="font-medium">{benchmark.meanScore}</span>
-                        </div>
-                        <Progress value={(benchmark.meanScore / maturityMaxScore) * 100} className="h-2" />
-                      </div>
-                      <p className="text-xs text-muted-foreground mt-2">
-                        {t('results.basedOnSample', { count: benchmark.sampleSize })}
-                      </p>
-                    </div>
-                  </div>
+                {!hideScoreAndNarratives && (
+                  <p className="mt-3 sm:mt-4 text-sm sm:text-base text-muted-foreground">
+                    {maturityLevel.description}
+                  </p>
                 )}
               </div>
+
+              {!hideScoreAndNarratives && (
+                <div>
+                  {benchmark && (
+                    <div className="bg-muted/30 rounded-lg p-4 sm:p-6">
+                      <h3 className="font-semibold mb-4">{t('results.industryBenchmark')}</h3>
+                      <div className="space-y-3">
+                        <div>
+                          <div className="flex justify-between text-sm mb-1">
+                            <span>{t('results.yourScore')}</span>
+                            <span className="font-medium">{result.overallScore}</span>
+                          </div>
+                          <Progress value={(result.overallScore / maturityMaxScore) * 100} className="h-2" />
+                        </div>
+                        <div>
+                          <div className="flex justify-between text-sm mb-1">
+                            <span>{t('results.industryAverage')}</span>
+                            <span className="font-medium">{benchmark.meanScore}</span>
+                          </div>
+                          <Progress value={(benchmark.meanScore / maturityMaxScore) * 100} className="h-2" />
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-2">
+                          {t('results.basedOnSample', { count: benchmark.sampleSize })}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </Card>
 
           {/* AI-Generated Maturity Summary */}
-          {!user && !model?.allowAnonymousResults ? (
+          {!hideScoreAndNarratives && (!user && !model?.allowAnonymousResults ? (
             <Card className="p-5 sm:p-6 md:p-8 mb-6 sm:mb-8 border-2 border-primary/20 bg-gradient-to-br from-primary/5 to-secondary/5">
               <div className="flex items-start gap-3 sm:gap-4 mb-4">
                 <div className="p-2 sm:p-3 rounded-lg bg-primary/10 flex-shrink-0">
@@ -942,7 +949,7 @@ export default function Results() {
                 <MarkdownContent content={maturitySummary} className="text-muted-foreground prose prose-lg max-w-none" />
               )}
             </Card>
-          )}
+          ))}
         </div>
       </section>
 
@@ -951,16 +958,27 @@ export default function Results() {
         <div className="container mx-auto px-4 max-w-6xl">
           <h2 className="text-2xl sm:text-3xl font-bold mb-6 sm:mb-8 text-center text-foreground">{t('results.dimensionBreakdown')}</h2>
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-            {dimensionScores.map(dim => (
-              <Card key={dim.key} className="p-4 sm:p-6" data-testid={`card-dimension-${dim.key}`}>
-                <h3 className="font-semibold mb-3 text-sm sm:text-base">{dim.label}</h3>
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-2xl sm:text-3xl font-bold text-primary">{dim.score}</span>
-                  <span className="text-sm text-muted-foreground">/ {dimensionMaxScore}</span>
-                </div>
-                <Progress value={(dim.score / dimensionMaxScore) * 100} className="h-2" />
-              </Card>
-            ))}
+            {dimensionScores.map(dim => {
+              const dimLevel = getMaturityLevel(dim.score, parsedMaturityScale);
+              return (
+                <Card key={dim.key} className="p-4 sm:p-6" data-testid={`card-dimension-${dim.key}`}>
+                  <h3 className="font-semibold mb-3 text-sm sm:text-base">{dim.label}</h3>
+                  {hideScoreAndNarratives ? (
+                    <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full ${dimLevel.bgColor} ${dimLevel.borderColor} border`}>
+                      <span className={`text-sm font-semibold ${dimLevel.color}`}>{dimLevel.name}</span>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="flex items-center justify-between mb-3">
+                        <span className="text-2xl sm:text-3xl font-bold text-primary">{dim.score}</span>
+                        <span className="text-sm text-muted-foreground">/ {dimensionMaxScore}</span>
+                      </div>
+                      <Progress value={(dim.score / dimensionMaxScore) * 100} className="h-2" />
+                    </>
+                  )}
+                </Card>
+              );
+            })}
           </div>
         </div>
       </section>
@@ -1025,7 +1043,7 @@ export default function Results() {
       )}
 
       {/* Personalized Recommendations */}
-      <section className="py-8 sm:py-12 bg-muted/30">
+      {!hideScoreAndNarratives && <section className="py-8 sm:py-12 bg-muted/30">
         <div className="container mx-auto px-4 max-w-6xl">
           <h2 className="text-2xl sm:text-3xl font-bold mb-6 sm:mb-8 text-center text-foreground">{t('results.strategicRecommendations')}</h2>
           
@@ -1098,10 +1116,10 @@ export default function Results() {
             ))}
           </div>
         </div>
-      </section>
+      </section>}
 
       {/* Improvement Resources */}
-      {improvementResources.length > 0 && (
+      {!hideScoreAndNarratives && improvementResources.length > 0 && (
         <section className="py-8 sm:py-12">
           <div className="container mx-auto px-4 max-w-6xl">
             <h2 className="text-2xl sm:text-3xl font-bold mb-6 sm:mb-8 text-center text-foreground">{t('results.improvementResources')}</h2>

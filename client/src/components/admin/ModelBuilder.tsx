@@ -835,6 +835,24 @@ export function ModelBuilder({
                 />
               </div>
 
+              {/* Hide Score and Narratives Toggle */}
+              <div className="flex items-center justify-between p-4 rounded-lg border border-border">
+                <div className="space-y-0.5">
+                  <Label htmlFor="hide-score-and-narratives" className="cursor-pointer">
+                    Level Name Only Mode
+                  </Label>
+                  <p className="text-sm text-muted-foreground">
+                    Results show only the maturity level name — no numeric scores, AI summaries, or narrative interpretations. Useful for training-readiness assessments where teams only need to know their level.
+                  </p>
+                </div>
+                <Switch
+                  id="hide-score-and-narratives"
+                  checked={model.hideScoreAndNarratives ?? false}
+                  onCheckedChange={(checked) => onUpdateModel({ hideScoreAndNarratives: checked })}
+                  data-testid="switch-hide-score-and-narratives"
+                />
+              </div>
+
               {/* Tenant Assignment (only for private models) */}
               {model.visibility === 'private' && (
                 <div>
