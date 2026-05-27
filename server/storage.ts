@@ -288,6 +288,8 @@ export class DatabaseStorage implements IStorage {
         m.estimated_time,
         m.status,
         m.featured,
+        m.allow_anonymous_results,
+        m.hide_score_and_narratives,
         m.image_url,
         m.maturity_scale,
         m.general_resources,
@@ -300,7 +302,7 @@ export class DatabaseStorage implements IStorage {
       FROM models m
       LEFT JOIN questions q ON m.id = q.model_id
       ${whereSql}
-      GROUP BY m.id, m.slug, m.name, m.description, m.version, m.estimated_time, m.status, m.featured, m.image_url, m.maturity_scale::text, m.general_resources::text, m.visibility, m.owner_tenant_id, m.model_class, m.created_at, m.updated_at
+      GROUP BY m.id, m.slug, m.name, m.description, m.version, m.estimated_time, m.status, m.featured, m.allow_anonymous_results, m.hide_score_and_narratives, m.image_url, m.maturity_scale::text, m.general_resources::text, m.visibility, m.owner_tenant_id, m.model_class, m.created_at, m.updated_at
       ORDER BY m.created_at DESC
     `);
 
@@ -313,6 +315,8 @@ export class DatabaseStorage implements IStorage {
       estimatedTime: row.estimated_time,
       status: row.status,
       featured: row.featured,
+      allowAnonymousResults: row.allow_anonymous_results ?? false,
+      hideScoreAndNarratives: row.hide_score_and_narratives ?? false,
       imageUrl: row.image_url,
       maturityScale: row.maturity_scale,
       generalResources: row.general_resources,
