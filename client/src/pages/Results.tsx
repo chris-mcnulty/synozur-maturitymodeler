@@ -314,7 +314,8 @@ export default function Results() {
             modelName: model.name,
             modelId: model.id,
             userContext,
-            maxScore
+            maxScore,
+            hideScoreAndNarratives: !!(model as any).hideScoreAndNarratives
           })
         });
 

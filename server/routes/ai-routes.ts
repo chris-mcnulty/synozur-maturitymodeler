@@ -440,7 +440,7 @@ Respond in JSON format:
 
   app.post("/api/ai/generate-maturity-summary", async (req, res) => {
     try {
-      const { overallScore, dimensionScores, modelName, userContext, maxScore, modelId } = req.body;
+      const { overallScore, dimensionScores, modelName, userContext, maxScore, modelId, hideScoreAndNarratives } = req.body;
       
       // Validate input
       if (!overallScore || !dimensionScores || !modelName) {
@@ -458,9 +458,9 @@ Respond in JSON format:
         return res.status(401).json({ error: "Authentication required" });
       }
 
-      // Generate cache key (include maxScore for proper cache separation)
+      // Generate cache key (include maxScore and hideScoreAndNarratives for proper cache separation)
       const contextHash = createHash('md5')
-        .update(JSON.stringify({ overallScore, dimensionScores, modelName, userContext, maxScore }))
+        .update(JSON.stringify({ overallScore, dimensionScores, modelName, userContext, maxScore, hideScoreAndNarratives: !!hideScoreAndNarratives }))
         .digest('hex');
 
       // Check cache first
@@ -475,7 +475,8 @@ Respond in JSON format:
         dimensionScores,
         modelName,
         userContext,
-        maxScore || 500
+        maxScore || 500,
+        !!hideScoreAndNarratives
       );
 
       // Cache the result for 30 days

@@ -367,7 +367,8 @@ class AIService {
     dimensionScores: Record<string, { score: number; label: string }>,
     modelName: string,
     userContext?: { industry?: string; companySize?: string; jobTitle?: string },
-    maxScore: number = 500
+    maxScore: number = 500,
+    hideScoreAndNarratives: boolean = false
   ): Promise<string> {
     // Get model ID and class to fetch knowledge version and determine audience type
     let modelId: string | undefined;
@@ -428,10 +429,10 @@ Your assessment shows areas of strength and opportunities for growth. The Synozu
       const dimensionMax = maxScore <= 100 ? 100 : maxScore;
       
       const topStrengths = validDimensions.slice(0, 2)
-        .map(([, dim]) => `${dim.label} (${dim.score}/${dimensionMax})`);
+        .map(([, dim]) => hideScoreAndNarratives ? dim.label : `${dim.label} (${dim.score}/${dimensionMax})`);
       
       const opportunities = validDimensions.slice(-2)
-        .map(([, dim]) => `${dim.label} (${dim.score}/${dimensionMax})`);
+        .map(([, dim]) => hideScoreAndNarratives ? dim.label : `${dim.label} (${dim.score}/${dimensionMax})`);
 
       // Fetch knowledge context from uploaded documents (modelId already retrieved above)
       const knowledgeContext = await this.getKnowledgeContext(modelId);
@@ -446,8 +447,12 @@ Your assessment shows areas of strength and opportunities for growth. The Synozu
         ? 'IMPORTANT: This is an INDIVIDUAL assessment. Write directly to the person (use "you", "your"). Do NOT reference "organization", "company", or "team" - focus on their personal development and growth.'
         : 'This is an ORGANIZATIONAL assessment. Reference the organization, company, and team where appropriate.';
       
-      const prompt = `You are a transformation expert from The Synozur Alliance LLC. Write a comprehensive executive summary.
+      const noScoresInstruction = hideScoreAndNarratives
+        ? '\nCRITICAL CONSTRAINT: Do NOT include any numeric scores, percentages, or X/Y notation anywhere in your output. Refer to dimensions by name only.\n'
+        : '';
 
+      const prompt = `You are a transformation expert from The Synozur Alliance LLC. Write a comprehensive executive summary.
+${noScoresInstruction}
 ${audienceGuidance}
 
 ${knowledgeContext}
