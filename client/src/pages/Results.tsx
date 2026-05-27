@@ -841,11 +841,9 @@ export default function Results() {
                   </span>
                 </div>
                 
-                {!hideScoreAndNarratives && (
-                  <p className="mt-3 sm:mt-4 text-sm sm:text-base text-muted-foreground">
-                    {maturityLevel.description}
-                  </p>
-                )}
+                <p className="mt-3 sm:mt-4 text-sm sm:text-base text-muted-foreground">
+                  {maturityLevel.description}
+                </p>
               </div>
 
               {!hideScoreAndNarratives && (
@@ -880,7 +878,7 @@ export default function Results() {
           </Card>
 
           {/* AI-Generated Maturity Summary */}
-          {!hideScoreAndNarratives && (!user && !model?.allowAnonymousResults ? (
+          {!user && !model?.allowAnonymousResults ? (
             <Card className="p-5 sm:p-6 md:p-8 mb-6 sm:mb-8 border-2 border-primary/20 bg-gradient-to-br from-primary/5 to-secondary/5">
               <div className="flex items-start gap-3 sm:gap-4 mb-4">
                 <div className="p-2 sm:p-3 rounded-lg bg-primary/10 flex-shrink-0">
@@ -949,7 +947,7 @@ export default function Results() {
                 <MarkdownContent content={maturitySummary} className="text-muted-foreground prose prose-lg max-w-none" />
               )}
             </Card>
-          ))}
+          )}
         </div>
       </section>
 
@@ -1043,7 +1041,7 @@ export default function Results() {
       )}
 
       {/* Personalized Recommendations */}
-      {!hideScoreAndNarratives && <section className="py-8 sm:py-12 bg-muted/30">
+      <section className="py-8 sm:py-12 bg-muted/30">
         <div className="container mx-auto px-4 max-w-6xl">
           <h2 className="text-2xl sm:text-3xl font-bold mb-6 sm:mb-8 text-center text-foreground">{t('results.strategicRecommendations')}</h2>
           
@@ -1116,10 +1114,10 @@ export default function Results() {
             ))}
           </div>
         </div>
-      </section>}
+      </section>
 
       {/* Improvement Resources */}
-      {!hideScoreAndNarratives && improvementResources.length > 0 && (
+      {improvementResources.length > 0 && (
         <section className="py-8 sm:py-12">
           <div className="container mx-auto px-4 max-w-6xl">
             <h2 className="text-2xl sm:text-3xl font-bold mb-6 sm:mb-8 text-center text-foreground">{t('results.improvementResources')}</h2>
