@@ -14,7 +14,7 @@ import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Download, Plus, Edit, Trash, FileSpreadsheet, Eye, EyeOff, BarChart3, Settings, FileDown, FileUp, ListOrdered, Users, Star, Upload, X, Sparkles, CheckCircle2, XCircle, Database, FileText, Brain, BookOpen, ClipboardList, Home, Building2, ChevronDown, Shield, Tag, Activity, Copy, Archive, ArchiveRestore, KeyRound, Clock, ExternalLink, Building, Ticket, Palette, GraduationCap, Bell, BellOff } from "lucide-react";
+import { Download, Plus, Edit, Trash, FileSpreadsheet, Eye, EyeOff, BarChart3, Settings, FileDown, FileUp, ListOrdered, Users, Star, Upload, X, Sparkles, CheckCircle2, XCircle, Database, FileText, Brain, BookOpen, ClipboardList, Home, Building2, ChevronDown, Shield, Tag, Activity, Copy, Archive, ArchiveRestore, KeyRound, Clock, ExternalLink, Building, Ticket, Palette, GraduationCap, Bell, BellOff, Mail } from "lucide-react";
 import type { Model, Result, Assessment, Dimension, Question, Answer, User, AssessmentTag } from "@shared/schema";
 import { USER_ROLES, type UserRole } from "@shared/constants";
 import { useAuth } from "@/hooks/use-auth";
@@ -95,6 +95,9 @@ function SectionFallback() {
 }
 const AdminGuideSection = lazy(() =>
   import("@/components/admin/AdminGuideSection").then((m) => ({ default: m.AdminGuideSection })),
+);
+const RemediationMessaging = lazy(() =>
+  import("@/components/admin/RemediationMessaging").then((m) => ({ default: m.RemediationMessaging })),
 );
 import {
   Sidebar,
@@ -2873,6 +2876,17 @@ export default function Admin() {
                       </SidebarMenuButton>
                     </SidebarMenuItem>
                     <SidebarMenuItem>
+                      <SidebarMenuButton
+                        onClick={() => setActiveSection('outreach')}
+                        isActive={activeSection === 'outreach'}
+                        data-testid="tab-outreach"
+                        tooltip="Outreach Messaging"
+                      >
+                        <Mail className="h-4 w-4" />
+                        <span className="group-data-[collapsible=icon]:hidden">Outreach</span>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                    <SidebarMenuItem>
                       <SidebarMenuButton 
                         onClick={() => setActiveSection('admin-guide')}
                         isActive={activeSection === 'admin-guide'}
@@ -4812,6 +4826,10 @@ export default function Admin() {
               )}
 
               {activeSection === 'support' && <SupportManagement />}
+
+              {activeSection === 'outreach' && (
+                <RemediationMessaging models={models.map(m => ({ id: m.id, name: m.name }))} />
+              )}
 
               {activeSection === 'admin-guide' && <AdminGuideSection />}
               </Suspense>
