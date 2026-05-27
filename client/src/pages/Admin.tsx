@@ -1355,6 +1355,7 @@ export default function Admin() {
       tenantIds: [],
       modelClass: ((updatedModel.modelClass as string) || 'organizational') as 'organizational' | 'individual',
       allowAnonymousResults: (updatedModel.allowAnonymousResults as boolean) ?? false,
+      hideScoreAndNarratives: (updatedModel.hideScoreAndNarratives as boolean) ?? false,
       generalResources: (updatedModel.generalResources as any[]) || [],
       maturityScale: (updatedModel.maturityScale as any[]) || [],
     } as any);
@@ -1403,6 +1404,7 @@ export default function Admin() {
         tenantIds: [],
         modelClass: (current.modelClass || 'organizational') as 'organizational' | 'individual',
         allowAnonymousResults: current.allowAnonymousResults ?? false,
+        hideScoreAndNarratives: current.hideScoreAndNarratives ?? false,
         generalResources: current.generalResources || [],
         maturityScale: current.maturityScale || [],
       } as any);
