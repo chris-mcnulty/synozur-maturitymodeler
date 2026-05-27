@@ -10,7 +10,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { Mail, Send, Users, AlertTriangle, CheckCircle2, Loader2, RefreshCw } from "lucide-react";
+import { Mail, Send, Users, AlertTriangle, CheckCircle2, Loader2, RefreshCw, Calendar } from "lucide-react";
 
 interface RemediationResult {
   assessmentId: string;
@@ -67,6 +67,7 @@ export function RemediationMessaging({ models }: { models: Array<{ id: string; n
   const { toast } = useToast();
   const [selectedModelId, setSelectedModelId] = useState('');
   const [selectedDate, setSelectedDate] = useState(() => new Date().toISOString().split('T')[0]);
+  const [filterByDate, setFilterByDate] = useState(true);
   const [levels, setLevels] = useState<MaturityLevel[]>(DEFAULT_LEVELS);
   const [subject, setSubject] = useState(DEFAULT_SUBJECT);
   const [messageTemplate, setMessageTemplate] = useState(DEFAULT_MESSAGE);
@@ -74,13 +75,15 @@ export function RemediationMessaging({ models }: { models: Array<{ id: string; n
   const [sendResult, setSendResult] = useState<{ sent: number; failed: number; failedList: string[] } | null>(null);
 
   const { data, isLoading, refetch, isFetching } = useQuery<ResultsResponse>({
-    queryKey: ['/api/admin/remediation/results', selectedModelId, selectedDate],
+    queryKey: ['/api/admin/remediation/results', selectedModelId, filterByDate ? selectedDate : 'all'],
     queryFn: async () => {
-      const res = await fetch(`/api/admin/remediation/results?modelId=${selectedModelId}&date=${selectedDate}`);
+      const params = new URLSearchParams({ modelId: selectedModelId });
+      if (filterByDate && selectedDate) params.set('date', selectedDate);
+      const res = await fetch(`/api/admin/remediation/results?${params}`);
       if (!res.ok) throw new Error('Failed to fetch results');
       return res.json();
     },
-    enabled: !!selectedModelId && !!selectedDate,
+    enabled: !!selectedModelId,
   });
 
   const rows = useMemo(() => {
@@ -148,7 +151,7 @@ export function RemediationMessaging({ models }: { models: Array<{ id: string; n
           <div className="flex flex-wrap gap-4 items-end">
             <div className="flex-1 min-w-48">
               <Label htmlFor="model-select" className="mb-1.5 block">Assessment Model</Label>
-              <Select value={selectedModelId} onValueChange={setSelectedModelId}>
+              <Select value={selectedModelId} onValueChange={v => { setSelectedModelId(v); setSelected(new Set()); }}>
                 <SelectTrigger id="model-select" data-testid="select-remediation-model">
                   <SelectValue placeholder="Choose a model…" />
                 </SelectTrigger>
@@ -160,12 +163,23 @@ export function RemediationMessaging({ models }: { models: Array<{ id: string; n
               </Select>
             </div>
             <div className="w-48">
-              <Label htmlFor="date-select" className="mb-1.5 block">Date</Label>
+              <div className="flex items-center gap-2 mb-1.5">
+                <Label htmlFor="date-select">Date</Label>
+                <button
+                  type="button"
+                  onClick={() => setFilterByDate(f => !f)}
+                  className={`text-xs px-1.5 py-0.5 rounded border transition-colors ${filterByDate ? 'bg-primary/10 border-primary/30 text-primary' : 'border-border text-muted-foreground'}`}
+                  data-testid="toggle-date-filter"
+                >
+                  {filterByDate ? 'On' : 'Off — showing all'}
+                </button>
+              </div>
               <Input
                 id="date-select"
                 type="date"
                 value={selectedDate}
                 onChange={e => setSelectedDate(e.target.value)}
+                disabled={!filterByDate}
                 data-testid="input-remediation-date"
               />
             </div>
@@ -174,6 +188,12 @@ export function RemediationMessaging({ models }: { models: Array<{ id: string; n
               <span className="ml-1.5">Search</span>
             </Button>
           </div>
+          {selectedModelId && !filterByDate && (
+            <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1.5">
+              <Calendar className="h-3.5 w-3.5" />
+              Showing all completed responses for this model — turn Date filter on to narrow to a specific day.
+            </p>
+          )}
         </CardContent>
       </Card>
 

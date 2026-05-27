@@ -12,13 +12,26 @@ export function registerRemediationRoutes(app: Express) {
   // Returns all completed assessments for the model on that date, with user info and score
   app.get('/api/admin/remediation/results', ensureGlobalAdmin, async (req, res) => {
     try {
-      const { modelId, date } = req.query as { modelId: string; date: string };
-      if (!modelId || !date) {
-        return res.status(400).json({ error: 'modelId and date are required' });
+      const { modelId, date } = req.query as { modelId: string; date?: string };
+      if (!modelId) {
+        return res.status(400).json({ error: 'modelId is required' });
       }
 
-      const dayStart = new Date(`${date}T00:00:00.000Z`);
-      const dayEnd = new Date(`${date}T23:59:59.999Z`);
+      // Build date filter. Add +/- 14-hour buffer around the local day to handle
+      // any timezone offset between the server and where respondents took the assessment.
+      const dateConditions: ReturnType<typeof and>[] = [
+        eq(assessments.modelId, modelId),
+        eq(assessments.status, 'completed'),
+      ];
+      if (date) {
+        // Widen window by 14 hours either side to avoid UTC-vs-local-timezone mismatches
+        const dayStart = new Date(`${date}T00:00:00.000Z`);
+        dayStart.setHours(dayStart.getHours() - 14);
+        const dayEnd = new Date(`${date}T23:59:59.999Z`);
+        dayEnd.setHours(dayEnd.getHours() + 14);
+        dateConditions.push(gte(assessments.completedAt, dayStart));
+        dateConditions.push(lt(assessments.completedAt, dayEnd));
+      }
 
       // Fetch completed assessments for this model on this date, joined with results and users
       const rows = await db
@@ -37,15 +50,7 @@ export function registerRemediationRoutes(app: Express) {
         .from(assessments)
         .innerJoin(results, eq(results.assessmentId, assessments.id))
         .leftJoin(users, eq(users.id, assessments.userId))
-        .where(
-          and(
-            eq(assessments.modelId, modelId),
-            eq(assessments.status, 'completed'),
-            isNotNull(assessments.completedAt),
-            gte(assessments.completedAt, dayStart),
-            lt(assessments.completedAt, dayEnd)
-          )
-        )
+        .where(and(...dateConditions))
         .orderBy(assessments.completedAt);
 
       // Fetch model name
