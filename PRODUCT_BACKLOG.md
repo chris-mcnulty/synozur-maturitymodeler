@@ -397,6 +397,85 @@ The MVP slice (catalog, player, authoring, quizzes, attestations, enrollment tra
 
 ---
 
+## RICH COURSE SLIDES, NARRATION & POWERPOINT IMPORT (Orion Courses for Clients)
+
+**Status:** In progress (Phases 0–1 underway)
+**Priority:** High
+**Branch:** `claude/orion-course-features-nax6bd`
+
+### Background
+Client demand to do more with Orion for courses: (1) author visually rich
+screens at least as delightful as PowerPoint, optionally ingested from .pptx;
+(2) per-slide narration (machine-generated or recorded) for accessibility;
+(3) video on a slide within a module; (4) break a long recording into 8–10
+separately playable modules; (5) private courses available to selected client
+domains; (6) optionally close with a quiz to certify involvement.
+
+### Assessment of existing platform (already built)
+- Courses → Modules → Lessons with 7 lesson types (`slides`, `video`, `audio`,
+  `rich_text`, `quiz`, `scorm`, `attestation`), enrollment + progress, SCORM
+  import/export, certificates (`certificate-pdf.ts`), attestation records.
+- Access control: `visibility` public/private, `ownerTenantId`, `courseTenants`
+  sharing, and verified `tenantDomains` (email-domain → tenant mapping).
+- Quiz grading (server-side), passing score, sequential gating, per-course
+  certificate/attestation — **all present**.
+
+### Confirmed product decisions
+- **Slide authoring:** block/rich editor for native authoring; PowerPoint import
+  is the high-fidelity escape hatch for complex decks (both required).
+- **Narration:** machine TTS **and** recorded-audio upload, per slide. **TTS
+  provider = Azure** (`@azure-rest/ai-inference` / Azure Speech). Captions not in
+  v1 (transcript toggle is a cheap fast-follow; we already hold narration text).
+- **Cert/quiz:** per-course (existing model) — no new work.
+- **Access control (#5):** no build — reuse tenant ↔ verified-domain mapping;
+  share a private course to the client's tenant.
+- **Video (#3/#4):** no transcoding/segmentation build. Client pre-chunks the
+  long recording into small hosted MP4s; we play them inline on slides. Each
+  "module" is a lesson/slide pointing at its own MP4.
+- **PPTX rendering:** LibreOffice headless (`soffice --convert-to`) renders each
+  slide to an image (high fidelity); JS parsing extracts text + speaker notes.
+
+### Architecture
+- `lessons.content` is freeform JSONB → **no DB migration**. The `slides`
+  payload evolves to a block model; legacy `{title, html, imageUrl}` slides are
+  normalized on read (`normalizeSlide`) for backward compatibility.
+- Shared, framework-agnostic slide model in `shared/slides.ts` (Zod schemas +
+  types + `normalizeSlide`/`slideToHtml`) consumed by the client renderer/editor,
+  the SCORM exporter, and (later) the PPTX importer.
+- Slide content v2:
+  - `slide = { id, blocks: Block[], narration?: { mode, text?, audioUrl?, voice?, status? } }`
+  - `Block = heading | text | image | video | callout | image_slide`
+- Media (images, recorded audio, MP4) reuse the existing Uppy + GCS upload path
+  (`/api/objects/upload`, `ObjectUploader`).
+
+### Phases
+- **Phase 0 — Foundations (DONE):** shared slide v2 model + Zod; block renderer
+  in `CourseDetail.tsx` (backward-compatible) with narration playback +
+  transcript; SCORM export renders blocks; unit tests (`tests/unit/slides.test.ts`).
+- **Phase 1 — Block slide editor (DONE):** `SlideEditor.tsx` — add/reorder/delete
+  slides and blocks, rich-text fields, inline image/video upload, recorded-audio
+  narration upload, transcript field; wired into `LessonEditorDialog` (replaces
+  the JSON textarea for `slides`).
+- **Phase 2 — Narration TTS (TODO):** Azure TTS endpoint
+  (`POST /api/lessons/:id/slides/:slideId/narration/tts`) → generate MP3, store in
+  GCS, save `narration.audioUrl`; enable the "Generate narration (Azure TTS)"
+  button (currently a disabled placeholder in the editor).
+- **Phase 3 — PowerPoint import (TODO):** `.pptx` upload → LibreOffice headless
+  → per-slide images (`image_slide` blocks) + text/speaker-notes extraction
+  (seeds narration text + alt). Remove the current `.pptx` upload block in
+  `Admin.tsx`. Requires `soffice` available in the deploy environment.
+- **Phase 4 — Glue & hardening (TODO):** accessibility pass (required alt text,
+  labeled controls, keyboard nav), broader Vitest/Playwright coverage.
+
+### Files touched (Phases 0–1)
+- NEW `shared/slides.ts`, `client/src/components/admin/SlideEditor.tsx`,
+  `tests/unit/slides.test.ts`
+- MOD `client/src/pages/CourseDetail.tsx` (block renderer + narration),
+  `client/src/components/admin/CourseManagement.tsx` (editor integration),
+  `server/services/scorm-service.ts` (block-aware export)
+
+---
+
 ## COMPLETED FEATURES
 
 ### February 2026

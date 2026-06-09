@@ -15,8 +15,10 @@ import { Switch } from "@/components/ui/switch";
 import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Plus, Edit, Trash, Users, ChevronLeft, FileText, Save, Loader2, Upload, Download, X, ChevronDown, Share2 } from "lucide-react";
 import { ObjectUploader } from "@/components/ObjectUploader";
+import { SlideEditor } from "@/components/admin/SlideEditor";
 import { useAuth } from "@/hooks/use-auth";
 import type { Course, CourseModule, Lesson, CourseTag, LessonType, CourseEnrollment } from "@shared/schema";
+import { normalizeSlides, type SlidesContent } from "@shared/slides";
 
 interface TenantShareRow {
   id: string;
@@ -894,9 +896,17 @@ function LessonEditorDialog({
     setContentJson(JSON.stringify(defaultContentFor(t), null, 2));
   };
 
+  // For `slides`, drive a structured editor and keep `contentJson` (the saved
+  // payload) in sync. Falls back to an empty slide set if the JSON is invalid.
+  const slidesValue: SlidesContent = (() => {
+    if (type !== "slides") return { slides: [] };
+    try { return { slides: normalizeSlides(JSON.parse(contentJson)) }; }
+    catch { return { slides: [] }; }
+  })();
+
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className={type === "slides" ? "max-w-4xl max-h-[90vh] overflow-y-auto" : "max-w-2xl"}>
         <DialogHeader>
           <DialogTitle>{lesson ? "Edit lesson" : "New lesson"}</DialogTitle>
           <DialogDescription>
@@ -944,20 +954,33 @@ function LessonEditorDialog({
               </div>
             </div>
           )}
-          <div>
-            <Label htmlFor="ld-content">Content (JSON)</Label>
-            <Textarea
-              id="ld-content"
-              rows={12}
-              value={contentJson}
-              onChange={e => setContentJson(e.target.value)}
-              className="font-mono text-xs"
-              data-testid="textarea-lesson-content"
-            />
-            <p className="text-xs text-muted-foreground mt-1">
-              {contentHelpFor(type)}
-            </p>
-          </div>
+          {type === "slides" ? (
+            <div>
+              <Label>Slides</Label>
+              <p className="text-xs text-muted-foreground mb-2">
+                Build each slide from content blocks and add optional narration. PowerPoint import is coming in a later release.
+              </p>
+              <SlideEditor
+                value={slidesValue}
+                onChange={(v) => setContentJson(JSON.stringify(v, null, 2))}
+              />
+            </div>
+          ) : (
+            <div>
+              <Label htmlFor="ld-content">Content (JSON)</Label>
+              <Textarea
+                id="ld-content"
+                rows={12}
+                value={contentJson}
+                onChange={e => setContentJson(e.target.value)}
+                className="font-mono text-xs"
+                data-testid="textarea-lesson-content"
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                {contentHelpFor(type)}
+              </p>
+            </div>
+          )}
           <div className="flex items-center gap-2">
             <Switch id="ld-req" checked={required} onCheckedChange={setRequired} data-testid="switch-lesson-required" />
             <Label htmlFor="ld-req">Required for course completion</Label>
@@ -978,7 +1001,18 @@ function LessonEditorDialog({
 function defaultContentFor(type: LessonType): any {
   switch (type) {
     case "rich_text": return { html: "<p>Lesson content goes here.</p>" };
-    case "slides": return { slides: [{ title: "Slide 1", html: "<p>Content</p>" }] };
+    case "slides": return {
+      slides: [
+        {
+          id: `slide_${Date.now().toString(36)}`,
+          blocks: [
+            { id: `b_${Date.now().toString(36)}_h`, type: "heading", level: 2, text: "Slide 1" },
+            { id: `b_${Date.now().toString(36)}_t`, type: "text", html: "<p>Content</p>" },
+          ],
+          narration: { mode: "none" },
+        },
+      ],
+    };
     case "video": return { videoUrl: "", provider: "mp4" };
     case "audio": return { audioUrl: "" };
     case "quiz": return {
@@ -998,7 +1032,7 @@ function defaultContentFor(type: LessonType): any {
 function contentHelpFor(type: LessonType): string {
   switch (type) {
     case "rich_text": return "Shape: { html: string }";
-    case "slides": return "Shape: { slides: [{ title?, html?, imageUrl? }] }";
+    case "slides": return "Block-based slides with optional narration. Edited visually above.";
     case "video": return "Shape: { videoUrl, provider?: 'mp4'|'youtube'|'vimeo' }";
     case "audio": return "Shape: { audioUrl }";
     case "quiz": return "Shape: { passingScore, questions: [{ id, text, answers: [{ id, text }], correctAnswerId }] }";
