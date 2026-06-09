@@ -1,0 +1,361 @@
+{
+  "formatVersion": "1.0",
+  "exportedAt": "2026-06-09T16:58:00Z",
+  "model": {
+    "name": "Generative AI Adoption & Governance Maturity Assessment",
+    "slug": "generative-ai-adoption-governance-maturity-assessment",
+    "description": "Organizational capability model for generative AI adoption and governance; scored 100-500 (CMMI) per question. Dimension and overall scores are mean averages.",
+    "version": "1.0.0",
+    "estimatedTime": "15-20 minutes",
+    "status": "draft",
+    "featured": false,
+    "allowAnonymousResults": false,
+    "imageUrl": "",
+    "maturityScale": [
+      { "id": "1", "name": "Initial", "description": "Ad hoc generative AI adoption; success depends on individuals", "minScore": 100, "maxScore": 199 },
+      { "id": "2", "name": "Managed", "description": "Repeatable generative AI practices at team/project level", "minScore": 200, "maxScore": 299 },
+      { "id": "3", "name": "Defined", "description": "Consistent organization-wide generative AI practices", "minScore": 300, "maxScore": 399 },
+      { "id": "4", "name": "Quantitatively Managed", "description": "Measured and data-driven generative AI management", "minScore": 400, "maxScore": 449 },
+      { "id": "5", "name": "Optimizing", "description": "Continuously improving generative AI leadership", "minScore": 450, "maxScore": 500 }
+    ],
+    "generalResources": []
+  },
+  "dimensions": [
+    { "key": "access_tooling", "label": "Access & Tooling", "description": "Breadth of access to generative AI tools and how the approved tool set is defined, sourced, and standardized.", "order": 1 },
+    { "key": "agent_adoption", "label": "Agent Adoption & Building", "description": "Use of publisher declarative agents, in-house custom agent building, and long-form autonomous agentic tools.", "order": 2 },
+    { "key": "governance_operating_model", "label": "Governance & Operating Model", "description": "Steering bodies, centers of excellence, communities of practice, and IT support that enable and direct AI use.", "order": 3 },
+    { "key": "risk_policy_data", "label": "Risk, Policy & Data Protection", "description": "Acceptable-use policy, data protection, output-quality controls, and regulatory readiness.", "order": 4 },
+    { "key": "economic_oversight", "label": "Economic & Value Oversight", "description": "Management of license costs, consumption-based spend, ROI targets, and investment decision-making.", "order": 5 }
+  ],
+  "questions": [
+    {
+      "dimensionKey": "access_tooling",
+      "text": "How broadly is access to generative AI chat tools (Copilot, ChatGPT, Gemini, Claude) provided across your organization?",
+      "type": "multiple_choice",
+      "order": 0,
+      "minValue": null, "maxValue": null, "unit": null, "placeholder": null,
+      "improvementStatement": null, "resourceTitle": null, "resourceLink": null, "resourceDescription": null,
+      "answers": [
+        { "text": "Not available, or actively blocked", "score": 100, "order": 0, "improvementStatement": null, "resourceTitle": null, "resourceLink": null, "resourceDescription": null },
+        { "text": "Limited to a pilot group or specific teams", "score": 200, "order": 1, "improvementStatement": null, "resourceTitle": null, "resourceLink": null, "resourceDescription": null },
+        { "text": "Broadly available to most knowledge workers", "score": 300, "order": 2, "improvementStatement": null, "resourceTitle": null, "resourceLink": null, "resourceDescription": null },
+        { "text": "Universal access, provisioned and managed as a standard part of the toolkit", "score": 500, "order": 3, "improvementStatement": null, "resourceTitle": null, "resourceLink": null, "resourceDescription": null }
+      ]
+    },
+    {
+      "dimensionKey": "access_tooling",
+      "text": "How is the approved generative AI tool set defined and managed?",
+      "type": "multiple_choice",
+      "order": 1,
+      "minValue": null, "maxValue": null, "unit": null, "placeholder": null,
+      "improvementStatement": null, "resourceTitle": null, "resourceLink": null, "resourceDescription": null,
+      "answers": [
+        { "text": "No standard; individuals use whatever they find (shadow AI prevalent)", "score": 100, "order": 0, "improvementStatement": null, "resourceTitle": null, "resourceLink": null, "resourceDescription": null },
+        { "text": "Bring-your-own permitted, tracked only informally", "score": 200, "order": 1, "improvementStatement": null, "resourceTitle": null, "resourceLink": null, "resourceDescription": null },
+        { "text": "A primary standard set plus vetted secondary tools for defined needs, documented", "score": 300, "order": 2, "improvementStatement": null, "resourceTitle": null, "resourceLink": null, "resourceDescription": null },
+        { "text": "A managed catalog with usage monitored and a formal approval path for new tools", "score": 400, "order": 3, "improvementStatement": null, "resourceTitle": null, "resourceLink": null, "resourceDescription": null },
+        { "text": "Curated catalog continuously optimized, with usage analytics driving tool decisions", "score": 500, "order": 4, "improvementStatement": null, "resourceTitle": null, "resourceLink": null, "resourceDescription": null }
+      ]
+    },
+    {
+      "dimensionKey": "access_tooling",
+      "text": "How does your organization handle requests for new or non-standard AI tools?",
+      "type": "multiple_choice",
+      "order": 2,
+      "minValue": null, "maxValue": null, "unit": null, "placeholder": null,
+      "improvementStatement": null, "resourceTitle": null, "resourceLink": null, "resourceDescription": null,
+      "answers": [
+        { "text": "No process; requests are ignored or handled entirely ad hoc", "score": 100, "order": 0, "improvementStatement": null, "resourceTitle": null, "resourceLink": null, "resourceDescription": null },
+        { "text": "Case-by-case, with outcomes depending on who is asked", "score": 200, "order": 1, "improvementStatement": null, "resourceTitle": null, "resourceLink": null, "resourceDescription": null },
+        { "text": "A defined intake and review process exists", "score": 300, "order": 2, "improvementStatement": null, "resourceTitle": null, "resourceLink": null, "resourceDescription": null },
+        { "text": "Requests reviewed against documented criteria with decisions tracked", "score": 400, "order": 3, "improvementStatement": null, "resourceTitle": null, "resourceLink": null, "resourceDescription": null },
+        { "text": "Proactive evaluation pipeline with continuous market scanning", "score": 500, "order": 4, "improvementStatement": null, "resourceTitle": null, "resourceLink": null, "resourceDescription": null }
+      ]
+    },
+    {
+      "dimensionKey": "access_tooling",
+      "text": "How consistent is the generative AI tool experience across departments?",
+      "type": "multiple_choice",
+      "order": 3,
+      "minValue": null, "maxValue": null, "unit": null, "placeholder": null,
+      "improvementStatement": null, "resourceTitle": null, "resourceLink": null, "resourceDescription": null,
+      "answers": [
+        { "text": "Highly fragmented; every team does something different", "score": 100, "order": 0, "improvementStatement": null, "resourceTitle": null, "resourceLink": null, "resourceDescription": null },
+        { "text": "Some common tools, but adoption is mostly siloed", "score": 200, "order": 1, "improvementStatement": null, "resourceTitle": null, "resourceLink": null, "resourceDescription": null },
+        { "text": "Mostly consistent org-wide", "score": 300, "order": 2, "improvementStatement": null, "resourceTitle": null, "resourceLink": null, "resourceDescription": null },
+        { "text": "Consistent and centrally administered", "score": 400, "order": 3, "improvementStatement": null, "resourceTitle": null, "resourceLink": null, "resourceDescription": null },
+        { "text": "Consistent, optimized, and refined through user feedback loops", "score": 500, "order": 4, "improvementStatement": null, "resourceTitle": null, "resourceLink": null, "resourceDescription": null }
+      ]
+    },
+    {
+      "dimensionKey": "agent_adoption",
+      "text": "How widely are publisher-issued declarative agents (out-of-the-box Copilot agents, store GPTs, Gemini Gems) used?",
+      "type": "multiple_choice",
+      "order": 4,
+      "minValue": null, "maxValue": null, "unit": null, "placeholder": null,
+      "improvementStatement": null, "resourceTitle": null, "resourceLink": null, "resourceDescription": null,
+      "answers": [
+        { "text": "Not used", "score": 100, "order": 0, "improvementStatement": null, "resourceTitle": null, "resourceLink": null, "resourceDescription": null },
+        { "text": "Aware of them; occasional experimental use by individuals", "score": 200, "order": 1, "improvementStatement": null, "resourceTitle": null, "resourceLink": null, "resourceDescription": null },
+        { "text": "Used regularly by several teams", "score": 300, "order": 2, "improvementStatement": null, "resourceTitle": null, "resourceLink": null, "resourceDescription": null },
+        { "text": "Standardized agents deployed and managed across teams", "score": 400, "order": 3, "improvementStatement": null, "resourceTitle": null, "resourceLink": null, "resourceDescription": null },
+        { "text": "Embedded in core workflows with usage measured and the agent set curated", "score": 500, "order": 4, "improvementStatement": null, "resourceTitle": null, "resourceLink": null, "resourceDescription": null }
+      ]
+    },
+    {
+      "dimensionKey": "agent_adoption",
+      "text": "Does your organization build its own custom agents, and by what means?",
+      "type": "multiple_choice",
+      "order": 5,
+      "minValue": null, "maxValue": null, "unit": null, "placeholder": null,
+      "improvementStatement": null, "resourceTitle": null, "resourceLink": null, "resourceDescription": null,
+      "answers": [
+        { "text": "No custom agents are built", "score": 100, "order": 0, "improvementStatement": null, "resourceTitle": null, "resourceLink": null, "resourceDescription": null },
+        { "text": "Occasional no-code experiments by individuals (Copilot Studio builder, custom GPTs)", "score": 200, "order": 1, "improvementStatement": null, "resourceTitle": null, "resourceLink": null, "resourceDescription": null },
+        { "text": "Low-code agents built by power users in business units (Copilot Studio, Power Platform)", "score": 300, "order": 2, "improvementStatement": null, "resourceTitle": null, "resourceLink": null, "resourceDescription": null },
+        { "text": "Pro-code / full declarative agents built under defined development practices", "score": 400, "order": 3, "improvementStatement": null, "resourceTitle": null, "resourceLink": null, "resourceDescription": null },
+        { "text": "A mature agent factory spanning no-code to pro-code with reuse, lifecycle, and standards", "score": 500, "order": 4, "improvementStatement": null, "resourceTitle": null, "resourceLink": null, "resourceDescription": null }
+      ]
+    },
+    {
+      "dimensionKey": "agent_adoption",
+      "text": "Who builds custom agents in your organization?",
+      "type": "multiple_choice",
+      "order": 6,
+      "minValue": null, "maxValue": null, "unit": null, "placeholder": null,
+      "improvementStatement": null, "resourceTitle": null, "resourceLink": null, "resourceDescription": null,
+      "answers": [
+        { "text": "No one", "score": 100, "order": 0, "improvementStatement": null, "resourceTitle": null, "resourceLink": null, "resourceDescription": null },
+        { "text": "Only central IT or professional developers", "score": 200, "order": 1, "improvementStatement": null, "resourceTitle": null, "resourceLink": null, "resourceDescription": null },
+        { "text": "A few power users across business units", "score": 300, "order": 2, "improvementStatement": null, "resourceTitle": null, "resourceLink": null, "resourceDescription": null },
+        { "text": "An established maker community operating within guardrails", "score": 400, "order": 3, "improvementStatement": null, "resourceTitle": null, "resourceLink": null, "resourceDescription": null },
+        { "text": "A broad, governed maker community feeding a shared, reusable catalog", "score": 500, "order": 4, "improvementStatement": null, "resourceTitle": null, "resourceLink": null, "resourceDescription": null }
+      ]
+    },
+    {
+      "dimensionKey": "agent_adoption",
+      "text": "How widespread is use of long-form, autonomous agentic tools (Copilot Cowork, ChatGPT Agent/Operator, Claude Cowork, research and coding agents)?",
+      "type": "multiple_choice",
+      "order": 7,
+      "minValue": null, "maxValue": null, "unit": null, "placeholder": null,
+      "improvementStatement": null, "resourceTitle": null, "resourceLink": null, "resourceDescription": null,
+      "answers": [
+        { "text": "Not used", "score": 100, "order": 0, "improvementStatement": null, "resourceTitle": null, "resourceLink": null, "resourceDescription": null },
+        { "text": "Individual experimentation only", "score": 200, "order": 1, "improvementStatement": null, "resourceTitle": null, "resourceLink": null, "resourceDescription": null },
+        { "text": "Pockets of adoption within specific teams", "score": 300, "order": 2, "improvementStatement": null, "resourceTitle": null, "resourceLink": null, "resourceDescription": null },
+        { "text": "Adopted in defined production workflows with oversight", "score": 400, "order": 3, "improvementStatement": null, "resourceTitle": null, "resourceLink": null, "resourceDescription": null },
+        { "text": "Embedded across the organization with measured outcomes and continuous tuning", "score": 500, "order": 4, "improvementStatement": null, "resourceTitle": null, "resourceLink": null, "resourceDescription": null }
+      ]
+    },
+    {
+      "dimensionKey": "agent_adoption",
+      "text": "How are custom and third-party agents managed through their lifecycle (ownership, versioning, retirement)?",
+      "type": "multiple_choice",
+      "order": 8,
+      "minValue": null, "maxValue": null, "unit": null, "placeholder": null,
+      "improvementStatement": null, "resourceTitle": null, "resourceLink": null, "resourceDescription": null,
+      "answers": [
+        { "text": "No lifecycle management", "score": 100, "order": 0, "improvementStatement": null, "resourceTitle": null, "resourceLink": null, "resourceDescription": null },
+        { "text": "Informal and dependent on the individual owner", "score": 200, "order": 1, "improvementStatement": null, "resourceTitle": null, "resourceLink": null, "resourceDescription": null },
+        { "text": "Defined ownership and a review cadence", "score": 300, "order": 2, "improvementStatement": null, "resourceTitle": null, "resourceLink": null, "resourceDescription": null },
+        { "text": "A tracked inventory with version and performance monitoring", "score": 400, "order": 3, "improvementStatement": null, "resourceTitle": null, "resourceLink": null, "resourceDescription": null },
+        { "text": "Fully governed lifecycle with automated monitoring and managed retirement", "score": 500, "order": 4, "improvementStatement": null, "resourceTitle": null, "resourceLink": null, "resourceDescription": null }
+      ]
+    },
+    {
+      "dimensionKey": "governance_operating_model",
+      "text": "Is there a formal AI governance or steering body?",
+      "type": "multiple_choice",
+      "order": 9,
+      "minValue": null, "maxValue": null, "unit": null, "placeholder": null,
+      "improvementStatement": null, "resourceTitle": null, "resourceLink": null, "resourceDescription": null,
+      "answers": [
+        { "text": "None", "score": 100, "order": 0, "improvementStatement": null, "resourceTitle": null, "resourceLink": null, "resourceDescription": null },
+        { "text": "An informal group meets occasionally", "score": 200, "order": 1, "improvementStatement": null, "resourceTitle": null, "resourceLink": null, "resourceDescription": null },
+        { "text": "A formal committee exists with a defined charter", "score": 300, "order": 2, "improvementStatement": null, "resourceTitle": null, "resourceLink": null, "resourceDescription": null },
+        { "text": "A steering committee blends business and technology leadership and meets on a regular cadence", "score": 400, "order": 3, "improvementStatement": null, "resourceTitle": null, "resourceLink": null, "resourceDescription": null },
+        { "text": "An active steering group drives strategy and is measured against outcomes", "score": 500, "order": 4, "improvementStatement": null, "resourceTitle": null, "resourceLink": null, "resourceDescription": null }
+      ]
+    },
+    {
+      "dimensionKey": "governance_operating_model",
+      "text": "Is there a Center of Excellence (or equivalent) for AI best practices?",
+      "type": "multiple_choice",
+      "order": 10,
+      "minValue": null, "maxValue": null, "unit": null, "placeholder": null,
+      "improvementStatement": null, "resourceTitle": null, "resourceLink": null, "resourceDescription": null,
+      "answers": [
+        { "text": "No", "score": 100, "order": 0, "improvementStatement": null, "resourceTitle": null, "resourceLink": null, "resourceDescription": null },
+        { "text": "Informal knowledge sharing by individuals", "score": 200, "order": 1, "improvementStatement": null, "resourceTitle": null, "resourceLink": null, "resourceDescription": null },
+        { "text": "A designated CoE function is established", "score": 300, "order": 2, "improvementStatement": null, "resourceTitle": null, "resourceLink": null, "resourceDescription": null },
+        { "text": "The CoE actively develops and disseminates standards and reusable assets", "score": 400, "order": 3, "improvementStatement": null, "resourceTitle": null, "resourceLink": null, "resourceDescription": null },
+        { "text": "The CoE continuously improves practices and measures adoption impact", "score": 500, "order": 4, "improvementStatement": null, "resourceTitle": null, "resourceLink": null, "resourceDescription": null }
+      ]
+    },
+    {
+      "dimensionKey": "governance_operating_model",
+      "text": "How do employees get peer support and share generative AI practices?",
+      "type": "multiple_choice",
+      "order": 11,
+      "minValue": null, "maxValue": null, "unit": null, "placeholder": null,
+      "improvementStatement": null, "resourceTitle": null, "resourceLink": null, "resourceDescription": null,
+      "answers": [
+        { "text": "No community or peer support", "score": 100, "order": 0, "improvementStatement": null, "resourceTitle": null, "resourceLink": null, "resourceDescription": null },
+        { "text": "Ad hoc, person-to-person", "score": 200, "order": 1, "improvementStatement": null, "resourceTitle": null, "resourceLink": null, "resourceDescription": null },
+        { "text": "Established communities of practice or dedicated channels", "score": 300, "order": 2, "improvementStatement": null, "resourceTitle": null, "resourceLink": null, "resourceDescription": null },
+        { "text": "Active communities with curated content and regular events", "score": 400, "order": 3, "improvementStatement": null, "resourceTitle": null, "resourceLink": null, "resourceDescription": null },
+        { "text": "A thriving grassroots network that feeds the CoE and steering body", "score": 500, "order": 4, "improvementStatement": null, "resourceTitle": null, "resourceLink": null, "resourceDescription": null }
+      ]
+    },
+    {
+      "dimensionKey": "governance_operating_model",
+      "text": "What support model does IT provide for generative AI tools?",
+      "type": "multiple_choice",
+      "order": 12,
+      "minValue": null, "maxValue": null, "unit": null, "placeholder": null,
+      "improvementStatement": null, "resourceTitle": null, "resourceLink": null, "resourceDescription": null,
+      "answers": [
+        { "text": "None; users are on their own", "score": 100, "order": 0, "improvementStatement": null, "resourceTitle": null, "resourceLink": null, "resourceDescription": null },
+        { "text": "Best-effort, informal help", "score": 200, "order": 1, "improvementStatement": null, "resourceTitle": null, "resourceLink": null, "resourceDescription": null },
+        { "text": "A defined support channel and documentation", "score": 300, "order": 2, "improvementStatement": null, "resourceTitle": null, "resourceLink": null, "resourceDescription": null },
+        { "text": "Tiered support with SLAs and a curated tool catalog", "score": 400, "order": 3, "improvementStatement": null, "resourceTitle": null, "resourceLink": null, "resourceDescription": null },
+        { "text": "Proactive support with monitoring, self-service, and continuous improvement", "score": 500, "order": 4, "improvementStatement": null, "resourceTitle": null, "resourceLink": null, "resourceDescription": null }
+      ]
+    },
+    {
+      "dimensionKey": "governance_operating_model",
+      "text": "How are AI use cases identified, prioritized, and scaled?",
+      "type": "multiple_choice",
+      "order": 13,
+      "minValue": null, "maxValue": null, "unit": null, "placeholder": null,
+      "improvementStatement": null, "resourceTitle": null, "resourceLink": null, "resourceDescription": null,
+      "answers": [
+        { "text": "No process; purely opportunistic", "score": 100, "order": 0, "improvementStatement": null, "resourceTitle": null, "resourceLink": null, "resourceDescription": null },
+        { "text": "Individual initiative, not coordinated", "score": 200, "order": 1, "improvementStatement": null, "resourceTitle": null, "resourceLink": null, "resourceDescription": null },
+        { "text": "A defined intake and prioritization process", "score": 300, "order": 2, "improvementStatement": null, "resourceTitle": null, "resourceLink": null, "resourceDescription": null },
+        { "text": "A portfolio managed with value/effort scoring and tracked benefits", "score": 400, "order": 3, "improvementStatement": null, "resourceTitle": null, "resourceLink": null, "resourceDescription": null },
+        { "text": "A continuous pipeline optimized against strategic objectives", "score": 500, "order": 4, "improvementStatement": null, "resourceTitle": null, "resourceLink": null, "resourceDescription": null }
+      ]
+    },
+    {
+      "dimensionKey": "risk_policy_data",
+      "text": "Is there an acceptable-use policy for generative AI?",
+      "type": "multiple_choice",
+      "order": 14,
+      "minValue": null, "maxValue": null, "unit": null, "placeholder": null,
+      "improvementStatement": null, "resourceTitle": null, "resourceLink": null, "resourceDescription": null,
+      "answers": [
+        { "text": "None", "score": 100, "order": 0, "improvementStatement": null, "resourceTitle": null, "resourceLink": null, "resourceDescription": null },
+        { "text": "Informal guidance only", "score": 200, "order": 1, "improvementStatement": null, "resourceTitle": null, "resourceLink": null, "resourceDescription": null },
+        { "text": "A documented policy is published", "score": 300, "order": 2, "improvementStatement": null, "resourceTitle": null, "resourceLink": null, "resourceDescription": null },
+        { "text": "Policy is enforced and acknowledged, and reviewed periodically", "score": 400, "order": 3, "improvementStatement": null, "resourceTitle": null, "resourceLink": null, "resourceDescription": null },
+        { "text": "Policy is continuously updated with monitoring and adaptive controls", "score": 500, "order": 4, "improvementStatement": null, "resourceTitle": null, "resourceLink": null, "resourceDescription": null }
+      ]
+    },
+    {
+      "dimensionKey": "risk_policy_data",
+      "text": "How is sensitive data protected when employees use AI tools (DLP, approved-data boundaries)?",
+      "type": "multiple_choice",
+      "order": 15,
+      "minValue": null, "maxValue": null, "unit": null, "placeholder": null,
+      "improvementStatement": null, "resourceTitle": null, "resourceLink": null, "resourceDescription": null,
+      "answers": [
+        { "text": "No controls; users can paste anything into any tool", "score": 100, "order": 0, "improvementStatement": null, "resourceTitle": null, "resourceLink": null, "resourceDescription": null },
+        { "text": "Verbal guidance only, with no technical controls", "score": 200, "order": 1, "improvementStatement": null, "resourceTitle": null, "resourceLink": null, "resourceDescription": null },
+        { "text": "Defined data-handling rules with some technical controls", "score": 300, "order": 2, "improvementStatement": null, "resourceTitle": null, "resourceLink": null, "resourceDescription": null },
+        { "text": "Enforced DLP and approved-data boundaries with monitoring", "score": 400, "order": 3, "improvementStatement": null, "resourceTitle": null, "resourceLink": null, "resourceDescription": null },
+        { "text": "Comprehensive, automated data protection with continuous auditing", "score": 500, "order": 4, "improvementStatement": null, "resourceTitle": null, "resourceLink": null, "resourceDescription": null }
+      ]
+    },
+    {
+      "dimensionKey": "risk_policy_data",
+      "text": "How does your organization manage AI output quality and risk (accuracy, bias, human review)?",
+      "type": "multiple_choice",
+      "order": 16,
+      "minValue": null, "maxValue": null, "unit": null, "placeholder": null,
+      "improvementStatement": null, "resourceTitle": null, "resourceLink": null, "resourceDescription": null,
+      "answers": [
+        { "text": "No review; outputs are used as-is", "score": 100, "order": 0, "improvementStatement": null, "resourceTitle": null, "resourceLink": null, "resourceDescription": null },
+        { "text": "Reliance on individual judgment", "score": 200, "order": 1, "improvementStatement": null, "resourceTitle": null, "resourceLink": null, "resourceDescription": null },
+        { "text": "Defined review expectations for AI-assisted work", "score": 300, "order": 2, "improvementStatement": null, "resourceTitle": null, "resourceLink": null, "resourceDescription": null },
+        { "text": "Required human-in-the-loop controls with checks for high-risk uses", "score": 400, "order": 3, "improvementStatement": null, "resourceTitle": null, "resourceLink": null, "resourceDescription": null },
+        { "text": "Measured quality controls with feedback loops and continuous improvement", "score": 500, "order": 4, "improvementStatement": null, "resourceTitle": null, "resourceLink": null, "resourceDescription": null }
+      ]
+    },
+    {
+      "dimensionKey": "risk_policy_data",
+      "text": "How prepared is your organization for AI regulatory and compliance requirements?",
+      "type": "multiple_choice",
+      "order": 17,
+      "minValue": null, "maxValue": null, "unit": null, "placeholder": null,
+      "improvementStatement": null, "resourceTitle": null, "resourceLink": null, "resourceDescription": null,
+      "answers": [
+        { "text": "Not considered", "score": 100, "order": 0, "improvementStatement": null, "resourceTitle": null, "resourceLink": null, "resourceDescription": null },
+        { "text": "Aware, but no action taken", "score": 200, "order": 1, "improvementStatement": null, "resourceTitle": null, "resourceLink": null, "resourceDescription": null },
+        { "text": "Compliance requirements identified and mapped", "score": 300, "order": 2, "improvementStatement": null, "resourceTitle": null, "resourceLink": null, "resourceDescription": null },
+        { "text": "Controls implemented and audited against requirements", "score": 400, "order": 3, "improvementStatement": null, "resourceTitle": null, "resourceLink": null, "resourceDescription": null },
+        { "text": "A proactive compliance program adapts to evolving regulation", "score": 500, "order": 4, "improvementStatement": null, "resourceTitle": null, "resourceLink": null, "resourceDescription": null }
+      ]
+    },
+    {
+      "dimensionKey": "economic_oversight",
+      "text": "How are AI license and subscription costs managed?",
+      "type": "multiple_choice",
+      "order": 18,
+      "minValue": null, "maxValue": null, "unit": null, "placeholder": null,
+      "improvementStatement": null, "resourceTitle": null, "resourceLink": null, "resourceDescription": null,
+      "answers": [
+        { "text": "Not tracked", "score": 100, "order": 0, "improvementStatement": null, "resourceTitle": null, "resourceLink": null, "resourceDescription": null },
+        { "text": "Tracked informally and scattered across budgets", "score": 200, "order": 1, "improvementStatement": null, "resourceTitle": null, "resourceLink": null, "resourceDescription": null },
+        { "text": "Centrally tracked and managed", "score": 300, "order": 2, "improvementStatement": null, "resourceTitle": null, "resourceLink": null, "resourceDescription": null },
+        { "text": "Managed with allocation or showback to business units", "score": 400, "order": 3, "improvementStatement": null, "resourceTitle": null, "resourceLink": null, "resourceDescription": null },
+        { "text": "Optimized with usage analytics driving licensing decisions", "score": 500, "order": 4, "improvementStatement": null, "resourceTitle": null, "resourceLink": null, "resourceDescription": null }
+      ]
+    },
+    {
+      "dimensionKey": "economic_oversight",
+      "text": "How is consumption-based / pay-as-you-go (token) spend governed?",
+      "type": "multiple_choice",
+      "order": 19,
+      "minValue": null, "maxValue": null, "unit": null, "placeholder": null,
+      "improvementStatement": null, "resourceTitle": null, "resourceLink": null, "resourceDescription": null,
+      "answers": [
+        { "text": "Not applicable, or uncontrolled", "score": 100, "order": 0, "improvementStatement": null, "resourceTitle": null, "resourceLink": null, "resourceDescription": null },
+        { "text": "Spend occurs without a dedicated budget", "score": 200, "order": 1, "improvementStatement": null, "resourceTitle": null, "resourceLink": null, "resourceDescription": null },
+        { "text": "Defined budgets allocated for token/consumption use", "score": 300, "order": 2, "improvementStatement": null, "resourceTitle": null, "resourceLink": null, "resourceDescription": null },
+        { "text": "Budgets monitored with alerts and spending controls", "score": 400, "order": 3, "improvementStatement": null, "resourceTitle": null, "resourceLink": null, "resourceDescription": null },
+        { "text": "FinOps-style optimization with forecasting and chargeback", "score": 500, "order": 4, "improvementStatement": null, "resourceTitle": null, "resourceLink": null, "resourceDescription": null }
+      ]
+    },
+    {
+      "dimensionKey": "economic_oversight",
+      "text": "Are formal ROI or business-value targets established for AI investment?",
+      "type": "multiple_choice",
+      "order": 20,
+      "minValue": null, "maxValue": null, "unit": null, "placeholder": null,
+      "improvementStatement": null, "resourceTitle": null, "resourceLink": null, "resourceDescription": null,
+      "answers": [
+        { "text": "No", "score": 100, "order": 0, "improvementStatement": null, "resourceTitle": null, "resourceLink": null, "resourceDescription": null },
+        { "text": "Anecdotal benefits are cited but not measured", "score": 200, "order": 1, "improvementStatement": null, "resourceTitle": null, "resourceLink": null, "resourceDescription": null },
+        { "text": "ROI targets are defined for key initiatives", "score": 300, "order": 2, "improvementStatement": null, "resourceTitle": null, "resourceLink": null, "resourceDescription": null },
+        { "text": "Benefits are tracked and measured against targets", "score": 400, "order": 3, "improvementStatement": null, "resourceTitle": null, "resourceLink": null, "resourceDescription": null },
+        { "text": "Value is continuously measured and reinvested via a benefits-realization process", "score": 500, "order": 4, "improvementStatement": null, "resourceTitle": null, "resourceLink": null, "resourceDescription": null }
+      ]
+    },
+    {
+      "dimensionKey": "economic_oversight",
+      "text": "How is AI investment decision-making structured?",
+      "type": "multiple_choice",
+      "order": 21,
+      "minValue": null, "maxValue": null, "unit": null, "placeholder": null,
+      "improvementStatement": null, "resourceTitle": null, "resourceLink": null, "resourceDescription": null,
+      "answers": [
+        { "text": "No structured funding; spend is ad hoc", "score": 100, "order": 0, "improvementStatement": null, "resourceTitle": null, "resourceLink": null, "resourceDescription": null },
+        { "text": "Funded reactively as requests arise", "score": 200, "order": 1, "improvementStatement": null, "resourceTitle": null, "resourceLink": null, "resourceDescription": null },
+        { "text": "A defined budget and approval process exists", "score": 300, "order": 2, "improvementStatement": null, "resourceTitle": null, "resourceLink": null, "resourceDescription": null },
+        { "text": "Portfolio-based investment with measured returns", "score": 400, "order": 3, "improvementStatement": null, "resourceTitle": null, "resourceLink": null, "resourceDescription": null },
+        { "text": "Strategic, data-driven investment optimized continuously", "score": 500, "order": 4, "improvementStatement": null, "resourceTitle": null, "resourceLink": null, "resourceDescription": null }
+      ]
+    }
+  ]
+}
