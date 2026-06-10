@@ -184,7 +184,8 @@ export async function importPptx(opts: {
       entityId: `slides/${randomUUID()}.png`,
       data: images[i],
       contentType: "image/png",
-      acl: { owner: opts.ownerUserId || "system", visibility: "public" },
+      // Private: served to learners via the course-aware media proxy.
+      acl: { owner: opts.ownerUserId || "system", visibility: "private" },
     });
 
     const alt = (info?.title || info?.text?.split("\n")[0] || `Slide ${i + 1}`).slice(0, 280);

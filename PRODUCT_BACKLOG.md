@@ -508,9 +508,18 @@ domains; (6) optionally close with a quiz to certify involvement.
 - **Tests:** unit coverage for `splitTextForTts` + `extractManagedObjectPaths`,
   and route tests for finalize / TTS / PPTX-import / slide validation
   (`tests/integration/course-media.test.ts`).
-- **Open decision:** object ACL for narration/slide media is still **public**;
-  gating to enrolled learners (Part D) needs a course-aware serving path — see
-  PR discussion.
+- **Media ACL — gate by course access (Part D):** narration audio, imported
+  slide images, and slide-editor-uploaded media are now stored **private** and
+  served through a course-aware proxy `GET /api/courses/:id/media?path=…` that
+  gates by course access. Managers stream any managed object (so the editor can
+  preview unsaved media); other viewers must be able to view a *published*
+  course AND the object must be referenced by one of its lessons (no open
+  proxy). Anonymous viewers of public courses still work. Hero images are
+  finalized separately (`PUT …/image`) and remain public for the catalog. The
+  client rewrites media URLs via `courseMediaUrl()` in the player and editor.
+  - *Perf note:* viewer requests load the course tree to validate the
+    referenced-object set; fine for current course sizes, revisit with a cache
+    or object→course index if decks grow large.
 
 ### Media finalize
 Direct-to-storage Uppy uploads (inline images/video, recorded narration) are

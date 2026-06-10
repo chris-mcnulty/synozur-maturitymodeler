@@ -138,7 +138,7 @@ export async function synthesizeNarration(opts: {
     entityId: `narration/${randomUUID()}.mp3`,
     data: buf,
     contentType: "audio/mpeg",
-    acl: { owner: opts.ownerUserId || "system", visibility: "public" },
+    acl: { owner: opts.ownerUserId || "system", visibility: "private" },
   });
 
   return { audioUrl, voice };

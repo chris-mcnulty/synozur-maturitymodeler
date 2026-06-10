@@ -7,8 +7,12 @@ const course = { id: 'c1', title: 'C', status: 'published', visibility: 'public'
 const courseSvcMock = {
   getCourseById: vi.fn(async () => course),
   userCanManageCourse: vi.fn(() => true),
+  userCanViewCourse: vi.fn(async () => true),
   getCourseForModule: vi.fn(async () => course),
   createLesson: vi.fn(async (data: any) => ({ id: 'l1', ...data })),
+  getCourseFull: vi.fn(async () => ({
+    modules: [{ lessons: [{ content: { slides: [{ id: 's', blocks: [{ id: 'b', type: 'image_slide', url: '/objects/slides/known.png' }] }] } }] }],
+  })),
 };
 
 const ttsMock = {
@@ -29,6 +33,8 @@ const objectStorageMock = {
     async trySetObjectEntityAclPolicy(url: string) {
       return this.normalizeObjectEntityPath(url);
     }
+    async getObjectEntityFile(p: string) { return { path: p }; }
+    async downloadObject(_file: any, res: any) { res.status(200).send('BINARY'); }
   },
   ObjectNotFoundError: class extends Error {},
 };
@@ -121,6 +127,46 @@ describe('course media + narration + import routes', () => {
       expect(res.status).toBe(200);
       expect(res.body.slides).toHaveLength(1);
       expect(pptxMock.importPptx).toHaveBeenCalledOnce();
+    });
+  });
+
+  describe('GET /api/courses/:id/media (course-aware proxy)', () => {
+    it('400s on a path outside managed prefixes', async () => {
+      const app = await buildApp();
+      const res = await request(app).get('/api/courses/c1/media').query({ path: '/objects/certificates/secret.pdf' });
+      expect(res.status).toBe(400);
+    });
+
+    it('streams for a course manager without a reference check', async () => {
+      courseSvcMock.userCanManageCourse.mockReturnValueOnce(true);
+      const app = await buildApp();
+      const res = await request(app).get('/api/courses/c1/media').query({ path: '/objects/narration/unsaved.mp3' });
+      expect(res.status).toBe(200);
+      expect(courseSvcMock.getCourseFull).not.toHaveBeenCalled();
+    });
+
+    it('lets a viewer fetch an object referenced by the course', async () => {
+      courseSvcMock.userCanManageCourse.mockReturnValueOnce(false);
+      courseSvcMock.userCanViewCourse.mockResolvedValueOnce(true);
+      const app = await buildApp('user');
+      const res = await request(app).get('/api/courses/c1/media').query({ path: '/objects/slides/known.png' });
+      expect(res.status).toBe(200);
+    });
+
+    it('404s when a viewer requests an object the course does not reference', async () => {
+      courseSvcMock.userCanManageCourse.mockReturnValueOnce(false);
+      courseSvcMock.userCanViewCourse.mockResolvedValueOnce(true);
+      const app = await buildApp('user');
+      const res = await request(app).get('/api/courses/c1/media').query({ path: '/objects/slides/other.png' });
+      expect(res.status).toBe(404);
+    });
+
+    it('403s a viewer who cannot view the course', async () => {
+      courseSvcMock.userCanManageCourse.mockReturnValueOnce(false);
+      courseSvcMock.userCanViewCourse.mockResolvedValueOnce(false);
+      const app = await buildApp('user');
+      const res = await request(app).get('/api/courses/c1/media').query({ path: '/objects/slides/known.png' });
+      expect(res.status).toBe(403);
     });
   });
 

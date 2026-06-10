@@ -27,7 +27,7 @@ import {
 import { ObjectUploader } from "@/components/ObjectUploader";
 import { useToast } from "@/hooks/use-toast";
 import {
-  genId, blankSlide, normalizeSlides,
+  genId, blankSlide, normalizeSlides, courseMediaUrl,
   type Slide, type SlideBlock, type SlidesContent, type SlideNarrationMode,
 } from "@shared/slides";
 
@@ -176,7 +176,7 @@ function MediaUrlInput({ label, url, onChange, accept, fileTypes }: {
   );
 }
 
-function BlockEditor({ block, onChange }: { block: SlideBlock; onChange: (b: SlideBlock) => void }) {
+function BlockEditor({ block, courseId, onChange }: { block: SlideBlock; courseId: string; onChange: (b: SlideBlock) => void }) {
   switch (block.type) {
     case "heading":
       return (
@@ -233,7 +233,7 @@ function BlockEditor({ block, onChange }: { block: SlideBlock; onChange: (b: Sli
               <Input value={block.caption || ""} onChange={(e) => onChange({ ...block, caption: e.target.value })} />
             </div>
           )}
-          {block.url && <img src={block.url} alt={block.alt} className="max-h-40 rounded-md border" />}
+          {block.url && <img src={courseMediaUrl(courseId, block.url)} alt={block.alt} className="max-h-40 rounded-md border" />}
         </div>
       );
     case "video":
@@ -349,7 +349,7 @@ function NarrationPanel({ slide, courseId, onChange }: {
               <Upload className="h-4 w-4" aria-label="Upload narration audio" />
             </ObjectUploader>
           </div>
-          {narration.audioUrl && <audio src={narration.audioUrl} controls className="w-full" />}
+          {narration.audioUrl && <audio src={courseMediaUrl(courseId, narration.audioUrl)} controls className="w-full" />}
         </div>
       )}
 
@@ -378,7 +378,7 @@ function NarrationPanel({ slide, courseId, onChange }: {
             {generating ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
             Generate narration (Azure TTS)
           </Button>
-          {narration.audioUrl && <audio src={narration.audioUrl} controls className="w-full" />}
+          {narration.audioUrl && <audio src={courseMediaUrl(courseId, narration.audioUrl)} controls className="w-full" />}
         </div>
       )}
 
@@ -589,7 +589,7 @@ export function SlideEditor({ value, courseId, onChange }: {
                     </Button>
                   </div>
                 </div>
-                <BlockEditor block={b} onChange={(nb) => updateBlock(activeIdx, bi, nb)} />
+                <BlockEditor block={b} courseId={courseId} onChange={(nb) => updateBlock(activeIdx, bi, nb)} />
               </div>
             );
           })}

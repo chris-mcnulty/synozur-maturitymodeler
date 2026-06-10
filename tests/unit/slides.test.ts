@@ -5,6 +5,7 @@ import {
   slideToHtml,
   blankSlide,
   extractManagedObjectPaths,
+  courseMediaUrl,
   type SlideBlock,
 } from '../../shared/slides';
 
@@ -101,6 +102,21 @@ describe('extractManagedObjectPaths', () => {
   it('returns empty for null/garbage content', () => {
     expect(extractManagedObjectPaths(null)).toEqual([]);
     expect(extractManagedObjectPaths(undefined)).toEqual([]);
+  });
+});
+
+describe('courseMediaUrl', () => {
+  it('rewrites managed object paths to the course media proxy', () => {
+    expect(courseMediaUrl('c1', '/objects/narration/n.mp3'))
+      .toBe('/api/courses/c1/media?path=%2Fobjects%2Fnarration%2Fn.mp3');
+    expect(courseMediaUrl('c1', '/objects/slides/s.png'))
+      .toBe('/api/courses/c1/media?path=%2Fobjects%2Fslides%2Fs.png');
+  });
+
+  it('leaves external URLs and empty values unchanged', () => {
+    expect(courseMediaUrl('c1', 'https://youtube.com/x')).toBe('https://youtube.com/x');
+    expect(courseMediaUrl('c1', '/objects/certificates/c.pdf')).toBe('/objects/certificates/c.pdf');
+    expect(courseMediaUrl('c1', undefined)).toBe('');
   });
 });
 

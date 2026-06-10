@@ -25,7 +25,7 @@ import * as scormSvc from "../services/scorm-service";
 import * as courseIE from "../services/course-import-export";
 import { synthesizeNarration, isTtsConfigured } from "../services/tts-service";
 import { importPptx } from "../services/pptx-import";
-import { slidesContentSchema } from "@shared/slides";
+import { slidesContentSchema, extractManagedObjectPaths } from "@shared/slides";
 
 /**
  * Validate a lesson's content payload against its type. Currently enforces the
@@ -897,14 +897,75 @@ export function registerCourseRoutes(app: Express) {
       if (!normalizedPath.startsWith("/objects/uploads/")) {
         return res.status(400).json({ error: "Only freshly uploaded objects can be finalized" });
       }
+      // Course/lesson media is private: it's served to learners through the
+      // course-aware proxy (`GET /api/courses/:id/media`) which gates by course
+      // access. (Hero images are finalized separately via PUT .../image and
+      // stay public for the anonymous catalog.)
       await objectStorageService.trySetObjectEntityAclPolicy(url, {
         owner: user.id || "admin",
-        visibility: "public",
+        visibility: "private",
       });
       res.json({ url: normalizedPath });
     } catch (err: any) {
       console.error("object finalize error", err);
       res.status(400).json({ error: err.message ?? "Failed to finalize object" });
+    }
+  });
+
+  // Course-aware media proxy. Slide images, narration audio and uploaded
+  // lesson media are stored privately; learners reach them only through this
+  // route, which gates by course access (anonymous is fine for public,
+  // published courses). Course managers stream any managed object (the editor
+  // previews media before it's saved into a lesson); everyone else may only
+  // fetch objects actually referenced by the course's lessons, so an
+  // accessible course can't be used as an open proxy. No `ensureAuthenticated`
+  // — anonymous viewers of public courses must work — but session cookies
+  // still flow for logged-in users.
+  const MANAGED_MEDIA_RE = /^\/objects\/(?:uploads|narration|slides)\/[A-Za-z0-9._\-/]+$/;
+  app.get("/api/courses/:id/media", async (req, res) => {
+    try {
+      const rawPath = typeof req.query.path === "string" ? req.query.path : "";
+      if (!MANAGED_MEDIA_RE.test(rawPath)) {
+        return res.status(400).json({ error: "Invalid media path" });
+      }
+      const user = req.user as schema.User | undefined;
+      const course = await courseSvc.getCourseById(req.params.id);
+      if (!course) return res.status(404).json({ error: "Course not found" });
+
+      const canManage = courseSvc.userCanManageCourse(user, course);
+      if (!canManage) {
+        if (course.status !== "published") {
+          return res.status(403).json({ error: "Course is not available" });
+        }
+        if (!(await courseSvc.userCanViewCourse(user, course))) {
+          return res.status(403).json({ error: "Forbidden" });
+        }
+        // Confirm the object is referenced by one of this course's lessons.
+        const full = await courseSvc.getCourseFull(course.id);
+        const referenced = new Set(
+          (full?.modules ?? []).flatMap((m: any) =>
+            (m.lessons ?? []).flatMap((l: any) => extractManagedObjectPaths(l.content)),
+          ),
+        );
+        if (!referenced.has(rawPath)) {
+          return res.status(404).json({ error: "Not found" });
+        }
+      }
+
+      const { ObjectStorageService, ObjectNotFoundError } = await import("../objectStorage");
+      const svc = new ObjectStorageService();
+      try {
+        const file = await svc.getObjectEntityFile(rawPath);
+        await svc.downloadObject(file, res);
+      } catch (err) {
+        if (err instanceof ObjectNotFoundError) {
+          return res.status(404).json({ error: "Not found" });
+        }
+        throw err;
+      }
+    } catch (err: any) {
+      console.error("course media proxy error", err);
+      if (!res.headersSent) res.status(500).json({ error: err.message ?? "Failed" });
     }
   });
 

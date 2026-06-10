@@ -210,6 +210,19 @@ export function slideToHtml(slide: Slide): string {
 }
 
 /**
+ * Rewrite a managed object path (`/objects/uploads|narration|slides/...`) to the
+ * course-aware media proxy, which gates private course media by course access.
+ * External URLs, data URIs and non-managed paths are returned unchanged.
+ */
+export function courseMediaUrl(courseId: string, url: string | null | undefined): string {
+  if (!url) return "";
+  if (/^\/objects\/(?:uploads|narration|slides)\//.test(url)) {
+    return `/api/courses/${courseId}/media?path=${encodeURIComponent(url)}`;
+  }
+  return url;
+}
+
+/**
  * Object-storage entity paths (under our managed prefixes) referenced anywhere
  * in a lesson's content — narration audio, uploaded images/video, imported
  * slide images. Used to garbage-collect objects when a lesson is deleted or

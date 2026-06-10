@@ -17,7 +17,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Loader2, BookOpen, CheckCircle2, Clock, PlayCircle, FileText, Music, Lock, Award, ChevronLeft, ChevronRight, Download } from "lucide-react";
 import DOMPurify from "dompurify";
 import type { Course, CourseModule, Lesson, CourseEnrollment, LessonProgress, CourseTag } from "@shared/schema";
-import { normalizeSlides, type SlideBlock } from "@shared/slides";
+import { normalizeSlides, courseMediaUrl, type SlideBlock } from "@shared/slides";
 
 /**
  * Sanitize author-provided HTML before rendering. Lesson content is authored
@@ -49,7 +49,7 @@ function isSafeHttpUrl(url: string): boolean {
 const EMBED_SANDBOX = "allow-scripts allow-same-origin allow-presentation allow-popups";
 
 /** Render a single slide block in the learner view. */
-function SlideBlockView({ block }: { block: SlideBlock }) {
+function SlideBlockView({ block, courseId }: { block: SlideBlock; courseId: string }) {
   switch (block.type) {
     case "heading": {
       const Tag = (`h${block.level}` as unknown) as keyof JSX.IntrinsicElements;
@@ -79,12 +79,12 @@ function SlideBlockView({ block }: { block: SlideBlock }) {
     case "image":
       return (
         <figure className="mb-3">
-          {block.url && <img src={block.url} alt={block.alt || ""} className="rounded-md max-w-full" />}
+          {block.url && <img src={courseMediaUrl(courseId, block.url)} alt={block.alt || ""} className="rounded-md max-w-full" />}
           {block.caption && <figcaption className="text-xs text-muted-foreground mt-1">{block.caption}</figcaption>}
         </figure>
       );
     case "image_slide":
-      return block.url ? <img src={block.url} alt={block.alt || ""} className="rounded-md w-full mb-3" /> : null;
+      return block.url ? <img src={courseMediaUrl(courseId, block.url)} alt={block.alt || ""} className="rounded-md w-full mb-3" /> : null;
     case "video": {
       if (!block.url || !isSafeHttpUrl(block.url)) return null;
       const isEmbed = block.provider === "youtube" || block.provider === "vimeo" ||
@@ -498,7 +498,7 @@ function CoursePlayer({ course, lesson, currentIndex, total, progress, onPrev, o
         const slides = normalizeSlides(c);
         if (slides.length === 0) return <p>No slides.</p>;
         const slide = slides[Math.min(slideIdx, slides.length - 1)];
-        const narrationUrl = slide.narration?.audioUrl;
+        const narrationUrl = courseMediaUrl(course.id, slide.narration?.audioUrl);
         return (
           <div
             data-testid="content-slides"
@@ -513,7 +513,7 @@ function CoursePlayer({ course, lesson, currentIndex, total, progress, onPrev, o
             className="focus:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-md"
           >
             <div aria-live="polite">
-              {slide.blocks.map((b) => <SlideBlockView key={b.id} block={b} />)}
+              {slide.blocks.map((b) => <SlideBlockView key={b.id} block={b} courseId={course.id} />)}
             </div>
             {narrationUrl && (
               <div className="mt-4 rounded-md border bg-muted/40 p-3" data-testid="slide-narration">
