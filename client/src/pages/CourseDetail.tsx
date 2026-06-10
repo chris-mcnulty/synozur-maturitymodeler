@@ -86,9 +86,13 @@ function SlideBlockView({ block, courseId }: { block: SlideBlock; courseId: stri
     case "image_slide":
       return block.url ? <img src={courseMediaUrl(courseId, block.url)} alt={block.alt || ""} className="rounded-md w-full mb-3" /> : null;
     case "video": {
-      if (!block.url || !isSafeHttpUrl(block.url)) return null;
-      const isEmbed = block.provider === "youtube" || block.provider === "vimeo" ||
-        block.url.includes("youtube.com") || block.url.includes("youtu.be") || block.url.includes("vimeo.com");
+      if (!block.url) return null;
+      // Managed uploads live at /objects/... (private) and must be served via
+      // the course media proxy; external links must be safe http(s).
+      const isManaged = /^\/objects\/(?:uploads|narration|slides)\//.test(block.url);
+      if (!isManaged && !isSafeHttpUrl(block.url)) return null;
+      const isEmbed = !isManaged && (block.provider === "youtube" || block.provider === "vimeo" ||
+        block.url.includes("youtube.com") || block.url.includes("youtu.be") || block.url.includes("vimeo.com"));
       return isEmbed ? (
         <div className="relative w-full rounded-md overflow-hidden mb-3" style={{ paddingBottom: "56.25%" }}>
           <iframe
@@ -101,7 +105,7 @@ function SlideBlockView({ block, courseId }: { block: SlideBlock; courseId: stri
           />
         </div>
       ) : (
-        <video src={block.url} poster={block.poster} controls className="w-full rounded-md mb-3" aria-label="Slide video" />
+        <video src={courseMediaUrl(courseId, block.url)} poster={courseMediaUrl(courseId, block.poster)} controls className="w-full rounded-md mb-3" aria-label="Slide video" />
       );
     }
     default:

@@ -39,8 +39,10 @@ async function getUploadParameters() {
 
 /**
  * Resolve the raw URL from a completed Uppy upload, then normalize it to a
- * stable `/objects/...` path with a public ACL so learners can read it. Falls
- * back to the raw URL if finalize fails (still better than nothing).
+ * stable `/objects/...` path. The server finalizes course/lesson media with a
+ * *private* ACL; learners read it through the course-aware media proxy
+ * (`courseMediaUrl()` → `GET /api/courses/:id/media`). Falls back to the raw
+ * URL if finalize fails (still better than nothing).
  */
 async function finalizeUploaded(result: any): Promise<string | undefined> {
   const raw = result?.successful?.[0]?.uploadURL;

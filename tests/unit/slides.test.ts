@@ -103,6 +103,18 @@ describe('extractManagedObjectPaths', () => {
     expect(extractManagedObjectPaths(null)).toEqual([]);
     expect(extractManagedObjectPaths(undefined)).toEqual([]);
   });
+
+  it('does not treat /objects paths embedded in author text or HTML as references', () => {
+    const content = {
+      slides: [{
+        id: 's', blocks: [
+          { id: 'b1', type: 'text', html: '<p>see /objects/narration/secret.mp3 for details</p>' },
+          { id: 'b2', type: 'heading', level: 2, text: 'Visit /objects/slides/other.png' },
+        ],
+      }],
+    };
+    expect(extractManagedObjectPaths(content)).toEqual([]);
+  });
 });
 
 describe('courseMediaUrl', () => {

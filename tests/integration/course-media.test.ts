@@ -35,9 +35,12 @@ const objectStorageMock = {
     }
     async getObjectEntityFile(p: string) { return { path: p }; }
     async downloadObject(_file: any, res: any) { res.status(200).send('BINARY'); }
+    async canAccessObjectEntity() { return objectAclAllows; }
   },
   ObjectNotFoundError: class extends Error {},
 };
+// Toggled per-test to simulate the object's own ACL granting/denying the user.
+let objectAclAllows = true;
 
 vi.mock('../../server/services/course-service', () => courseSvcMock);
 vi.mock('../../server/services/tts-service', () => ttsMock);
@@ -131,18 +134,28 @@ describe('course media + narration + import routes', () => {
   });
 
   describe('GET /api/courses/:id/media (course-aware proxy)', () => {
+    beforeEach(() => { objectAclAllows = true; });
+
     it('400s on a path outside managed prefixes', async () => {
       const app = await buildApp();
       const res = await request(app).get('/api/courses/c1/media').query({ path: '/objects/certificates/secret.pdf' });
       expect(res.status).toBe(400);
     });
 
-    it('streams for a course manager without a reference check', async () => {
+    it('lets a manager preview unsaved media the object ACL grants them', async () => {
       courseSvcMock.userCanManageCourse.mockReturnValueOnce(true);
+      objectAclAllows = true; // uploader owns the freshly-uploaded object
       const app = await buildApp();
       const res = await request(app).get('/api/courses/c1/media').query({ path: '/objects/narration/unsaved.mp3' });
       expect(res.status).toBe(200);
-      expect(courseSvcMock.getCourseFull).not.toHaveBeenCalled();
+    });
+
+    it('blocks a manager from streaming an unreferenced object they cannot access (cross-course/tenant)', async () => {
+      courseSvcMock.userCanManageCourse.mockReturnValueOnce(true);
+      objectAclAllows = false; // another course/tenant's private object
+      const app = await buildApp();
+      const res = await request(app).get('/api/courses/c1/media').query({ path: '/objects/narration/foreign.mp3' });
+      expect(res.status).toBe(404);
     });
 
     it('lets a viewer fetch an object referenced by the course', async () => {
@@ -153,9 +166,10 @@ describe('course media + narration + import routes', () => {
       expect(res.status).toBe(200);
     });
 
-    it('404s when a viewer requests an object the course does not reference', async () => {
+    it('404s when a viewer requests an unreferenced object the ACL also denies', async () => {
       courseSvcMock.userCanManageCourse.mockReturnValueOnce(false);
       courseSvcMock.userCanViewCourse.mockResolvedValueOnce(true);
+      objectAclAllows = false;
       const app = await buildApp('user');
       const res = await request(app).get('/api/courses/c1/media').query({ path: '/objects/slides/other.png' });
       expect(res.status).toBe(404);

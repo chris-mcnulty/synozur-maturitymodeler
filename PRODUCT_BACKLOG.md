@@ -517,9 +517,19 @@ domains; (6) optionally close with a quiz to certify involvement.
   proxy). Anonymous viewers of public courses still work. Hero images are
   finalized separately (`PUT …/image`) and remain public for the catalog. The
   client rewrites media URLs via `courseMediaUrl()` in the player and editor.
-  - *Perf note:* viewer requests load the course tree to validate the
-    referenced-object set; fine for current course sizes, revisit with a cache
-    or object→course index if decks grow large.
+  - Access is gated in two layers: a course-level check (managers, else a
+    published course the user can view), then an object-level check (the object
+    must be referenced by one of the course's lessons, else it falls back to the
+    object's own ACL). The reference scan only reads known media-URL keys, not
+    free text/HTML, so it can't be spoofed by an /objects path in slide text.
+  - *Perf note:* requests load the course tree to validate the referenced-object
+    set; fine for current course sizes, revisit with a cache or object→course
+    index if decks grow large.
+  - **Follow-up — SCORM export media:** the SCORM export still emits `/objects/…`
+    URLs for slide images and narration. Those don't resolve inside an offline
+    SCORM ZIP running in an external LMS (true even before this change, since the
+    URLs are server-relative; now also private). Proper fix: copy referenced
+    managed objects into the package and rewrite to relative asset paths.
 
 ### Media finalize
 Direct-to-storage Uppy uploads (inline images/video, recorded narration) are

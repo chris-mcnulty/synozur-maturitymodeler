@@ -914,13 +914,16 @@ export function registerCourseRoutes(app: Express) {
 
   // Course-aware media proxy. Slide images, narration audio and uploaded
   // lesson media are stored privately; learners reach them only through this
-  // route, which gates by course access (anonymous is fine for public,
-  // published courses). Course managers stream any managed object (the editor
-  // previews media before it's saved into a lesson); everyone else may only
-  // fetch objects actually referenced by the course's lessons, so an
-  // accessible course can't be used as an open proxy. No `ensureAuthenticated`
-  // — anonymous viewers of public courses must work — but session cookies
-  // still flow for logged-in users.
+  // route. Access is gated in two layers: (1) a course-level check — managers
+  // pass, everyone else needs a published course they can view (anonymous is
+  // fine for public courses); and (2) an object-level check — the object must
+  // be referenced by one of the course's lessons, else it falls back to the
+  // object's own ACL. That keeps an accessible course from acting as an open
+  // proxy and stops managers from streaming other courses'/tenants' private
+  // objects, while still allowing the editor to preview freshly uploaded media
+  // (owned by the uploader) before it's saved. No `ensureAuthenticated` —
+  // anonymous viewers of public courses must work — but session cookies still
+  // flow for logged-in users.
   const MANAGED_MEDIA_RE = /^\/objects\/(?:uploads|narration|slides)\/[A-Za-z0-9._\-/]+$/;
   app.get("/api/courses/:id/media", async (req, res) => {
     try {
@@ -932,6 +935,8 @@ export function registerCourseRoutes(app: Express) {
       const course = await courseSvc.getCourseById(req.params.id);
       if (!course) return res.status(404).json({ error: "Course not found" });
 
+      // Course-level gate: managers always pass; everyone else needs a
+      // published course they can view.
       const canManage = courseSvc.userCanManageCourse(user, course);
       if (!canManage) {
         if (course.status !== "published") {
@@ -940,29 +945,36 @@ export function registerCourseRoutes(app: Express) {
         if (!(await courseSvc.userCanViewCourse(user, course))) {
           return res.status(403).json({ error: "Forbidden" });
         }
-        // Confirm the object is referenced by one of this course's lessons.
-        const full = await courseSvc.getCourseFull(course.id);
-        const referenced = new Set(
-          (full?.modules ?? []).flatMap((m: any) =>
-            (m.lessons ?? []).flatMap((l: any) => extractManagedObjectPaths(l.content)),
-          ),
-        );
-        if (!referenced.has(rawPath)) {
-          return res.status(404).json({ error: "Not found" });
-        }
       }
 
       const { ObjectStorageService, ObjectNotFoundError } = await import("../objectStorage");
       const svc = new ObjectStorageService();
+      let file;
       try {
-        const file = await svc.getObjectEntityFile(rawPath);
-        await svc.downloadObject(file, res);
+        file = await svc.getObjectEntityFile(rawPath);
       } catch (err) {
-        if (err instanceof ObjectNotFoundError) {
-          return res.status(404).json({ error: "Not found" });
-        }
+        if (err instanceof ObjectNotFoundError) return res.status(404).json({ error: "Not found" });
         throw err;
       }
+
+      // Object-level gate. The object must be referenced by one of this
+      // course's lessons; otherwise fall back to the object's own ACL. This
+      // both stops a viewable course from acting as an open proxy AND prevents
+      // a manager from streaming arbitrary private objects from other
+      // courses/tenants — while still letting the editor preview freshly
+      // uploaded media (owned by the uploader) before it's saved into a lesson.
+      const full = await courseSvc.getCourseFull(course.id);
+      const referenced = new Set(
+        (full?.modules ?? []).flatMap((m: any) =>
+          (m.lessons ?? []).flatMap((l: any) => extractManagedObjectPaths(l.content)),
+        ),
+      );
+      if (!referenced.has(rawPath)) {
+        const ok = await svc.canAccessObjectEntity({ objectFile: file, userId: user?.id });
+        if (!ok) return res.status(404).json({ error: "Not found" });
+      }
+
+      await svc.downloadObject(file, res);
     } catch (err: any) {
       console.error("course media proxy error", err);
       if (!res.headersSent) res.status(500).json({ error: err.message ?? "Failed" });

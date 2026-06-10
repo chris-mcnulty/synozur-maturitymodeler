@@ -226,18 +226,34 @@ export function courseMediaUrl(courseId: string, url: string | null | undefined)
  * Object-storage entity paths (under our managed prefixes) referenced anywhere
  * in a lesson's content — narration audio, uploaded images/video, imported
  * slide images. Used to garbage-collect objects when a lesson is deleted or
- * its content changes. Scans the serialized content so it works for any lesson
- * shape (slides blocks, narration, or top-level video/audio lessons), and only
- * returns paths we created (`uploads/`, `narration/`, `slides/`).
+ * its content changes. Traverses the content structurally and only collects
+ * values of known media-URL keys (`url`, `audioUrl`, `videoUrl`, `poster`,
+ * `src`) that are exactly a managed path (`uploads/`, `narration/`, `slides/`)
+ * — so it works for any lesson shape (slides blocks, narration, or top-level
+ * video/audio lessons) without being fooled by /objects paths embedded in
+ * author text or HTML.
  */
 export function extractManagedObjectPaths(content: unknown): string[] {
-  if (content == null) return [];
-  let json: string;
-  try {
-    json = JSON.stringify(content);
-  } catch {
-    return [];
-  }
-  const re = /\/objects\/(?:uploads|narration|slides)\/[A-Za-z0-9._\-/]+/g;
-  return Array.from(new Set(json.match(re) ?? []));
+  const MANAGED = /^\/objects\/(?:uploads|narration|slides)\/[A-Za-z0-9._\-/]+$/;
+  // Only treat values of known media-URL keys as object references — never
+  // free text/HTML (e.g. a `text`/`html`/`caption` field that happens to
+  // mention an /objects path), since these references both gate proxy access
+  // and drive object GC.
+  const MEDIA_KEYS = new Set(["url", "audioUrl", "videoUrl", "poster", "src"]);
+  const out = new Set<string>();
+  const visit = (node: unknown): void => {
+    if (Array.isArray(node)) {
+      node.forEach(visit);
+    } else if (node && typeof node === "object") {
+      for (const [key, value] of Object.entries(node)) {
+        if (typeof value === "string") {
+          if (MEDIA_KEYS.has(key) && MANAGED.test(value)) out.add(value);
+        } else {
+          visit(value);
+        }
+      }
+    }
+  };
+  visit(content);
+  return Array.from(out);
 }
