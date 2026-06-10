@@ -4,7 +4,9 @@ hidden = [".config", ".git", "generated-icon.png", "node_modules", "dist"]
 
 [nix]
 channel = "stable-24_05"
-packages = ["jq"]
+# libreoffice (incl. Impress) + poppler_utils (pdftoppm) power the PowerPoint
+# slide import pipeline: .pptx -> PDF (soffice) -> per-slide PNGs (pdftoppm).
+packages = ["jq", "libreoffice", "poppler_utils"]
 
 [deployment]
 deploymentTarget = "autoscale"

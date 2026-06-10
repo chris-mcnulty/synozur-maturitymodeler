@@ -23,6 +23,7 @@ import { XMLParser, XMLBuilder } from "fast-xml-parser";
 import { db } from "../db";
 import { eq } from "drizzle-orm";
 import * as schema from "@shared/schema";
+import { normalizeSlides, slideToHtml } from "@shared/slides";
 import { objectStorageClient } from "../objectStorage";
 import { setObjectAclPolicy } from "../objectAcl";
 
@@ -475,11 +476,14 @@ function lessonHtml(lesson: schema.Lesson): string {
       body = c.html || "<p>(empty)</p>";
       break;
     case "slides": {
-      const slides = Array.isArray(c.slides) ? c.slides : [];
+      const slides = normalizeSlides(c);
       body = slides
-        .map((s: any, i: number) =>
-          `<section><h2>${escapeHtml(s.title || `Slide ${i + 1}`)}</h2>${s.imageUrl ? `<img src="${escapeHtml(s.imageUrl)}" alt="" />` : ""}${s.html || ""}</section>`,
-        )
+        .map((s) => {
+          const narration = s.narration?.audioUrl
+            ? `<audio controls src="${escapeHtml(s.narration.audioUrl)}"></audio>`
+            : "";
+          return `<section>${slideToHtml(s)}${narration}</section>`;
+        })
         .join("<hr/>");
       break;
     }

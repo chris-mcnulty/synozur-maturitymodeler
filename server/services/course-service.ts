@@ -8,6 +8,7 @@
 import { db } from "../db";
 import { and, eq, inArray, or, isNull, desc, sql } from "drizzle-orm";
 import * as schema from "@shared/schema";
+import { extractManagedObjectPaths } from "@shared/slides";
 import type {
   Course, InsertCourse,
   CourseModule, InsertCourseModule,
@@ -352,11 +353,33 @@ export async function createLesson(data: InsertLesson): Promise<Lesson> {
   return row;
 }
 export async function updateLesson(id: string, data: Partial<InsertLesson>): Promise<Lesson | null> {
+  // Capture the prior content so we can GC objects the edit removed (e.g. a
+  // replaced narration MP3, a deleted image block, regenerated TTS audio).
+  const prev = data.content !== undefined ? await getLesson(id) : null;
   const [row] = await db.update(schema.lessons).set(data as any).where(eq(schema.lessons.id, id)).returning();
+  if (row && prev) {
+    const before = extractManagedObjectPaths(prev.content);
+    const after = new Set(extractManagedObjectPaths(row.content));
+    await deleteOrphanedObjects(before.filter((p) => !after.has(p)));
+  }
   return row ?? null;
 }
 export async function deleteLesson(id: string): Promise<void> {
+  const lesson = await getLesson(id);
   await db.delete(schema.lessons).where(eq(schema.lessons.id, id));
+  if (lesson) await deleteOrphanedObjects(extractManagedObjectPaths(lesson.content));
+}
+
+/** Best-effort GC of object-storage entities no longer referenced by a lesson. */
+async function deleteOrphanedObjects(paths: string[]): Promise<void> {
+  if (paths.length === 0) return;
+  try {
+    const { ObjectStorageService } = await import("../objectStorage");
+    const svc = new ObjectStorageService();
+    await Promise.all(paths.map((p) => svc.deleteObjectByPath(p)));
+  } catch (err) {
+    console.error("deleteOrphanedObjects failed", err);
+  }
 }
 export async function getLesson(id: string): Promise<Lesson | null> {
   const [row] = await db.select().from(schema.lessons).where(eq(schema.lessons.id, id)).limit(1);

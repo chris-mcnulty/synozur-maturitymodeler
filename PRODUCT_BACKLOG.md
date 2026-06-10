@@ -397,6 +397,157 @@ The MVP slice (catalog, player, authoring, quizzes, attestations, enrollment tra
 
 ---
 
+## RICH COURSE SLIDES, NARRATION & POWERPOINT IMPORT (Orion Courses for Clients)
+
+**Status:** Phases 0–4 complete (pending review / deploy-dependency provisioning)
+**Priority:** High
+**Branch:** `claude/orion-course-features-nax6bd`
+
+### Background
+Client demand to do more with Orion for courses: (1) author visually rich
+screens at least as delightful as PowerPoint, optionally ingested from .pptx;
+(2) per-slide narration (machine-generated or recorded) for accessibility;
+(3) video on a slide within a module; (4) break a long recording into 8–10
+separately playable modules; (5) private courses available to selected client
+domains; (6) optionally close with a quiz to certify involvement.
+
+### Assessment of existing platform (already built)
+- Courses → Modules → Lessons with 7 lesson types (`slides`, `video`, `audio`,
+  `rich_text`, `quiz`, `scorm`, `attestation`), enrollment + progress, SCORM
+  import/export, certificates (`certificate-pdf.ts`), attestation records.
+- Access control: `visibility` public/private, `ownerTenantId`, `courseTenants`
+  sharing, and verified `tenantDomains` (email-domain → tenant mapping).
+- Quiz grading (server-side), passing score, sequential gating, per-course
+  certificate/attestation — **all present**.
+
+### Confirmed product decisions
+- **Slide authoring:** block/rich editor for native authoring; PowerPoint import
+  is the high-fidelity escape hatch for complex decks (both required).
+- **Narration:** machine TTS **and** recorded-audio upload, per slide. **TTS
+  provider = Azure** (`@azure-rest/ai-inference` / Azure Speech). Captions not in
+  v1 (transcript toggle is a cheap fast-follow; we already hold narration text).
+- **Cert/quiz:** per-course (existing model) — no new work.
+- **Access control (#5):** no build — reuse tenant ↔ verified-domain mapping;
+  share a private course to the client's tenant.
+- **Video (#3/#4):** no transcoding/segmentation build. Client pre-chunks the
+  long recording into small hosted MP4s; we play them inline on slides. Each
+  "module" is a lesson/slide pointing at its own MP4.
+- **PPTX rendering:** LibreOffice headless (`soffice --convert-to`) renders each
+  slide to an image (high fidelity); JS parsing extracts text + speaker notes.
+
+### Architecture
+- `lessons.content` is freeform JSONB → **no DB migration**. The `slides`
+  payload evolves to a block model; legacy `{title, html, imageUrl}` slides are
+  normalized on read (`normalizeSlide`) for backward compatibility.
+- Shared, framework-agnostic slide model in `shared/slides.ts` (Zod schemas +
+  types + `normalizeSlide`/`slideToHtml`) consumed by the client renderer/editor,
+  the SCORM exporter, and (later) the PPTX importer.
+- Slide content v2:
+  - `slide = { id, blocks: Block[], narration?: { mode, text?, audioUrl?, voice?, status? } }`
+  - `Block = heading | text | image | video | callout | image_slide`
+- Media (images, recorded audio, MP4) reuse the existing Uppy + GCS upload path
+  (`/api/objects/upload`, `ObjectUploader`).
+
+### Phases
+- **Phase 0 — Foundations (DONE):** shared slide v2 model + Zod; block renderer
+  in `CourseDetail.tsx` (backward-compatible) with narration playback +
+  transcript; SCORM export renders blocks; unit tests (`tests/unit/slides.test.ts`).
+- **Phase 1 — Block slide editor (DONE):** `SlideEditor.tsx` — add/reorder/delete
+  slides and blocks, rich-text fields, inline image/video upload, recorded-audio
+  narration upload, transcript field; wired into `LessonEditorDialog` (replaces
+  the JSON textarea for `slides`).
+- **Phase 2 — Narration TTS (DONE):** Azure Speech REST TTS in
+  `server/services/tts-service.ts`; endpoint `POST /api/courses/:id/narration/tts`
+  (+ `GET /api/courses/tts/status`) generates an MP3, stores it via
+  `ObjectStorageService.storeObjectBytes` (public ACL), returns `audioUrl`. The
+  editor's "Generate narration (Azure TTS)" button is live; the client patches
+  `narration.audioUrl` and saves the lesson. **Env:** `AZURE_SPEECH_KEY`,
+  `AZURE_SPEECH_REGION` (or `AZURE_SPEECH_ENDPOINT`), optional `AZURE_SPEECH_VOICE`
+  (default `en-US-JennyNeural`).
+- **Phase 3 — PowerPoint import (DONE):** `server/services/pptx-import.ts` —
+  `.pptx` → LibreOffice headless → PDF → `pdftoppm` per-slide PNGs
+  (`image_slide` blocks) + OOXML text/speaker-notes extraction (seeds alt text +
+  narration script, notes default to `mode: 'tts'`). Endpoint
+  `POST /api/courses/:id/slides/pptx-import` (raw body) returns slides; the editor
+  has an "Import PowerPoint" button that merges them in. Verified end-to-end
+  (conversion + extraction) against a real 3-slide deck.
+  **Deploy requirement:** the image must include `libreoffice-impress`
+  (NOT just `libreoffice-core`) **and** `poppler-utils` (for `pdftoppm`).
+  Overridable via `SOFFICE_BIN` / `PDFTOPPM_BIN`. Note: the unrelated `.pptx`
+  block in `Admin.tsx` is for Knowledge-Base document uploads and was left as-is.
+- **Phase 4 — Glue & hardening (DONE):**
+  - Accessibility: learner slide view is a labelled carousel `group` with
+    ArrowLeft/ArrowRight keyboard navigation, an `aria-live` region for block
+    content, and labelled narration audio / video. Editor icon-only controls
+    have `aria-label`s, the rich-text field is a labelled `textbox`, and image
+    blocks warn when alt text is missing.
+  - `/finalize` ACL audit: finalize now only accepts freshly-uploaded objects
+    under the `uploads/` prefix, so an admin/modeler cannot flip an arbitrary
+    existing object (e.g. a private certificate) to public via a known path.
+  - Tests: unit coverage for the slide model, TTS config gating, and the PPTX
+    OOXML text/entity extraction (`tests/unit/{slides,tts-service,pptx-import}.test.ts`).
+  - Deferred to CI: component/E2E specs for the editor & player (no jsdom /
+    Playwright runtime in this environment); the PPTX render pipeline was
+    verified manually end-to-end against a real deck.
+
+### Post-review follow-ups (sprint completion)
+- **Slide content validation:** `POST`/`PUT` lessons now validate `slides`
+  payloads against `slidesContentSchema` server-side (defense in depth).
+- **Object GC:** narration MP3s / slide images are deleted when a lesson is
+  removed or its content changes (regenerated TTS, replaced/removed media), via
+  `ObjectStorageService.deleteObjectByPath` + `extractManagedObjectPaths` diff.
+- **PPTX guards:** import rejects non-ZIP bodies (PK signature) and is capped at
+  100 MB by the raw body limit.
+- **Bulk narration + voice picker:** per-slide Azure voice selector plus a
+  deck-level "Generate all narration" action (with a default voice) for slides
+  that have a script but no audio.
+- **TTS chunking:** long scripts are split (~3500-char chunks, sentence-aware)
+  and the MP3s concatenated; total input bounded at 50k chars.
+- **Narration auto-play / auto-advance:** learner toggle that auto-plays each
+  slide's narration and advances when it ends.
+- **Tests:** unit coverage for `splitTextForTts` + `extractManagedObjectPaths`,
+  and route tests for finalize / TTS / PPTX-import / slide validation
+  (`tests/integration/course-media.test.ts`).
+- **Media ACL — gate by course access (Part D):** narration audio, imported
+  slide images, and slide-editor-uploaded media are now stored **private** and
+  served through a course-aware proxy `GET /api/courses/:id/media?path=…` that
+  gates by course access. Managers stream any managed object (so the editor can
+  preview unsaved media); other viewers must be able to view a *published*
+  course AND the object must be referenced by one of its lessons (no open
+  proxy). Anonymous viewers of public courses still work. Hero images are
+  finalized separately (`PUT …/image`) and remain public for the catalog. The
+  client rewrites media URLs via `courseMediaUrl()` in the player and editor.
+  - Access is gated in two layers: a course-level check (managers, else a
+    published course the user can view), then an object-level check (the object
+    must be referenced by one of the course's lessons, else it falls back to the
+    object's own ACL). The reference scan only reads known media-URL keys, not
+    free text/HTML, so it can't be spoofed by an /objects path in slide text.
+  - *Perf note:* requests load the course tree to validate the referenced-object
+    set; fine for current course sizes, revisit with a cache or object→course
+    index if decks grow large.
+  - **Follow-up — SCORM export media:** the SCORM export still emits `/objects/…`
+    URLs for slide images and narration. Those don't resolve inside an offline
+    SCORM ZIP running in an external LMS (true even before this change, since the
+    URLs are server-relative; now also private). Proper fix: copy referenced
+    managed objects into the package and rewrite to relative asset paths.
+
+### Media finalize
+Direct-to-storage Uppy uploads (inline images/video, recorded narration) are
+normalized to stable `/objects/...` paths with a public ACL via
+`POST /api/objects/finalize`, mirroring the course-hero-image flow.
+
+### Files touched (Phases 0–3)
+- NEW `shared/slides.ts`, `client/src/components/admin/SlideEditor.tsx`,
+  `server/services/tts-service.ts`, `server/services/pptx-import.ts`,
+  `tests/unit/slides.test.ts`, `tests/unit/tts-service.test.ts`
+- MOD `client/src/pages/CourseDetail.tsx` (block renderer + narration),
+  `client/src/components/admin/CourseManagement.tsx` (editor + PPTX import),
+  `server/services/scorm-service.ts` (block-aware export),
+  `server/objectStorage.ts` (`storeObjectBytes`),
+  `server/routes/course-routes.ts` (TTS / PPTX / finalize endpoints)
+
+---
+
 ## COMPLETED FEATURES
 
 ### February 2026

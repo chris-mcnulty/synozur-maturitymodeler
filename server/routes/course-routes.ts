@@ -23,6 +23,21 @@ import { getAccessibleTenantIds, checkIsGlobalAdmin, canManageModels } from "../
 import * as courseSvc from "../services/course-service";
 import * as scormSvc from "../services/scorm-service";
 import * as courseIE from "../services/course-import-export";
+import { synthesizeNarration, isTtsConfigured } from "../services/tts-service";
+import { importPptx } from "../services/pptx-import";
+import { slidesContentSchema, extractManagedObjectPaths } from "@shared/slides";
+
+/**
+ * Validate a lesson's content payload against its type. Currently enforces the
+ * `slides` block model so malformed slide content can't be persisted by a
+ * hand-crafted request (the editor always sends valid data). Throws a ZodError
+ * (→ 400) on failure.
+ */
+function validateLessonContent(type: string, content: unknown): void {
+  if (type === "slides") {
+    slidesContentSchema.parse(content);
+  }
+}
 import * as schema from "@shared/schema";
 import { db } from "../db";
 import { eq } from "drizzle-orm";
@@ -511,6 +526,7 @@ export function registerCourseRoutes(app: Express) {
       if (!course) return res.status(404).json({ error: "Module not found" });
       if (!courseSvc.userCanManageCourse(user, course)) return res.status(403).json({ error: "Forbidden" });
       const parsed = schema.insertLessonSchema.parse({ ...req.body, moduleId: req.params.mid });
+      validateLessonContent(parsed.type ?? "rich_text", parsed.content);
       res.json(await courseSvc.createLesson(parsed));
     } catch (err: any) {
       res.status(400).json({ error: err.message ?? "Failed" });
@@ -524,6 +540,9 @@ export function registerCourseRoutes(app: Express) {
       if (!ctx) return res.status(404).json({ error: "Lesson not found" });
       if (!courseSvc.userCanManageCourse(user, ctx.course)) return res.status(403).json({ error: "Forbidden" });
       const { moduleId, ...patch } = req.body; // disallow moving lesson across modules via PUT
+      if (patch.content !== undefined) {
+        validateLessonContent(patch.type ?? ctx.lesson.type, patch.content);
+      }
       const lesson = await courseSvc.updateLesson(req.params.id, patch);
       if (!lesson) return res.status(404).json({ error: "Not found" });
       res.json(lesson);
@@ -792,6 +811,175 @@ export function registerCourseRoutes(app: Express) {
       }
     },
   );
+
+  // ----- Slide narration: machine TTS (Azure Speech) -----
+  // Generates narration audio for the supplied text, stores it, and returns
+  // the object URL. The client patches it onto the slide's narration and saves
+  // the lesson as usual.
+  app.get("/api/courses/tts/status", ensureAdminOrModeler, (_req, res) => {
+    res.json({ configured: isTtsConfigured() });
+  });
+
+  app.post("/api/courses/:id/narration/tts", ensureAdminOrModeler, async (req, res) => {
+    try {
+      const course = await requireManageCourse(req, res, req.params.id);
+      if (!course) return;
+      const { text, voice } = req.body ?? {};
+      if (typeof text !== "string" || !text.trim()) {
+        return res.status(400).json({ error: "text is required" });
+      }
+      const user = req.user as schema.User;
+      const result = await synthesizeNarration({ text, voice, ownerUserId: user.id });
+      res.json(result);
+    } catch (err: any) {
+      console.error("tts narration error", err);
+      res.status(400).json({ error: err.message ?? "Failed to generate narration" });
+    }
+  });
+
+  // ----- PowerPoint import → slides -----
+  // Accepts a raw .pptx body, renders each slide to an image, and returns the
+  // resulting Orion slides for the client to merge into the slide editor.
+  app.post(
+    "/api/courses/:id/slides/pptx-import",
+    ensureAdminOrModeler,
+    express.raw({
+      type: [
+        "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+        "application/octet-stream",
+        "application/zip",
+      ],
+      limit: "100mb",
+    }),
+    async (req, res) => {
+      try {
+        const course = await requireManageCourse(req, res, req.params.id);
+        if (!course) return;
+        const buf: Buffer | undefined = req.body && Buffer.isBuffer(req.body) ? req.body : undefined;
+        if (!buf || buf.length === 0) {
+          return res.status(400).json({
+            error: "Empty body. POST a .pptx file as the request body.",
+          });
+        }
+        // A .pptx is a ZIP container — reject anything that isn't (PK\x03\x04)
+        // before handing off to LibreOffice.
+        if (buf.length < 4 || buf[0] !== 0x50 || buf[1] !== 0x4b || buf[2] !== 0x03 || buf[3] !== 0x04) {
+          return res.status(400).json({ error: "File does not look like a .pptx (expected a ZIP/OOXML container)." });
+        }
+        const user = req.user as schema.User;
+        const result = await importPptx({ buffer: buf, ownerUserId: user.id });
+        res.json(result);
+      } catch (err: any) {
+        console.error("pptx import error", err);
+        res.status(400).json({ error: err.message ?? "Failed to import PowerPoint" });
+      }
+    },
+  );
+
+  // ----- Finalize an uploaded media object -----
+  // After a direct-to-storage Uppy upload, normalize the raw URL to a stable
+  // `/objects/...` path and set its ACL so learners can read it. Used by the
+  // slide editor for inline images/video and recorded narration audio.
+  app.post("/api/objects/finalize", ensureAdminOrModeler, async (req, res) => {
+    try {
+      const { url } = req.body ?? {};
+      if (typeof url !== "string" || !url) {
+        return res.status(400).json({ error: "url is required" });
+      }
+      const user = req.user as schema.User;
+      const { ObjectStorageService } = await import("../objectStorage");
+      const objectStorageService = new ObjectStorageService();
+      // Only finalize freshly-uploaded objects (under the `uploads/` prefix that
+      // getObjectEntityUploadURL writes to). This prevents re-ACLing an
+      // arbitrary existing object — e.g. flipping someone's private certificate
+      // to public — via a guessed/known /objects path.
+      const normalizedPath = objectStorageService.normalizeObjectEntityPath(url);
+      if (!normalizedPath.startsWith("/objects/uploads/")) {
+        return res.status(400).json({ error: "Only freshly uploaded objects can be finalized" });
+      }
+      // Course/lesson media is private: it's served to learners through the
+      // course-aware proxy (`GET /api/courses/:id/media`) which gates by course
+      // access. (Hero images are finalized separately via PUT .../image and
+      // stay public for the anonymous catalog.)
+      await objectStorageService.trySetObjectEntityAclPolicy(url, {
+        owner: user.id || "admin",
+        visibility: "private",
+      });
+      res.json({ url: normalizedPath });
+    } catch (err: any) {
+      console.error("object finalize error", err);
+      res.status(400).json({ error: err.message ?? "Failed to finalize object" });
+    }
+  });
+
+  // Course-aware media proxy. Slide images, narration audio and uploaded
+  // lesson media are stored privately; learners reach them only through this
+  // route. Access is gated in two layers: (1) a course-level check — managers
+  // pass, everyone else needs a published course they can view (anonymous is
+  // fine for public courses); and (2) an object-level check — the object must
+  // be referenced by one of the course's lessons, else it falls back to the
+  // object's own ACL. That keeps an accessible course from acting as an open
+  // proxy and stops managers from streaming other courses'/tenants' private
+  // objects, while still allowing the editor to preview freshly uploaded media
+  // (owned by the uploader) before it's saved. No `ensureAuthenticated` —
+  // anonymous viewers of public courses must work — but session cookies still
+  // flow for logged-in users.
+  const MANAGED_MEDIA_RE = /^\/objects\/(?:uploads|narration|slides)\/[A-Za-z0-9._\-/]+$/;
+  app.get("/api/courses/:id/media", async (req, res) => {
+    try {
+      const rawPath = typeof req.query.path === "string" ? req.query.path : "";
+      if (!MANAGED_MEDIA_RE.test(rawPath)) {
+        return res.status(400).json({ error: "Invalid media path" });
+      }
+      const user = req.user as schema.User | undefined;
+      const course = await courseSvc.getCourseById(req.params.id);
+      if (!course) return res.status(404).json({ error: "Course not found" });
+
+      // Course-level gate: managers always pass; everyone else needs a
+      // published course they can view.
+      const canManage = courseSvc.userCanManageCourse(user, course);
+      if (!canManage) {
+        if (course.status !== "published") {
+          return res.status(403).json({ error: "Course is not available" });
+        }
+        if (!(await courseSvc.userCanViewCourse(user, course))) {
+          return res.status(403).json({ error: "Forbidden" });
+        }
+      }
+
+      const { ObjectStorageService, ObjectNotFoundError } = await import("../objectStorage");
+      const svc = new ObjectStorageService();
+      let file;
+      try {
+        file = await svc.getObjectEntityFile(rawPath);
+      } catch (err) {
+        if (err instanceof ObjectNotFoundError) return res.status(404).json({ error: "Not found" });
+        throw err;
+      }
+
+      // Object-level gate. The object must be referenced by one of this
+      // course's lessons; otherwise fall back to the object's own ACL. This
+      // both stops a viewable course from acting as an open proxy AND prevents
+      // a manager from streaming arbitrary private objects from other
+      // courses/tenants — while still letting the editor preview freshly
+      // uploaded media (owned by the uploader) before it's saved into a lesson.
+      const full = await courseSvc.getCourseFull(course.id);
+      const referenced = new Set(
+        (full?.modules ?? []).flatMap((m: any) =>
+          (m.lessons ?? []).flatMap((l: any) => extractManagedObjectPaths(l.content)),
+        ),
+      );
+      if (!referenced.has(rawPath)) {
+        const ok = await svc.canAccessObjectEntity({ objectFile: file, userId: user?.id });
+        if (!ok) return res.status(404).json({ error: "Not found" });
+      }
+
+      await svc.downloadObject(file, res);
+    } catch (err: any) {
+      console.error("course media proxy error", err);
+      if (!res.headersSent) res.status(500).json({ error: err.message ?? "Failed" });
+    }
+  });
 
   // Resolve a SCORM package and authorize the caller against its owning
   // course. SCORM packages without a courseId (orphan uploads) are only

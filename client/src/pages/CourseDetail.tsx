@@ -17,6 +17,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Loader2, BookOpen, CheckCircle2, Clock, PlayCircle, FileText, Music, Lock, Award, ChevronLeft, ChevronRight, Download } from "lucide-react";
 import DOMPurify from "dompurify";
 import type { Course, CourseModule, Lesson, CourseEnrollment, LessonProgress, CourseTag } from "@shared/schema";
+import { normalizeSlides, courseMediaUrl, type SlideBlock } from "@shared/slides";
 
 /**
  * Sanitize author-provided HTML before rendering. Lesson content is authored
@@ -25,6 +26,91 @@ import type { Course, CourseModule, Lesson, CourseEnrollment, LessonProgress, Co
  */
 function sanitizeHtml(html: string): string {
   return DOMPurify.sanitize(html, { USE_PROFILES: { html: true } });
+}
+
+/**
+ * Author-provided embed URLs go into an iframe src, so reject anything that
+ * isn't plain http(s) (e.g. `javascript:`/`data:` schemes).
+ */
+function isSafeHttpUrl(url: string): boolean {
+  try {
+    const u = new URL(url, window.location.origin);
+    return u.protocol === "http:" || u.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Sandbox for third-party video embeds (YouTube/Vimeo). Their players need
+ * scripts + same-origin + fullscreen/popups to function, but this still blocks
+ * top-navigation, form submission, downloads, and pointer-lock.
+ */
+const EMBED_SANDBOX = "allow-scripts allow-same-origin allow-presentation allow-popups";
+
+/** Render a single slide block in the learner view. */
+function SlideBlockView({ block, courseId }: { block: SlideBlock; courseId: string }) {
+  switch (block.type) {
+    case "heading": {
+      const Tag = (`h${block.level}` as unknown) as keyof JSX.IntrinsicElements;
+      const sizes: Record<number, string> = { 1: "text-2xl", 2: "text-xl", 3: "text-lg" };
+      return <Tag className={`${sizes[block.level] || "text-xl"} font-semibold mb-3`}>{block.text}</Tag>;
+    }
+    case "text":
+      return (
+        <div
+          className="prose prose-sm dark:prose-invert max-w-none mb-3"
+          dangerouslySetInnerHTML={{ __html: sanitizeHtml(block.html || "") }}
+        />
+      );
+    case "callout": {
+      const tones: Record<string, string> = {
+        info: "border-blue-500/40 bg-blue-500/10",
+        tip: "border-green-500/40 bg-green-500/10",
+        warning: "border-amber-500/40 bg-amber-500/10",
+      };
+      return (
+        <div
+          className={`rounded-md border-l-4 p-3 mb-3 ${tones[block.tone] || tones.info}`}
+          dangerouslySetInnerHTML={{ __html: sanitizeHtml(block.html || "") }}
+        />
+      );
+    }
+    case "image":
+      return (
+        <figure className="mb-3">
+          {block.url && <img src={courseMediaUrl(courseId, block.url)} alt={block.alt || ""} className="rounded-md max-w-full" />}
+          {block.caption && <figcaption className="text-xs text-muted-foreground mt-1">{block.caption}</figcaption>}
+        </figure>
+      );
+    case "image_slide":
+      return block.url ? <img src={courseMediaUrl(courseId, block.url)} alt={block.alt || ""} className="rounded-md w-full mb-3" /> : null;
+    case "video": {
+      if (!block.url) return null;
+      // Managed uploads live at /objects/... (private) and must be served via
+      // the course media proxy; external links must be safe http(s).
+      const isManaged = /^\/objects\/(?:uploads|narration|slides)\//.test(block.url);
+      if (!isManaged && !isSafeHttpUrl(block.url)) return null;
+      const isEmbed = !isManaged && (block.provider === "youtube" || block.provider === "vimeo" ||
+        block.url.includes("youtube.com") || block.url.includes("youtu.be") || block.url.includes("vimeo.com"));
+      return isEmbed ? (
+        <div className="relative w-full rounded-md overflow-hidden mb-3" style={{ paddingBottom: "56.25%" }}>
+          <iframe
+            src={block.url}
+            className="absolute inset-0 w-full h-full"
+            sandbox={EMBED_SANDBOX}
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            allowFullScreen
+            title="Slide video"
+          />
+        </div>
+      ) : (
+        <video src={courseMediaUrl(courseId, block.url)} poster={courseMediaUrl(courseId, block.poster)} controls className="w-full rounded-md mb-3" aria-label="Slide video" />
+      );
+    }
+    default:
+      return null;
+  }
 }
 
 /**
@@ -359,6 +445,7 @@ function CoursePlayer({ course, lesson, currentIndex, total, progress, onPrev, o
   const [signedName, setSignedName] = useState("");
   const [quizResponses, setQuizResponses] = useState<Record<string, string[]>>({});
   const [slideIdx, setSlideIdx] = useState(0);
+  const [autoAdvance, setAutoAdvance] = useState(false);
   const [submittedScore, setSubmittedScore] = useState<number | null>(progress?.score ?? null);
   const [submittedStatus, setSubmittedStatus] = useState<string | null>(progress?.status ?? null);
 
@@ -412,22 +499,64 @@ function CoursePlayer({ course, lesson, currentIndex, total, progress, onPrev, o
           />
         );
       case "slides": {
-        const slides: Array<{ title?: string; html?: string; imageUrl?: string }> = c.slides || [];
+        const slides = normalizeSlides(c);
         if (slides.length === 0) return <p>No slides.</p>;
         const slide = slides[Math.min(slideIdx, slides.length - 1)];
+        const narrationUrl = courseMediaUrl(course.id, slide.narration?.audioUrl);
         return (
-          <div data-testid="content-slides">
-            {slide.title && <h3 className="text-xl font-semibold mb-3">{slide.title}</h3>}
-            {slide.imageUrl && <img src={slide.imageUrl} alt="" className="rounded-md mb-3 max-w-full" />}
-            {slide.html && (
-              <div className="prose prose-sm dark:prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: sanitizeHtml(slide.html) }} />
+          <div
+            data-testid="content-slides"
+            role="group"
+            aria-roledescription="carousel"
+            aria-label={`Slides, ${slideIdx + 1} of ${slides.length}`}
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if (e.key === "ArrowRight" && slideIdx < slides.length - 1) { setSlideIdx(i => i + 1); e.preventDefault(); }
+              if (e.key === "ArrowLeft" && slideIdx > 0) { setSlideIdx(i => i - 1); e.preventDefault(); }
+            }}
+            className="focus:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-md"
+          >
+            <div aria-live="polite">
+              {slide.blocks.map((b) => <SlideBlockView key={b.id} block={b} courseId={course.id} />)}
+            </div>
+            {narrationUrl && (
+              <div className="mt-4 rounded-md border bg-muted/40 p-3" data-testid="slide-narration">
+                <div className="flex items-center justify-between mb-1">
+                  <p className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+                    <Music className="h-3.5 w-3.5" /> Narration
+                  </p>
+                  <label className="flex items-center gap-1.5 text-xs text-muted-foreground cursor-pointer">
+                    <Checkbox
+                      checked={autoAdvance}
+                      onCheckedChange={(v) => setAutoAdvance(v === true)}
+                      data-testid="checkbox-auto-advance"
+                    />
+                    Auto-play &amp; advance
+                  </label>
+                </div>
+                <audio
+                  key={slide.id}
+                  src={narrationUrl}
+                  controls
+                  autoPlay={autoAdvance}
+                  onEnded={() => { if (autoAdvance && slideIdx < slides.length - 1) setSlideIdx(i => i + 1); }}
+                  className="w-full"
+                  aria-label={`Narration for slide ${slideIdx + 1}`}
+                />
+                {slide.narration?.text && (
+                  <details className="mt-2">
+                    <summary className="text-xs text-muted-foreground cursor-pointer">Transcript</summary>
+                    <p className="text-sm mt-1 whitespace-pre-wrap">{slide.narration.text}</p>
+                  </details>
+                )}
+              </div>
             )}
             <div className="flex items-center justify-between gap-2 mt-4">
-              <Button variant="outline" size="sm" disabled={slideIdx === 0} onClick={() => setSlideIdx(i => i - 1)} data-testid="button-slide-prev">
+              <Button variant="outline" size="sm" disabled={slideIdx === 0} onClick={() => setSlideIdx(i => i - 1)} data-testid="button-slide-prev" aria-label="Previous slide">
                 Previous slide
               </Button>
-              <span className="text-sm text-muted-foreground">{slideIdx + 1} / {slides.length}</span>
-              <Button variant="outline" size="sm" disabled={slideIdx >= slides.length - 1} onClick={() => setSlideIdx(i => i + 1)} data-testid="button-slide-next">
+              <span className="text-sm text-muted-foreground" aria-hidden="true">{slideIdx + 1} / {slides.length}</span>
+              <Button variant="outline" size="sm" disabled={slideIdx >= slides.length - 1} onClick={() => setSlideIdx(i => i + 1)} data-testid="button-slide-next" aria-label="Next slide">
                 Next slide
               </Button>
             </div>
@@ -442,13 +571,14 @@ function CoursePlayer({ course, lesson, currentIndex, total, progress, onPrev, o
             {c.description && (
               <p className="text-sm text-muted-foreground">{c.description}</p>
             )}
-            {!c.videoUrl ? (
+            {!c.videoUrl || !isSafeHttpUrl(c.videoUrl) ? (
               <p className="text-sm text-muted-foreground">No video URL configured.</p>
             ) : isEmbed ? (
               <div className="relative w-full rounded-md overflow-hidden" style={{ paddingBottom: '56.25%' }}>
                 <iframe
                   src={c.videoUrl}
                   className="absolute inset-0 w-full h-full"
+                  sandbox={EMBED_SANDBOX}
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                   allowFullScreen
                   title={lesson.title}
