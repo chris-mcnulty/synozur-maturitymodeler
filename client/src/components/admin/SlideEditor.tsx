@@ -399,14 +399,16 @@ function NarrationPanel({ slide, courseId, onChange }: {
   );
 }
 
-export function SlideEditor({ value, courseId, onChange }: {
+export function SlideEditor({ value, courseId, onChange, initialActiveIdx }: {
   value: SlidesContent;
   courseId: string;
   onChange: (v: SlidesContent) => void;
+  /** Jump to this slide index when first rendered (e.g. after a PPTX import). */
+  initialActiveIdx?: number;
 }) {
   const { toast } = useToast();
   const slides: Slide[] = normalizeSlides(value);
-  const [activeIdx, setActiveIdx] = useState(0);
+  const [activeIdx, setActiveIdx] = useState(initialActiveIdx ?? 0);
   const [bulkVoice, setBulkVoice] = useState(DEFAULT_VOICE);
   const [bulkProgress, setBulkProgress] = useState<{ done: number; total: number } | null>(null);
   const active = slides[Math.min(activeIdx, Math.max(0, slides.length - 1))];

@@ -838,6 +838,7 @@ function LessonEditorDialog({
   const [required, setRequired] = useState(lesson?.required ?? true);
   const [scormUploading, setScormUploading] = useState(false);
   const [pptxImporting, setPptxImporting] = useState(false);
+  const [slideEditorInitialIdx, setSlideEditorInitialIdx] = useState<number | undefined>(undefined);
 
   const handlePptxImport = async (file: File) => {
     setPptxImporting(true);
@@ -848,12 +849,31 @@ function LessonEditorDialog({
         headers: { "Content-Type": "application/vnd.openxmlformats-officedocument.presentationml.presentation" },
         body: file,
       });
+
+      // Guard against non-JSON responses (e.g. a proxy timeout returning HTML).
+      const contentType = res.headers.get("content-type") || "";
+      if (!contentType.includes("application/json")) {
+        const status = res.status;
+        throw new Error(
+          status >= 500 || status === 0
+            ? "The server timed out converting the file. Try a smaller PowerPoint (fewer slides or lower-resolution images)."
+            : `Import failed (HTTP ${status}).`,
+        );
+      }
+
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Import failed");
+
       const existing = (() => { try { return normalizeSlides(JSON.parse(contentJson)); } catch { return []; } })();
-      const merged = { slides: [...existing, ...(data.slides || [])] };
+      const importedSlides: Slide[] = data.slides || [];
+      const merged = { slides: [...existing, ...importedSlides] };
       setContentJson(JSON.stringify(merged, null, 2));
-      toast({ title: "PowerPoint imported", description: `${data.slides?.length ?? 0} slide(s) added` });
+      // Jump the editor to the first newly added slide so the user can see them.
+      if (importedSlides.length > 0) setSlideEditorInitialIdx(existing.length);
+      toast({
+        title: "PowerPoint imported",
+        description: `${importedSlides.length} slide${importedSlides.length === 1 ? "" : "s"} added — use the slide list on the left to navigate.`,
+      });
     } catch (err: any) {
       toast({ title: "Import failed", description: err.message, variant: "destructive" });
     } finally {
@@ -983,7 +1003,7 @@ function LessonEditorDialog({
                 <div>
                   <Label>Slides</Label>
                   <p className="text-xs text-muted-foreground">
-                    Build each slide from content blocks and add optional narration.
+                    Build slides from content blocks. Import PowerPoint to add <strong>all slides</strong> from a .pptx deck at once.
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
@@ -1015,6 +1035,7 @@ function LessonEditorDialog({
                 value={slidesValue}
                 courseId={courseId}
                 onChange={(v) => setContentJson(JSON.stringify(v, null, 2))}
+                initialActiveIdx={slideEditorInitialIdx}
               />
             </div>
           ) : (
