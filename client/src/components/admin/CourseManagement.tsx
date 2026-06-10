@@ -13,12 +13,14 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Plus, Edit, Trash, Users, ChevronLeft, FileText, Save, Loader2, Upload, Download, X, ChevronDown, Share2 } from "lucide-react";
+import { Plus, Edit, Trash, Users, ChevronLeft, FileText, Save, Loader2, Upload, Download, X, ChevronDown, Share2, Sparkles } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 import { ObjectUploader } from "@/components/ObjectUploader";
 import { SlideEditor } from "@/components/admin/SlideEditor";
+import { RichTextField, MediaUrlInput, requestTts, TTS_VOICES, DEFAULT_VOICE } from "@/components/admin/editor-fields";
 import { useAuth } from "@/hooks/use-auth";
 import type { Course, CourseModule, Lesson, CourseTag, LessonType, CourseEnrollment } from "@shared/schema";
-import { normalizeSlides, type SlidesContent } from "@shared/slides";
+import { genId, normalizeSlides, courseMediaUrl, type Slide, type SlidesContent } from "@shared/slides";
 
 interface TenantShareRow {
   id: string;
@@ -947,13 +949,29 @@ function LessonEditorDialog({
     catch { return { slides: [] }; }
   })();
 
+  // All other types drive structured editors off the parsed payload, writing
+  // back through `contentJson` so save/raw-JSON editing stay in sync.
+  const parsedContent: any = (() => {
+    try { return JSON.parse(contentJson) ?? {}; } catch { return {}; }
+  })();
+  const patchContent = (patch: Record<string, any>) => {
+    // Functional update: merge into the *latest* payload rather than the
+    // render-time `parsedContent` snapshot, so rapid/batched patches from
+    // different fields can't overwrite each other.
+    setContentJson(prev => {
+      let base: any;
+      try { base = JSON.parse(prev) ?? {}; } catch { base = {}; }
+      return JSON.stringify({ ...base, ...patch }, null, 2);
+    });
+  };
+
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className={type === "slides" ? "max-w-4xl max-h-[90vh] overflow-y-auto" : "max-w-2xl"}>
+      <DialogContent className={`${type === "slides" ? "max-w-4xl" : "max-w-2xl"} max-h-[90vh] overflow-y-auto`}>
         <DialogHeader>
           <DialogTitle>{lesson ? "Edit lesson" : "New lesson"}</DialogTitle>
           <DialogDescription>
-            Configure the lesson's title, type, and content payload.
+            Configure the lesson's title, type, and content.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-3">
@@ -1039,19 +1057,89 @@ function LessonEditorDialog({
               />
             </div>
           ) : (
-            <div>
-              <Label htmlFor="ld-content">Content (JSON)</Label>
-              <Textarea
-                id="ld-content"
-                rows={12}
-                value={contentJson}
-                onChange={e => setContentJson(e.target.value)}
-                className="font-mono text-xs"
-                data-testid="textarea-lesson-content"
-              />
-              <p className="text-xs text-muted-foreground mt-1">
-                {contentHelpFor(type)}
-              </p>
+            <div className="space-y-3">
+              {type === "rich_text" && (
+                <div>
+                  <Label>Content</Label>
+                  <RichTextField
+                    key={lesson?.id ?? "new"}
+                    value={parsedContent.html || ""}
+                    onChange={(html) => patchContent({ html })}
+                    placeholder="Write the lesson content…"
+                    minHeight={220}
+                  />
+                </div>
+              )}
+              {type === "video" && (
+                <VideoLessonFields content={parsedContent} courseId={courseId} onPatch={patchContent} />
+              )}
+              {type === "audio" && (
+                <AudioLessonFields content={parsedContent} courseId={courseId} onPatch={patchContent} />
+              )}
+              {type === "quiz" && (
+                <QuizLessonFields content={parsedContent} onChange={(c) => setContentJson(JSON.stringify(c, null, 2))} />
+              )}
+              {type === "attestation" && (
+                <div className="space-y-3">
+                  <div>
+                    <Label htmlFor="att-statement">Attestation statement</Label>
+                    <Textarea
+                      id="att-statement"
+                      rows={4}
+                      value={parsedContent.statement || ""}
+                      onChange={e => patchContent({ statement: e.target.value })}
+                      placeholder="I attest I have read and understood this material."
+                      data-testid="input-attestation-statement"
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Learners type their full name to sign this statement.
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Switch
+                      id="att-typed"
+                      checked={parsedContent.requireTyped ?? true}
+                      onCheckedChange={(v) => patchContent({ requireTyped: v })}
+                      data-testid="switch-attestation-typed"
+                    />
+                    <Label htmlFor="att-typed">Require typed signature</Label>
+                  </div>
+                </div>
+              )}
+              {type === "scorm" && (
+                <div className="rounded-md border p-3 text-sm">
+                  {parsedContent.packageId ? (
+                    <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1">
+                      <dt className="text-muted-foreground">Package</dt>
+                      <dd className="font-mono text-xs break-all">{parsedContent.packageId}</dd>
+                      <dt className="text-muted-foreground">Entry point</dt>
+                      <dd className="font-mono text-xs">{parsedContent.entryPoint}</dd>
+                      <dt className="text-muted-foreground">SCORM version</dt>
+                      <dd>{parsedContent.version}</dd>
+                    </dl>
+                  ) : (
+                    <p className="text-muted-foreground">
+                      No package yet — upload a SCORM .zip above and the lesson is wired up automatically.
+                    </p>
+                  )}
+                </div>
+              )}
+              <details>
+                <summary className="text-xs text-muted-foreground cursor-pointer select-none">
+                  Advanced: edit raw JSON
+                </summary>
+                <Textarea
+                  id="ld-content"
+                  rows={10}
+                  value={contentJson}
+                  onChange={e => setContentJson(e.target.value)}
+                  className="font-mono text-xs mt-2"
+                  data-testid="textarea-lesson-content"
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  {contentHelpFor(type)}
+                </p>
+              </details>
             </div>
           )}
           <div className="flex items-center gap-2">
@@ -1071,9 +1159,291 @@ function LessonEditorDialog({
   );
 }
 
+/** URL + upload + provider + preview for `video` lessons. */
+function VideoLessonFields({ content, courseId, onPatch }: {
+  content: any;
+  courseId: string;
+  onPatch: (patch: Record<string, any>) => void;
+}) {
+  const url: string = content.videoUrl || "";
+  const isEmbed = content.provider === "youtube" || content.provider === "vimeo" ||
+    /youtube\.com|youtu\.be|vimeo\.com/.test(url);
+  return (
+    <div className="space-y-2">
+      <MediaUrlInput
+        label="Video URL (MP4) or YouTube/Vimeo link"
+        url={url}
+        onChange={(videoUrl) => onPatch({ videoUrl })}
+        fileTypes={["video/mp4", "video/webm"]}
+      />
+      <Select value={content.provider || "mp4"} onValueChange={(v) => onPatch({ provider: v })}>
+        <SelectTrigger className="w-40" data-testid="select-video-provider"><SelectValue /></SelectTrigger>
+        <SelectContent>
+          <SelectItem value="mp4">MP4 (hosted)</SelectItem>
+          <SelectItem value="youtube">YouTube</SelectItem>
+          <SelectItem value="vimeo">Vimeo</SelectItem>
+        </SelectContent>
+      </Select>
+      <div>
+        <Label className="text-xs">Description (optional, shown above the player)</Label>
+        <Input
+          value={content.description || ""}
+          onChange={(e) => onPatch({ description: e.target.value })}
+          data-testid="input-video-description"
+        />
+      </div>
+      {url && !isEmbed && (
+        <video src={courseMediaUrl(courseId, url)} controls className="w-full max-h-64 rounded-md border" />
+      )}
+      {url && isEmbed && (
+        <p className="text-xs text-muted-foreground">Embedded player — learners see the YouTube/Vimeo player.</p>
+      )}
+    </div>
+  );
+}
+
+/** URL + upload + TTS generation + preview for `audio` lessons. */
+function AudioLessonFields({ content, courseId, onPatch }: {
+  content: any;
+  courseId: string;
+  onPatch: (patch: Record<string, any>) => void;
+}) {
+  const { toast } = useToast();
+  const [generating, setGenerating] = useState(false);
+  const url: string = content.audioUrl || "";
+
+  const generate = async () => {
+    const text = (content.transcript || "").trim();
+    if (!text) {
+      toast({ title: "Add a script first", description: "Type the words to be narrated, then generate.", variant: "destructive" });
+      return;
+    }
+    setGenerating(true);
+    try {
+      const data = await requestTts(courseId, text, content.voice || DEFAULT_VOICE);
+      onPatch({ audioUrl: data.audioUrl, voice: data.voice });
+      toast({ title: "Audio generated" });
+    } catch (err: any) {
+      toast({ title: "TTS failed", description: err.message, variant: "destructive" });
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  return (
+    <div className="space-y-2">
+      <MediaUrlInput
+        label="Audio URL (MP3/WAV) or upload"
+        url={url}
+        onChange={(audioUrl) => onPatch({ audioUrl })}
+        fileTypes={["audio/mpeg", "audio/mp3", "audio/wav", "audio/webm", "audio/ogg", "audio/m4a", "audio/mp4"]}
+      />
+      {url && <audio src={courseMediaUrl(courseId, url)} controls className="w-full" />}
+      <div>
+        <Label className="text-xs">Description (optional, shown above the player)</Label>
+        <Input
+          value={content.description || ""}
+          onChange={(e) => onPatch({ description: e.target.value })}
+          data-testid="input-audio-description"
+        />
+      </div>
+      <div className="rounded-md border p-3 space-y-2">
+        <Label className="text-xs font-medium">Or generate the audio from a script (machine voice)</Label>
+        <Textarea
+          rows={3}
+          value={content.transcript || ""}
+          onChange={(e) => onPatch({ transcript: e.target.value })}
+          placeholder="Type the words to be narrated…"
+          data-testid="input-audio-script"
+        />
+        <div className="flex items-center gap-2">
+          <Select value={content.voice || DEFAULT_VOICE} onValueChange={(v) => onPatch({ voice: v })}>
+            <SelectTrigger className="w-56" data-testid="select-audio-voice"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {TTS_VOICES.map((v) => <SelectItem key={v.id} value={v.id}>{v.label}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <Button type="button" variant="outline" size="sm" onClick={generate} disabled={generating} data-testid="button-generate-audio">
+            {generating ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
+            Generate audio
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Normalize the freeform quiz payload into a single editable shape. Accepts
+ * both naming conventions the platform supports (`options`/`answers`,
+ * `correctIds`/`correctAnswerIds`/`correctAnswerId`) — the same ones the
+ * server-side grader in course-service understands.
+ */
+function normalizeQuizContent(raw: any): { passingScore: number; questions: any[] } {
+  const questions = Array.isArray(raw?.questions) ? raw.questions : [];
+  return {
+    passingScore: typeof raw?.passingScore === "number" ? raw.passingScore : 70,
+    questions: questions.map((q: any, i: number) => {
+      const choices = Array.isArray(q?.answers) ? q.answers : Array.isArray(q?.options) ? q.options : [];
+      const answers = choices.map((a: any, j: number) => ({ ...a, id: a?.id || `a${i + 1}_${j + 1}`, text: a?.text ?? "" }));
+      const multi = q?.correctIds ?? q?.correctAnswerIds;
+      const correctIds: string[] = Array.isArray(multi) ? multi : q?.correctAnswerId ? [q.correctAnswerId] : [];
+      const isMultiple = q?.type === "multiple" || (Array.isArray(multi) && multi.length > 1);
+      return { ...q, id: q?.id || `q${i + 1}`, text: q?.text ?? "", answers, correctIds, isMultiple };
+    }),
+  };
+}
+
+/** Inverse of `normalizeQuizContent`: emit the saved quiz payload. */
+function serializeQuizContent(value: { passingScore: number; questions: any[] }): any {
+  return {
+    passingScore: value.passingScore,
+    questions: value.questions.map((q) => {
+      const {
+        correctIds, isMultiple,
+        options: _opts, correctAnswerIds: _cai, correctAnswerId: _ca, type: _type,
+        ...rest
+      } = q;
+      return {
+        ...rest,
+        ...(isMultiple
+          ? { type: "multiple", correctAnswerIds: correctIds }
+          : { correctAnswerId: correctIds[0] || "" }),
+      };
+    }),
+  };
+}
+
+/** Structured question/answer builder for `quiz` lessons. */
+function QuizLessonFields({ content, onChange }: {
+  content: any;
+  onChange: (content: any) => void;
+}) {
+  const quiz = normalizeQuizContent(content);
+  const commit = (next: { passingScore: number; questions: any[] }) => onChange(serializeQuizContent(next));
+  const updateQuestion = (qi: number, patch: Record<string, any>) => {
+    commit({ ...quiz, questions: quiz.questions.map((q, i) => (i === qi ? { ...q, ...patch } : q)) });
+  };
+
+  const toggleCorrect = (q: any, qi: number, answerId: string, on: boolean) => {
+    if (!q.isMultiple) {
+      updateQuestion(qi, { correctIds: on ? [answerId] : [] });
+      return;
+    }
+    const next = on
+      ? Array.from(new Set([...q.correctIds, answerId]))
+      : q.correctIds.filter((id: string) => id !== answerId);
+    updateQuestion(qi, { correctIds: next });
+  };
+
+  return (
+    <div className="space-y-3">
+      <div>
+        <Label htmlFor="quiz-passing" className="text-xs">Passing score (%)</Label>
+        <Input
+          id="quiz-passing"
+          type="number"
+          min={0}
+          max={100}
+          className="w-28"
+          value={quiz.passingScore}
+          onChange={(e) => commit({ ...quiz, passingScore: Math.max(0, Math.min(100, Number(e.target.value) || 0)) })}
+          data-testid="input-quiz-passing-score"
+        />
+      </div>
+      {quiz.questions.map((q, qi) => (
+        <div key={q.id} className="rounded-md border p-3 space-y-2" data-testid={`quiz-question-${qi}`}>
+          <div className="flex items-center justify-between gap-2">
+            <Label className="text-xs text-muted-foreground">Question {qi + 1}</Label>
+            <Button
+              type="button" variant="ghost" size="sm" className="h-7 w-7 p-0 text-destructive"
+              onClick={() => commit({ ...quiz, questions: quiz.questions.filter((_, i) => i !== qi) })}
+              title="Delete question" aria-label={`Delete question ${qi + 1}`}
+            >
+              <Trash className="h-4 w-4" />
+            </Button>
+          </div>
+          <Input
+            value={q.text}
+            onChange={(e) => updateQuestion(qi, { text: e.target.value })}
+            placeholder="Question text"
+            data-testid={`input-quiz-question-${qi}`}
+          />
+          <div className="flex items-center gap-2">
+            <Switch
+              id={`quiz-multi-${qi}`}
+              checked={q.isMultiple}
+              onCheckedChange={(v) => updateQuestion(qi, {
+                isMultiple: v,
+                // Collapsing to single-answer keeps only the first correct choice.
+                correctIds: v ? q.correctIds : q.correctIds.slice(0, 1),
+              })}
+            />
+            <Label htmlFor={`quiz-multi-${qi}`} className="text-xs">Multiple correct answers</Label>
+          </div>
+          <div className="space-y-1.5">
+            {q.answers.map((a: any, ai: number) => (
+              <div key={a.id} className="flex items-center gap-2">
+                <Checkbox
+                  checked={q.correctIds.includes(a.id)}
+                  onCheckedChange={(on) => toggleCorrect(q, qi, a.id, on === true)}
+                  title="Correct answer"
+                  aria-label={`Mark answer ${ai + 1} correct`}
+                  data-testid={`checkbox-quiz-correct-${qi}-${ai}`}
+                />
+                <Input
+                  value={a.text}
+                  onChange={(e) => updateQuestion(qi, {
+                    answers: q.answers.map((x: any, j: number) => (j === ai ? { ...x, text: e.target.value } : x)),
+                  })}
+                  placeholder={`Answer ${ai + 1}`}
+                  data-testid={`input-quiz-answer-${qi}-${ai}`}
+                />
+                <Button
+                  type="button" variant="ghost" size="sm" className="h-7 w-7 p-0 text-destructive shrink-0"
+                  onClick={() => updateQuestion(qi, {
+                    answers: q.answers.filter((_: any, j: number) => j !== ai),
+                    correctIds: q.correctIds.filter((id: string) => id !== a.id),
+                  })}
+                  title="Delete answer" aria-label={`Delete answer ${ai + 1}`}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            ))}
+          </div>
+          <Button
+            type="button" variant="outline" size="sm"
+            onClick={() => updateQuestion(qi, { answers: [...q.answers, { id: genId("a"), text: "" }] })}
+            data-testid={`button-add-answer-${qi}`}
+          >
+            <Plus className="h-4 w-4 mr-1" /> Answer
+          </Button>
+          {q.correctIds.length === 0 && (
+            <p className="text-xs text-amber-600 dark:text-amber-500">Mark at least one answer as correct.</p>
+          )}
+        </div>
+      ))}
+      <Button
+        type="button" variant="outline" size="sm"
+        onClick={() => commit({
+          ...quiz,
+          questions: [...quiz.questions, {
+            id: genId("q"), text: "", isMultiple: false, correctIds: [],
+            answers: [{ id: genId("a"), text: "" }, { id: genId("a"), text: "" }],
+          }],
+        })}
+        data-testid="button-add-question"
+      >
+        <Plus className="h-4 w-4 mr-1" /> Question
+      </Button>
+    </div>
+  );
+}
+
 function defaultContentFor(type: LessonType): any {
   switch (type) {
-    case "rich_text": return { html: "<p>Lesson content goes here.</p>" };
+    case "rich_text": return { html: "" };
     case "slides": return {
       slides: [
         {

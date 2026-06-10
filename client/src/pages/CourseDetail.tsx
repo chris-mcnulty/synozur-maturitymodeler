@@ -564,14 +564,17 @@ function CoursePlayer({ course, lesson, currentIndex, total, progress, onPrev, o
         );
       }
       case "video": {
-        const isEmbed = c.provider === 'youtube' || c.provider === 'vimeo' ||
-          (c.videoUrl && (c.videoUrl.includes('youtube.com') || c.videoUrl.includes('youtu.be') || c.videoUrl.includes('vimeo.com')));
+        // Managed uploads live at /objects/... (private) and must be served
+        // via the course media proxy; external links must be safe http(s).
+        const isManaged = /^\/objects\/(?:uploads|narration|slides)\//.test(c.videoUrl || "");
+        const isEmbed = !isManaged && (c.provider === 'youtube' || c.provider === 'vimeo' ||
+          (c.videoUrl && (c.videoUrl.includes('youtube.com') || c.videoUrl.includes('youtu.be') || c.videoUrl.includes('vimeo.com'))));
         return (
           <div data-testid="content-video" className="space-y-3">
             {c.description && (
               <p className="text-sm text-muted-foreground">{c.description}</p>
             )}
-            {!c.videoUrl || !isSafeHttpUrl(c.videoUrl) ? (
+            {!c.videoUrl || (!isManaged && !isSafeHttpUrl(c.videoUrl)) ? (
               <p className="text-sm text-muted-foreground">No video URL configured.</p>
             ) : isEmbed ? (
               <div className="relative w-full rounded-md overflow-hidden" style={{ paddingBottom: '56.25%' }}>
@@ -585,24 +588,35 @@ function CoursePlayer({ course, lesson, currentIndex, total, progress, onPrev, o
                 />
               </div>
             ) : (
-              <video src={c.videoUrl} controls className="w-full rounded-md" />
+              <video src={courseMediaUrl(course.id, c.videoUrl)} controls className="w-full rounded-md" />
             )}
           </div>
         );
       }
-      case "audio":
+      case "audio": {
+        // Same gating as video: managed uploads go through the media proxy,
+        // anything else must be a safe http(s) URL (no data:/javascript:).
+        const isManagedAudio = /^\/objects\/(?:uploads|narration|slides)\//.test(c.audioUrl || "");
+        const playableAudio = c.audioUrl && (isManagedAudio || isSafeHttpUrl(c.audioUrl));
         return (
           <div data-testid="content-audio" className="space-y-3">
             {c.description && (
               <p className="text-sm text-muted-foreground">{c.description}</p>
             )}
-            {c.audioUrl ? (
-              <audio src={c.audioUrl} controls className="w-full" />
+            {playableAudio ? (
+              <audio src={courseMediaUrl(course.id, c.audioUrl)} controls className="w-full" />
             ) : (
               <p className="text-sm text-muted-foreground">No audio URL configured.</p>
             )}
+            {c.transcript && (
+              <details>
+                <summary className="text-xs text-muted-foreground cursor-pointer">Transcript</summary>
+                <p className="text-sm mt-1 whitespace-pre-wrap">{c.transcript}</p>
+              </details>
+            )}
           </div>
         );
+      }
       case "quiz": {
         const questions: any[] = c.questions || [];
         if (submittedScore !== null) {
