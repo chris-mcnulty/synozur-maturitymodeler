@@ -23,6 +23,8 @@ import { getAccessibleTenantIds, checkIsGlobalAdmin, canManageModels } from "../
 import * as courseSvc from "../services/course-service";
 import * as scormSvc from "../services/scorm-service";
 import * as courseIE from "../services/course-import-export";
+import { synthesizeNarration, isTtsConfigured } from "../services/tts-service";
+import { importPptx } from "../services/pptx-import";
 import * as schema from "@shared/schema";
 import { db } from "../db";
 import { eq } from "drizzle-orm";
@@ -792,6 +794,89 @@ export function registerCourseRoutes(app: Express) {
       }
     },
   );
+
+  // ----- Slide narration: machine TTS (Azure Speech) -----
+  // Generates narration audio for the supplied text, stores it, and returns
+  // the object URL. The client patches it onto the slide's narration and saves
+  // the lesson as usual.
+  app.get("/api/courses/tts/status", ensureAdminOrModeler, (_req, res) => {
+    res.json({ configured: isTtsConfigured() });
+  });
+
+  app.post("/api/courses/:id/narration/tts", ensureAdminOrModeler, async (req, res) => {
+    try {
+      const course = await requireManageCourse(req, res, req.params.id);
+      if (!course) return;
+      const { text, voice } = req.body ?? {};
+      if (typeof text !== "string" || !text.trim()) {
+        return res.status(400).json({ error: "text is required" });
+      }
+      const user = req.user as schema.User;
+      const result = await synthesizeNarration({ text, voice, ownerUserId: user.id });
+      res.json(result);
+    } catch (err: any) {
+      console.error("tts narration error", err);
+      res.status(400).json({ error: err.message ?? "Failed to generate narration" });
+    }
+  });
+
+  // ----- PowerPoint import → slides -----
+  // Accepts a raw .pptx body, renders each slide to an image, and returns the
+  // resulting Orion slides for the client to merge into the slide editor.
+  app.post(
+    "/api/courses/:id/slides/pptx-import",
+    ensureAdminOrModeler,
+    express.raw({
+      type: [
+        "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+        "application/octet-stream",
+        "application/zip",
+      ],
+      limit: "100mb",
+    }),
+    async (req, res) => {
+      try {
+        const course = await requireManageCourse(req, res, req.params.id);
+        if (!course) return;
+        const buf: Buffer | undefined = req.body && Buffer.isBuffer(req.body) ? req.body : undefined;
+        if (!buf || buf.length === 0) {
+          return res.status(400).json({
+            error: "Empty body. POST a .pptx file as the request body.",
+          });
+        }
+        const user = req.user as schema.User;
+        const result = await importPptx({ buffer: buf, ownerUserId: user.id });
+        res.json(result);
+      } catch (err: any) {
+        console.error("pptx import error", err);
+        res.status(400).json({ error: err.message ?? "Failed to import PowerPoint" });
+      }
+    },
+  );
+
+  // ----- Finalize an uploaded media object -----
+  // After a direct-to-storage Uppy upload, normalize the raw URL to a stable
+  // `/objects/...` path and set its ACL so learners can read it. Used by the
+  // slide editor for inline images/video and recorded narration audio.
+  app.post("/api/objects/finalize", ensureAdminOrModeler, async (req, res) => {
+    try {
+      const { url } = req.body ?? {};
+      if (typeof url !== "string" || !url) {
+        return res.status(400).json({ error: "url is required" });
+      }
+      const user = req.user as schema.User;
+      const { ObjectStorageService } = await import("../objectStorage");
+      const objectStorageService = new ObjectStorageService();
+      const normalizedPath = await objectStorageService.trySetObjectEntityAclPolicy(url, {
+        owner: user.id || "admin",
+        visibility: "public",
+      });
+      res.json({ url: normalizedPath });
+    } catch (err: any) {
+      console.error("object finalize error", err);
+      res.status(400).json({ error: err.message ?? "Failed to finalize object" });
+    }
+  });
 
   // Resolve a SCORM package and authorize the caller against its owning
   // course. SCORM packages without a courseId (orphan uploads) are only

@@ -399,7 +399,7 @@ The MVP slice (catalog, player, authoring, quizzes, attestations, enrollment tra
 
 ## RICH COURSE SLIDES, NARRATION & POWERPOINT IMPORT (Orion Courses for Clients)
 
-**Status:** In progress (Phases 0–1 underway)
+**Status:** In progress (Phases 0–3 done; Phase 4 remaining)
 **Priority:** High
 **Branch:** `claude/orion-course-features-nax6bd`
 
@@ -456,23 +456,43 @@ domains; (6) optionally close with a quiz to certify involvement.
   slides and blocks, rich-text fields, inline image/video upload, recorded-audio
   narration upload, transcript field; wired into `LessonEditorDialog` (replaces
   the JSON textarea for `slides`).
-- **Phase 2 — Narration TTS (TODO):** Azure TTS endpoint
-  (`POST /api/lessons/:id/slides/:slideId/narration/tts`) → generate MP3, store in
-  GCS, save `narration.audioUrl`; enable the "Generate narration (Azure TTS)"
-  button (currently a disabled placeholder in the editor).
-- **Phase 3 — PowerPoint import (TODO):** `.pptx` upload → LibreOffice headless
-  → per-slide images (`image_slide` blocks) + text/speaker-notes extraction
-  (seeds narration text + alt). Remove the current `.pptx` upload block in
-  `Admin.tsx`. Requires `soffice` available in the deploy environment.
+- **Phase 2 — Narration TTS (DONE):** Azure Speech REST TTS in
+  `server/services/tts-service.ts`; endpoint `POST /api/courses/:id/narration/tts`
+  (+ `GET /api/courses/tts/status`) generates an MP3, stores it via
+  `ObjectStorageService.storeObjectBytes` (public ACL), returns `audioUrl`. The
+  editor's "Generate narration (Azure TTS)" button is live; the client patches
+  `narration.audioUrl` and saves the lesson. **Env:** `AZURE_SPEECH_KEY`,
+  `AZURE_SPEECH_REGION` (or `AZURE_SPEECH_ENDPOINT`), optional `AZURE_SPEECH_VOICE`
+  (default `en-US-JennyNeural`).
+- **Phase 3 — PowerPoint import (DONE):** `server/services/pptx-import.ts` —
+  `.pptx` → LibreOffice headless → PDF → `pdftoppm` per-slide PNGs
+  (`image_slide` blocks) + OOXML text/speaker-notes extraction (seeds alt text +
+  narration script, notes default to `mode: 'tts'`). Endpoint
+  `POST /api/courses/:id/slides/pptx-import` (raw body) returns slides; the editor
+  has an "Import PowerPoint" button that merges them in. Verified end-to-end
+  (conversion + extraction) against a real 3-slide deck.
+  **Deploy requirement:** the image must include `libreoffice-impress`
+  (NOT just `libreoffice-core`) **and** `poppler-utils` (for `pdftoppm`).
+  Overridable via `SOFFICE_BIN` / `PDFTOPPM_BIN`. Note: the unrelated `.pptx`
+  block in `Admin.tsx` is for Knowledge-Base document uploads and was left as-is.
 - **Phase 4 — Glue & hardening (TODO):** accessibility pass (required alt text,
-  labeled controls, keyboard nav), broader Vitest/Playwright coverage.
+  labeled controls, keyboard nav), broader Vitest/Playwright coverage, and a
+  `/finalize` ACL audit.
 
-### Files touched (Phases 0–1)
+### Media finalize
+Direct-to-storage Uppy uploads (inline images/video, recorded narration) are
+normalized to stable `/objects/...` paths with a public ACL via
+`POST /api/objects/finalize`, mirroring the course-hero-image flow.
+
+### Files touched (Phases 0–3)
 - NEW `shared/slides.ts`, `client/src/components/admin/SlideEditor.tsx`,
-  `tests/unit/slides.test.ts`
+  `server/services/tts-service.ts`, `server/services/pptx-import.ts`,
+  `tests/unit/slides.test.ts`, `tests/unit/tts-service.test.ts`
 - MOD `client/src/pages/CourseDetail.tsx` (block renderer + narration),
-  `client/src/components/admin/CourseManagement.tsx` (editor integration),
-  `server/services/scorm-service.ts` (block-aware export)
+  `client/src/components/admin/CourseManagement.tsx` (editor + PPTX import),
+  `server/services/scorm-service.ts` (block-aware export),
+  `server/objectStorage.ts` (`storeObjectBytes`),
+  `server/routes/course-routes.ts` (TTS / PPTX / finalize endpoints)
 
 ---
 

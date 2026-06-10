@@ -837,6 +837,29 @@ function LessonEditorDialog({
   const [contentJson, setContentJson] = useState(JSON.stringify(lesson?.content ?? defaultContentFor("rich_text"), null, 2));
   const [required, setRequired] = useState(lesson?.required ?? true);
   const [scormUploading, setScormUploading] = useState(false);
+  const [pptxImporting, setPptxImporting] = useState(false);
+
+  const handlePptxImport = async (file: File) => {
+    setPptxImporting(true);
+    try {
+      const res = await fetch(`/api/courses/${courseId}/slides/pptx-import`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/vnd.openxmlformats-officedocument.presentationml.presentation" },
+        body: file,
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Import failed");
+      const existing = (() => { try { return normalizeSlides(JSON.parse(contentJson)); } catch { return []; } })();
+      const merged = { slides: [...existing, ...(data.slides || [])] };
+      setContentJson(JSON.stringify(merged, null, 2));
+      toast({ title: "PowerPoint imported", description: `${data.slides?.length ?? 0} slide(s) added` });
+    } catch (err: any) {
+      toast({ title: "Import failed", description: err.message, variant: "destructive" });
+    } finally {
+      setPptxImporting(false);
+    }
+  };
 
   const handleScormUpload = async (file: File) => {
     setScormUploading(true);
@@ -956,12 +979,41 @@ function LessonEditorDialog({
           )}
           {type === "slides" ? (
             <div>
-              <Label>Slides</Label>
-              <p className="text-xs text-muted-foreground mb-2">
-                Build each slide from content blocks and add optional narration. PowerPoint import is coming in a later release.
-              </p>
+              <div className="flex items-center justify-between mb-2">
+                <div>
+                  <Label>Slides</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Build each slide from content blocks and add optional narration.
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  {pptxImporting && <Loader2 className="h-4 w-4 animate-spin" />}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={pptxImporting}
+                    onClick={() => document.getElementById("pptx-import-input")?.click()}
+                    data-testid="button-import-pptx"
+                  >
+                    <Upload className="h-4 w-4 mr-2" /> Import PowerPoint
+                  </Button>
+                  <input
+                    id="pptx-import-input"
+                    type="file"
+                    accept=".pptx,application/vnd.openxmlformats-officedocument.presentationml.presentation"
+                    className="hidden"
+                    onChange={(e) => {
+                      const f = e.target.files?.[0];
+                      if (f) handlePptxImport(f);
+                      e.target.value = "";
+                    }}
+                  />
+                </div>
+              </div>
               <SlideEditor
                 value={slidesValue}
+                courseId={courseId}
                 onChange={(v) => setContentJson(JSON.stringify(v, null, 2))}
               />
             </div>

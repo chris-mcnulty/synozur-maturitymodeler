@@ -20,9 +20,10 @@ import {
 } from "@/components/ui/dropdown-menu";
 import {
   Plus, Trash, ChevronUp, ChevronDown, Image as ImageIcon, Video, Type, Heading,
-  Lightbulb, Upload, Bold, Italic, List, Link as LinkIcon, Mic,
+  Lightbulb, Upload, Bold, Italic, List, Link as LinkIcon, Mic, Loader2, Sparkles,
 } from "lucide-react";
 import { ObjectUploader } from "@/components/ObjectUploader";
+import { useToast } from "@/hooks/use-toast";
 import {
   genId, blankSlide, normalizeSlides,
   type Slide, type SlideBlock, type SlidesContent, type SlideNarrationMode,
@@ -34,8 +35,29 @@ async function getUploadParameters() {
   return { method: "PUT" as const, url: data.uploadURL };
 }
 
-function firstUrl(result: any): string | undefined {
-  return result?.successful?.[0]?.uploadURL;
+/**
+ * Resolve the raw URL from a completed Uppy upload, then normalize it to a
+ * stable `/objects/...` path with a public ACL so learners can read it. Falls
+ * back to the raw URL if finalize fails (still better than nothing).
+ */
+async function finalizeUploaded(result: any): Promise<string | undefined> {
+  const raw = result?.successful?.[0]?.uploadURL;
+  if (!raw) return undefined;
+  try {
+    const res = await fetch("/api/objects/finalize", {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url: raw }),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      return data.url || raw;
+    }
+  } catch {
+    /* fall through to raw */
+  }
+  return raw;
 }
 
 /** contentEditable rich-text field with a minimal formatting toolbar. */
@@ -115,7 +137,7 @@ function MediaUrlInput({ label, url, onChange, accept, fileTypes }: {
         maxFileSize={524288000 /* 500MB for video/audio */}
         allowedFileTypes={fileTypes}
         onGetUploadParameters={getUploadParameters}
-        onComplete={(r) => { const u = firstUrl(r); if (u) onChange(u); }}
+        onComplete={async (r) => { const u = await finalizeUploaded(r); if (u) onChange(u); }}
         buttonVariant="outline"
       >
         <Upload className="h-4 w-4" />
@@ -225,8 +247,40 @@ function newBlock(type: string): SlideBlock {
   }
 }
 
-function NarrationPanel({ slide, onChange }: { slide: Slide; onChange: (n: Slide["narration"]) => void }) {
+function NarrationPanel({ slide, courseId, onChange }: {
+  slide: Slide;
+  courseId: string;
+  onChange: (n: Slide["narration"]) => void;
+}) {
+  const { toast } = useToast();
+  const [generating, setGenerating] = useState(false);
   const narration = slide.narration ?? { mode: "none" as SlideNarrationMode };
+
+  const generateTts = async () => {
+    const text = (narration.text || "").trim();
+    if (!text) {
+      toast({ title: "Add a narration script first", variant: "destructive" });
+      return;
+    }
+    setGenerating(true);
+    try {
+      const res = await fetch(`/api/courses/${courseId}/narration/tts`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text, voice: narration.voice }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to generate narration");
+      onChange({ ...narration, mode: "tts", audioUrl: data.audioUrl, voice: data.voice, status: "ready" });
+      toast({ title: "Narration generated" });
+    } catch (err: any) {
+      toast({ title: "TTS failed", description: err.message, variant: "destructive" });
+    } finally {
+      setGenerating(false);
+    }
+  };
+
   return (
     <div className="rounded-md border p-3 space-y-2">
       <div className="flex items-center gap-2">
@@ -261,7 +315,7 @@ function NarrationPanel({ slide, onChange }: { slide: Slide; onChange: (n: Slide
               maxFileSize={104857600 /* 100MB */}
               allowedFileTypes={["audio/mpeg", "audio/mp3", "audio/wav", "audio/webm", "audio/ogg", "audio/m4a", "audio/mp4"]}
               onGetUploadParameters={getUploadParameters}
-              onComplete={(r) => { const u = firstUrl(r); if (u) onChange({ ...narration, audioUrl: u, status: "ready" }); }}
+              onComplete={async (r) => { const u = await finalizeUploaded(r); if (u) onChange({ ...narration, audioUrl: u, status: "ready" }); }}
               buttonVariant="outline"
             >
               <Upload className="h-4 w-4" />
@@ -280,9 +334,11 @@ function NarrationPanel({ slide, onChange }: { slide: Slide; onChange: (n: Slide
             onChange={(e) => onChange({ ...narration, text: e.target.value })}
             placeholder="Type the words to be narrated…"
           />
-          <Button type="button" variant="outline" size="sm" disabled title="Azure Text-to-Speech generation ships in the next release">
-            Generate narration (Azure TTS) — coming soon
+          <Button type="button" variant="outline" size="sm" onClick={generateTts} disabled={generating} data-testid="button-generate-tts">
+            {generating ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
+            Generate narration (Azure TTS)
           </Button>
+          {narration.audioUrl && <audio src={narration.audioUrl} controls className="w-full" />}
         </div>
       )}
 
@@ -301,7 +357,11 @@ function NarrationPanel({ slide, onChange }: { slide: Slide; onChange: (n: Slide
   );
 }
 
-export function SlideEditor({ value, onChange }: { value: SlidesContent; onChange: (v: SlidesContent) => void }) {
+export function SlideEditor({ value, courseId, onChange }: {
+  value: SlidesContent;
+  courseId: string;
+  onChange: (v: SlidesContent) => void;
+}) {
   const slides: Slide[] = normalizeSlides(value);
   const [activeIdx, setActiveIdx] = useState(0);
   const active = slides[Math.min(activeIdx, Math.max(0, slides.length - 1))];
@@ -451,7 +511,7 @@ export function SlideEditor({ value, onChange }: { value: SlidesContent; onChang
           </DropdownMenuContent>
         </DropdownMenu>
 
-        <NarrationPanel slide={active} onChange={(n) => updateSlide(activeIdx, { narration: n })} />
+        <NarrationPanel slide={active} courseId={courseId} onChange={(n) => updateSlide(activeIdx, { narration: n })} />
       </div>
     </div>
   );
