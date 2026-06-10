@@ -23,7 +23,7 @@ import { getAccessibleTenantIds, checkIsGlobalAdmin, canManageModels } from "../
 import * as courseSvc from "../services/course-service";
 import * as scormSvc from "../services/scorm-service";
 import * as courseIE from "../services/course-import-export";
-import { synthesizeNarration, isTtsConfigured } from "../services/tts-service";
+import { synthesizeNarration, isTtsConfigured, getTtsProvider } from "../services/tts-service";
 import { importPptx } from "../services/pptx-import";
 import { slidesContentSchema, extractManagedObjectPaths } from "@shared/slides";
 
@@ -817,7 +817,7 @@ export function registerCourseRoutes(app: Express) {
   // the object URL. The client patches it onto the slide's narration and saves
   // the lesson as usual.
   app.get("/api/courses/tts/status", ensureAdminOrModeler, (_req, res) => {
-    res.json({ configured: isTtsConfigured() });
+    res.json({ configured: isTtsConfigured(), provider: getTtsProvider() });
   });
 
   app.post("/api/courses/:id/narration/tts", ensureAdminOrModeler, async (req, res) => {
