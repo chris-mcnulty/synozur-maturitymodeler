@@ -87,18 +87,18 @@ function RichTextField({ value, onChange, placeholder }: {
 
   return (
     <div className="rounded-md border">
-      <div className="flex items-center gap-1 border-b bg-muted/40 px-1 py-1">
-        <Button type="button" variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => exec("bold")} title="Bold">
+      <div className="flex items-center gap-1 border-b bg-muted/40 px-1 py-1" role="toolbar" aria-label="Text formatting">
+        <Button type="button" variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => exec("bold")} title="Bold" aria-label="Bold">
           <Bold className="h-3.5 w-3.5" />
         </Button>
-        <Button type="button" variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => exec("italic")} title="Italic">
+        <Button type="button" variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => exec("italic")} title="Italic" aria-label="Italic">
           <Italic className="h-3.5 w-3.5" />
         </Button>
-        <Button type="button" variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => exec("insertUnorderedList")} title="Bulleted list">
+        <Button type="button" variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => exec("insertUnorderedList")} title="Bulleted list" aria-label="Bulleted list">
           <List className="h-3.5 w-3.5" />
         </Button>
         <Button
-          type="button" variant="ghost" size="sm" className="h-7 w-7 p-0" title="Link"
+          type="button" variant="ghost" size="sm" className="h-7 w-7 p-0" title="Link" aria-label="Insert link"
           onClick={() => {
             const url = window.prompt("Link URL");
             if (url) exec("createLink", url);
@@ -110,6 +110,9 @@ function RichTextField({ value, onChange, placeholder }: {
       <div
         ref={ref}
         contentEditable
+        role="textbox"
+        aria-multiline="true"
+        aria-label={placeholder || "Rich text"}
         suppressContentEditableWarning
         onInput={(e) => onChange((e.target as HTMLDivElement).innerHTML)}
         data-placeholder={placeholder || "Type here…"}
@@ -140,7 +143,7 @@ function MediaUrlInput({ label, url, onChange, accept, fileTypes }: {
         onComplete={async (r) => { const u = await finalizeUploaded(r); if (u) onChange(u); }}
         buttonVariant="outline"
       >
-        <Upload className="h-4 w-4" />
+        <Upload className="h-4 w-4" aria-label="Upload file" />
       </ObjectUploader>
     </div>
   );
@@ -190,7 +193,12 @@ function BlockEditor({ block, onChange }: { block: SlideBlock; onChange: (b: Sli
           />
           <div>
             <Label className="text-xs">Alt text (accessibility)</Label>
-            <Input value={block.alt} onChange={(e) => onChange({ ...block, alt: e.target.value })} placeholder="Describe the image" />
+            <Input value={block.alt} onChange={(e) => onChange({ ...block, alt: e.target.value })} placeholder="Describe the image" aria-label="Image alt text" />
+            {block.url && !block.alt?.trim() && (
+              <p className="text-xs text-amber-600 dark:text-amber-500 mt-1">
+                Add alt text so screen-reader users can understand this image.
+              </p>
+            )}
           </div>
           {block.type === "image" && (
             <div>
@@ -318,7 +326,7 @@ function NarrationPanel({ slide, courseId, onChange }: {
               onComplete={async (r) => { const u = await finalizeUploaded(r); if (u) onChange({ ...narration, audioUrl: u, status: "ready" }); }}
               buttonVariant="outline"
             >
-              <Upload className="h-4 w-4" />
+              <Upload className="h-4 w-4" aria-label="Upload narration audio" />
             </ObjectUploader>
           </div>
           {narration.audioUrl && <audio src={narration.audioUrl} controls className="w-full" />}
@@ -451,13 +459,13 @@ export function SlideEditor({ value, courseId, onChange }: {
         <div className="flex items-center justify-between">
           <span className="text-sm font-medium">Slide {activeIdx + 1} of {slides.length}</span>
           <div className="flex items-center gap-1">
-            <Button type="button" variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => moveSlide(activeIdx, -1)} disabled={activeIdx === 0} title="Move slide up">
+            <Button type="button" variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => moveSlide(activeIdx, -1)} disabled={activeIdx === 0} title="Move slide up" aria-label="Move slide up">
               <ChevronUp className="h-4 w-4" />
             </Button>
-            <Button type="button" variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => moveSlide(activeIdx, 1)} disabled={activeIdx >= slides.length - 1} title="Move slide down">
+            <Button type="button" variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => moveSlide(activeIdx, 1)} disabled={activeIdx >= slides.length - 1} title="Move slide down" aria-label="Move slide down">
               <ChevronDown className="h-4 w-4" />
             </Button>
-            <Button type="button" variant="ghost" size="sm" className="h-7 w-7 p-0 text-destructive" onClick={() => removeSlide(activeIdx)} disabled={slides.length <= 1} title="Delete slide">
+            <Button type="button" variant="ghost" size="sm" className="h-7 w-7 p-0 text-destructive" onClick={() => removeSlide(activeIdx)} disabled={slides.length <= 1} title="Delete slide" aria-label="Delete slide">
               <Trash className="h-4 w-4" />
             </Button>
           </div>
@@ -475,13 +483,13 @@ export function SlideEditor({ value, courseId, onChange }: {
                     <Icon className="h-3.5 w-3.5" /> {meta.label}
                   </span>
                   <div className="flex items-center gap-0.5">
-                    <Button type="button" variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => moveBlock(bi, -1)} disabled={bi === 0} title="Move up">
+                    <Button type="button" variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => moveBlock(bi, -1)} disabled={bi === 0} title="Move up" aria-label="Move block up">
                       <ChevronUp className="h-3.5 w-3.5" />
                     </Button>
-                    <Button type="button" variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => moveBlock(bi, 1)} disabled={bi >= active.blocks.length - 1} title="Move down">
+                    <Button type="button" variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => moveBlock(bi, 1)} disabled={bi >= active.blocks.length - 1} title="Move down" aria-label="Move block down">
                       <ChevronDown className="h-3.5 w-3.5" />
                     </Button>
-                    <Button type="button" variant="ghost" size="sm" className="h-6 w-6 p-0 text-destructive" onClick={() => removeBlock(bi)} title="Delete block">
+                    <Button type="button" variant="ghost" size="sm" className="h-6 w-6 p-0 text-destructive" onClick={() => removeBlock(bi)} title="Delete block" aria-label="Delete block">
                       <Trash className="h-3.5 w-3.5" />
                     </Button>
                   </div>

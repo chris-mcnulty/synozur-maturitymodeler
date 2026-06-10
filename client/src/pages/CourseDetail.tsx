@@ -80,7 +80,7 @@ function SlideBlockView({ block }: { block: SlideBlock }) {
           />
         </div>
       ) : (
-        <video src={block.url} poster={block.poster} controls className="w-full rounded-md mb-3" />
+        <video src={block.url} poster={block.poster} controls className="w-full rounded-md mb-3" aria-label="Slide video" />
       );
     }
     default:
@@ -478,14 +478,27 @@ function CoursePlayer({ course, lesson, currentIndex, total, progress, onPrev, o
         const slide = slides[Math.min(slideIdx, slides.length - 1)];
         const narrationUrl = slide.narration?.audioUrl;
         return (
-          <div data-testid="content-slides">
-            {slide.blocks.map((b) => <SlideBlockView key={b.id} block={b} />)}
+          <div
+            data-testid="content-slides"
+            role="group"
+            aria-roledescription="carousel"
+            aria-label={`Slides, ${slideIdx + 1} of ${slides.length}`}
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if (e.key === "ArrowRight" && slideIdx < slides.length - 1) { setSlideIdx(i => i + 1); e.preventDefault(); }
+              if (e.key === "ArrowLeft" && slideIdx > 0) { setSlideIdx(i => i - 1); e.preventDefault(); }
+            }}
+            className="focus:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-md"
+          >
+            <div aria-live="polite">
+              {slide.blocks.map((b) => <SlideBlockView key={b.id} block={b} />)}
+            </div>
             {narrationUrl && (
               <div className="mt-4 rounded-md border bg-muted/40 p-3" data-testid="slide-narration">
                 <p className="text-xs font-medium text-muted-foreground mb-1 flex items-center gap-1">
                   <Music className="h-3.5 w-3.5" /> Narration
                 </p>
-                <audio src={narrationUrl} controls className="w-full" />
+                <audio src={narrationUrl} controls className="w-full" aria-label={`Narration for slide ${slideIdx + 1}`} />
                 {slide.narration?.text && (
                   <details className="mt-2">
                     <summary className="text-xs text-muted-foreground cursor-pointer">Transcript</summary>
@@ -495,11 +508,11 @@ function CoursePlayer({ course, lesson, currentIndex, total, progress, onPrev, o
               </div>
             )}
             <div className="flex items-center justify-between gap-2 mt-4">
-              <Button variant="outline" size="sm" disabled={slideIdx === 0} onClick={() => setSlideIdx(i => i - 1)} data-testid="button-slide-prev">
+              <Button variant="outline" size="sm" disabled={slideIdx === 0} onClick={() => setSlideIdx(i => i - 1)} data-testid="button-slide-prev" aria-label="Previous slide">
                 Previous slide
               </Button>
-              <span className="text-sm text-muted-foreground">{slideIdx + 1} / {slides.length}</span>
-              <Button variant="outline" size="sm" disabled={slideIdx >= slides.length - 1} onClick={() => setSlideIdx(i => i + 1)} data-testid="button-slide-next">
+              <span className="text-sm text-muted-foreground" aria-hidden="true">{slideIdx + 1} / {slides.length}</span>
+              <Button variant="outline" size="sm" disabled={slideIdx >= slides.length - 1} onClick={() => setSlideIdx(i => i + 1)} data-testid="button-slide-next" aria-label="Next slide">
                 Next slide
               </Button>
             </div>

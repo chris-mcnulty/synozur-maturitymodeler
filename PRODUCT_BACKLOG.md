@@ -399,7 +399,7 @@ The MVP slice (catalog, player, authoring, quizzes, attestations, enrollment tra
 
 ## RICH COURSE SLIDES, NARRATION & POWERPOINT IMPORT (Orion Courses for Clients)
 
-**Status:** In progress (Phases 0–3 done; Phase 4 remaining)
+**Status:** Phases 0–4 complete (pending review / deploy-dependency provisioning)
 **Priority:** High
 **Branch:** `claude/orion-course-features-nax6bd`
 
@@ -475,9 +475,20 @@ domains; (6) optionally close with a quiz to certify involvement.
   (NOT just `libreoffice-core`) **and** `poppler-utils` (for `pdftoppm`).
   Overridable via `SOFFICE_BIN` / `PDFTOPPM_BIN`. Note: the unrelated `.pptx`
   block in `Admin.tsx` is for Knowledge-Base document uploads and was left as-is.
-- **Phase 4 — Glue & hardening (TODO):** accessibility pass (required alt text,
-  labeled controls, keyboard nav), broader Vitest/Playwright coverage, and a
-  `/finalize` ACL audit.
+- **Phase 4 — Glue & hardening (DONE):**
+  - Accessibility: learner slide view is a labelled carousel `group` with
+    ArrowLeft/ArrowRight keyboard navigation, an `aria-live` region for block
+    content, and labelled narration audio / video. Editor icon-only controls
+    have `aria-label`s, the rich-text field is a labelled `textbox`, and image
+    blocks warn when alt text is missing.
+  - `/finalize` ACL audit: finalize now only accepts freshly-uploaded objects
+    under the `uploads/` prefix, so an admin/modeler cannot flip an arbitrary
+    existing object (e.g. a private certificate) to public via a known path.
+  - Tests: unit coverage for the slide model, TTS config gating, and the PPTX
+    OOXML text/entity extraction (`tests/unit/{slides,tts-service,pptx-import}.test.ts`).
+  - Deferred to CI: component/E2E specs for the editor & player (no jsdom /
+    Playwright runtime in this environment); the PPTX render pipeline was
+    verified manually end-to-end against a real deck.
 
 ### Media finalize
 Direct-to-storage Uppy uploads (inline images/video, recorded narration) are

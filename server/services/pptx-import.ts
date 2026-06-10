@@ -50,7 +50,7 @@ function run(cmd: string, args: string[], opts: { cwd?: string; env?: NodeJS.Pro
   });
 }
 
-function decodeXmlEntities(s: string): string {
+export function decodeXmlEntities(s: string): string {
   return s
     .replace(/&lt;/g, "<")
     .replace(/&gt;/g, ">")
@@ -62,7 +62,7 @@ function decodeXmlEntities(s: string): string {
 }
 
 /** Extract visible text from a slide/notes XML part by collecting <a:t> runs. */
-function extractText(xml: string): string {
+export function extractText(xml: string): string {
   const matches = xml.match(/<a:t>([\s\S]*?)<\/a:t>/g) || [];
   const lines = matches
     .map((m) => decodeXmlEntities(m.replace(/<\/?a:t>/g, "")).trim())

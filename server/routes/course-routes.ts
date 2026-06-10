@@ -867,7 +867,15 @@ export function registerCourseRoutes(app: Express) {
       const user = req.user as schema.User;
       const { ObjectStorageService } = await import("../objectStorage");
       const objectStorageService = new ObjectStorageService();
-      const normalizedPath = await objectStorageService.trySetObjectEntityAclPolicy(url, {
+      // Only finalize freshly-uploaded objects (under the `uploads/` prefix that
+      // getObjectEntityUploadURL writes to). This prevents re-ACLing an
+      // arbitrary existing object — e.g. flipping someone's private certificate
+      // to public — via a guessed/known /objects path.
+      const normalizedPath = objectStorageService.normalizeObjectEntityPath(url);
+      if (!normalizedPath.startsWith("/objects/uploads/")) {
+        return res.status(400).json({ error: "Only freshly uploaded objects can be finalized" });
+      }
+      await objectStorageService.trySetObjectEntityAclPolicy(url, {
         owner: user.id || "admin",
         visibility: "public",
       });
