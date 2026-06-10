@@ -54,7 +54,7 @@ export async function synthesizeNarration(opts: {
 }): Promise<{ audioUrl: string; voice: string }> {
   if (!isTtsConfigured()) {
     throw new Error(
-      "Azure Speech is not configured. Set AZURE_SPEECH_KEY and AZURE_SPEECH_REGION.",
+      "Azure Speech is not configured. Set AZURE_SPEECH_KEY and AZURE_SPEECH_REGION (or AZURE_SPEECH_ENDPOINT).",
     );
   }
   const text = (opts.text || "").trim();

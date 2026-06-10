@@ -165,7 +165,8 @@ export class ObjectStorageService {
     return `/objects/${opts.entityId}`;
   }
 
-  async getObjectEntityFile(objectPath: string): Promise<File> {    if (!objectPath.startsWith("/objects/")) {
+  async getObjectEntityFile(objectPath: string): Promise<File> {
+    if (!objectPath.startsWith("/objects/")) {
       throw new ObjectNotFoundError();
     }
 

@@ -2,8 +2,10 @@
  * Visual, block-based editor for `slides` lessons.
  *
  * Authors build each slide from ordered content blocks (heading, rich text,
- * image, video, callout) and attach optional narration (recorded upload now;
- * machine TTS in a later release). Replaces the raw JSON textarea for slides.
+ * image, video, callout) and attach optional narration — either a recorded
+ * audio upload or machine-generated speech via Azure TTS
+ * (POST /api/courses/:id/narration/tts). Replaces the raw JSON textarea for
+ * slides lessons.
  *
  * Rendering on the learner side is handled by `SlideBlockView` in
  * `pages/CourseDetail.tsx`; both consume the shared slide model in
@@ -342,6 +344,9 @@ function NarrationPanel({ slide, courseId, onChange }: {
             onChange={(e) => onChange({ ...narration, text: e.target.value })}
             placeholder="Type the words to be narrated…"
           />
+          <p className="text-xs text-muted-foreground">
+            The script is also shown to learners as the narration transcript.
+          </p>
           <Button type="button" variant="outline" size="sm" onClick={generateTts} disabled={generating} data-testid="button-generate-tts">
             {generating ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
             Generate narration (Azure TTS)
@@ -350,7 +355,7 @@ function NarrationPanel({ slide, courseId, onChange }: {
         </div>
       )}
 
-      {narration.mode !== "none" && (
+      {narration.mode === "recorded" && (
         <div>
           <Label className="text-xs">Transcript (accessibility, optional)</Label>
           <Textarea

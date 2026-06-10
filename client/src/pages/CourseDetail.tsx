@@ -28,6 +28,26 @@ function sanitizeHtml(html: string): string {
   return DOMPurify.sanitize(html, { USE_PROFILES: { html: true } });
 }
 
+/**
+ * Author-provided embed URLs go into an iframe src, so reject anything that
+ * isn't plain http(s) (e.g. `javascript:`/`data:` schemes).
+ */
+function isSafeHttpUrl(url: string): boolean {
+  try {
+    const u = new URL(url, window.location.origin);
+    return u.protocol === "http:" || u.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Sandbox for third-party video embeds (YouTube/Vimeo). Their players need
+ * scripts + same-origin + fullscreen/popups to function, but this still blocks
+ * top-navigation, form submission, downloads, and pointer-lock.
+ */
+const EMBED_SANDBOX = "allow-scripts allow-same-origin allow-presentation allow-popups";
+
 /** Render a single slide block in the learner view. */
 function SlideBlockView({ block }: { block: SlideBlock }) {
   switch (block.type) {
@@ -66,7 +86,7 @@ function SlideBlockView({ block }: { block: SlideBlock }) {
     case "image_slide":
       return block.url ? <img src={block.url} alt={block.alt || ""} className="rounded-md w-full mb-3" /> : null;
     case "video": {
-      if (!block.url) return null;
+      if (!block.url || !isSafeHttpUrl(block.url)) return null;
       const isEmbed = block.provider === "youtube" || block.provider === "vimeo" ||
         block.url.includes("youtube.com") || block.url.includes("youtu.be") || block.url.includes("vimeo.com");
       return isEmbed ? (
@@ -74,6 +94,7 @@ function SlideBlockView({ block }: { block: SlideBlock }) {
           <iframe
             src={block.url}
             className="absolute inset-0 w-full h-full"
+            sandbox={EMBED_SANDBOX}
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
             allowFullScreen
             title="Slide video"
@@ -527,13 +548,14 @@ function CoursePlayer({ course, lesson, currentIndex, total, progress, onPrev, o
             {c.description && (
               <p className="text-sm text-muted-foreground">{c.description}</p>
             )}
-            {!c.videoUrl ? (
+            {!c.videoUrl || !isSafeHttpUrl(c.videoUrl) ? (
               <p className="text-sm text-muted-foreground">No video URL configured.</p>
             ) : isEmbed ? (
               <div className="relative w-full rounded-md overflow-hidden" style={{ paddingBottom: '56.25%' }}>
                 <iframe
                   src={c.videoUrl}
                   className="absolute inset-0 w-full h-full"
+                  sandbox={EMBED_SANDBOX}
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                   allowFullScreen
                   title={lesson.title}
