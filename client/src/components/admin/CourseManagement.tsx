@@ -955,7 +955,14 @@ function LessonEditorDialog({
     try { return JSON.parse(contentJson) ?? {}; } catch { return {}; }
   })();
   const patchContent = (patch: Record<string, any>) => {
-    setContentJson(JSON.stringify({ ...parsedContent, ...patch }, null, 2));
+    // Functional update: merge into the *latest* payload rather than the
+    // render-time `parsedContent` snapshot, so rapid/batched patches from
+    // different fields can't overwrite each other.
+    setContentJson(prev => {
+      let base: any;
+      try { base = JSON.parse(prev) ?? {}; } catch { base = {}; }
+      return JSON.stringify({ ...base, ...patch }, null, 2);
+    });
   };
 
   return (

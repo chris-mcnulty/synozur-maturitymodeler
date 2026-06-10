@@ -593,13 +593,17 @@ function CoursePlayer({ course, lesson, currentIndex, total, progress, onPrev, o
           </div>
         );
       }
-      case "audio":
+      case "audio": {
+        // Same gating as video: managed uploads go through the media proxy,
+        // anything else must be a safe http(s) URL (no data:/javascript:).
+        const isManagedAudio = /^\/objects\/(?:uploads|narration|slides)\//.test(c.audioUrl || "");
+        const playableAudio = c.audioUrl && (isManagedAudio || isSafeHttpUrl(c.audioUrl));
         return (
           <div data-testid="content-audio" className="space-y-3">
             {c.description && (
               <p className="text-sm text-muted-foreground">{c.description}</p>
             )}
-            {c.audioUrl ? (
+            {playableAudio ? (
               <audio src={courseMediaUrl(course.id, c.audioUrl)} controls className="w-full" />
             ) : (
               <p className="text-sm text-muted-foreground">No audio URL configured.</p>
@@ -612,6 +616,7 @@ function CoursePlayer({ course, lesson, currentIndex, total, progress, onPrev, o
             )}
           </div>
         );
+      }
       case "quiz": {
         const questions: any[] = c.questions || [];
         if (submittedScore !== null) {

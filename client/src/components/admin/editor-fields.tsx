@@ -79,14 +79,16 @@ export function RichTextField({ value, onChange, placeholder, minHeight }: {
 }) {
   const ref = useRef<HTMLDivElement>(null);
 
-  // Initialize once on mount; the caller remounts (via `key`) when switching
-  // blocks/slides, so we never fight React over the cursor position.
+  // Sync external `value` changes (e.g. edits made in the Advanced raw-JSON
+  // textarea) into the DOM — but never while the field is focused: during
+  // typing the DOM is the source of truth, and rewriting innerHTML would
+  // clobber the cursor and any keystrokes not yet flushed through React.
   useEffect(() => {
-    if (ref.current && ref.current.innerHTML !== value) {
-      ref.current.innerHTML = value || "";
+    const el = ref.current;
+    if (el && document.activeElement !== el && el.innerHTML !== value) {
+      el.innerHTML = value || "";
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [value]);
 
   const exec = (cmd: string, arg?: string) => {
     ref.current?.focus();
