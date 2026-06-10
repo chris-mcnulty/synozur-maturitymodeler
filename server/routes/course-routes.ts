@@ -25,6 +25,19 @@ import * as scormSvc from "../services/scorm-service";
 import * as courseIE from "../services/course-import-export";
 import { synthesizeNarration, isTtsConfigured } from "../services/tts-service";
 import { importPptx } from "../services/pptx-import";
+import { slidesContentSchema } from "@shared/slides";
+
+/**
+ * Validate a lesson's content payload against its type. Currently enforces the
+ * `slides` block model so malformed slide content can't be persisted by a
+ * hand-crafted request (the editor always sends valid data). Throws a ZodError
+ * (→ 400) on failure.
+ */
+function validateLessonContent(type: string, content: unknown): void {
+  if (type === "slides") {
+    slidesContentSchema.parse(content);
+  }
+}
 import * as schema from "@shared/schema";
 import { db } from "../db";
 import { eq } from "drizzle-orm";
@@ -513,6 +526,7 @@ export function registerCourseRoutes(app: Express) {
       if (!course) return res.status(404).json({ error: "Module not found" });
       if (!courseSvc.userCanManageCourse(user, course)) return res.status(403).json({ error: "Forbidden" });
       const parsed = schema.insertLessonSchema.parse({ ...req.body, moduleId: req.params.mid });
+      validateLessonContent(parsed.type ?? "rich_text", parsed.content);
       res.json(await courseSvc.createLesson(parsed));
     } catch (err: any) {
       res.status(400).json({ error: err.message ?? "Failed" });
@@ -526,6 +540,9 @@ export function registerCourseRoutes(app: Express) {
       if (!ctx) return res.status(404).json({ error: "Lesson not found" });
       if (!courseSvc.userCanManageCourse(user, ctx.course)) return res.status(403).json({ error: "Forbidden" });
       const { moduleId, ...patch } = req.body; // disallow moving lesson across modules via PUT
+      if (patch.content !== undefined) {
+        validateLessonContent(patch.type ?? ctx.lesson.type, patch.content);
+      }
       const lesson = await courseSvc.updateLesson(req.params.id, patch);
       if (!lesson) return res.status(404).json({ error: "Not found" });
       res.json(lesson);
@@ -843,6 +860,11 @@ export function registerCourseRoutes(app: Express) {
           return res.status(400).json({
             error: "Empty body. POST a .pptx file as the request body.",
           });
+        }
+        // A .pptx is a ZIP container — reject anything that isn't (PK\x03\x04)
+        // before handing off to LibreOffice.
+        if (buf.length < 4 || buf[0] !== 0x50 || buf[1] !== 0x4b || buf[2] !== 0x03 || buf[3] !== 0x04) {
+          return res.status(400).json({ error: "File does not look like a .pptx (expected a ZIP/OOXML container)." });
         }
         const user = req.user as schema.User;
         const result = await importPptx({ buffer: buf, ownerUserId: user.id });

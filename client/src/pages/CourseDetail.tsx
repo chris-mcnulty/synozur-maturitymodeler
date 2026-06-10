@@ -441,6 +441,7 @@ function CoursePlayer({ course, lesson, currentIndex, total, progress, onPrev, o
   const [signedName, setSignedName] = useState("");
   const [quizResponses, setQuizResponses] = useState<Record<string, string[]>>({});
   const [slideIdx, setSlideIdx] = useState(0);
+  const [autoAdvance, setAutoAdvance] = useState(false);
   const [submittedScore, setSubmittedScore] = useState<number | null>(progress?.score ?? null);
   const [submittedStatus, setSubmittedStatus] = useState<string | null>(progress?.status ?? null);
 
@@ -516,10 +517,28 @@ function CoursePlayer({ course, lesson, currentIndex, total, progress, onPrev, o
             </div>
             {narrationUrl && (
               <div className="mt-4 rounded-md border bg-muted/40 p-3" data-testid="slide-narration">
-                <p className="text-xs font-medium text-muted-foreground mb-1 flex items-center gap-1">
-                  <Music className="h-3.5 w-3.5" /> Narration
-                </p>
-                <audio src={narrationUrl} controls className="w-full" aria-label={`Narration for slide ${slideIdx + 1}`} />
+                <div className="flex items-center justify-between mb-1">
+                  <p className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+                    <Music className="h-3.5 w-3.5" /> Narration
+                  </p>
+                  <label className="flex items-center gap-1.5 text-xs text-muted-foreground cursor-pointer">
+                    <Checkbox
+                      checked={autoAdvance}
+                      onCheckedChange={(v) => setAutoAdvance(v === true)}
+                      data-testid="checkbox-auto-advance"
+                    />
+                    Auto-play &amp; advance
+                  </label>
+                </div>
+                <audio
+                  key={slide.id}
+                  src={narrationUrl}
+                  controls
+                  autoPlay={autoAdvance}
+                  onEnded={() => { if (autoAdvance && slideIdx < slides.length - 1) setSlideIdx(i => i + 1); }}
+                  className="w-full"
+                  aria-label={`Narration for slide ${slideIdx + 1}`}
+                />
                 {slide.narration?.text && (
                   <details className="mt-2">
                     <summary className="text-xs text-muted-foreground cursor-pointer">Transcript</summary>

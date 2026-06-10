@@ -208,3 +208,23 @@ export function blockToHtml(b: SlideBlock): string {
 export function slideToHtml(slide: Slide): string {
   return slide.blocks.map(blockToHtml).join("\n");
 }
+
+/**
+ * Object-storage entity paths (under our managed prefixes) referenced anywhere
+ * in a lesson's content — narration audio, uploaded images/video, imported
+ * slide images. Used to garbage-collect objects when a lesson is deleted or
+ * its content changes. Scans the serialized content so it works for any lesson
+ * shape (slides blocks, narration, or top-level video/audio lessons), and only
+ * returns paths we created (`uploads/`, `narration/`, `slides/`).
+ */
+export function extractManagedObjectPaths(content: unknown): string[] {
+  if (content == null) return [];
+  let json: string;
+  try {
+    json = JSON.stringify(content);
+  } catch {
+    return [];
+  }
+  const re = /\/objects\/(?:uploads|narration|slides)\/[A-Za-z0-9._\-/]+/g;
+  return Array.from(new Set(json.match(re) ?? []));
+}

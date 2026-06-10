@@ -62,6 +62,31 @@ async function finalizeUploaded(result: any): Promise<string | undefined> {
   return raw;
 }
 
+/** Curated Azure neural voices offered in the narration picker. */
+const TTS_VOICES: { id: string; label: string }[] = [
+  { id: "en-US-JennyNeural", label: "Jenny (US, female)" },
+  { id: "en-US-AriaNeural", label: "Aria (US, female)" },
+  { id: "en-US-GuyNeural", label: "Guy (US, male)" },
+  { id: "en-US-DavisNeural", label: "Davis (US, male)" },
+  { id: "en-GB-SoniaNeural", label: "Sonia (UK, female)" },
+  { id: "en-GB-RyanNeural", label: "Ryan (UK, male)" },
+  { id: "en-AU-NatashaNeural", label: "Natasha (AU, female)" },
+];
+const DEFAULT_VOICE = TTS_VOICES[0].id;
+
+/** Request TTS narration for some text; returns the stored audio URL + voice. */
+async function requestTts(courseId: string, text: string, voice?: string): Promise<{ audioUrl: string; voice: string }> {
+  const res = await fetch(`/api/courses/${courseId}/narration/tts`, {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ text, voice }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || "Failed to generate narration");
+  return data;
+}
+
 /** contentEditable rich-text field with a minimal formatting toolbar. */
 function RichTextField({ value, onChange, placeholder }: {
   value: string;
@@ -274,14 +299,7 @@ function NarrationPanel({ slide, courseId, onChange }: {
     }
     setGenerating(true);
     try {
-      const res = await fetch(`/api/courses/${courseId}/narration/tts`, {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text, voice: narration.voice }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to generate narration");
+      const data = await requestTts(courseId, text, narration.voice || DEFAULT_VOICE);
       onChange({ ...narration, mode: "tts", audioUrl: data.audioUrl, voice: data.voice, status: "ready" });
       toast({ title: "Narration generated" });
     } catch (err: any) {
@@ -347,6 +365,15 @@ function NarrationPanel({ slide, courseId, onChange }: {
           <p className="text-xs text-muted-foreground">
             The script is also shown to learners as the narration transcript.
           </p>
+          <div className="flex items-center gap-2">
+            <Label className="text-xs">Voice</Label>
+            <Select value={narration.voice || DEFAULT_VOICE} onValueChange={(v) => onChange({ ...narration, voice: v })}>
+              <SelectTrigger className="w-56" data-testid="select-tts-voice"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {TTS_VOICES.map((v) => <SelectItem key={v.id} value={v.id}>{v.label}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
           <Button type="button" variant="outline" size="sm" onClick={generateTts} disabled={generating} data-testid="button-generate-tts">
             {generating ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
             Generate narration (Azure TTS)
@@ -375,11 +402,46 @@ export function SlideEditor({ value, courseId, onChange }: {
   courseId: string;
   onChange: (v: SlidesContent) => void;
 }) {
+  const { toast } = useToast();
   const slides: Slide[] = normalizeSlides(value);
   const [activeIdx, setActiveIdx] = useState(0);
+  const [bulkVoice, setBulkVoice] = useState(DEFAULT_VOICE);
+  const [bulkProgress, setBulkProgress] = useState<{ done: number; total: number } | null>(null);
   const active = slides[Math.min(activeIdx, Math.max(0, slides.length - 1))];
 
   const commit = (next: Slide[]) => onChange({ slides: next });
+
+  // Slides that have a narration script but no generated/uploaded audio yet.
+  const pendingNarration = slides.filter(
+    (s) => (s.narration?.text || "").trim() && !s.narration?.audioUrl,
+  );
+
+  const generateAllNarration = async () => {
+    const targets = slides
+      .map((s, i) => ({ s, i }))
+      .filter(({ s }) => (s.narration?.text || "").trim() && !s.narration?.audioUrl);
+    if (targets.length === 0) return;
+    setBulkProgress({ done: 0, total: targets.length });
+    const next = [...slides];
+    let failures = 0;
+    for (let k = 0; k < targets.length; k++) {
+      const { s, i } = targets[k];
+      try {
+        const data = await requestTts(courseId, (s.narration!.text || "").trim(), s.narration?.voice || bulkVoice);
+        next[i] = { ...next[i], narration: { ...next[i].narration!, mode: "tts", audioUrl: data.audioUrl, voice: data.voice, status: "ready" } };
+        commit([...next]);
+      } catch {
+        failures++;
+      }
+      setBulkProgress({ done: k + 1, total: targets.length });
+    }
+    setBulkProgress(null);
+    toast(
+      failures
+        ? { title: `Generated ${targets.length - failures}/${targets.length}`, description: `${failures} slide(s) failed`, variant: "destructive" }
+        : { title: `Generated narration for ${targets.length} slide(s)` },
+    );
+  };
 
   const updateSlide = (idx: number, patch: Partial<Slide>) => {
     commit(slides.map((s, i) => (i === idx ? { ...s, ...patch } : s)));
@@ -434,7 +496,35 @@ export function SlideEditor({ value, courseId, onChange }: {
   }
 
   return (
-    <div className="grid grid-cols-[180px_1fr] gap-3" data-testid="slide-editor">
+    <div className="space-y-3" data-testid="slide-editor">
+      {/* Deck-level narration toolbar */}
+      {pendingNarration.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2 rounded-md border bg-muted/40 p-2">
+          <Mic className="h-4 w-4 text-muted-foreground" />
+          <span className="text-xs text-muted-foreground">
+            {pendingNarration.length} slide(s) have a script but no audio.
+          </span>
+          <Select value={bulkVoice} onValueChange={setBulkVoice}>
+            <SelectTrigger className="w-52 h-8" data-testid="select-bulk-voice"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {TTS_VOICES.map((v) => <SelectItem key={v.id} value={v.id}>{v.label}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <Button
+            type="button" variant="outline" size="sm"
+            onClick={generateAllNarration}
+            disabled={!!bulkProgress}
+            data-testid="button-generate-all-narration"
+          >
+            {bulkProgress
+              ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> {bulkProgress.done}/{bulkProgress.total}</>
+              : <><Sparkles className="h-4 w-4 mr-2" /> Generate all narration</>}
+          </Button>
+          <span className="text-xs text-muted-foreground">(voice applies to slides without their own)</span>
+        </div>
+      )}
+
+      <div className="grid grid-cols-[180px_1fr] gap-3">
       {/* Slide list */}
       <div className="space-y-2">
         <div className="space-y-1 max-h-[420px] overflow-y-auto pr-1">
@@ -525,6 +615,7 @@ export function SlideEditor({ value, courseId, onChange }: {
         </DropdownMenu>
 
         <NarrationPanel slide={active} courseId={courseId} onChange={(n) => updateSlide(activeIdx, { narration: n })} />
+      </div>
       </div>
     </div>
   );

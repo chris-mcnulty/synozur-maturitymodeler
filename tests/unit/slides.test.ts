@@ -4,6 +4,7 @@ import {
   normalizeSlides,
   slideToHtml,
   blankSlide,
+  extractManagedObjectPaths,
   type SlideBlock,
 } from '../../shared/slides';
 
@@ -62,6 +63,44 @@ describe('slide model: HTML rendering', () => {
   it('omits a video block with no url', () => {
     const html = slideToHtml({ id: 's', blocks: [{ id: '1', type: 'video', url: '' }] });
     expect(html.trim()).toBe('');
+  });
+});
+
+describe('extractManagedObjectPaths', () => {
+  it('collects narration audio and uploaded/imported media under managed prefixes', () => {
+    const content = {
+      slides: [
+        {
+          id: 's1',
+          blocks: [
+            { id: 'b1', type: 'image_slide', url: '/objects/slides/abc.png', alt: '' },
+            { id: 'b2', type: 'video', url: '/objects/uploads/vid.mp4' },
+          ],
+          narration: { mode: 'tts', audioUrl: '/objects/narration/n1.mp3' },
+        },
+      ],
+    };
+    const paths = extractManagedObjectPaths(content);
+    expect(paths.sort()).toEqual(
+      ['/objects/narration/n1.mp3', '/objects/slides/abc.png', '/objects/uploads/vid.mp4'].sort(),
+    );
+  });
+
+  it('ignores external URLs and unmanaged object paths', () => {
+    const content = {
+      slides: [{
+        id: 's', blocks: [
+          { id: 'b1', type: 'video', url: 'https://youtube.com/watch?v=x' },
+          { id: 'b2', type: 'image', url: '/objects/certificates/secret.pdf', alt: '' },
+        ],
+      }],
+    };
+    expect(extractManagedObjectPaths(content)).toEqual([]);
+  });
+
+  it('returns empty for null/garbage content', () => {
+    expect(extractManagedObjectPaths(null)).toEqual([]);
+    expect(extractManagedObjectPaths(undefined)).toEqual([]);
   });
 });
 

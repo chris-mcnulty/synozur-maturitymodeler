@@ -165,6 +165,22 @@ export class ObjectStorageService {
     return `/objects/${opts.entityId}`;
   }
 
+  /**
+   * Best-effort delete of an object by its `/objects/<id>` path. Used to
+   * garbage-collect narration audio / slide images that are no longer
+   * referenced. Never throws — a missing object or storage hiccup must not
+   * fail the originating request.
+   */
+  async deleteObjectByPath(objectPath: string): Promise<void> {
+    try {
+      const file = await this.getObjectEntityFile(objectPath);
+      await file.delete({ ignoreNotFound: true });
+    } catch (err) {
+      if (err instanceof ObjectNotFoundError) return;
+      console.error("deleteObjectByPath failed", objectPath, err);
+    }
+  }
+
   async getObjectEntityFile(objectPath: string): Promise<File> {
     if (!objectPath.startsWith("/objects/")) {
       throw new ObjectNotFoundError();

@@ -490,6 +490,28 @@ domains; (6) optionally close with a quiz to certify involvement.
     Playwright runtime in this environment); the PPTX render pipeline was
     verified manually end-to-end against a real deck.
 
+### Post-review follow-ups (sprint completion)
+- **Slide content validation:** `POST`/`PUT` lessons now validate `slides`
+  payloads against `slidesContentSchema` server-side (defense in depth).
+- **Object GC:** narration MP3s / slide images are deleted when a lesson is
+  removed or its content changes (regenerated TTS, replaced/removed media), via
+  `ObjectStorageService.deleteObjectByPath` + `extractManagedObjectPaths` diff.
+- **PPTX guards:** import rejects non-ZIP bodies (PK signature) and is capped at
+  100 MB by the raw body limit.
+- **Bulk narration + voice picker:** per-slide Azure voice selector plus a
+  deck-level "Generate all narration" action (with a default voice) for slides
+  that have a script but no audio.
+- **TTS chunking:** long scripts are split (~3500-char chunks, sentence-aware)
+  and the MP3s concatenated; total input bounded at 50k chars.
+- **Narration auto-play / auto-advance:** learner toggle that auto-plays each
+  slide's narration and advances when it ends.
+- **Tests:** unit coverage for `splitTextForTts` + `extractManagedObjectPaths`,
+  and route tests for finalize / TTS / PPTX-import / slide validation
+  (`tests/integration/course-media.test.ts`).
+- **Open decision:** object ACL for narration/slide media is still **public**;
+  gating to enrolled learners (Part D) needs a course-aware serving path — see
+  PR discussion.
+
 ### Media finalize
 Direct-to-storage Uppy uploads (inline images/video, recorded narration) are
 normalized to stable `/objects/...` paths with a public ACL via
