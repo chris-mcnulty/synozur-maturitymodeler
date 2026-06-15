@@ -171,6 +171,7 @@ interface AdminResult extends Result {
   proxyName?: string;
   proxyCompany?: string;
   maxScore?: number;
+  assessmentMode?: string;
 }
 
 // Benchmark Configuration Component
@@ -2556,10 +2557,11 @@ export default function Admin() {
     }
   };
 
-  // Calculate statistics
+  // Calculate statistics (exclude type/propensity assessments from score averages)
   const totalAssessments = results.length;
-  const averageScore = totalAssessments > 0 
-    ? Math.round(results.reduce((acc, r) => acc + r.overallScore, 0) / totalAssessments)
+  const scoredResults = results.filter(r => r.assessmentMode !== 'type');
+  const averageScore = scoredResults.length > 0 
+    ? Math.round(scoredResults.reduce((acc, r) => acc + r.overallScore, 0) / scoredResults.length)
     : 0;
   const publishedModels = models.filter(m => m.status !== 'draft').length;
   const completionRate = 89; // Would need to calculate from actual data
@@ -4185,9 +4187,11 @@ export default function Admin() {
                             )}
                           </div>
                           <div className="text-right flex-shrink-0">
-                            <div className="text-xl font-bold">{result.overallScore}</div>
+                            <div className="text-xl font-bold">
+                              {result.assessmentMode === 'type' ? (result.label || '—') : result.overallScore}
+                            </div>
                             <Badge variant={result.status === 'completed' ? 'default' : 'secondary'} className="text-xs">
-                              {result.status || result.label}
+                              {result.assessmentMode === 'type' ? 'type' : (result.status || result.label)}
                             </Badge>
                           </div>
                         </div>
@@ -4217,7 +4221,7 @@ export default function Admin() {
                       <TableHead>User</TableHead>
                       <TableHead>Company</TableHead>
                       <TableHead>Model</TableHead>
-                      <TableHead>Score</TableHead>
+                      <TableHead>Score / Type</TableHead>
                       <TableHead>Tags</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
@@ -4252,8 +4256,9 @@ export default function Admin() {
 
                         // Render grouped results with subtotals
                         return Object.entries(groupedByDate).map(([date, dateResults]) => {
-                          const dateTotal = dateResults.reduce((sum, r) => sum + r.overallScore, 0);
-                          const dateAvg = Math.round(dateTotal / dateResults.length);
+                          const scoredInDate = dateResults.filter(r => r.assessmentMode !== 'type');
+                          const dateTotal = scoredInDate.reduce((sum, r) => sum + r.overallScore, 0);
+                          const dateAvg = scoredInDate.length > 0 ? Math.round(dateTotal / scoredInDate.length) : null;
                           
                           return [
                             // Date header row
@@ -4262,7 +4267,7 @@ export default function Admin() {
                                 {date} ({dateResults.length} assessment{dateResults.length !== 1 ? 's' : ''})
                               </TableCell>
                               <TableCell className="font-semibold">
-                                Avg: {dateAvg}
+                                {dateAvg !== null ? `Avg: ${dateAvg}` : '—'}
                               </TableCell>
                               <TableCell colSpan={3}></TableCell>
                             </TableRow>,
@@ -4282,7 +4287,9 @@ export default function Admin() {
                                 </TableCell>
                                 <TableCell>{result.isProxy ? result.proxyCompany : (result.company || '-')}</TableCell>
                                 <TableCell>{result.modelName}</TableCell>
-                                <TableCell>{result.overallScore}</TableCell>
+                                <TableCell>
+                                  {result.assessmentMode === 'type' ? (result.label || '—') : result.overallScore}
+                                </TableCell>
                                 <TableCell>
                                   <AssessmentTagSelector assessmentId={result.assessmentId} />
                                 </TableCell>

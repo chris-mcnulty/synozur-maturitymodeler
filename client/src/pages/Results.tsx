@@ -321,7 +321,9 @@ export default function Results() {
             modelId: model.id,
             userContext,
             maxScore,
-            hideScoreAndNarratives: !!(model as any).hideScoreAndNarratives
+            hideScoreAndNarratives: !!(model as any).hideScoreAndNarratives,
+            assessmentMode: (model as any).assessmentMode,
+            archetypeLabel: result.label,
           })
         });
 

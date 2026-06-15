@@ -440,10 +440,10 @@ Respond in JSON format:
 
   app.post("/api/ai/generate-maturity-summary", async (req, res) => {
     try {
-      const { overallScore, dimensionScores, modelName, userContext, maxScore, modelId, hideScoreAndNarratives } = req.body;
+      const { overallScore, dimensionScores, modelName, userContext, maxScore, modelId, hideScoreAndNarratives, assessmentMode, archetypeLabel } = req.body;
       
-      // Validate input
-      if (!overallScore || !dimensionScores || !modelName) {
+      // Validate input — overallScore of 0 is valid for type/propensity assessments
+      if (overallScore === undefined || overallScore === null || !dimensionScores || !modelName) {
         return res.status(400).json({ error: "Missing required fields" });
       }
       
@@ -458,9 +458,9 @@ Respond in JSON format:
         return res.status(401).json({ error: "Authentication required" });
       }
 
-      // Generate cache key (include maxScore and hideScoreAndNarratives for proper cache separation)
+      // Generate cache key (include assessmentMode and archetypeLabel so type results are cached separately)
       const contextHash = createHash('md5')
-        .update(JSON.stringify({ overallScore, dimensionScores, modelName, userContext, maxScore, hideScoreAndNarratives: !!hideScoreAndNarratives }))
+        .update(JSON.stringify({ overallScore, dimensionScores, modelName, userContext, maxScore, hideScoreAndNarratives: !!hideScoreAndNarratives, assessmentMode, archetypeLabel }))
         .digest('hex');
 
       // Check cache first
@@ -476,7 +476,9 @@ Respond in JSON format:
         modelName,
         userContext,
         maxScore || 500,
-        !!hideScoreAndNarratives
+        !!hideScoreAndNarratives,
+        assessmentMode,
+        archetypeLabel
       );
 
       // Cache the result for 30 days

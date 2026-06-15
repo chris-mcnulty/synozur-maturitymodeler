@@ -368,7 +368,9 @@ class AIService {
     modelName: string,
     userContext?: { industry?: string; companySize?: string; jobTitle?: string },
     maxScore: number = 500,
-    hideScoreAndNarratives: boolean = false
+    hideScoreAndNarratives: boolean = false,
+    assessmentMode?: string,
+    archetypeLabel?: string
   ): Promise<string> {
     // Get model ID and class to fetch knowledge version and determine audience type
     let modelId: string | undefined;
@@ -436,6 +438,43 @@ Your assessment shows areas of strength and opportunities for growth. The Synozu
 
       // Fetch knowledge context from uploaded documents (modelId already retrieved above)
       const knowledgeContext = await this.getKnowledgeContext(modelId);
+
+      // ── Type / propensity assessments ──────────────────────────────────────
+      // These use a voting mechanic (no numeric score). Build an archetype-
+      // focused narrative instead of the scored maturity prompt.
+      if (assessmentMode === 'type') {
+        const archetype = archetypeLabel || validDimensions[0]?.[1]?.label || 'Unknown';
+        const tallyLines = validDimensions
+          .map(([, dim]) => `• ${dim.label}: ${dim.score} vote(s)`)
+          .join('\n');
+
+        const typePrompt = `You are a transformation expert from The Synozur Alliance LLC. Write a personalized reflection for someone who has just completed the ${modelName}.
+${knowledgeContext ? `\n${knowledgeContext}\n` : ''}
+${userContext ? `Respondent: ${userContext.jobTitle || 'Professional'}${userContext.industry ? ` in ${userContext.industry}` : ''}${userContext.companySize ? `, ${userContext.companySize}` : ''}` : ''}
+
+Their dominant archetype is: ${archetype}
+
+How their responses distributed across all archetypes:
+${tallyLines}
+
+Write 3–4 flowing paragraphs that:
+1. Open by naming and celebrating their ${archetype} identity — what it reveals about how they think and lead
+2. Draw on the knowledge base above to describe the hallmark strengths, traits, and natural tendencies of this archetype
+3. Highlight the growth edge or blind spots this archetype commonly faces, with a concrete suggestion or two
+4. Close with an inspiring, forward-looking message about how Synozur can help them channel this identity for real transformation
+
+CRITICAL RULES:
+- Do NOT mention numeric scores, vote counts, percentages, or "scored X out of Y" — this is an archetype quiz, not a scored test
+- Do NOT say they "performed at" any level or imply a better/worse outcome
+- Write directly to the person using "you" and "your"
+- Focus on the meaning of being a ${archetype}, not comparison to others`;
+
+        const completion = await this.callProvider(typePrompt, false);
+        if (!completion) throw new Error('Failed to generate archetype summary');
+        await this.saveToCache('maturity_summary', cacheContext, completion);
+        return completion;
+      }
+      // ───────────────────────────────────────────────────────────────────────
 
       // Provide score interpretation context for the AI
       const scoreInterpretation = maxScore <= 100 

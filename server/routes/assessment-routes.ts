@@ -334,6 +334,7 @@ export function registerAssessmentRoutes(app: Express) {
           modelName: schema.models.name,
           modelSlug: schema.models.slug,
           maturityScale: schema.models.maturityScale,
+          assessmentMode: schema.models.assessmentMode,
         })
         .from(schema.results)
         .innerJoin(schema.assessments, eq(schema.results.assessmentId, schema.assessments.id))
@@ -377,11 +378,12 @@ export function registerAssessmentRoutes(app: Express) {
           modelId: r.modelId,
           overallScore: r.overallScore,
           dimensionScores: r.dimensionScores,
-          maturityLevel: r.maturityLevel,
+          label: r.maturityLevel,
           createdAt: r.resultCreatedAt,
           status: r.assessmentStatus,
           modelName: r.modelName,
           modelSlug: r.modelSlug,
+          assessmentMode: r.assessmentMode,
           userName: r.userName,
           userEmail: r.userEmail,
           userCompany: r.userCompany,
