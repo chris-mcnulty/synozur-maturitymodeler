@@ -1,9 +1,21 @@
 import express, { type Request, Response, NextFunction } from "express";
+import { execFileSync } from "child_process";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { initializeJWTService } from "./services/jwt-signing";
 import { startSsoStateCleanup } from "./services/sso-service";
 import { startMonthlyDigestSchedule } from "./services/digest-service";
+
+// Log availability of system binaries used by the PPTX import pipeline.
+// These lines appear in production logs so we can diagnose missing-binary issues.
+for (const bin of ["soffice", "pdftoppm"]) {
+  try {
+    const p = execFileSync("which", [bin]).toString().trim();
+    console.log(`[PPTX] ${bin}: ${p}`);
+  } catch {
+    console.warn(`[PPTX] ${bin}: NOT FOUND on PATH — PowerPoint import will fail`);
+  }
+}
 
 // Belt-and-suspenders: catch anything that slips past route-level error handlers.
 // Neon 57P01 is handled in db.ts, but this guards against any other stray throws.
