@@ -307,7 +307,7 @@ export function ImportExportPanel({
     message: string;
   }>({ type: null, message: "" });
 
-  const handleExport = useCallback(() => {
+  const handleExport = useCallback(async () => {
     if (!selectedModel) {
       toast({
         variant: "destructive",
@@ -323,67 +323,17 @@ export function ImportExportPanel({
       let mimeType = "";
 
       if (exportFormat === "model") {
-        // Build dimension key map
-        const dimensionIdToKey = new Map<string, string>();
-        dimensions.forEach(d => dimensionIdToKey.set(d.id, d.key));
-        
-        // Build answers map by question ID
-        const answersByQuestion = new Map<string, Answer[]>();
-        answers.forEach(a => {
-          if (!answersByQuestion.has(a.questionId)) {
-            answersByQuestion.set(a.questionId, []);
-          }
-          answersByQuestion.get(a.questionId)!.push(a);
+        // Use the server export endpoint so the .model file always includes the
+        // full definition (assessmentMode, archetype `types`, per-answer typeKey,
+        // hideScoreAndNarratives, etc.) and round-trips cleanly through import.
+        const response = await fetch(`/api/models/${selectedModel.id}/export-model`, {
+          credentials: 'include',
         });
-        
-        // Build standard export format with nested answers
-        const modelData = {
-          formatVersion: "1.0",
-          exportedAt: new Date().toISOString(),
-          model: {
-            name: selectedModel.name,
-            slug: selectedModel.slug,
-            description: selectedModel.description || '',
-            version: selectedModel.version || '1.0',
-            estimatedTime: selectedModel.estimatedTime,
-            status: selectedModel.status,
-            featured: selectedModel.featured || false,
-            allowAnonymousResults: selectedModel.allowAnonymousResults || false,
-            imageUrl: selectedModel.imageUrl,
-            maturityScale: selectedModel.maturityScale,
-            generalResources: selectedModel.generalResources,
-          },
-          dimensions: dimensions.map(d => ({
-            key: d.key,
-            label: d.label,
-            description: d.description || '',
-            order: d.order,
-          })),
-          questions: questions.map(q => ({
-            dimensionKey: q.dimensionId ? dimensionIdToKey.get(q.dimensionId) || null : null,
-            text: q.text,
-            type: q.type,
-            order: q.order,
-            minValue: q.minValue,
-            maxValue: q.maxValue,
-            unit: q.unit,
-            placeholder: q.placeholder,
-            improvementStatement: q.improvementStatement,
-            resourceTitle: q.resourceTitle,
-            resourceLink: q.resourceLink,
-            resourceDescription: q.resourceDescription,
-            answers: (answersByQuestion.get(q.id) || []).map(a => ({
-              text: a.text,
-              score: a.score,
-              order: a.order,
-              improvementStatement: a.improvementStatement,
-              resourceTitle: a.resourceTitle,
-              resourceLink: a.resourceLink,
-              resourceDescription: a.resourceDescription,
-            })),
-          })),
-        };
-        content = JSON.stringify(modelData, null, 2);
+        if (!response.ok) {
+          throw new Error('Failed to export model definition');
+        }
+        const exportData = await response.json();
+        content = JSON.stringify(exportData, null, 2);
         filename = `${selectedModel.slug}.model`;
         mimeType = "application/json";
       } else if (exportFormat === "csv-full") {
