@@ -149,6 +149,45 @@ export function registerModelRoutes(app: Express) {
     }
   });
 
+  app.put('/api/model-types/:id/image', ensureAdminOrModeler, async (req, res) => {
+    try {
+      const { imageUrl } = req.body;
+      if (!imageUrl) {
+        return res.status(400).json({ error: "imageUrl is required" });
+      }
+
+      const existing = await storage.getModelType(req.params.id);
+      if (!existing) {
+        return res.status(404).json({ error: "Model type not found" });
+      }
+      const model = await storage.getModel(existing.modelId);
+      if (!model || !(await canAccessModel(req.user, model))) {
+        return res.status(404).json({ error: "Model type not found" });
+      }
+
+      const userId = req.user?.id;
+      const objectStorageService = new ObjectStorageService();
+
+      // Set ACL policy for the uploaded image (public visibility)
+      const normalizedPath = await objectStorageService.trySetObjectEntityAclPolicy(
+        imageUrl,
+        {
+          owner: userId || 'admin',
+          visibility: "public",
+        }
+      );
+
+      const type = await storage.updateModelType(req.params.id, { imageUrl: normalizedPath });
+      if (!type) {
+        return res.status(404).json({ error: "Model type not found" });
+      }
+      res.json(type);
+    } catch (error) {
+      console.error("Error updating model type image:", error);
+      res.status(500).json({ error: "Failed to update model type image" });
+    }
+  });
+
   app.delete('/api/model-types/:id', ensureAdminOrModeler, async (req, res) => {
     try {
       const existing = await storage.getModelType(req.params.id);

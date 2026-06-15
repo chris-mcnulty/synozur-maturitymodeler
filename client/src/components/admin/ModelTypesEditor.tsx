@@ -7,7 +7,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, Upload, X } from "lucide-react";
+import { ObjectUploader } from "@/components/ObjectUploader";
+import type { UploadResult } from "@uppy/core";
 import type { ModelType } from "@shared/schema";
 
 interface ModelTypesEditorProps {
@@ -83,6 +85,41 @@ export function ModelTypesEditor({ modelId }: ModelTypesEditorProps) {
     onError: () =>
       toast({ title: "Error", description: "Failed to save type.", variant: "destructive" }),
   });
+
+  const uploadImage = useMutation({
+    mutationFn: ({ id, imageUrl }: { id: string; imageUrl: string }) =>
+      apiRequest(`/api/model-types/${id}/image`, "PUT", { imageUrl }),
+    onSuccess: () => {
+      invalidate();
+      toast({ title: "Image uploaded" });
+    },
+    onError: () =>
+      toast({ title: "Error", description: "Failed to upload image.", variant: "destructive" }),
+  });
+
+  const getUploadParameters = async () => {
+    const response = await fetch("/api/objects/upload", {
+      method: "POST",
+      credentials: "include",
+    });
+    const data = await response.json();
+    return { method: "PUT" as const, url: data.uploadURL };
+  };
+
+  const handleUploadComplete = (
+    id: string,
+    result: UploadResult<Record<string, unknown>, Record<string, unknown>>,
+  ) => {
+    const uploadURL = result.successful?.[0]?.uploadURL;
+    if (uploadURL) {
+      uploadImage.mutate({ id, imageUrl: uploadURL });
+    }
+  };
+
+  const removeImage = (t: ModelType) => {
+    setField(t.id, "imageUrl", "");
+    updateType.mutate({ id: t.id, updates: { imageUrl: null } });
+  };
 
   const deleteType = useMutation({
     mutationFn: (id: string) => apiRequest(`/api/model-types/${id}`, "DELETE"),
@@ -227,14 +264,65 @@ export function ModelTypesEditor({ modelId }: ModelTypesEditorProps) {
                 </div>
 
                 <div>
-                  <Label>Image URL</Label>
-                  <Input
-                    value={local.imageUrl}
-                    onChange={(e) => setField(t.id, "imageUrl", e.target.value)}
-                    onBlur={() => local.imageUrl !== (t.imageUrl || "") && save(t, "imageUrl")}
-                    placeholder="https://…"
-                    data-testid={`input-type-image-${t.id}`}
-                  />
+                  <Label>Image</Label>
+                  <p className="text-sm text-muted-foreground mb-2">
+                    Upload an image (JPG, PNG, or WebP, under 10MB) or paste an image URL.
+                  </p>
+                  {local.imageUrl ? (
+                    <div className="space-y-3">
+                      <div className="relative rounded-md overflow-hidden border border-border w-40">
+                        <img
+                          src={local.imageUrl}
+                          alt={`${local.name || "Archetype"} preview`}
+                          className="w-full h-40 object-cover"
+                          data-testid={`img-type-preview-${t.id}`}
+                        />
+                      </div>
+                      <div className="flex gap-2 flex-wrap">
+                        <ObjectUploader
+                          maxNumberOfFiles={1}
+                          maxFileSize={10485760}
+                          allowedFileTypes={["image/jpeg", "image/png", "image/webp"]}
+                          onGetUploadParameters={getUploadParameters}
+                          onComplete={(result) => handleUploadComplete(t.id, result)}
+                          buttonVariant="outline"
+                        >
+                          <Upload className="h-4 w-4 mr-2" />
+                          Replace Image
+                        </ObjectUploader>
+                        <Button
+                          variant="outline"
+                          onClick={() => removeImage(t)}
+                          data-testid={`button-remove-type-image-${t.id}`}
+                        >
+                          <X className="h-4 w-4 mr-2" />
+                          Remove Image
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <ObjectUploader
+                      maxNumberOfFiles={1}
+                      maxFileSize={10485760}
+                      allowedFileTypes={["image/jpeg", "image/png", "image/webp"]}
+                      onGetUploadParameters={getUploadParameters}
+                      onComplete={(result) => handleUploadComplete(t.id, result)}
+                      buttonVariant="outline"
+                    >
+                      <Upload className="h-4 w-4 mr-2" />
+                      Upload Image
+                    </ObjectUploader>
+                  )}
+                  <div className="mt-3">
+                    <Label className="text-xs text-muted-foreground">Or paste an image URL</Label>
+                    <Input
+                      value={local.imageUrl}
+                      onChange={(e) => setField(t.id, "imageUrl", e.target.value)}
+                      onBlur={() => local.imageUrl !== (t.imageUrl || "") && save(t, "imageUrl")}
+                      placeholder="https://…"
+                      data-testid={`input-type-image-${t.id}`}
+                    />
+                  </div>
                 </div>
               </Card>
             );
