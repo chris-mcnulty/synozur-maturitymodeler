@@ -210,10 +210,13 @@ export async function importPptx(opts: {
     }
 
     const notes = (info?.notes || "").trim();
+    // If there are no speaker notes, fall back to the slide's body text so the
+    // narration script is pre-populated without requiring a manual override.
+    const narrationText = notes || bodyLines.join("\n");
     slides.push({
       id: genId("slide"),
       blocks,
-      narration: notes ? { mode: "tts", text: notes } : { mode: "none" },
+      narration: narrationText ? { mode: "tts", text: narrationText } : { mode: "none" },
     });
   }
 

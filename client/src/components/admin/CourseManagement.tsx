@@ -841,6 +841,17 @@ function LessonEditorDialog({
   const [scormUploading, setScormUploading] = useState(false);
   const [pptxImporting, setPptxImporting] = useState(false);
   const [slideEditorInitialIdx, setSlideEditorInitialIdx] = useState<number | undefined>(undefined);
+  const titleInputRef = useRef<HTMLInputElement>(null);
+
+  const handleSaveWithTitleCheck = () => {
+    if (!title) {
+      toast({ title: "Title required", description: "Enter a lesson title before saving.", variant: "destructive" });
+      titleInputRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      titleInputRef.current?.focus();
+      return;
+    }
+    saveMutation.mutate();
+  };
 
   const handlePptxImport = async (file: File) => {
     setPptxImporting(true);
@@ -977,7 +988,7 @@ function LessonEditorDialog({
         <div className="space-y-3">
           <div>
             <Label htmlFor="ld-title">Title</Label>
-            <Input id="ld-title" value={title} onChange={e => setTitle(e.target.value)} data-testid="input-lesson-title" />
+            <Input id="ld-title" ref={titleInputRef} value={title} onChange={e => setTitle(e.target.value)} data-testid="input-lesson-title" />
           </div>
           <div>
             <Label htmlFor="ld-type">Type</Label>
@@ -1050,8 +1061,8 @@ function LessonEditorDialog({
                   <Button
                     type="button"
                     size="sm"
-                    onClick={() => saveMutation.mutate()}
-                    disabled={!title || saveMutation.isPending}
+                    onClick={handleSaveWithTitleCheck}
+                    disabled={saveMutation.isPending}
                     data-testid="button-save-lesson-slides"
                   >
                     {saveMutation.isPending
@@ -1161,7 +1172,7 @@ function LessonEditorDialog({
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>Cancel</Button>
-          <Button onClick={() => saveMutation.mutate()} disabled={!title || saveMutation.isPending} data-testid="button-save-lesson">
+          <Button onClick={handleSaveWithTitleCheck} disabled={saveMutation.isPending} data-testid="button-save-lesson">
             {saveMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
             Save
           </Button>
