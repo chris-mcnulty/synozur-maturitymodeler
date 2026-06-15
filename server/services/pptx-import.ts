@@ -189,12 +189,30 @@ export async function importPptx(opts: {
     });
 
     const alt = (info?.title || info?.text?.split("\n")[0] || `Slide ${i + 1}`).slice(0, 280);
-    const block: SlideBlock = { id: genId(), type: "image_slide", url, alt };
+    // Start with the full-bleed image (visual fidelity) then add editable text blocks.
+    const blocks: SlideBlock[] = [{ id: genId(), type: "image_slide", url, alt }];
+
+    // Heading from the slide title.
+    if (info?.title) {
+      blocks.push({ id: genId(), type: "heading", level: 2, text: info.title });
+    }
+    // Body text: lines after the title, HTML-escaped into <p> tags so the
+    // rich-text editor renders them as editable paragraphs.
+    const bodyLines = (info?.text || "")
+      .split("\n")
+      .slice(info?.title ? 1 : 0)
+      .filter((l) => l.trim());
+    if (bodyLines.length > 0) {
+      const htmlEsc = (s: string) =>
+        s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+      const html = bodyLines.map((l) => `<p>${htmlEsc(l)}</p>`).join("");
+      blocks.push({ id: genId(), type: "text", html });
+    }
 
     const notes = (info?.notes || "").trim();
     slides.push({
       id: genId("slide"),
-      blocks: [block],
+      blocks,
       narration: notes ? { mode: "tts", text: notes } : { mode: "none" },
     });
   }

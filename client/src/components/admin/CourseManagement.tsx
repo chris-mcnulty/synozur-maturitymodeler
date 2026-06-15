@@ -1047,6 +1047,18 @@ function LessonEditorDialog({
                       e.target.value = "";
                     }}
                   />
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={() => saveMutation.mutate()}
+                    disabled={!title || saveMutation.isPending}
+                    data-testid="button-save-lesson-slides"
+                  >
+                    {saveMutation.isPending
+                      ? <Loader2 className="h-4 w-4 animate-spin" />
+                      : <Save className="h-4 w-4 mr-2" />}
+                    Save
+                  </Button>
                 </div>
               </div>
               <SlideEditor
