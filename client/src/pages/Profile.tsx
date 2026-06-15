@@ -45,6 +45,7 @@ interface AssessmentHistoryItem {
   maturityLevel: string | null;
   resultCreatedAt: string | null;
   maxScore: number;
+  assessmentMode?: string | null;
 }
 
 export default function Profile() {
@@ -196,7 +197,7 @@ Thank you!`;
   const completedForChart = useMemo(() => {
     if (selectedModelFilter === 'all') return [];
     return assessmentHistory
-      .filter(item => item.modelId === selectedModelFilter && item.status === 'completed' && item.overallScore !== null)
+      .filter(item => item.modelId === selectedModelFilter && item.status === 'completed' && item.assessmentMode !== 'type' && item.overallScore !== null)
       .sort((a, b) => {
         const dateA = new Date(a.completedAt || a.startedAt || 0).getTime();
         const dateB = new Date(b.completedAt || b.startedAt || 0).getTime();
@@ -438,7 +439,7 @@ Thank you!`;
   const getTrendIcon = (current: AssessmentHistoryItem) => {
     if (selectedModelFilter === 'all') return null;
     const sameModel = assessmentHistory
-      .filter(h => h.modelId === current.modelId && h.status === 'completed' && h.overallScore !== null)
+      .filter(h => h.modelId === current.modelId && h.status === 'completed' && h.assessmentMode !== 'type' && h.overallScore !== null)
       .sort((a, b) => {
         const dateA = new Date(a.completedAt || a.startedAt || 0).getTime();
         const dateB = new Date(b.completedAt || b.startedAt || 0).getTime();
@@ -906,7 +907,15 @@ Thank you!`;
                           </div>
 
                           <div className="flex items-center gap-3">
-                            {item.status === 'completed' && item.overallScore !== null && (
+                            {item.status === 'completed' && item.assessmentMode === 'type' ? (
+                              item.maturityLevel && (
+                                <div className="text-center">
+                                  <div className="text-lg font-bold text-primary" data-testid={`text-type-${item.assessmentId}`}>
+                                    {item.maturityLevel}
+                                  </div>
+                                </div>
+                              )
+                            ) : item.status === 'completed' && item.overallScore !== null ? (
                               <div className="text-center">
                                 <div className="text-3xl font-bold text-primary" data-testid={`text-score-${item.assessmentId}`}>
                                   {item.overallScore}
@@ -917,7 +926,7 @@ Thank you!`;
                                   </Badge>
                                 )}
                               </div>
-                            )}
+                            ) : null}
 
                             {trend && (
                               <div className="flex items-center gap-1 text-sm">

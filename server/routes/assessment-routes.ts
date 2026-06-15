@@ -116,6 +116,7 @@ export function registerAssessmentRoutes(app: Express) {
           maturityLevel: schema.results.label,
           resultCreatedAt: schema.results.createdAt,
           maturityScale: schema.models.maturityScale,
+          assessmentMode: schema.models.assessmentMode,
         })
         .from(schema.assessments)
         .innerJoin(schema.models, eq(schema.assessments.modelId, schema.models.id))
@@ -142,6 +143,7 @@ export function registerAssessmentRoutes(app: Express) {
           maturityLevel: r.maturityLevel,
           resultCreatedAt: r.resultCreatedAt,
           maxScore,
+          assessmentMode: r.assessmentMode,
         };
       });
 
