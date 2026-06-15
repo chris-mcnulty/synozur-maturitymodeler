@@ -758,6 +758,10 @@ export default function Results() {
       .map(k => types.find(t => t.key === k))
       .filter((t): t is ModelType => !!t);
     const isTie = winners.length > 1;
+    const typeTally = types
+      .map(t => ({ type: t, count: tally[t.key] ?? 0 }))
+      .sort((a, b) => b.count - a.count);
+    const totalVotes = typeTally.reduce((sum, row) => sum + row.count, 0);
 
     return (
       <div className="min-h-screen flex flex-col bg-background">
@@ -851,6 +855,33 @@ export default function Results() {
                   </Card>
                 ))}
               </div>
+            )}
+
+            {totalVotes > 0 && (
+              <Card className="p-6 sm:p-8 mt-6" data-testid="card-type-tally">
+                <h3 className="font-semibold mb-4" data-testid="text-type-tally-heading">
+                  {t('results.typeBreakdown', { defaultValue: 'How your answers broke down' })}
+                </h3>
+                <div className="space-y-3">
+                  {typeTally.map(({ type, count }) => {
+                    const pct = maxCount > 0 ? (count / maxCount) * 100 : 0;
+                    const isWinner = winnerKeys.includes(type.key);
+                    return (
+                      <div key={type.id} className="space-y-1" data-testid={`tally-row-${type.key}`}>
+                        <div className="flex items-center justify-between gap-2 text-sm">
+                          <span className={isWinner ? 'font-semibold text-foreground' : 'text-muted-foreground'}>
+                            {type.name}
+                          </span>
+                          <span className="font-medium tabular-nums" data-testid={`tally-count-${type.key}`}>
+                            {count}
+                          </span>
+                        </div>
+                        <Progress value={pct} className="h-2" />
+                      </div>
+                    );
+                  })}
+                </div>
+              </Card>
             )}
           </div>
         </section>

@@ -117,5 +117,10 @@ test.describe('Orion type/propensity journey', () => {
     const typeName = page.locator('[data-testid^="text-type-name-"]').first();
     await expect(typeName).toBeVisible();
     await expect(page.getByTestId('text-score')).toHaveCount(0);
+
+    // The per-type vote tally should be visible with per-type counts.
+    await expect(page.getByTestId('card-type-tally')).toBeVisible();
+    await expect(page.locator('[data-testid^="tally-row-"]').first()).toBeVisible();
+    await expect(page.locator('[data-testid^="tally-count-"]').first()).toBeVisible();
   });
 });
