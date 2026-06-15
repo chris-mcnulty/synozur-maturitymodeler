@@ -816,8 +816,8 @@ export function registerCourseRoutes(app: Express) {
   // Generates narration audio for the supplied text, stores it, and returns
   // the object URL. The client patches it onto the slide's narration and saves
   // the lesson as usual.
-  app.get("/api/courses/tts/status", ensureAdminOrModeler, (_req, res) => {
-    res.json({ configured: isTtsConfigured(), provider: getTtsProvider() });
+  app.get("/api/courses/tts/status", ensureAdminOrModeler, async (_req, res) => {
+    res.json({ configured: await isTtsConfigured(), provider: await getTtsProvider() });
   });
 
   app.post("/api/courses/:id/narration/tts", ensureAdminOrModeler, async (req, res) => {

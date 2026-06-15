@@ -1243,4 +1243,23 @@ export function registerAdminRoutes(app: Express) {
       res.status(500).json({ error: 'Failed to build tenant insights' });
     }
   });
+
+  // ── Azure Speech / TTS configuration ─────────────────────────────────────
+  // Returns current TTS config for the admin UI (key masked for security).
+  app.get("/api/admin/tts/config", ensureAdmin, async (_req, res) => {
+    try {
+      const { getAzureConfig, isAzureTtsConfigured, isOpenAITtsConfigured } = await import("../services/tts-service");
+      const cfg = await getAzureConfig();
+      res.json({
+        keyConfigured: Boolean(cfg.key),
+        region: cfg.region,
+        voice: cfg.voice,
+        endpoint: cfg.endpoint,
+        azureConfigured: await isAzureTtsConfigured(),
+        openAiConfigured: isOpenAITtsConfigured(),
+      });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message ?? "Failed to fetch TTS config" });
+    }
+  });
 }

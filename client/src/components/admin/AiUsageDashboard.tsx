@@ -2,11 +2,12 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
-import { Brain, DollarSign, Activity, TrendingUp, CheckCircle2, XCircle } from "lucide-react";
+import { Brain, DollarSign, Activity, TrendingUp, CheckCircle2, XCircle, Mic } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatDistanceToNow } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
@@ -41,10 +42,22 @@ const operationLabels: Record<string, string> = {
   'generate-improvement': 'Improvements',
 };
 
+interface TtsConfig {
+  keyConfigured: boolean;
+  region: string;
+  voice: string;
+  endpoint: string;
+  azureConfigured: boolean;
+  openAiConfigured: boolean;
+}
+
 export function AiUsageDashboard() {
   const { toast } = useToast();
   const [aiProviderId, setAiProviderId] = useState<string>('');
   const [aiModelId, setAiModelId] = useState<string>('');
+  const [speechKey, setSpeechKey] = useState('');
+  const [speechRegion, setSpeechRegion] = useState('');
+  const [speechVoice, setSpeechVoice] = useState('');
 
   const { data: stats, isLoading } = useQuery<AiUsageStats>({
     queryKey: ['/api/admin/ai/usage'],
@@ -60,12 +73,44 @@ export function AiUsageDashboard() {
     staleTime: 30000,
   });
 
+  const { data: ttsConfig } = useQuery<TtsConfig>({
+    queryKey: ['/api/admin/tts/config'],
+  });
+
   useEffect(() => {
     if (aiProvidersData) {
       setAiProviderId(aiProvidersData.active.providerId);
       setAiModelId(aiProvidersData.active.modelId);
     }
   }, [aiProvidersData]);
+
+  useEffect(() => {
+    if (ttsConfig) {
+      setSpeechRegion(ttsConfig.region || '');
+      setSpeechVoice(ttsConfig.voice || '');
+    }
+  }, [ttsConfig]);
+
+  const saveTtsConfig = useMutation({
+    mutationFn: async () => {
+      if (speechKey) {
+        await apiRequest('/api/settings/azureSpeechKey', 'POST', { value: speechKey });
+      }
+      if (speechRegion) {
+        await apiRequest('/api/settings/azureSpeechRegion', 'POST', { value: speechRegion });
+      }
+      await apiRequest('/api/settings/azureSpeechVoice', 'POST', { value: speechVoice || 'en-US-JennyNeural' });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/tts/config'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/courses/tts/status'] });
+      setSpeechKey('');
+      toast({ title: "Speech settings saved", description: "Azure Speech is now configured for narration generation." });
+    },
+    onError: () => {
+      toast({ title: "Error", description: "Failed to save speech settings.", variant: "destructive" });
+    },
+  });
 
   const saveAiConfig = useMutation({
     mutationFn: async ({ providerId, modelId }: { providerId: string; modelId: string }) => {
@@ -163,6 +208,81 @@ export function AiUsageDashboard() {
             data-testid="button-save-ai-config"
           >
             {saveAiConfig.isPending ? 'Saving…' : 'Apply'}
+          </Button>
+        </div>
+      </Card>
+
+      {/* Azure Speech / TTS Configuration */}
+      <Card className="p-6">
+        <div className="flex items-center gap-2 mb-1">
+          <Mic className="h-5 w-5 text-primary" />
+          <h3 className="text-lg font-semibold">Narration (Azure Speech)</h3>
+          {ttsConfig?.azureConfigured ? (
+            <Badge variant="outline" className="text-green-500 border-green-500 ml-1">
+              <CheckCircle2 className="h-3 w-3 mr-1" /> Configured
+            </Badge>
+          ) : ttsConfig?.openAiConfigured ? (
+            <Badge variant="outline" className="text-yellow-500 border-yellow-500 ml-1">
+              OpenAI fallback active
+            </Badge>
+          ) : ttsConfig !== undefined ? (
+            <Badge variant="outline" className="text-destructive border-destructive ml-1">
+              <XCircle className="h-3 w-3 mr-1" /> Not configured
+            </Badge>
+          ) : null}
+        </div>
+        <p className="text-sm text-muted-foreground mb-4">
+          Azure Cognitive Services Speech is used to generate AI narration audio for course slides.
+          {ttsConfig?.keyConfigured && !speechKey && (
+            <span className="text-green-500 ml-1">A key is already saved — leave the field blank to keep it.</span>
+          )}
+        </p>
+
+        <div className="flex items-end gap-3 flex-wrap">
+          <div className="space-y-1.5 min-w-[220px]">
+            <Label htmlFor="speechKey" className="text-xs">
+              Speech Key{ttsConfig?.keyConfigured ? ' (saved — enter to replace)' : ''}
+            </Label>
+            <Input
+              id="speechKey"
+              type="password"
+              placeholder={ttsConfig?.keyConfigured ? '••••••••••••••••' : 'Azure Speech subscription key'}
+              value={speechKey}
+              onChange={e => setSpeechKey(e.target.value)}
+              data-testid="input-speech-key"
+              autoComplete="new-password"
+            />
+          </div>
+
+          <div className="space-y-1.5 min-w-[140px]">
+            <Label htmlFor="speechRegion" className="text-xs">Region</Label>
+            <Input
+              id="speechRegion"
+              placeholder="e.g. eastus"
+              value={speechRegion}
+              onChange={e => setSpeechRegion(e.target.value)}
+              data-testid="input-speech-region"
+            />
+          </div>
+
+          <div className="space-y-1.5 min-w-[200px]">
+            <Label htmlFor="speechVoice" className="text-xs">Default Voice</Label>
+            <Input
+              id="speechVoice"
+              placeholder="en-US-JennyNeural"
+              value={speechVoice}
+              onChange={e => setSpeechVoice(e.target.value)}
+              data-testid="input-speech-voice"
+            />
+          </div>
+
+          <Button
+            size="sm"
+            onClick={() => saveTtsConfig.mutate()}
+            disabled={saveTtsConfig.isPending || (!speechKey && !speechRegion && !speechVoice)}
+            data-testid="button-save-tts-config"
+          >
+            {saveTtsConfig.isPending ? 'Saving…' : 'Apply'}
           </Button>
         </div>
       </Card>
