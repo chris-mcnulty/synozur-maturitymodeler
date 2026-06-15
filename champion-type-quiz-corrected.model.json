@@ -1,0 +1,561 @@
+{
+  "formatVersion": "1.0",
+  "exportedAt": "2026-06-15T04:03:55.782Z",
+  "model": {
+    "name": "Champion Type Quiz",
+    "slug": "champion-type-quiz",
+    "description": "Answer 7 quick questions to discover your natural leadership style for driving AI adoption. Go with your gut — there are no wrong answers.",
+    "version": "1.0.0",
+    "estimatedTime": "5",
+    "status": "published",
+    "featured": true,
+    "allowAnonymousResults": false,
+    "hideScoreAndNarratives": false,
+    "assessmentMode": "type",
+    "imageUrl": null,
+    "maturityScale": null,
+    "generalResources": null
+  },
+  "types": [
+    {
+      "key": "visionary",
+      "name": "The Visionary",
+      "tagline": "You see the future — and make others want to be part of it.",
+      "description": "You lead through inspiration and storytelling. Where others see tools, you see transformation. Your superpower is painting a compelling picture of what’s possible that motivates teams to move forward with confidence.",
+      "superpowers": [
+        "Future-state thinking",
+        "Compelling storytelling",
+        "Inspiring action through vision",
+        "Connecting technology to purpose"
+      ],
+      "proTip": "Partner with a Coach or Builder to translate your big vision into practical first steps that people can act on immediately.",
+      "imageUrl": null,
+      "order": 0
+    },
+    {
+      "key": "connector",
+      "name": "The Connector",
+      "tagline": "You bring the right people together at the right time.",
+      "description": "You build bridges across teams, departments, and hierarchies. You know who’s doing great work and make sure knowledge flows freely. Your superpower is creating communities where people feel safe to learn and experiment.",
+      "superpowers": [
+        "Cross-functional networking",
+        "Knowledge sharing",
+        "Community building",
+        "Facilitating collaboration"
+      ],
+      "proTip": "Use your network strategically — pair skeptics with believers, match mentors with learners, and amplify quiet wins across the organization.",
+      "imageUrl": null,
+      "order": 1
+    },
+    {
+      "key": "coach",
+      "name": "The Coach",
+      "tagline": "You meet people where they are — and help them grow.",
+      "description": "You lead with empathy and hands-on support. You create psychologically safe spaces where questions are welcome, mistakes are learning opportunities, and small wins get celebrated. Your superpower is patience and genuine care.",
+      "superpowers": [
+        "Empathetic listening",
+        "Hands-on support",
+        "Celebrating small wins",
+        "Creating safe learning spaces"
+      ],
+      "proTip": "Don’t carry the emotional weight alone. Build a peer support network of fellow coaches and establish clear boundaries for sustainable impact.",
+      "imageUrl": null,
+      "order": 2
+    },
+    {
+      "key": "builder",
+      "name": "The Builder",
+      "tagline": "You make adoption tangible — one tool at a time.",
+      "description": "You turn “Copilot can do that?” into “here, try mine.” You create prompt libraries, reusable templates, custom agents, and practical solutions that others adopt naturally. Your superpower is making the abstract concrete.",
+      "superpowers": [
+        "Solution design",
+        "Template and prompt creation",
+        "Rapid prototyping",
+        "Practical problem-solving"
+      ],
+      "proTip": "Document and share your creations broadly. What feels obvious to you is often a revelation to others. Pair with a Connector to scale your impact.",
+      "imageUrl": null,
+      "order": 3
+    },
+    {
+      "key": "skeptic",
+      "name": "The Skeptic-Turned-Believer",
+      "tagline": "Your honesty is your credibility — and your greatest asset.",
+      "description": "Having questioned AI yourself, you bring authenticity that no amount of corporate messaging can match. You share your honest journey — the doubts, the experiments, and what finally convinced you. Your superpower is earned trust.",
+      "superpowers": [
+        "Authentic advocacy",
+        "Evidence-based persuasion",
+        "Addressing real concerns",
+        "Building trust through transparency"
+      ],
+      "proTip": "Keep sharing your evolving journey openly. Your credibility comes from honesty, not perfection. New skeptics need to see someone who once stood where they stand.",
+      "imageUrl": null,
+      "order": 4
+    }
+  ],
+  "dimensions": [],
+  "questions": [
+    {
+      "dimensionKey": null,
+      "text": "A new AI tool is announced for your organization. What’s your first instinct?",
+      "type": "multiple_choice",
+      "order": 1,
+      "minValue": null,
+      "maxValue": null,
+      "unit": null,
+      "placeholder": null,
+      "improvementStatement": null,
+      "resourceTitle": null,
+      "resourceLink": null,
+      "resourceDescription": null,
+      "answers": [
+        {
+          "text": "Imagine how it could transform workflows a year from now",
+          "score": 0,
+          "order": 1,
+          "typeKey": "visionary",
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Think about who across the org should know about this",
+          "score": 0,
+          "order": 2,
+          "typeKey": "connector",
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Wonder how the team is feeling and whether they’ll need support",
+          "score": 0,
+          "order": 3,
+          "typeKey": "coach",
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Start exploring it to build something useful right away",
+          "score": 0,
+          "order": 4,
+          "typeKey": "builder",
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Ask tough questions first — then share your honest findings",
+          "score": 0,
+          "order": 5,
+          "typeKey": "skeptic",
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        }
+      ]
+    },
+    {
+      "dimensionKey": null,
+      "text": "You hear a colleague say “I don’t see the point of Copilot.” How do you respond?",
+      "type": "multiple_choice",
+      "order": 2,
+      "minValue": null,
+      "maxValue": null,
+      "unit": null,
+      "placeholder": null,
+      "improvementStatement": null,
+      "resourceTitle": null,
+      "resourceLink": null,
+      "resourceDescription": null,
+      "answers": [
+        {
+          "text": "Paint a picture of what their work could look like with it",
+          "score": 0,
+          "order": 1,
+          "typeKey": "visionary",
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Connect them with someone who’s already having success",
+          "score": 0,
+          "order": 2,
+          "typeKey": "connector",
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Sit with them to understand their concerns and offer to walk through it together",
+          "score": 0,
+          "order": 3,
+          "typeKey": "coach",
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Show them a prompt or template you built that solves a real pain point",
+          "score": 0,
+          "order": 4,
+          "typeKey": "builder",
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Share that you felt the same way once — then explain what changed your mind",
+          "score": 0,
+          "order": 5,
+          "typeKey": "skeptic",
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        }
+      ]
+    },
+    {
+      "dimensionKey": null,
+      "text": "Your team is asked to pilot a new Copilot feature. What role do you naturally play?",
+      "type": "multiple_choice",
+      "order": 3,
+      "minValue": null,
+      "maxValue": null,
+      "unit": null,
+      "placeholder": null,
+      "improvementStatement": null,
+      "resourceTitle": null,
+      "resourceLink": null,
+      "resourceDescription": null,
+      "answers": [
+        {
+          "text": "Rally the group around a compelling vision of what success looks like",
+          "score": 0,
+          "order": 1,
+          "typeKey": "visionary",
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Coordinate across teams so learnings get shared widely",
+          "score": 0,
+          "order": 2,
+          "typeKey": "connector",
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Check in with each person to make sure nobody feels left behind",
+          "score": 0,
+          "order": 3,
+          "typeKey": "coach",
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Build templates, guides, or sample prompts the team can use immediately",
+          "score": 0,
+          "order": 4,
+          "typeKey": "builder",
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Test it rigorously and share a candid review — pros and cons",
+          "score": 0,
+          "order": 5,
+          "typeKey": "skeptic",
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        }
+      ]
+    },
+    {
+      "dimensionKey": null,
+      "text": "What kind of recognition energizes you most?",
+      "type": "multiple_choice",
+      "order": 4,
+      "minValue": null,
+      "maxValue": null,
+      "unit": null,
+      "placeholder": null,
+      "improvementStatement": null,
+      "resourceTitle": null,
+      "resourceLink": null,
+      "resourceDescription": null,
+      "answers": [
+        {
+          "text": "Being known as someone who sees the future before others do",
+          "score": 0,
+          "order": 1,
+          "typeKey": "visionary",
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Hearing that you helped two teams discover a shared opportunity",
+          "score": 0,
+          "order": 2,
+          "typeKey": "connector",
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "A quiet “thank you” from someone you helped get unstuck",
+          "score": 0,
+          "order": 3,
+          "typeKey": "coach",
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Seeing others adopt a solution or tool you created",
+          "score": 0,
+          "order": 4,
+          "typeKey": "builder",
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Earning trust because people know you’ll always give them the real story",
+          "score": 0,
+          "order": 5,
+          "typeKey": "skeptic",
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        }
+      ]
+    },
+    {
+      "dimensionKey": null,
+      "text": "How do you typically prepare for a big change initiative?",
+      "type": "multiple_choice",
+      "order": 5,
+      "minValue": null,
+      "maxValue": null,
+      "unit": null,
+      "placeholder": null,
+      "improvementStatement": null,
+      "resourceTitle": null,
+      "resourceLink": null,
+      "resourceDescription": null,
+      "answers": [
+        {
+          "text": "Craft a narrative that makes the destination feel exciting and achievable",
+          "score": 0,
+          "order": 1,
+          "typeKey": "visionary",
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Map the stakeholders and figure out who needs to be in the room",
+          "score": 0,
+          "order": 2,
+          "typeKey": "connector",
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Anticipate who will struggle most and plan how to support them",
+          "score": 0,
+          "order": 3,
+          "typeKey": "coach",
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Create practical resources — checklists, quick-start guides, or demos",
+          "score": 0,
+          "order": 4,
+          "typeKey": "builder",
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Research thoroughly so you can address objections with facts, not hype",
+          "score": 0,
+          "order": 5,
+          "typeKey": "skeptic",
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        }
+      ]
+    },
+    {
+      "dimensionKey": null,
+      "text": "A senior leader asks you: “Why should we invest more in AI adoption?” What do you lead with?",
+      "type": "multiple_choice",
+      "order": 6,
+      "minValue": null,
+      "maxValue": null,
+      "unit": null,
+      "placeholder": null,
+      "improvementStatement": null,
+      "resourceTitle": null,
+      "resourceLink": null,
+      "resourceDescription": null,
+      "answers": [
+        {
+          "text": "A future-state story showing what the org looks like when AI is fully embedded",
+          "score": 0,
+          "order": 1,
+          "typeKey": "visionary",
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Examples of cross-functional wins and the community momentum building",
+          "score": 0,
+          "order": 2,
+          "typeKey": "connector",
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Employee feedback showing how supported teams outperform unsupported ones",
+          "score": 0,
+          "order": 3,
+          "typeKey": "coach",
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "A live demo of a custom agent or workflow you built that saves hours per week",
+          "score": 0,
+          "order": 4,
+          "typeKey": "builder",
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "A before-and-after of your own journey — from skeptic to advocate — backed by data",
+          "score": 0,
+          "order": 5,
+          "typeKey": "skeptic",
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        }
+      ]
+    },
+    {
+      "dimensionKey": null,
+      "text": "When adoption starts to stall in your organization, what’s your instinct?",
+      "type": "multiple_choice",
+      "order": 7,
+      "minValue": null,
+      "maxValue": null,
+      "unit": null,
+      "placeholder": null,
+      "improvementStatement": null,
+      "resourceTitle": null,
+      "resourceLink": null,
+      "resourceDescription": null,
+      "answers": [
+        {
+          "text": "Reconnect people to the bigger vision — remind them why this matters",
+          "score": 0,
+          "order": 1,
+          "typeKey": "visionary",
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Bring champions together to share what’s working and re-energize the network",
+          "score": 0,
+          "order": 2,
+          "typeKey": "connector",
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Go back to basics — offer refresher sessions and one-on-one coaching",
+          "score": 0,
+          "order": 3,
+          "typeKey": "coach",
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Ship something new — a fresh prompt library or workflow that reignites interest",
+          "score": 0,
+          "order": 4,
+          "typeKey": "builder",
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        },
+        {
+          "text": "Surface the real blockers honestly and propose targeted fixes",
+          "score": 0,
+          "order": 5,
+          "typeKey": "skeptic",
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null
+        }
+      ]
+    }
+  ]
+}

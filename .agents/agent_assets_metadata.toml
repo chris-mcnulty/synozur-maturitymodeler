@@ -1,0 +1,8 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "UrA04J8daL7V_Llgqml4A"
+uri = "file://champion-type-quiz-corrected.model.json"
+type = "unspecified"
+title = "Champion Type Quiz — corrected export (type mode + 5 archetypes + answer mappings)"
