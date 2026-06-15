@@ -93,6 +93,79 @@ export function registerModelRoutes(app: Express) {
     }
   });
 
+  // Model type (archetype) routes — for 'type' assessment-mode models
+
+  app.get('/api/models/:id/types', async (req, res) => {
+    try {
+      const model = await storage.getModel(req.params.id);
+      if (!model) {
+        return res.status(404).json({ error: "Model not found" });
+      }
+      if (!(await canAccessModel(req.user, model))) {
+        return res.status(404).json({ error: "Model not found" });
+      }
+      const types = await storage.getModelTypesByModelId(model.id);
+      res.json(types);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch model types" });
+    }
+  });
+
+  app.post('/api/models/:id/types', ensureAdminOrModeler, async (req, res) => {
+    try {
+      const model = await storage.getModel(req.params.id);
+      if (!model) {
+        return res.status(404).json({ error: "Model not found" });
+      }
+      if (!(await canAccessModel(req.user, model))) {
+        return res.status(404).json({ error: "Model not found" });
+      }
+      const parsed = schema.insertModelTypeSchema.parse({ ...req.body, modelId: req.params.id });
+      const type = await storage.createModelType(parsed);
+      res.json(type);
+    } catch (error: any) {
+      res.status(400).json({ error: error?.message || "Failed to create model type" });
+    }
+  });
+
+  app.put('/api/model-types/:id', ensureAdminOrModeler, async (req, res) => {
+    try {
+      const existing = await storage.getModelType(req.params.id);
+      if (!existing) {
+        return res.status(404).json({ error: "Model type not found" });
+      }
+      const model = await storage.getModel(existing.modelId);
+      if (!model || !(await canAccessModel(req.user, model))) {
+        return res.status(404).json({ error: "Model type not found" });
+      }
+      const { id, modelId, ...updateData } = req.body;
+      const type = await storage.updateModelType(req.params.id, updateData);
+      if (!type) {
+        return res.status(404).json({ error: "Model type not found" });
+      }
+      res.json(type);
+    } catch (error) {
+      res.status(400).json({ error: "Failed to update model type" });
+    }
+  });
+
+  app.delete('/api/model-types/:id', ensureAdminOrModeler, async (req, res) => {
+    try {
+      const existing = await storage.getModelType(req.params.id);
+      if (!existing) {
+        return res.json({ success: true });
+      }
+      const model = await storage.getModel(existing.modelId);
+      if (!model || !(await canAccessModel(req.user, model))) {
+        return res.status(404).json({ error: "Model type not found" });
+      }
+      await storage.deleteModelType(req.params.id);
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete model type" });
+    }
+  });
+
   // Question routes
 
   app.get("/api/questions", async (req, res) => {
@@ -151,9 +224,14 @@ export function registerModelRoutes(app: Express) {
       console.log('[Question Creation] Validated data:', JSON.stringify(validatedData, null, 2));
       
       const question = await storage.createQuestion(validatedData);
-      
+
+      // For 'type' (archetype) models, answers map to types and are authored
+      // explicitly — skip the scored default-answer seeding.
+      const parentModel = await storage.getModel(validatedData.modelId);
+      const isTypeModel = parentModel?.assessmentMode === 'type';
+
       // Create default answers if it's a multiple choice question
-      if (validatedData.type === 'multiple_choice') {
+      if (validatedData.type === 'multiple_choice' && !isTypeModel) {
         const defaultAnswers = [
           { questionId: question.id, text: 'Not Started', score: 100, order: 1 },
           { questionId: question.id, text: 'Beginning', score: 200, order: 2 },
@@ -275,7 +353,25 @@ export function registerModelRoutes(app: Express) {
           });
         }
       }
-      
+
+      // Create archetype types if provided (for 'type' assessment-mode models)
+      if (req.body.types && Array.isArray(req.body.types)) {
+        for (let i = 0; i < req.body.types.length; i++) {
+          const t = req.body.types[i];
+          await storage.createModelType({
+            modelId: model.id,
+            key: t.key,
+            name: t.name,
+            tagline: t.tagline ?? null,
+            description: t.description ?? null,
+            superpowers: t.superpowers ?? null,
+            proTip: t.proTip ?? null,
+            imageUrl: t.imageUrl ?? null,
+            order: t.order ?? i,
+          });
+        }
+      }
+
       res.json(model);
     } catch (error) {
       console.error('Error creating model:', error);
@@ -508,7 +604,10 @@ export function registerModelRoutes(app: Express) {
       }
 
       const dimensions = await storage.getDimensionsByModelId(model.id);
-      res.json({ ...model, dimensions });
+      const types = model.assessmentMode === 'type'
+        ? await storage.getModelTypesByModelId(model.id)
+        : [];
+      res.json({ ...model, dimensions, types });
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch model" });
     }
@@ -557,7 +656,10 @@ export function registerModelRoutes(app: Express) {
       }
 
       const dimensions = await storage.getDimensionsByModelId(model.id);
-      res.json({ ...model, dimensions });
+      const types = model.assessmentMode === 'type'
+        ? await storage.getModelTypesByModelId(model.id)
+        : [];
+      res.json({ ...model, dimensions, types });
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch model" });
     }

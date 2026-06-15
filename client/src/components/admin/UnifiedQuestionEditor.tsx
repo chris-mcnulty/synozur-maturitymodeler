@@ -33,6 +33,9 @@ interface UnifiedQuestionEditorProps {
   onDeleteQuestion: (id: string) => void;
   questionIndex: number;
   defaultExpanded?: boolean;
+  // For 'type' (archetype) models: answers vote for a type instead of carrying a score.
+  assessmentMode?: string;
+  types?: { key: string; name: string }[];
 }
 
 export function UnifiedQuestionEditor({
@@ -42,7 +45,10 @@ export function UnifiedQuestionEditor({
   onDeleteQuestion,
   questionIndex,
   defaultExpanded = false,
+  assessmentMode = "scored",
+  types = [],
 }: UnifiedQuestionEditorProps) {
+  const isTypeMode = assessmentMode === "type";
   const { toast } = useToast();
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);
   const [guidanceOpen, setGuidanceOpen] = useState(false);
@@ -73,7 +79,7 @@ export function UnifiedQuestionEditor({
 
   // Local answer state for inline editing
   const [localAnswers, setLocalAnswers] = useState<
-    Record<string, { text: string; score: number; order: number; improvementStatement: string; resourceTitle: string; resourceDescription: string; resourceLink: string }>
+    Record<string, { text: string; score: number; order: number; typeKey: string; improvementStatement: string; resourceTitle: string; resourceDescription: string; resourceLink: string }>
   >({});
 
   // Fetch answers for this question (only when expanded to avoid N+1 on load)
@@ -94,6 +100,7 @@ export function UnifiedQuestionEditor({
             text: a.text,
             score: a.score,
             order: a.order,
+            typeKey: a.typeKey || "",
             improvementStatement: a.improvementStatement || "",
             resourceTitle: a.resourceTitle || "",
             resourceDescription: a.resourceDescription || "",
@@ -110,6 +117,7 @@ export function UnifiedQuestionEditor({
       text: answer.text,
       score: answer.score,
       order: answer.order,
+      typeKey: answer.typeKey || "",
       improvementStatement: answer.improvementStatement || "",
       resourceTitle: answer.resourceTitle || "",
       resourceDescription: answer.resourceDescription || "",
@@ -471,25 +479,50 @@ export function UnifiedQuestionEditor({
                               className="flex-1 h-8 text-sm"
                               data-testid={`input-answer-text-${answer.id}`}
                             />
-                            <div className="flex items-center gap-1 flex-shrink-0">
-                              <span className="text-xs text-muted-foreground whitespace-nowrap">Score</span>
-                              <Input
-                                type="number"
-                                value={local.score}
-                                onChange={(e) =>
-                                  setLocalAnswers((prev) => ({
-                                    ...prev,
-                                    [answer.id]: { ...local, score: Number(e.target.value) },
-                                  }))
-                                }
-                                onBlur={() => {
-                                  if (local.score !== answer.score)
-                                    saveAnswerField(answer.id, { score: local.score });
-                                }}
-                                className="w-20 h-8 text-sm"
-                                data-testid={`input-answer-score-${answer.id}`}
-                              />
-                            </div>
+                            {isTypeMode ? (
+                              <div className="flex items-center gap-1 flex-shrink-0">
+                                <span className="text-xs text-muted-foreground whitespace-nowrap">Type</span>
+                                <Select
+                                  value={local.typeKey || undefined}
+                                  onValueChange={(value) => {
+                                    setLocalAnswers((prev) => ({
+                                      ...prev,
+                                      [answer.id]: { ...local, typeKey: value },
+                                    }));
+                                    saveAnswerField(answer.id, { typeKey: value });
+                                  }}
+                                >
+                                  <SelectTrigger className="w-40 h-8 text-sm" data-testid={`select-answer-type-${answer.id}`}>
+                                    <SelectValue placeholder="Select type" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {types.map((ty) => (
+                                      <SelectItem key={ty.key} value={ty.key}>{ty.name}</SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                            ) : (
+                              <div className="flex items-center gap-1 flex-shrink-0">
+                                <span className="text-xs text-muted-foreground whitespace-nowrap">Score</span>
+                                <Input
+                                  type="number"
+                                  value={local.score}
+                                  onChange={(e) =>
+                                    setLocalAnswers((prev) => ({
+                                      ...prev,
+                                      [answer.id]: { ...local, score: Number(e.target.value) },
+                                    }))
+                                  }
+                                  onBlur={() => {
+                                    if (local.score !== answer.score)
+                                      saveAnswerField(answer.id, { score: local.score });
+                                  }}
+                                  className="w-20 h-8 text-sm"
+                                  data-testid={`input-answer-score-${answer.id}`}
+                                />
+                              </div>
+                            )}
                             <AiAssistant
                               type="answer-rewrite"
                               context={{

@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Download, Mail, ArrowLeft, ChevronRight, Users, Target, TrendingUp, Award, BookOpen, Calendar, Phone, ExternalLink, Lightbulb, Share2, Sparkles, Lock, CheckCircle2 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { DataState } from "@/components/DataState";
-import type { Result, Assessment, Model, Dimension, User, Question, Answer, Course, CourseTag } from "@shared/schema";
+import type { Result, Assessment, Model, Dimension, User, Question, Answer, Course, CourseTag, ModelType } from "@shared/schema";
 
 interface RecommendedCourse extends Course {
   moduleCount: number;
@@ -128,7 +128,7 @@ export default function Results() {
     enabled: !!assessmentId,
   });
 
-  const { data: model } = useQuery<Model & { dimensions: Dimension[] }>({
+  const { data: model } = useQuery<Model & { dimensions: Dimension[]; types?: ModelType[] }>({
     queryKey: ['/api/models', 'by-id', assessment?.modelId],
     queryFn: async () => {
       const res = await fetch(`/api/models/by-id/${assessment?.modelId}`);
@@ -735,6 +735,119 @@ export default function Results() {
             </DataState>
           </div>
         </main>
+        <Footer />
+      </div>
+    );
+  }
+
+  // ---- Type / Propensity (archetype) result rendering ----
+  if (model.assessmentMode === 'type') {
+    const types = (model.types ?? []).slice().sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+    const tally = (result.dimensionScores as Record<string, number>) || {};
+    const maxCount = Object.values(tally).reduce((m, c) => Math.max(m, c), 0);
+    const winnerKeys = Object.entries(tally)
+      .filter(([, c]) => c === maxCount && maxCount > 0)
+      .map(([k]) => k);
+    const winners = winnerKeys
+      .map(k => types.find(t => t.key === k))
+      .filter((t): t is ModelType => !!t);
+    const isTie = winners.length > 1;
+
+    return (
+      <div className="min-h-screen flex flex-col bg-background">
+        <section className="relative bg-gradient-to-b from-primary/5 to-background py-10 sm:py-12 md:py-16 overflow-hidden">
+          {model.imageUrl && (
+            <div className="absolute inset-0 z-0">
+              <img src={model.imageUrl} alt={model.name} className="w-full h-full object-cover opacity-10" />
+            </div>
+          )}
+          <div className="container relative z-10 mx-auto px-4 max-w-4xl">
+            <Button
+              variant="ghost"
+              onClick={() => setLocation('/')}
+              className="mb-4 sm:mb-6"
+              data-testid="button-back"
+            >
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              <span className="hidden sm:inline">{t('common.backToAssessments')}</span>
+              <span className="sm:hidden">{t('common.back')}</span>
+            </Button>
+
+            <div className="text-center mb-8">
+              <p className="text-base sm:text-lg text-muted-foreground mb-2">
+                {assessment?.isProxy ? model.name : t('results.yourResults', { name: model.name })}
+              </p>
+              {isTie && (
+                <p className="text-sm text-muted-foreground" data-testid="text-type-tie">
+                  {t('results.typeBlended', { defaultValue: "You're a blend of multiple types" })}
+                </p>
+              )}
+            </div>
+
+            {winners.length === 0 ? (
+              <Card className="p-8 text-center">
+                <p className="text-muted-foreground" data-testid="text-type-none">
+                  {result.label || t('results.typeNoResult', { defaultValue: 'No result available.' })}
+                </p>
+              </Card>
+            ) : (
+              <div className="space-y-6">
+                {winners.map(type => (
+                  <Card key={type.id} className="p-6 sm:p-8" data-testid={`card-type-${type.key}`}>
+                    <div className="flex flex-col items-center text-center">
+                      {type.imageUrl && (
+                        <img
+                          src={type.imageUrl}
+                          alt={type.name}
+                          className="h-28 w-28 rounded-md object-cover mb-4"
+                          data-testid={`img-type-${type.key}`}
+                        />
+                      )}
+                      <h2 className="text-2xl sm:text-3xl font-bold mb-1" data-testid={`text-type-name-${type.key}`}>
+                        {type.name}
+                      </h2>
+                      {type.tagline && (
+                        <p className="text-base sm:text-lg text-primary font-medium mb-4" data-testid={`text-type-tagline-${type.key}`}>
+                          {type.tagline}
+                        </p>
+                      )}
+                    </div>
+                    {type.description && (
+                      <div className="mb-6">
+                        <MarkdownContent content={type.description} />
+                      </div>
+                    )}
+                    {type.superpowers && type.superpowers.length > 0 && (
+                      <div className="mb-6">
+                        <h3 className="font-semibold mb-3 flex items-center gap-2">
+                          <Sparkles className="h-4 w-4 text-primary" />
+                          {t('results.superpowers', { defaultValue: 'Your superpowers' })}
+                        </h3>
+                        <ul className="space-y-2">
+                          {type.superpowers.map((sp, i) => (
+                            <li key={i} className="flex items-start gap-2" data-testid={`text-superpower-${type.key}-${i}`}>
+                              <CheckCircle2 className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
+                              <span className="text-sm sm:text-base">{sp}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                    {type.proTip && (
+                      <div className="bg-muted/30 rounded-md p-4 flex items-start gap-3">
+                        <Lightbulb className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+                        <div>
+                          <p className="font-semibold text-sm mb-1">{t('results.proTip', { defaultValue: 'Pro tip' })}</p>
+                          <p className="text-sm text-muted-foreground" data-testid={`text-protip-${type.key}`}>{type.proTip}</p>
+                        </div>
+                      </div>
+                    )}
+                  </Card>
+                ))}
+              </div>
+            )}
+          </div>
+        </section>
         <Footer />
       </div>
     );

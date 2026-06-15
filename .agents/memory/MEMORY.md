@@ -1,0 +1,1 @@
+- [getAllModels column projection](getallmodels-projection.md) — the models list endpoint hand-writes raw SQL; new `models` columns must be added to SELECT, GROUP BY, and the row-mapping or they silently vanish from `/api/models`.

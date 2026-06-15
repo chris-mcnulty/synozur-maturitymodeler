@@ -103,6 +103,7 @@ export function ModelCreationWizard({
   const [slugManual, setSlugManual] = useState(false);
   const [description, setDescription] = useState("");
   const [modelClass, setModelClass] = useState<"organizational" | "individual">("organizational");
+  const [assessmentMode, setAssessmentMode] = useState<"scored" | "type">("scored");
   const [visibility, setVisibility] = useState<"public" | "private">("public");
   const [estimatedTime, setEstimatedTime] = useState("15-20 minutes");
   const [version, setVersion] = useState("1.0.0");
@@ -257,6 +258,7 @@ export function ModelCreationWizard({
       slug: slug.trim(),
       description: description.trim(),
       modelClass,
+      assessmentMode,
       visibility,
       estimatedTime: estimatedTime.trim(),
       version: version.trim(),
@@ -341,6 +343,18 @@ export function ModelCreationWizard({
             <SelectContent>
               <SelectItem value="organizational">Organizational</SelectItem>
               <SelectItem value="individual">Individual</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div>
+          <Label>Assessment Mode</Label>
+          <Select value={assessmentMode} onValueChange={(v) => setAssessmentMode(v as any)}>
+            <SelectTrigger className="mt-1" data-testid="wiz-select-assessment-mode">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="scored">Scored (Maturity)</SelectItem>
+              <SelectItem value="type">Type / Propensity (Archetype)</SelectItem>
             </SelectContent>
           </Select>
         </div>

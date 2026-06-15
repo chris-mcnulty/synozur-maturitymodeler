@@ -76,6 +76,10 @@ export const models = pgTable("models", {
   ownerTenantId: varchar("owner_tenant_id"), // Tenant that owns this model (if private)
   visibility: text("visibility").notNull().default("public"), // 'public', 'private', 'individual'
   modelClass: text("model_class").notNull().default("organizational"), // 'organizational', 'individual'
+  // Assessment scoring mode: 'scored' = numeric maturity score (default);
+  // 'type' = archetype/propensity quiz that categorizes the respondent into one
+  // of several model types (each answer votes for a type) rather than a score.
+  assessmentMode: text("assessment_mode").notNull().default("scored"), // 'scored', 'type'
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 }, (table) => ({
@@ -123,6 +127,9 @@ export const answers = pgTable("answers", {
   text: text("text").notNull(),
   score: integer("score").notNull(),
   order: integer("order").notNull(),
+  // For 'type' assessment-mode models: the model type (archetype) this answer
+  // votes for, referenced by key. Null for normal scored models.
+  typeKey: text("type_key"),
   // Optional improvement guidance for PDF reports
   improvementStatement: text("improvement_statement"),
   resourceTitle: text("resource_title"),
@@ -130,6 +137,24 @@ export const answers = pgTable("answers", {
   resourceDescription: text("resource_description"),
 }, (table) => ({
   questionIdIdx: index("idx_answers_question_id").on(table.questionId),
+}));
+
+// Model types (archetypes) — used by 'type' assessment-mode models. Each answer
+// in a type model votes for one of these via answers.typeKey; the most-voted
+// type becomes the respondent's result.
+export const modelTypes = pgTable("model_types", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  modelId: varchar("model_id").notNull().references(() => models.id, { onDelete: "cascade" }),
+  key: text("key").notNull(), // Stable identifier within the model (e.g. 'visionary')
+  name: text("name").notNull(), // Display name (e.g. 'The Visionary')
+  tagline: text("tagline"),
+  description: text("description"),
+  superpowers: text("superpowers").array(), // Bullet list of strengths
+  proTip: text("pro_tip"),
+  imageUrl: text("image_url"),
+  order: integer("order").notNull().default(0),
+}, (table) => ({
+  modelIdIdx: index("idx_model_types_model_id").on(table.modelId),
 }));
 
 // Import batches table for tracking data imports
@@ -486,6 +511,10 @@ export const insertAnswerSchema = createInsertSchema(answers).omit({
   id: true,
 });
 
+export const insertModelTypeSchema = createInsertSchema(modelTypes).omit({
+  id: true,
+});
+
 export const insertAssessmentSchema = createInsertSchema(assessments).omit({
   id: true,
   startedAt: true,
@@ -682,6 +711,8 @@ export type Question = typeof questions.$inferSelect;
 export type InsertQuestion = z.infer<typeof insertQuestionSchema>;
 
 export type Answer = typeof answers.$inferSelect;
+export type ModelType = typeof modelTypes.$inferSelect;
+export type InsertModelType = z.infer<typeof insertModelTypeSchema>;
 export type InsertAnswer = z.infer<typeof insertAnswerSchema>;
 
 export type Assessment = typeof assessments.$inferSelect;
@@ -731,6 +762,7 @@ export const modelExportFormatSchema = z.object({
     featured: z.boolean().optional().default(false),
     allowAnonymousResults: z.boolean().optional().default(false),
     hideScoreAndNarratives: z.boolean().optional().default(false),
+    assessmentMode: z.string().optional().default("scored"),
     imageUrl: z.string().nullable().optional(),
     maturityScale: z.array(z.object({
       id: z.union([z.string(), z.number()]).transform(v => String(v)),
@@ -746,6 +778,17 @@ export const modelExportFormatSchema = z.object({
       link: z.string().optional(),
     })).nullable().optional(),
   }),
+  // Archetype definitions for 'type' assessment-mode models.
+  types: z.array(z.object({
+    key: z.string(),
+    name: z.string(),
+    tagline: z.string().nullable().optional(),
+    description: z.string().nullable().optional(),
+    superpowers: z.array(z.string()).nullable().optional(),
+    proTip: z.string().nullable().optional(),
+    imageUrl: z.string().nullable().optional(),
+    order: z.number().optional().default(0),
+  })).optional(),
   dimensions: z.array(z.object({
     key: z.string(),
     label: z.string(),
@@ -769,6 +812,7 @@ export const modelExportFormatSchema = z.object({
       text: z.string(),
       score: z.number(),
       order: z.number(),
+      typeKey: z.string().nullable().optional(),
       improvementStatement: z.string().nullable().optional(),
       resourceTitle: z.string().nullable().optional(),
       resourceLink: z.string().nullable().optional(),

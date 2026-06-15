@@ -9,6 +9,7 @@ import type {
   Dimension, InsertDimension,
   Question, InsertQuestion,
   Answer, InsertAnswer,
+  ModelType, InsertModelType,
   Assessment, InsertAssessment,
   AssessmentResponse, InsertAssessmentResponse,
   Result, InsertResult,
@@ -59,6 +60,14 @@ export interface IStorage {
   createAnswer(answer: InsertAnswer): Promise<Answer>;
   updateAnswer(id: string, answer: Partial<InsertAnswer>): Promise<Answer>;
   deleteAnswer(id: string): Promise<void>;
+
+  // Model type (archetype) methods — for 'type' assessment-mode models
+  getModelTypesByModelId(modelId: string): Promise<ModelType[]>;
+  getModelType(id: string): Promise<ModelType | undefined>;
+  createModelType(modelType: InsertModelType): Promise<ModelType>;
+  updateModelType(id: string, modelType: Partial<InsertModelType>): Promise<ModelType | undefined>;
+  deleteModelType(id: string): Promise<void>;
+  deleteModelTypesByModelId(modelId: string): Promise<void>;
 
   // Assessment methods
   getAssessment(id: string): Promise<Assessment | undefined>;
@@ -296,13 +305,14 @@ export class DatabaseStorage implements IStorage {
         m.visibility,
         m.owner_tenant_id,
         m.model_class,
+        m.assessment_mode,
         m.created_at,
         m.updated_at,
         COALESCE(COUNT(q.id), 0)::integer as question_count
       FROM models m
       LEFT JOIN questions q ON m.id = q.model_id
       ${whereSql}
-      GROUP BY m.id, m.slug, m.name, m.description, m.version, m.estimated_time, m.status, m.featured, m.allow_anonymous_results, m.hide_score_and_narratives, m.image_url, m.maturity_scale::text, m.general_resources::text, m.visibility, m.owner_tenant_id, m.model_class, m.created_at, m.updated_at
+      GROUP BY m.id, m.slug, m.name, m.description, m.version, m.estimated_time, m.status, m.featured, m.allow_anonymous_results, m.hide_score_and_narratives, m.image_url, m.maturity_scale::text, m.general_resources::text, m.visibility, m.owner_tenant_id, m.model_class, m.assessment_mode, m.created_at, m.updated_at
       ORDER BY m.created_at DESC
     `);
 
@@ -323,6 +333,7 @@ export class DatabaseStorage implements IStorage {
       visibility: row.visibility,
       ownerTenantId: row.owner_tenant_id,
       modelClass: row.model_class,
+      assessmentMode: row.assessment_mode,
       createdAt: new Date(row.created_at.replace(' ', 'T') + 'Z'),
       updatedAt: new Date(row.updated_at.replace(' ', 'T') + 'Z'),
       questionCount: row.question_count,
@@ -422,6 +433,34 @@ export class DatabaseStorage implements IStorage {
   async updateAnswer(id: string, answer: Partial<InsertAnswer>): Promise<Answer> {
     const [updated] = await db.update(schema.answers).set(answer).where(eq(schema.answers.id, id)).returning();
     return updated;
+  }
+
+  // Model type (archetype) methods
+  async getModelTypesByModelId(modelId: string): Promise<ModelType[]> {
+    return db.select().from(schema.modelTypes).where(eq(schema.modelTypes.modelId, modelId)).orderBy(schema.modelTypes.order);
+  }
+
+  async getModelType(id: string): Promise<ModelType | undefined> {
+    const [modelType] = await db.select().from(schema.modelTypes).where(eq(schema.modelTypes.id, id));
+    return modelType;
+  }
+
+  async createModelType(insertModelType: InsertModelType): Promise<ModelType> {
+    const [modelType] = await db.insert(schema.modelTypes).values(insertModelType).returning();
+    return modelType;
+  }
+
+  async updateModelType(id: string, modelTypeData: Partial<InsertModelType>): Promise<ModelType | undefined> {
+    const [modelType] = await db.update(schema.modelTypes).set(modelTypeData).where(eq(schema.modelTypes.id, id)).returning();
+    return modelType;
+  }
+
+  async deleteModelType(id: string): Promise<void> {
+    await db.delete(schema.modelTypes).where(eq(schema.modelTypes.id, id));
+  }
+
+  async deleteModelTypesByModelId(modelId: string): Promise<void> {
+    await db.delete(schema.modelTypes).where(eq(schema.modelTypes.modelId, modelId));
   }
 
   // Assessment methods

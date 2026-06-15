@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   calculateAssessmentScore,
+  calculateTypeResult,
   scoreResponse,
   type ScoringQuestion,
   type ScoringMaturityLevel,
@@ -590,5 +591,88 @@ describe('calculateAssessmentScore - degenerate inputs', () => {
     expect(result.overallScore).toBe(0);
     expect(result.dimensionScores).toEqual({});
     expect(result.label).toBe('Nascent');
+  });
+});
+
+describe('calculateTypeResult', () => {
+  const TYPES = [
+    { key: 'visionary', name: 'The Visionary' },
+    { key: 'connector', name: 'The Connector' },
+    { key: 'coach', name: 'The Coach' },
+  ];
+
+  function typeQuestion(id: string): ScoringQuestion {
+    return {
+      id,
+      dimensionId: null,
+      type: 'multiple_choice',
+      answers: [
+        { id: `${id}-a0`, score: 0, typeKey: 'visionary' },
+        { id: `${id}-a1`, score: 0, typeKey: 'connector' },
+        { id: `${id}-a2`, score: 0, typeKey: 'coach' },
+      ],
+    };
+  }
+
+  const questions = [typeQuestion('q1'), typeQuestion('q2'), typeQuestion('q3')];
+
+  it('picks the single most-voted type', () => {
+    const result = calculateTypeResult({
+      questions,
+      responses: [
+        { questionId: 'q1', answerId: 'q1-a0' },
+        { questionId: 'q2', answerId: 'q2-a0' },
+        { questionId: 'q3', answerId: 'q3-a1' },
+      ],
+      types: TYPES,
+    });
+
+    expect(result.tally).toEqual({ visionary: 2, connector: 1, coach: 0 });
+    expect(result.topCount).toBe(2);
+    expect(result.winnerKeys).toEqual(['visionary']);
+    expect(result.isTie).toBe(false);
+    expect(result.label).toBe('The Visionary');
+  });
+
+  it('surfaces a blended tie when top totals are equal', () => {
+    const result = calculateTypeResult({
+      questions,
+      responses: [
+        { questionId: 'q1', answerId: 'q1-a0' },
+        { questionId: 'q2', answerId: 'q2-a1' },
+      ],
+      types: TYPES,
+    });
+
+    expect(result.topCount).toBe(1);
+    expect(result.winnerKeys.sort()).toEqual(['connector', 'visionary']);
+    expect(result.isTie).toBe(true);
+    expect(result.label).toContain('/');
+  });
+
+  it('ignores answers without a typeKey and undeclared types', () => {
+    const q = typeQuestion('q1');
+    q.answers.push({ id: 'q1-aX', score: 0, typeKey: null });
+    q.answers.push({ id: 'q1-aY', score: 0, typeKey: 'ghost' });
+    const result = calculateTypeResult({
+      questions: [q],
+      responses: [
+        { questionId: 'q1', answerId: 'q1-aX' },
+        { questionId: 'q1', answerId: 'q1-aY' },
+      ],
+      types: TYPES,
+    });
+
+    expect(result.topCount).toBe(0);
+    expect(result.winnerKeys).toEqual([]);
+    expect(result.isTie).toBe(false);
+  });
+
+  it('returns zero tallies and no winner with no responses', () => {
+    const result = calculateTypeResult({ questions, responses: [], types: TYPES });
+    expect(result.tally).toEqual({ visionary: 0, connector: 0, coach: 0 });
+    expect(result.topCount).toBe(0);
+    expect(result.winnerKeys).toEqual([]);
+    expect(result.label).toBe('');
   });
 });

@@ -16,6 +16,9 @@ export type ScoringQuestionType =
 export interface ScoringAnswer {
   id: string;
   score: number;
+  // For 'type' assessment-mode models: the model type (archetype) key this
+  // answer votes for. Null/undefined for normal scored models.
+  typeKey?: string | null;
 }
 
 export interface ScoringQuestion {
@@ -207,4 +210,72 @@ export function calculateAssessmentScore(input: ScoringInput): ScoringOutput {
     use100PointScale,
     maxMaturityScore,
   };
+}
+
+// ========== TYPE / PROPENSITY (ARCHETYPE) SCORING ==========
+
+export interface TypeScoringType {
+  key: string;
+  name: string;
+}
+
+export interface TypeScoringInput {
+  questions: ScoringQuestion[];
+  responses: ScoringResponse[];
+  types: TypeScoringType[];
+}
+
+export interface TypeScoringOutput {
+  // Vote count per type key (every declared type appears, even with 0 votes).
+  tally: Record<string, number>;
+  // Highest vote total reached by any type.
+  topCount: number;
+  // All type keys sharing the top vote total (more than one ⇒ a tie).
+  winnerKeys: string[];
+  // Whether the result is a tie between multiple types.
+  isTie: boolean;
+  // Human-readable label: the winning type name, or names joined by " / " on a tie.
+  label: string;
+}
+
+/**
+ * Tally a type/propensity assessment. Each selected multiple-choice answer
+ * casts one vote for the type declared on that answer (`answer.typeKey`).
+ * The most-voted type wins; equal top totals surface as a blended tie.
+ *
+ * Pure: no DB, no I/O. Mirrors the type branch of
+ * `calculateAssessmentResults` so it can be unit-tested in isolation.
+ */
+export function calculateTypeResult(input: TypeScoringInput): TypeScoringOutput {
+  const { questions, responses, types } = input;
+
+  const tally: Record<string, number> = {};
+  const nameByKey: Record<string, string> = {};
+  for (const type of types) {
+    tally[type.key] = 0;
+    nameByKey[type.key] = type.name;
+  }
+
+  for (const response of responses) {
+    const question = questions.find(q => q.id === response.questionId);
+    if (!question) continue;
+
+    // Type quizzes use single-select multiple-choice answers.
+    const answer = question.answers.find(a => a.id === response.answerId);
+    if (!answer || !answer.typeKey) continue;
+
+    // Ignore votes for types that are not declared on the model.
+    if (!(answer.typeKey in tally)) continue;
+    tally[answer.typeKey] += 1;
+  }
+
+  const counts = Object.values(tally);
+  const topCount = counts.length > 0 ? Math.max(...counts) : 0;
+  const winnerKeys = topCount > 0
+    ? Object.keys(tally).filter(key => tally[key] === topCount)
+    : [];
+  const isTie = winnerKeys.length > 1;
+  const label = winnerKeys.map(key => nameByKey[key] ?? key).join(' / ');
+
+  return { tally, topCount, winnerKeys, isTie, label };
 }

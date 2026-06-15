@@ -15,9 +15,10 @@ import { Plus, Edit, Trash, GripVertical, ChevronRight, Upload, X, ChevronDown, 
 import { ObjectUploader } from "@/components/ObjectUploader";
 import { QRCodeSVG } from "qrcode.react";
 import { UnifiedQuestionEditor } from "@/components/admin/UnifiedQuestionEditor";
+import { ModelTypesEditor } from "@/components/admin/ModelTypesEditor";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import type { Model, Dimension, Question, AssessmentCourseLink, Course, CourseTag } from "@shared/schema";
+import type { Model, Dimension, Question, AssessmentCourseLink, Course, CourseTag, ModelType } from "@shared/schema";
 
 interface CourseListItem extends Course {
   moduleCount: number;
@@ -566,6 +567,22 @@ export function ModelBuilder({
   isRemovingImage,
 }: ModelBuilderProps) {
   const [activeTab, setActiveTab] = useState("overview");
+
+  const isTypeMode = model.assessmentMode === "type";
+
+  // Archetype/types for 'type' (propensity) models
+  const { data: modelTypes = [] } = useQuery<ModelType[]>({
+    queryKey: ["/api/models", model.id, "types"],
+    queryFn: async (): Promise<ModelType[]> => apiRequest(`/api/models/${model.id}/types`, "GET"),
+    enabled: isTypeMode,
+  });
+
+  // Keep the active tab valid when assessment mode changes (the Types tab only
+  // exists in type mode; the Maturity Scale tab only exists in scored mode).
+  useEffect(() => {
+    if (isTypeMode && activeTab === "maturity-scale") setActiveTab("overview");
+    if (!isTypeMode && activeTab === "types") setActiveTab("overview");
+  }, [isTypeMode, activeTab]);
   
   // Local state for form fields (for responsive UI)
   const [localName, setLocalName] = useState(model.name);
@@ -694,19 +711,26 @@ export function ModelBuilder({
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className={`grid w-full ${isTypeMode ? 'grid-cols-6' : 'grid-cols-5'}`}>
           <TabsTrigger value="overview" data-testid="tab-overview">
             Overview
           </TabsTrigger>
           <TabsTrigger value="structure" data-testid="tab-structure">
             Structure
           </TabsTrigger>
+          {isTypeMode && (
+            <TabsTrigger value="types" data-testid="tab-types">
+              Types
+            </TabsTrigger>
+          )}
           <TabsTrigger value="resources" data-testid="tab-resources">
             Resources
           </TabsTrigger>
-          <TabsTrigger value="maturity-scale" data-testid="tab-maturity-scale">
-            Maturity Scale
-          </TabsTrigger>
+          {!isTypeMode && (
+            <TabsTrigger value="maturity-scale" data-testid="tab-maturity-scale">
+              Maturity Scale
+            </TabsTrigger>
+          )}
           <TabsTrigger value="course-links" data-testid="tab-course-links">
             Course Links
           </TabsTrigger>
@@ -814,6 +838,26 @@ export function ModelBuilder({
                       <SelectItem value="individual">Individual</SelectItem>
                     </SelectContent>
                   </Select>
+                </div>
+                <div>
+                  <Label>Assessment Mode</Label>
+                  <Select
+                    value={model.assessmentMode || 'scored'}
+                    onValueChange={(value: 'scored' | 'type') => {
+                      onUpdateModel({ assessmentMode: value });
+                    }}
+                  >
+                    <SelectTrigger data-testid="select-assessment-mode">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="scored">Scored (Maturity)</SelectItem>
+                      <SelectItem value="type">Type / Propensity (Archetype)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Type mode categorizes respondents into an archetype instead of a numeric score.
+                  </p>
                 </div>
               </div>
 
@@ -1085,6 +1129,8 @@ export function ModelBuilder({
                                 onUpdateQuestion={onUpdateQuestion}
                                 onDeleteQuestion={onDeleteQuestion}
                                 questionIndex={qIndex}
+                                assessmentMode={model.assessmentMode || "scored"}
+                                types={modelTypes}
                               />
                             ))}
                           </div>
@@ -1123,6 +1169,8 @@ export function ModelBuilder({
                           onUpdateQuestion={onUpdateQuestion}
                           onDeleteQuestion={onDeleteQuestion}
                           questionIndex={qIndex}
+                          assessmentMode={model.assessmentMode || "scored"}
+                          types={modelTypes}
                         />
                       ))}
                     </div>
@@ -1132,6 +1180,14 @@ export function ModelBuilder({
             </Accordion>
           )}
         </TabsContent>
+
+        {isTypeMode && (
+          <TabsContent value="types" className="space-y-4">
+            <Card className="p-6">
+              <ModelTypesEditor modelId={model.id} />
+            </Card>
+          </TabsContent>
+        )}
 
         <TabsContent value="resources" className="space-y-4">
           <div className="flex justify-between items-center">

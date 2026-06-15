@@ -2,7 +2,7 @@ import { storage } from "../storage";
 import { db } from "../db";
 import { eq, inArray } from "drizzle-orm";
 import * as schema from "@shared/schema";
-import { calculateAssessmentScore, type ScoringQuestion } from "./scoring";
+import { calculateAssessmentScore, calculateTypeResult, type ScoringQuestion } from "./scoring";
 import { ServiceError } from "./service-error";
 
 export async function calculateAssessmentResults(assessmentId: string) {
@@ -29,12 +29,12 @@ export async function calculateAssessmentResults(assessmentId: string) {
     ? await db.select().from(schema.answers)
         .where(inArray(schema.answers.questionId, allQuestionIds))
     : [];
-  const answersByQuestionId = new Map<string, Array<{ id: string; score: number }>>();
+  const answersByQuestionId = new Map<string, Array<{ id: string; score: number; typeKey?: string | null }>>();
   for (const a of allAnswersForModel) {
     if (!answersByQuestionId.has(a.questionId)) {
       answersByQuestionId.set(a.questionId, []);
     }
-    answersByQuestionId.get(a.questionId)!.push({ id: a.id, score: a.score });
+    answersByQuestionId.get(a.questionId)!.push({ id: a.id, score: a.score, typeKey: a.typeKey ?? null });
   }
 
   const scoringQuestions: ScoringQuestion[] = questions.map(q => ({
@@ -45,6 +45,58 @@ export async function calculateAssessmentResults(assessmentId: string) {
     maxValue: q.maxValue ?? null,
     answers: answersByQuestionId.get(q.id) ?? [],
   }));
+
+  // ----- Type / propensity (archetype) models: tally votes instead of scoring -----
+  if (model.assessmentMode === 'type') {
+    const modelTypes = await storage.getModelTypesByModelId(model.id);
+    const typeResult = calculateTypeResult({
+      questions: scoringQuestions,
+      responses: responses.map(r => ({
+        questionId: r.questionId,
+        answerId: r.answerId ?? null,
+      })),
+      types: modelTypes.map(t => ({ key: t.key, name: t.name })),
+    });
+
+    // Persist: overallScore is unused for type models (kept 0 to satisfy the
+    // NOT NULL column); label = winning archetype name(s); dimensionScores
+    // stores the per-type vote tally so the results page can derive winners.
+    const existingTypeResult = await storage.getResult(assessmentId);
+    const typeResultRow = existingTypeResult
+      ? (await storage.updateResult(existingTypeResult.id, {
+          overallScore: 0,
+          label: typeResult.label,
+          dimensionScores: typeResult.tally,
+        })) ?? existingTypeResult
+      : await storage.createResult({
+          assessmentId,
+          overallScore: 0,
+          label: typeResult.label,
+          dimensionScores: typeResult.tally,
+        });
+
+    await storage.updateAssessment(assessmentId, {
+      status: "completed",
+      completedAt: new Date(),
+    } as any);
+
+    try {
+      if (assessment.tenantId) {
+        const { emitGalaxyEvent } = await import('../routes/galaxy/webhooks');
+        await emitGalaxyEvent(assessment.tenantId, 'assessment.completed', {
+          assessmentId,
+          modelId: assessment.modelId,
+          userId: assessment.userId,
+          score: 0,
+          label: typeResult.label,
+        });
+      }
+    } catch (err) {
+      console.error('[galaxy] webhook emission failed', err);
+    }
+
+    return typeResultRow;
+  }
 
   const scoringResult = calculateAssessmentScore({
     questions: scoringQuestions,

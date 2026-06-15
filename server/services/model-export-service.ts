@@ -36,12 +36,28 @@ export async function duplicateModel(sourceId: string) {
     estimatedTime: sourceModel.estimatedTime,
     status: 'draft',
     featured: false,
+    assessmentMode: sourceModel.assessmentMode,
     imageUrl: sourceModel.imageUrl,
     maturityScale: sourceModel.maturityScale as any,
     generalResources: sourceModel.generalResources as any,
     visibility: sourceModel.visibility,
     ownerTenantId: sourceModel.ownerTenantId,
   });
+
+  const sourceTypes = await storage.getModelTypesByModelId(sourceModel.id);
+  for (const t of sourceTypes) {
+    await storage.createModelType({
+      modelId: newModel.id,
+      key: t.key,
+      name: t.name,
+      tagline: t.tagline,
+      description: t.description,
+      superpowers: t.superpowers,
+      proTip: t.proTip,
+      imageUrl: t.imageUrl,
+      order: t.order,
+    });
+  }
 
   const dimensionIdMap = new Map<string, string>();
   for (const dim of dimensions.sort((a, b) => a.order - b.order)) {
@@ -70,6 +86,7 @@ export async function duplicateModel(sourceId: string) {
         text: a.text,
         score: a.score,
         order: a.order,
+        typeKey: a.typeKey,
       });
     }
   }
@@ -113,6 +130,7 @@ export async function exportModelDefinition(modelId: string) {
           text: a.text,
           score: a.score,
           order: a.order,
+          typeKey: a.typeKey,
           improvementStatement: a.improvementStatement,
           resourceTitle: a.resourceTitle,
           resourceLink: a.resourceLink,
@@ -121,6 +139,8 @@ export async function exportModelDefinition(modelId: string) {
       };
     })
   );
+
+  const types = await storage.getModelTypesByModelId(model.id);
 
   const exportData: schema.ModelExportFormat = {
     formatVersion: "1.0",
@@ -135,10 +155,21 @@ export async function exportModelDefinition(modelId: string) {
       featured: model.featured,
       allowAnonymousResults: model.allowAnonymousResults,
       hideScoreAndNarratives: model.hideScoreAndNarratives,
+      assessmentMode: model.assessmentMode,
       imageUrl: model.imageUrl,
       maturityScale: model.maturityScale as any,
       generalResources: model.generalResources as any,
     },
+    types: types.map(t => ({
+      key: t.key,
+      name: t.name,
+      tagline: t.tagline,
+      description: t.description,
+      superpowers: t.superpowers,
+      proTip: t.proTip,
+      imageUrl: t.imageUrl,
+      order: t.order,
+    })),
     dimensions: dimensions.map(d => ({
       key: d.key,
       label: d.label,
@@ -309,10 +340,26 @@ export async function importModelDefinition(params: {
     featured: data.model.featured,
     allowAnonymousResults: data.model.allowAnonymousResults ?? false,
     hideScoreAndNarratives: data.model.hideScoreAndNarratives ?? false,
+    assessmentMode: data.model.assessmentMode ?? "scored",
     imageUrl: data.model.imageUrl,
     maturityScale: data.model.maturityScale as any,
     generalResources: data.model.generalResources as any,
   });
+
+  // Create archetype types (for 'type' assessment-mode models)
+  for (const t of data.types ?? []) {
+    await storage.createModelType({
+      modelId: createdModel.id,
+      key: t.key,
+      name: t.name,
+      tagline: t.tagline ?? null,
+      description: t.description ?? null,
+      superpowers: t.superpowers ?? null,
+      proTip: t.proTip ?? null,
+      imageUrl: t.imageUrl ?? null,
+      order: t.order ?? 0,
+    });
+  }
 
   const dimensionKeyToId = new Map<string, string>();
   for (const dim of data.dimensions) {
@@ -353,6 +400,7 @@ export async function importModelDefinition(params: {
         text: a.text,
         score: a.score,
         order: a.order,
+        typeKey: a.typeKey,
         improvementStatement: a.improvementStatement,
         resourceTitle: a.resourceTitle,
         resourceLink: a.resourceLink,
