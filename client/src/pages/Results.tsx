@@ -149,7 +149,7 @@ export default function Results() {
     }>;
   }>({
     queryKey: ['/api/benchmarks', assessment?.modelId],
-    enabled: !!assessment?.modelId,
+    enabled: !!assessment?.modelId && !!model && model.assessmentMode !== 'type',
   });
   
   // Extract overall benchmark for easier access
@@ -241,6 +241,12 @@ export default function Results() {
   useEffect(() => {
     const fetchAISummaries = async () => {
       if (!result || !model) return;
+      // Type/propensity models have no numeric maturity narrative or benchmarking —
+      // skip all AI summary generation for them.
+      if (model.assessmentMode === 'type') {
+        setAiContentReady(true);
+        return;
+      }
 
       setAiContentLoading(true);
       setAiContentReady(false);

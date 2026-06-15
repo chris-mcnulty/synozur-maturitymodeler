@@ -1,1 +1,1 @@
-- [getAllModels column projection](getallmodels-projection.md) — the models list endpoint hand-writes raw SQL; new `models` columns must be added to SELECT, GROUP BY, and the row-mapping or they silently vanish from `/api/models`.
+- [Landing prominent-assessment selection](landing-hero-selection.md) — the landing page picks the "main" assessment via TWO independent mechanisms; swapping it requires changing both.

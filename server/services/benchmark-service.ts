@@ -1,5 +1,5 @@
 import { db } from "../db";
-import { assessments, results, users, benchmarks, dimensions, settings } from "../../shared/schema";
+import { assessments, results, users, benchmarks, dimensions, settings, models } from "../../shared/schema";
 import { eq, and, isNotNull, sql } from "drizzle-orm";
 
 interface BenchmarkConfig {
@@ -158,6 +158,17 @@ async function calculateSegmentBenchmark(
 
 export async function calculateBenchmarks(modelId: string): Promise<void> {
   const config = await getBenchmarkConfig();
+
+  // Type/propensity models categorize respondents into archetypes — they have no
+  // numeric overall score, so averaging them into a benchmark is meaningless.
+  // Skip benchmark generation entirely (and clear any stale rows) for them.
+  const [model] = await db.select({ assessmentMode: models.assessmentMode })
+    .from(models)
+    .where(eq(models.id, modelId));
+  if (model?.assessmentMode === 'type') {
+    await db.delete(benchmarks).where(eq(benchmarks.modelId, modelId));
+    return;
+  }
 
   // Delete existing benchmarks for this model
   await db.delete(benchmarks).where(eq(benchmarks.modelId, modelId));

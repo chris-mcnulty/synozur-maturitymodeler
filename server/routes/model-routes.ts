@@ -1347,6 +1347,7 @@ export function registerModelRoutes(app: Express) {
             text: a.text || '',
             score: a.score || 0,
             order: a.order || 0,
+            typeKey: a.typeKey,
             improvementStatement: a.improvementStatement,
             resourceTitle: a.resourceTitle,
             resourceLink: a.resourceLink,

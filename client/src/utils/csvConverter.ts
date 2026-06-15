@@ -1,4 +1,4 @@
-import type { Model, Dimension, Question, Answer } from '@shared/schema';
+import type { Model, Dimension, Question, Answer, ModelType } from '@shared/schema';
 
 // Define scoring level structure for CSV export/import
 export interface ScoringLevel {
@@ -20,7 +20,8 @@ export function modelToCSV(
   dimensions: Dimension[],
   questions: Question[],
   answers: Answer[],
-  scoringLevels: ScoringLevel[]
+  scoringLevels: ScoringLevel[],
+  types: ModelType[] = []
 ): string {
   const rows: string[][] = [];
   
@@ -39,7 +40,8 @@ export function modelToCSV(
     model.version || '1.0.0',
     model.estimatedTime || '15-20 minutes',
     model.status || 'draft',
-    '', '', ''
+    model.assessmentMode || 'scored',
+    '', ''
   ]);
   
   // Dimensions
@@ -51,6 +53,24 @@ export function modelToCSV(
       dimension.key,
       dimension.description || '',
       '', '', '', '', '', ''
+    ]);
+  });
+  
+  // Model types (archetypes) — only present for 'type'/propensity models.
+  // superpowers (array) is encoded pipe-delimited so it survives a single cell.
+  types.forEach(t => {
+    rows.push([
+      'MODEL_TYPE',
+      t.id,
+      t.name,
+      t.key,
+      t.tagline || '',
+      t.description || '',
+      (t.superpowers || []).join('|'),
+      t.proTip || '',
+      t.imageUrl || '',
+      t.order?.toString() || '0',
+      ''
     ]);
   });
   
@@ -93,7 +113,8 @@ export function modelToCSV(
           answer.resourceTitle || '',
           answer.resourceLink || '',
           answer.resourceDescription || '',
-          '', ''
+          answer.typeKey || '',
+          ''
         ]);
       });
     }
@@ -129,6 +150,7 @@ export function csvToModel(csvContent: string): {
   questions: Partial<Question>[];
   answers: Partial<Answer>[];
   scoringLevels: ScoringLevel[];
+  types: Partial<ModelType>[];
 } {
   const lines = csvContent.split('\n').filter(line => line.trim());
   const rows = lines.slice(1).map(line => parseCSVLine(line)); // Skip header
@@ -138,6 +160,7 @@ export function csvToModel(csvContent: string): {
   const questions: Partial<Question>[] = [];
   const answers: Partial<Answer>[] = [];
   const scoringLevels: ScoringLevel[] = [];
+  const types: Partial<ModelType>[] = [];
   
   rows.forEach(row => {
     const type = row[0];
@@ -151,7 +174,23 @@ export function csvToModel(csvContent: string): {
           description: row[4] || undefined,
           version: row[5] || '1.0.0',
           estimatedTime: row[6] || '15-20 minutes',
-          status: (row[7] || 'draft') as 'draft' | 'published'
+          status: (row[7] || 'draft') as 'draft' | 'published',
+          assessmentMode: (row[8] || 'scored') as 'scored' | 'type'
+        });
+        break;
+        
+      case 'MODEL_TYPE':
+        types.push({
+          id: row[1],
+          name: row[2],
+          key: row[3],
+          tagline: row[4] || undefined,
+          description: row[5] || undefined,
+          superpowers: row[6] ? row[6].split('|').filter(Boolean) : undefined,
+          proTip: row[7] || undefined,
+          imageUrl: row[8] || undefined,
+          order: row[9] ? parseInt(row[9]) : 0,
+          modelId: model.id
         });
         break;
         
@@ -202,7 +241,8 @@ export function csvToModel(csvContent: string): {
           improvementStatement: row[5] || undefined,
           resourceTitle: row[6] || undefined,
           resourceLink: row[7] || undefined,
-          resourceDescription: row[8] || undefined
+          resourceDescription: row[8] || undefined,
+          typeKey: row[9] || undefined
         });
         break;
         
@@ -219,7 +259,7 @@ export function csvToModel(csvContent: string): {
     }
   });
   
-  return { model, dimensions, questions, answers, scoringLevels };
+  return { model, dimensions, questions, answers, scoringLevels, types };
 }
 
 function parseCSVLine(line: string): string[] {

@@ -15,8 +15,9 @@ interface SimplifiedRow {
 export function questionsToSimpleCSV(questions: any[], answers: any[]): string {
   const rows: string[] = [];
   
-  // Header row
-  rows.push('Question#,Question Text,Answer,Score,Interpretation,Resource Title,Resource Link,Resource Description');
+  // Header row. "Type Key" carries the archetype an answer votes for in
+  // 'type' (propensity) models; it is blank for normal scored models.
+  rows.push('Question#,Question Text,Answer,Score,Interpretation,Resource Title,Resource Link,Resource Description,Type Key');
   
   questions.forEach((question, qIndex) => {
     const questionNumber = qIndex + 1;
@@ -33,7 +34,8 @@ export function questionsToSimpleCSV(questions: any[], answers: any[]): string {
           answer.improvementStatement ? `"${answer.improvementStatement.replace(/"/g, '""')}"` : '',
           answer.resourceTitle ? `"${answer.resourceTitle.replace(/"/g, '""')}"` : '',
           answer.resourceLink ? `"${answer.resourceLink.replace(/"/g, '""')}"` : '',
-          answer.resourceDescription ? `"${answer.resourceDescription.replace(/"/g, '""')}"` : ''
+          answer.resourceDescription ? `"${answer.resourceDescription.replace(/"/g, '""')}"` : '',
+          answer.typeKey ? `"${answer.typeKey.replace(/"/g, '""')}"` : ''
         ];
         rows.push(row.join(','));
       });
@@ -49,7 +51,8 @@ export function questionsToSimpleCSV(questions: any[], answers: any[]): string {
         question.improvementStatement ? `"${question.improvementStatement.replace(/"/g, '""')}"` : '',
         question.resourceTitle ? `"${question.resourceTitle.replace(/"/g, '""')}"` : '',
         question.resourceLink ? `"${question.resourceLink.replace(/"/g, '""')}"` : '',
-        question.resourceDescription ? `"${question.resourceDescription.replace(/"/g, '""')}"` : ''
+        question.resourceDescription ? `"${question.resourceDescription.replace(/"/g, '""')}"` : '',
+        '' // No type key for non-multiple-choice
       ];
       rows.push(row.join(','));
     }
@@ -88,6 +91,7 @@ export function simpleCSVToQuestions(csvContent: string, modelId: string): { que
     const resourceTitle = values[5] || '';
     const resourceLink = values[6] || '';
     const resourceDescription = values[7] || '';
+    const typeKey = values[8] || '';
     
     if (!questionNumber || isNaN(questionNumber) || !questionText) continue;
     
@@ -144,6 +148,7 @@ export function simpleCSVToQuestions(csvContent: string, modelId: string): { que
           text: answerText,
           score: score,
           order: answers.filter(a => a.questionId === question.id).length,
+          typeKey: typeKey || undefined,
           improvementStatement: interpretation || undefined,
           resourceTitle: resourceTitle || undefined,
           resourceLink: resourceLink || undefined,

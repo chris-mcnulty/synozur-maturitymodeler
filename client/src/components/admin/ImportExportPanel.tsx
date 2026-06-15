@@ -1,4 +1,5 @@
 import { useState, useCallback } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Upload, Download, FileJson, FileSpreadsheet, X, AlertCircle, CheckCircle2, ChevronDown, ChevronUp, Copy, BookOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -9,7 +10,7 @@ import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import { modelToCSV, type ScoringLevel } from "@/utils/csvConverter";
 import { questionsToSimpleCSV } from "@/utils/csvConverterSimple";
-import type { Model, Dimension, Question, Answer } from "@shared/schema";
+import type { Model, Dimension, Question, Answer, ModelType } from "@shared/schema";
 
 type ExportFormat = "model" | "csv-full" | "csv-simple";
 type ImportFormat = "auto" | "model" | "csv-full" | "csv-simple";
@@ -281,6 +282,20 @@ export function ImportExportPanel({
   onImportComplete,
 }: ImportExportPanelProps) {
   const { toast } = useToast();
+
+  // Model archetypes (only present for 'type'/propensity models) — needed so the
+  // full CSV export includes MODEL_TYPE rows. Empty for normal scored models.
+  const { data: modelTypes = [] } = useQuery<ModelType[]>({
+    queryKey: ['/api/models', selectedModel?.id, 'types'],
+    queryFn: async () => {
+      if (!selectedModel?.id) return [];
+      const response = await fetch(`/api/models/${selectedModel.id}/types`);
+      if (!response.ok) return [];
+      return response.json();
+    },
+    enabled: !!selectedModel?.id,
+  });
+
   const [mode, setMode] = useState<"export" | "import">("export");
   const [exportFormat, setExportFormat] = useState<ExportFormat>("model");
   const [importFormat, setImportFormat] = useState<ImportFormat>("auto");
@@ -372,7 +387,7 @@ export function ImportExportPanel({
         filename = `${selectedModel.slug}.model`;
         mimeType = "application/json";
       } else if (exportFormat === "csv-full") {
-        content = modelToCSV(selectedModel, dimensions, questions, answers, scoringLevels);
+        content = modelToCSV(selectedModel, dimensions, questions, answers, scoringLevels, modelTypes);
         filename = `${selectedModel.slug}-full.csv`;
         mimeType = "text/csv";
       } else if (exportFormat === "csv-simple") {
