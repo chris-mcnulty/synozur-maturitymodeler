@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -824,6 +824,194 @@ function CourseTenantShareDialog({ courseId, onClose }: { courseId: string; onCl
   );
 }
 
+// ── PPTX slide-to-module splitter ────────────────────────────────────────────
+
+function getSlideHeading(slide: Slide): string {
+  const b = (slide.blocks as any[])?.find((x: any) => x.type === "heading");
+  return (b?.text as string) || "";
+}
+function getSlideThumbnailUrl(slide: Slide): string | undefined {
+  const b = (slide.blocks as any[])?.find((x: any) => x.type === "image_slide");
+  return b?.url ? courseMediaUrl(b.url as string) : undefined;
+}
+
+function PptxSplitDialog({
+  slides,
+  courseId,
+  moduleId,
+  existingCount,
+  onComplete,
+  onCancel,
+}: {
+  slides: Slide[];
+  courseId: string;
+  moduleId: string;
+  existingCount: number;
+  onComplete: (firstGroupSlides: Slide[]) => void;
+  onCancel: () => void;
+}) {
+  const { toast } = useToast();
+  const [splitPoints, setSplitPoints] = useState<Set<number>>(new Set());
+  const [groupNames, setGroupNames] = useState<string[]>([
+    getSlideHeading(slides[0]) || "Section 1",
+  ]);
+  const [saving, setSaving] = useState(false);
+
+  const groups = useMemo(() => {
+    const pts = Array.from(splitPoints).sort((a, b) => a - b);
+    const result: Slide[][] = [];
+    let start = 0;
+    for (const pt of pts) {
+      result.push(slides.slice(start, pt + 1));
+      start = pt + 1;
+    }
+    result.push(slides.slice(start));
+    return result;
+  }, [slides, splitPoints]);
+
+  useEffect(() => {
+    setGroupNames((prev) => {
+      const next = [...prev];
+      while (next.length < groups.length) {
+        const g = groups[next.length];
+        next.push(getSlideHeading(g?.[0]) || `Section ${next.length + 1}`);
+      }
+      return next.slice(0, groups.length);
+    });
+  }, [groups.length]);
+
+  const toggleSplit = (afterIndex: number) => {
+    setSplitPoints((prev) => {
+      const next = new Set(prev);
+      if (next.has(afterIndex)) next.delete(afterIndex);
+      else next.add(afterIndex);
+      return next;
+    });
+  };
+
+  const handleConfirm = async () => {
+    setSaving(true);
+    try {
+      for (let i = 1; i < groups.length; i++) {
+        await apiRequest(`/api/course-modules/${moduleId}/lessons`, "POST", {
+          title: groupNames[i] || `Section ${i + 1}`,
+          type: "slides",
+          content: { slides: groups[i] },
+          required: true,
+          moduleId,
+          order: existingCount + i,
+        });
+      }
+      if (groups.length > 1) {
+        queryClient.invalidateQueries({ queryKey: ["/api/courses", courseId] });
+      }
+      onComplete(groups[0]);
+    } catch (err: any) {
+      toast({ title: "Failed to create lessons", description: err.message, variant: "destructive" });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Dialog open onOpenChange={(open) => { if (!open && !saving) onCancel(); }}>
+      <DialogContent className="max-w-2xl flex flex-col" style={{ maxHeight: "90vh" }}>
+        <DialogHeader>
+          <DialogTitle>Organize imported slides</DialogTitle>
+          <DialogDescription>
+            {slides.length} slides imported. Click the divider between any two slides to start a new lesson there. Each section becomes its own lesson in this module.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="flex-1 overflow-y-auto space-y-0 min-h-0 pr-1">
+          {groups.map((grp, gi) => {
+            const absStart = groups.slice(0, gi).reduce((s, g) => s + g.length, 0);
+            return (
+              <div key={gi}>
+                <div className={`flex items-center gap-2 px-3 py-1.5 rounded-md mb-0.5 mt-2 ${gi === 0 ? "bg-muted/40" : "bg-primary/10"}`}>
+                  <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide shrink-0">
+                    Lesson {gi + 1}
+                  </span>
+                  <Input
+                    value={groupNames[gi] || ""}
+                    onChange={(e) =>
+                      setGroupNames((prev) => prev.map((n, idx) => (idx === gi ? e.target.value : n)))
+                    }
+                    placeholder={`Lesson ${gi + 1} title`}
+                    className="h-7 text-sm flex-1"
+                  />
+                  <span className="text-[10px] text-muted-foreground shrink-0">
+                    {grp.length} slide{grp.length !== 1 ? "s" : ""}
+                  </span>
+                </div>
+
+                {grp.map((slide, si) => {
+                  const absIdx = absStart + si;
+                  const thumb = getSlideThumbnailUrl(slide);
+                  const heading = getSlideHeading(slide);
+                  const isLastSlide = absIdx === slides.length - 1;
+                  return (
+                    <div key={slide.id}>
+                      <div className="flex items-center gap-3 px-3 py-1 rounded hover-elevate cursor-default">
+                        <span className="text-xs text-muted-foreground w-6 text-right shrink-0 tabular-nums">
+                          {absIdx + 1}
+                        </span>
+                        {thumb ? (
+                          <img src={thumb} alt="" className="h-9 w-14 object-cover rounded shrink-0 bg-muted" />
+                        ) : (
+                          <div className="h-9 w-14 bg-muted rounded shrink-0 flex items-center justify-center">
+                            <FileText className="h-3.5 w-3.5 text-muted-foreground" />
+                          </div>
+                        )}
+                        <span className="text-sm truncate flex-1 text-muted-foreground">
+                          {heading || `Slide ${absIdx + 1}`}
+                        </span>
+                      </div>
+
+                      {!isLastSlide && (
+                        <button
+                          type="button"
+                          onClick={() => toggleSplit(absIdx)}
+                          className={`w-full h-5 flex items-center gap-2 px-3 group transition-colors ${
+                            splitPoints.has(absIdx)
+                              ? "bg-primary/15 hover:bg-primary/25"
+                              : "hover:bg-muted/50"
+                          }`}
+                          title={splitPoints.has(absIdx) ? "Remove split — merge back" : "Split here — start new lesson"}
+                        >
+                          <div className={`flex-1 h-px transition-colors ${splitPoints.has(absIdx) ? "bg-primary" : "bg-border group-hover:bg-border"}`} />
+                          <span className={`text-[10px] font-medium shrink-0 transition-opacity select-none ${
+                            splitPoints.has(absIdx)
+                              ? "text-primary opacity-100"
+                              : "text-muted-foreground opacity-0 group-hover:opacity-100"
+                          }`}>
+                            {splitPoints.has(absIdx) ? "split" : "+ split here"}
+                          </span>
+                          <div className={`flex-1 h-px transition-colors ${splitPoints.has(absIdx) ? "bg-primary" : "bg-border group-hover:bg-border"}`} />
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })}
+        </div>
+
+        <DialogFooter className="flex-wrap gap-2 pt-3 border-t">
+          <Button variant="outline" onClick={onCancel} disabled={saving}>Cancel</Button>
+          <Button onClick={handleConfirm} disabled={saving} data-testid="button-confirm-pptx-split">
+            {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+            {groups.length === 1
+              ? `Import as 1 lesson (${slides.length} slide${slides.length !== 1 ? "s" : ""})`
+              : `Create ${groups.length} lessons`}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 function LessonEditorDialog({
   courseId, moduleId, lesson, existingCount, onClose,
 }: {
@@ -840,8 +1028,19 @@ function LessonEditorDialog({
   const [required, setRequired] = useState(lesson?.required ?? true);
   const [scormUploading, setScormUploading] = useState(false);
   const [pptxImporting, setPptxImporting] = useState(false);
+  const [pptxSplitPending, setPptxSplitPending] = useState<Slide[] | null>(null);
   const [slideEditorInitialIdx, setSlideEditorInitialIdx] = useState<number | undefined>(undefined);
   const titleInputRef = useRef<HTMLInputElement>(null);
+
+  const mergeSlides = (importedSlides: Slide[]) => {
+    const existing = (() => { try { return normalizeSlides(JSON.parse(contentJson)); } catch { return []; } })();
+    setContentJson(JSON.stringify({ slides: [...existing, ...importedSlides] }, null, 2));
+    if (importedSlides.length > 0) setSlideEditorInitialIdx(existing.length);
+    toast({
+      title: "Slides imported",
+      description: `${importedSlides.length} slide${importedSlides.length === 1 ? "" : "s"} added to this lesson.`,
+    });
+  };
 
   const handleSaveWithTitleCheck = () => {
     if (!title) {
@@ -877,16 +1076,13 @@ function LessonEditorDialog({
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Import failed");
 
-      const existing = (() => { try { return normalizeSlides(JSON.parse(contentJson)); } catch { return []; } })();
       const importedSlides: Slide[] = data.slides || [];
-      const merged = { slides: [...existing, ...importedSlides] };
-      setContentJson(JSON.stringify(merged, null, 2));
-      // Jump the editor to the first newly added slide so the user can see them.
-      if (importedSlides.length > 0) setSlideEditorInitialIdx(existing.length);
-      toast({
-        title: "PowerPoint imported",
-        description: `${importedSlides.length} slide${importedSlides.length === 1 ? "" : "s"} added — use the slide list on the left to navigate.`,
-      });
+      if (importedSlides.length === 0) {
+        toast({ title: "No slides found in this file.", variant: "destructive" });
+        return;
+      }
+      // Show the split dialog so the user can organise slides into lessons.
+      setPptxSplitPending(importedSlides);
     } catch (err: any) {
       toast({ title: "Import failed", description: err.message, variant: "destructive" });
     } finally {
@@ -977,7 +1173,21 @@ function LessonEditorDialog({
   };
 
   return (
-    <Dialog open onOpenChange={onClose}>
+    <>
+    {pptxSplitPending && (
+      <PptxSplitDialog
+        slides={pptxSplitPending}
+        courseId={courseId}
+        moduleId={moduleId}
+        existingCount={existingCount}
+        onComplete={(firstGroupSlides) => {
+          mergeSlides(firstGroupSlides);
+          setPptxSplitPending(null);
+        }}
+        onCancel={() => setPptxSplitPending(null)}
+      />
+    )}
+    <Dialog open={!pptxSplitPending} onOpenChange={onClose}>
       <DialogContent className={`${type === "slides" ? "max-w-4xl" : "max-w-2xl"} max-h-[90vh] overflow-y-auto`}>
         <DialogHeader>
           <DialogTitle>{lesson ? "Edit lesson" : "New lesson"}</DialogTitle>
@@ -1179,6 +1389,7 @@ function LessonEditorDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+    </>
   );
 }
 
