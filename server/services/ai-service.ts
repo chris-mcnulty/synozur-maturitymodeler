@@ -616,9 +616,6 @@ The Synozur Alliance LLC is here to help you find your North Star and make the d
       // Fetch knowledge context from uploaded documents (modelId already retrieved above)
       const knowledgeContext = await this.getKnowledgeContext(modelId);
 
-      // Build dynamic bullet list
-      const bulletList = topRecs.map(r => `• ${r.title}`).join('\n');
-      
       // Build dynamic section instructions with explicit title requirements
       const sectionInstructions = topRecs.map((rec, idx) => {
         const ordinal = idx === 0 ? 'First' : idx === 1 ? 'Second' : 'Third';
@@ -664,8 +661,7 @@ ${topRecs.map((r, i) => `${i + 1}. "${r.title}"`).join('\n')}
 STRUCTURE:
 
 Paragraph 1 - Opening (3-4 sentences):
-Frame their unique transformation journey and what it means for ${isIndividual ? 'their personal growth' : 'their organization'}. Explain the strategic context and why focusing on these priority actions matters. Use insights from the knowledge base to provide specific guidance. End with "Priority actions to focus on:" followed by EXACTLY these ${topRecs.length} bulleted items:
-${bulletList}
+Frame their unique transformation journey and what it means for ${isIndividual ? 'their personal growth' : 'their organization'}. Explain the strategic context and why focusing on these priority actions matters. Use insights from the knowledge base to provide specific guidance. End this paragraph with the lead-in phrase "Priority actions to focus on:" and then go STRAIGHT into the detailed sections below. Do NOT repeat the action titles as a separate bulleted list — each title appears exactly once, as its own section heading.
 
 [BLANK LINE]
 
@@ -687,7 +683,7 @@ ABSOLUTELY CRITICAL FORMATTING RULES - FAILURE TO FOLLOW WILL RESULT IN REJECTIO
 3. For example, if the title is "Industry Leader", write "## Industry Leader" NOT "## Third priority action"
 4. Section headings MUST use the EXACT titles provided above - NO EXCEPTIONS
 5. Each section MUST be separated by a blank line (double newline: \\n\\n)
-6. The opening bulleted list must have EXACTLY ${topRecs.length} items
+6. Do NOT include a bulleted preview list of the action titles — each title must appear only once, as its "## " section heading
 7. Write in a smooth, flowing narrative style
 8. End with the EXACT phrase: "Let's find your North Star together."
 ${userContext ? `9. Personalize for ${userContext.jobTitle} in ${userContext.industry}` : '9. Keep strategic and professional'}
@@ -696,10 +692,7 @@ ${userContext ? `9. Personalize for ${userContext.jobTitle} in ${userContext.ind
 12. REMINDER: Use "## [Exact Title]" format for each section heading - this is MANDATORY
 
 OUTPUT FORMAT EXAMPLE (structure only, not actual content):
-[Opening paragraph text here...]
-
-Priority actions to focus on:
-${bulletList}
+[Opening paragraph text here... ending with] Priority actions to focus on:
 
 ${topRecs.map(r => `## ${r.title}\n[explanation paragraph...]`).join('\n\n')}
 

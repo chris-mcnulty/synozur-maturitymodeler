@@ -1,3 +1,5 @@
+import { stripPreviewBullets } from "./markdown-utils";
+
 interface MarkdownContentProps {
   content: string;
   className?: string;
@@ -75,7 +77,7 @@ export function MarkdownContent({ content, className = "" }: MarkdownContentProp
         flushList();
         const headerText = trimmed.substring(3).trim();
         elements.push(
-          <h4 key={`h2-${keyCounter++}`} className="text-xl font-semibold mb-5 mt-5 text-secondary">
+          <h4 key={`h2-${keyCounter++}`} className="text-xl font-semibold mb-5 mt-5 text-foreground">
             {parseBoldText(headerText)}
           </h4>
         );
@@ -96,7 +98,7 @@ export function MarkdownContent({ content, className = "" }: MarkdownContentProp
         flushList();
         const boldText = trimmed.replace(/\*\*/g, '').trim();
         elements.push(
-          <h4 key={`bold-heading-${keyCounter++}`} className="text-lg font-semibold mb-5 mt-5 text-secondary">
+          <h4 key={`bold-heading-${keyCounter++}`} className="text-lg font-semibold mb-5 mt-5 text-foreground">
             {boldText}
           </h4>
         );
@@ -199,7 +201,7 @@ export function MarkdownContent({ content, className = "" }: MarkdownContentProp
 
   return (
     <div className={className}>
-      {parseMarkdown(content)}
+      {parseMarkdown(stripPreviewBullets(content))}
     </div>
   );
 }

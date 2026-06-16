@@ -1,3 +1,4 @@
 - [Landing prominent-assessment selection](landing-hero-selection.md) — the landing page picks the "main" assessment via TWO independent mechanisms; swapping it requires changing both.
 - [Admin model update payload](admin-model-update-payload.md) — model edits send a full allow-list payload, not a partial patch; a new models column must be added to both Admin.tsx mutate sites or it silently reverts.
 - [Dev vs prod data sync](dev-prod-data-sync.md) — publishing syncs DB *schema* only, never *data*; model/archetype config done in dev must be re-created in prod (via admin UI or .model import).
+- [AI summary markdown rendering](markdown-ai-summary-rendering.md) — never use `text-secondary` (a bg token) for headings; AI roadmap prompt + MarkdownContent.stripPreviewBullets are coupled to avoid duplicate headers in cached output.
