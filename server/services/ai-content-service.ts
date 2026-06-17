@@ -438,6 +438,8 @@ export async function generateAssessmentInsights(params: {
     const maxScaleScore = maturityScale.length > 0 ? Math.max(...maturityScale.map(s => s.maxScore || 100)) : 100;
     const maxScore = maxScaleScore;
 
+    const isTypeModel = model?.assessmentMode === 'type';
+
     return {
       id: a.id,
       modelId: a.modelId,
@@ -450,6 +452,12 @@ export async function generateAssessmentInsights(params: {
       userContext,
       isProxy: a.isProxy || false,
       tags: assessmentTagsMap.get(a.id) || [],
+      // Archetype ("type") models have no numeric score; pass the winning
+      // archetype label and the raw per-type vote tally so the insights engine
+      // can analyze the population distribution instead of averaging zeros.
+      assessmentMode: model?.assessmentMode || 'scored',
+      archetypeLabel: isTypeModel ? (result?.label || null) : null,
+      typeTally: isTypeModel ? ((result?.dimensionScores || {}) as Record<string, number>) : {},
     };
   });
 

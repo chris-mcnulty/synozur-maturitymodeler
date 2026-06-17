@@ -6,6 +6,7 @@ import { db } from '../db';
 import * as schema from '@shared/schema';
 import { aiGeneratedContent, knowledgeDocuments } from '@shared/schema';
 import { DocumentExtractionService } from './document-extraction';
+import { aggregateTypeInsights } from './scoring';
 import { providerRegistry } from './ai-providers/registry';
 import type { AICallOptions } from './ai-providers/types';
 
@@ -1203,6 +1204,9 @@ Return as JSON with structure:
     };
     isProxy?: boolean;
     tags?: string[];
+    assessmentMode?: string;
+    archetypeLabel?: string | null;
+    typeTally?: Record<string, number>;
   }[]): Promise<{
     summary: string;
     keyFindings: string[];
@@ -1221,6 +1225,20 @@ Return as JSON with structure:
           strengthAreas: [],
           improvementAreas: []
         };
+      }
+
+      // Type / propensity (archetype) models carry no numeric score. When the
+      // ENTIRE batch is archetype-based, analyze the archetype distribution,
+      // demographics, and overlap instead of averaging everyone's score to 0.
+      const typeAssessments = assessments.filter(a => a.assessmentMode === 'type');
+      if (typeAssessments.length === assessments.length) {
+        return await this.generateTypeAssessmentInsights(assessments);
+      }
+      // Mixed batch (scored + type): exclude the archetype assessments from the
+      // score-based aggregation below so their (intentionally 0) scores don't
+      // skew the averages and distributions.
+      if (typeAssessments.length > 0) {
+        assessments = assessments.filter(a => a.assessmentMode !== 'type');
       }
 
       // Aggregate statistics - use actual scores on 500 scale, not percentages
@@ -1432,6 +1450,188 @@ ABSOLUTE RULES FOR YOUR RESPONSE:
       };
     } catch (error) {
       console.error('Error generating assessment insights:', error);
+      throw new Error('Failed to generate assessment insights: ' + (error instanceof Error ? error.message : 'Unknown error'));
+    }
+  }
+
+  // Population insights for type / propensity (archetype) assessments. These
+  // have no numeric score, so we analyze the archetype distribution across the
+  // population, demographic patterns, and the overlap/commonality between
+  // archetypes (strongest secondary tendencies), grounded in the archetype
+  // definitions and the model's knowledge base.
+  private async generateTypeAssessmentInsights(assessments: {
+    id: string;
+    modelName: string;
+    modelId?: string;
+    completedAt: Date | null;
+    userContext?: { industry?: string; companySize?: string; jobTitle?: string; country?: string };
+    isProxy?: boolean;
+    tags?: string[];
+    archetypeLabel?: string | null;
+    typeTally?: Record<string, number>;
+  }[]): Promise<{
+    summary: string;
+    keyFindings: string[];
+    trends: string[];
+    recommendations: string[];
+    strengthAreas: string[];
+    improvementAreas: string[];
+  }> {
+    try {
+      const total = assessments.length;
+      const modelName = assessments[0]?.modelName || 'Assessment';
+
+      // Resolve archetype definitions + grounding doc when all from one model.
+      const uniqueModelIds = Array.from(
+        new Set(assessments.map(a => a.modelId).filter(Boolean))
+      ) as string[];
+      const isSingleModel = uniqueModelIds.length === 1;
+
+      let modelTypes: Array<{
+        key: string;
+        name: string;
+        tagline?: string | null;
+        description?: string | null;
+        superpowers?: string[] | null;
+        proTip?: string | null;
+      }> = [];
+      let modelClass = 'individual';
+      let knowledgeContext = '';
+
+      if (isSingleModel) {
+        try {
+          modelTypes = await db.select()
+            .from(schema.modelTypes)
+            .where(eq(schema.modelTypes.modelId, uniqueModelIds[0]));
+          const models = await db.select()
+            .from(schema.models)
+            .where(eq(schema.models.id, uniqueModelIds[0]))
+            .limit(1);
+          modelClass = models[0]?.modelClass || 'individual';
+          knowledgeContext = await this.getKnowledgeContext(uniqueModelIds[0]);
+        } catch (error) {
+          console.error('Error loading archetype context for insights:', error);
+        }
+      }
+
+      // Pure population aggregation (unit-tested in scoring.test.ts).
+      const agg = aggregateTypeInsights(
+        assessments.map(a => ({
+          archetypeLabel: a.archetypeLabel,
+          typeTally: a.typeTally,
+          userContext: a.userContext,
+        })),
+        modelTypes.map(t => ({ key: t.key, name: t.name })),
+      );
+      const {
+        archetypeCounts,
+        propensityByName,
+        totalVotes,
+        byIndustry,
+        bySize,
+        byRole,
+      } = agg;
+
+      // Formatting helpers.
+      const pct = (n: number, d: number) => (d > 0 ? Math.round((n / d) * 100) : 0);
+      const fmtCounts = (obj: Record<string, number>, denom: number) =>
+        Object.entries(obj).sort((a, b) => b[1] - a[1])
+          .map(([k, v]) => `- ${k}: ${v} (${pct(v, denom)}%)`).join('\n') || '- (none)';
+      const fmtCrossTab = (obj: Record<string, Record<string, number>>) => {
+        const segs = Object.entries(obj);
+        if (segs.length === 0) return '';
+        return segs
+          .sort((a, b) =>
+            Object.values(b[1]).reduce((s, n) => s + n, 0) -
+            Object.values(a[1]).reduce((s, n) => s + n, 0))
+          .slice(0, 8)
+          .map(([seg, dist]) => {
+            const segTotal = Object.values(dist).reduce((s, n) => s + n, 0);
+            const top = Object.entries(dist).sort((a, b) => b[1] - a[1]).slice(0, 3)
+              .map(([k, v]) => `${k} ${pct(v, segTotal)}%`).join(', ');
+            return `- ${seg} (n=${segTotal}): ${top}`;
+          }).join('\n');
+      };
+
+      const archetypeDefs = modelTypes.length > 0
+        ? modelTypes.map(t => {
+            const bits = [`• ${t.name}${t.tagline ? ` — ${t.tagline}` : ''}`];
+            if (t.description) bits.push(`  ${t.description}`);
+            if (t.superpowers && t.superpowers.length) {
+              bits.push(`  Hallmark strengths: ${t.superpowers.join(', ')}`);
+            }
+            return bits.join('\n');
+          }).join('\n')
+        : '(No archetype definitions available)';
+
+      const isIndividual = modelClass !== 'organizational';
+      const subjectPlural = isIndividual ? 'respondents' : 'organizations';
+
+      const dated = assessments.filter(a => a.completedAt);
+      const dateRange = dated.length > 0
+        ? `${new Date(Math.min(...dated.map(a => a.completedAt!.getTime()))).toLocaleDateString()} to ${new Date(Math.max(...dated.map(a => a.completedAt!.getTime()))).toLocaleDateString()}`
+        : 'N/A';
+
+      const overlapLines = agg.overlapPairs.slice(0, 8)
+        .map(({ pair, count }) => `- ${pair}: ${count}`).join('\n') || '- (insufficient data)';
+
+      const prompt = `You are a transformation expert from The Synozur Alliance LLC analyzing the results of "${modelName}", an ARCHETYPE / TYPE assessment (not a scored maturity model). Each respondent is sorted into a dominant archetype based on how their answers vote across the defined types.
+
+${knowledgeContext ? `KNOWLEDGE BASE / GROUNDING (use this to interpret archetype meaning, traits, and overlaps):\n${knowledgeContext}\n\n` : ''}ARCHETYPE DEFINITIONS:
+${archetypeDefs}
+
+CRITICAL INSTRUCTIONS:
+- This is NOT a maturity or scored assessment. There are NO numeric scores, no "out of X", and no ranking of archetypes as better or worse. Every archetype is equally valid.
+- Analyze the POPULATION DISTRIBUTION across archetypes, DEMOGRAPHIC patterns in who lands in which archetype, and the OVERLAP / COMMONALITY between archetypes (which archetypes frequently co-occur as people's strongest secondary tendencies).
+- Ground your interpretation of each archetype's meaning, strengths, and blind spots in the archetype definitions and knowledge base above.
+- Do NOT comment on data quality, missing demographics, completion rates, or survey methodology.
+
+POPULATION: ${total} ${subjectPlural} | Date range: ${dateRange}
+
+ARCHETYPE DISTRIBUTION (dominant archetype per respondent):
+${fmtCounts(archetypeCounts, total)}
+
+OVERALL PROPENSITY (share of all answer-votes across the population):
+${fmtCounts(propensityByName, totalVotes)}
+
+ARCHETYPE OVERLAP (most common "primary → strongest secondary" pairings):
+${overlapLines}
+
+${fmtCrossTab(byIndustry) ? `ARCHETYPE BY INDUSTRY:\n${fmtCrossTab(byIndustry)}\n\n` : ''}${fmtCrossTab(bySize) ? `ARCHETYPE BY COMPANY SIZE:\n${fmtCrossTab(bySize)}\n\n` : ''}${fmtCrossTab(byRole) ? `ARCHETYPE BY ROLE:\n${fmtCrossTab(byRole)}\n\n` : ''}Provide a comprehensive analysis in JSON format:
+{
+  "summary": "2-3 paragraph executive summary of what the archetype distribution reveals about this population — the dominant identities, how concentrated or varied the population is, and what the patterns mean. Reference archetype meanings from the knowledge base.",
+  "keyFindings": ["4-6 findings about the archetype distribution, demographic patterns, and notable concentrations or gaps"],
+  "trends": ["3-5 patterns across segments or over time — e.g., which roles or industries skew toward which archetypes"],
+  "recommendations": ["3-5 actionable recommendations for engaging or developing this population given its archetype mix"],
+  "strengthAreas": ["The 3-4 most prevalent or defining archetypes in this population, by name"],
+  "improvementAreas": ["3-4 underrepresented archetypes OR common growth edges/blind spots for the dominant archetypes, by name"]
+}
+
+ABSOLUTE RULES FOR YOUR RESPONSE:
+- Refer to archetypes by their names. Never invent archetypes not listed above.
+- Never imply one archetype is better than another and never assign numeric scores.
+- "strengthAreas" = most prevalent/defining archetypes; "improvementAreas" = underrepresented archetypes or growth edges — NOT data-collection advice.
+- ${isIndividual ? 'Use individual-centric language (respondents, people, professionals).' : 'Reference organizations appropriately.'}`;
+
+      const response = await this.callProvider(prompt, false);
+
+      const jsonMatch = response.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) {
+        throw new Error('Failed to parse AI response as JSON');
+      }
+
+      const parsed = JSON.parse(jsonMatch[0]);
+
+      return {
+        summary: parsed.summary || "Analysis complete.",
+        keyFindings: parsed.keyFindings || [],
+        trends: parsed.trends || [],
+        recommendations: parsed.recommendations || [],
+        strengthAreas: parsed.strengthAreas || [],
+        improvementAreas: parsed.improvementAreas || []
+      };
+    } catch (error) {
+      console.error('Error generating archetype assessment insights:', error);
       throw new Error('Failed to generate assessment insights: ' + (error instanceof Error ? error.message : 'Unknown error'));
     }
   }

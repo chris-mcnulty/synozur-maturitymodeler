@@ -279,3 +279,112 @@ export function calculateTypeResult(input: TypeScoringInput): TypeScoringOutput 
 
   return { tally, topCount, winnerKeys, isTie, label };
 }
+
+// ========== TYPE / PROPENSITY POPULATION AGGREGATION ==========
+
+export interface TypeInsightAssessment {
+  // Winning archetype name(s) for this respondent (result.label). May be a
+  // tie joined by " / ". Falsy ⇒ counted as "Undetermined".
+  archetypeLabel?: string | null;
+  // Per-type vote tally for this respondent, keyed by type key (result.dimensionScores).
+  typeTally?: Record<string, number>;
+  userContext?: { industry?: string; companySize?: string; jobTitle?: string; country?: string };
+}
+
+export interface TypeInsightAggregate {
+  total: number;
+  // Count of respondents whose dominant archetype is each name.
+  archetypeCounts: Record<string, number>;
+  // Aggregate answer-votes per archetype name across the whole population.
+  propensityByName: Record<string, number>;
+  totalVotes: number;
+  // "Primary → strongest secondary" co-occurrence counts, sorted desc.
+  overlapPairs: Array<{ pair: string; count: number }>;
+  // Archetype mix within each demographic segment: segment ⇒ name ⇒ count.
+  byIndustry: Record<string, Record<string, number>>;
+  bySize: Record<string, Record<string, number>>;
+  byRole: Record<string, Record<string, number>>;
+}
+
+/**
+ * Aggregate a population of type/propensity (archetype) results into the
+ * distributions used by the AI insights engine: dominant-archetype counts,
+ * overall propensity (vote share), archetype overlap (strongest secondary per
+ * respondent), and demographic cross-tabs.
+ *
+ * Pure: no DB, no I/O — so the population analytics can be unit-tested without
+ * an AI provider. `types` maps type keys to display names.
+ */
+export function aggregateTypeInsights(
+  assessments: TypeInsightAssessment[],
+  types: TypeScoringType[],
+): TypeInsightAggregate {
+  const nameByKey: Record<string, string> = {};
+  for (const t of types) nameByKey[t.key] = t.name;
+
+  const resolveName = (label?: string | null, fallbackKey?: string): string => {
+    if (label && label.trim()) return label;
+    if (fallbackKey) return nameByKey[fallbackKey] ?? fallbackKey;
+    return 'Undetermined';
+  };
+
+  const archetypeCounts: Record<string, number> = {};
+  const voteByKey: Record<string, number> = {};
+  const secondary: Record<string, number> = {};
+
+  const crossTab = (
+    getter: (a: TypeInsightAssessment) => string | undefined,
+  ): Record<string, Record<string, number>> => {
+    const out: Record<string, Record<string, number>> = {};
+    for (const a of assessments) {
+      const seg = getter(a);
+      if (!seg || !seg.trim()) continue;
+      const name = resolveName(a.archetypeLabel);
+      (out[seg] ??= {})[name] = (out[seg][name] || 0) + 1;
+    }
+    return out;
+  };
+
+  for (const a of assessments) {
+    archetypeCounts[resolveName(a.archetypeLabel)] =
+      (archetypeCounts[resolveName(a.archetypeLabel)] || 0) + 1;
+
+    for (const [k, v] of Object.entries(a.typeTally || {})) {
+      voteByKey[k] = (voteByKey[k] || 0) + (Number(v) || 0);
+    }
+
+    // Overlap requires a CLEAR primary and a non-zero secondary. When the top
+    // two tallies are tied (co-dominant / blended archetype), there is no
+    // directional "primary → secondary", so skip it.
+    const entries = Object.entries(a.typeTally || {}).sort((x, y) => y[1] - x[1]);
+    if (entries.length >= 2 && entries[1][1] > 0 && entries[0][1] > entries[1][1]) {
+      const primary = resolveName(a.archetypeLabel, entries[0][0]);
+      const sec = resolveName(null, entries[1][0]);
+      if (primary !== sec) {
+        const pair = `${primary} → ${sec}`;
+        secondary[pair] = (secondary[pair] || 0) + 1;
+      }
+    }
+  }
+
+  const propensityByName: Record<string, number> = {};
+  for (const [k, v] of Object.entries(voteByKey)) {
+    const name = nameByKey[k] || k;
+    propensityByName[name] = (propensityByName[name] || 0) + v;
+  }
+
+  const overlapPairs = Object.entries(secondary)
+    .map(([pair, count]) => ({ pair, count }))
+    .sort((a, b) => b.count - a.count);
+
+  return {
+    total: assessments.length,
+    archetypeCounts,
+    propensityByName,
+    totalVotes: Object.values(voteByKey).reduce((s, v) => s + v, 0),
+    overlapPairs,
+    byIndustry: crossTab(a => a.userContext?.industry),
+    bySize: crossTab(a => a.userContext?.companySize),
+    byRole: crossTab(a => a.userContext?.jobTitle),
+  };
+}

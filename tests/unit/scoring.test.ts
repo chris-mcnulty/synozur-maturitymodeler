@@ -2,9 +2,11 @@ import { describe, it, expect } from 'vitest';
 import {
   calculateAssessmentScore,
   calculateTypeResult,
+  aggregateTypeInsights,
   scoreResponse,
   type ScoringQuestion,
   type ScoringMaturityLevel,
+  type TypeInsightAssessment,
 } from '../../server/services/scoring';
 
 const FIVE_HUNDRED_SCALE: ScoringMaturityLevel[] = [
@@ -674,5 +676,89 @@ describe('calculateTypeResult', () => {
     expect(result.topCount).toBe(0);
     expect(result.winnerKeys).toEqual([]);
     expect(result.label).toBe('');
+  });
+});
+
+describe('aggregateTypeInsights', () => {
+  const TYPES = [
+    { key: 'visionary', name: 'The Visionary' },
+    { key: 'builder', name: 'The Builder' },
+    { key: 'connector', name: 'The Connector' },
+  ];
+
+  it('counts dominant-archetype distribution by name', () => {
+    const assessments: TypeInsightAssessment[] = [
+      { archetypeLabel: 'The Visionary', typeTally: { visionary: 3, builder: 1 } },
+      { archetypeLabel: 'The Visionary', typeTally: { visionary: 2, connector: 1 } },
+      { archetypeLabel: 'The Builder', typeTally: { builder: 4 } },
+    ];
+    const agg = aggregateTypeInsights(assessments, TYPES);
+    expect(agg.total).toBe(3);
+    expect(agg.archetypeCounts).toEqual({ 'The Visionary': 2, 'The Builder': 1 });
+  });
+
+  it('aggregates overall propensity (vote share) by archetype name', () => {
+    const assessments: TypeInsightAssessment[] = [
+      { archetypeLabel: 'The Visionary', typeTally: { visionary: 3, builder: 1 } },
+      { archetypeLabel: 'The Builder', typeTally: { builder: 2, visionary: 1 } },
+    ];
+    const agg = aggregateTypeInsights(assessments, TYPES);
+    expect(agg.propensityByName).toEqual({ 'The Visionary': 4, 'The Builder': 3 });
+    expect(agg.totalVotes).toBe(7);
+  });
+
+  it('computes overlap from each respondent strongest secondary archetype', () => {
+    const assessments: TypeInsightAssessment[] = [
+      { archetypeLabel: 'The Visionary', typeTally: { visionary: 5, builder: 3, connector: 1 } },
+      { archetypeLabel: 'The Visionary', typeTally: { visionary: 4, builder: 2 } },
+      { archetypeLabel: 'The Builder', typeTally: { builder: 6, connector: 2 } },
+    ];
+    const agg = aggregateTypeInsights(assessments, TYPES);
+    expect(agg.overlapPairs[0]).toEqual({ pair: 'The Visionary → The Builder', count: 2 });
+    expect(agg.overlapPairs).toContainEqual({ pair: 'The Builder → The Connector', count: 1 });
+  });
+
+  it('skips overlap when the top two tallies are tied (blended archetype)', () => {
+    const assessments: TypeInsightAssessment[] = [
+      { archetypeLabel: 'The Visionary / The Builder', typeTally: { visionary: 3, builder: 3, connector: 1 } },
+    ];
+    const agg = aggregateTypeInsights(assessments, TYPES);
+    expect(agg.overlapPairs).toEqual([]);
+  });
+
+  it('ignores secondary when there is no second non-zero vote', () => {
+    const assessments: TypeInsightAssessment[] = [
+      { archetypeLabel: 'The Builder', typeTally: { builder: 4, visionary: 0 } },
+      { archetypeLabel: 'The Builder', typeTally: { builder: 3 } },
+    ];
+    const agg = aggregateTypeInsights(assessments, TYPES);
+    expect(agg.overlapPairs).toEqual([]);
+  });
+
+  it('builds demographic cross-tabs and skips blank segments', () => {
+    const assessments: TypeInsightAssessment[] = [
+      { archetypeLabel: 'The Visionary', typeTally: { visionary: 3 }, userContext: { industry: 'Tech' } },
+      { archetypeLabel: 'The Builder', typeTally: { builder: 3 }, userContext: { industry: 'Tech' } },
+      { archetypeLabel: 'The Visionary', typeTally: { visionary: 2 }, userContext: { industry: '' } },
+    ];
+    const agg = aggregateTypeInsights(assessments, TYPES);
+    expect(agg.byIndustry).toEqual({ Tech: { 'The Visionary': 1, 'The Builder': 1 } });
+  });
+
+  it('falls back to Undetermined when a respondent has no archetype label', () => {
+    const assessments: TypeInsightAssessment[] = [
+      { archetypeLabel: null, typeTally: {} },
+      { archetypeLabel: '   ', typeTally: {} },
+    ];
+    const agg = aggregateTypeInsights(assessments, TYPES);
+    expect(agg.archetypeCounts).toEqual({ Undetermined: 2 });
+  });
+
+  it('resolves type keys to names, falling back to the key when undefined', () => {
+    const assessments: TypeInsightAssessment[] = [
+      { archetypeLabel: 'The Visionary', typeTally: { visionary: 3, mystery: 2 } },
+    ];
+    const agg = aggregateTypeInsights(assessments, TYPES);
+    expect(agg.overlapPairs).toContainEqual({ pair: 'The Visionary → mystery', count: 1 });
   });
 });
