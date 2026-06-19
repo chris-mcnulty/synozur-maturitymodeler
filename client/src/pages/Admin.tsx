@@ -12,9 +12,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuCheckboxItem } from "@/components/ui/dropdown-menu";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation, keepPreviousData } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Download, Plus, Edit, Trash, FileSpreadsheet, Eye, EyeOff, BarChart3, Settings, FileDown, FileUp, ListOrdered, Users, Star, Upload, X, Sparkles, CheckCircle2, XCircle, Database, FileText, Brain, BookOpen, ClipboardList, Home, Building2, ChevronDown, Shield, Tag, Activity, Copy, Archive, ArchiveRestore, KeyRound, Clock, ExternalLink, Building, Ticket, Palette, GraduationCap, Bell, BellOff, Mail } from "lucide-react";
+import { Download, Plus, Edit, Trash, FileSpreadsheet, Eye, EyeOff, BarChart3, Settings, FileDown, FileUp, ListOrdered, Users, Star, Upload, X, Sparkles, CheckCircle2, XCircle, Database, FileText, Brain, BookOpen, ClipboardList, Home, Building2, ChevronDown, Shield, Tag, Activity, Copy, Archive, ArchiveRestore, KeyRound, Clock, ExternalLink, Building, Ticket, Palette, GraduationCap, Bell, BellOff, Mail, RefreshCw } from "lucide-react";
 import type { Model, Result, Assessment, Dimension, Question, Answer, User, AssessmentTag } from "@shared/schema";
 import { USER_ROLES, type UserRole } from "@shared/constants";
 import { useAuth } from "@/hooks/use-auth";
@@ -530,6 +530,19 @@ export default function Admin() {
     window.addEventListener('hashchange', onHashChange);
     return () => window.removeEventListener('hashchange', onHashChange);
   }, []);
+
+  // Keep the URL hash in sync with the active section so a page refresh stays
+  // in context (e.g. the Results screen) instead of resetting to Models.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (window.location.hash.slice(1) !== activeSection) {
+      window.history.replaceState(
+        null,
+        '',
+        `${window.location.pathname}${window.location.search}#${activeSection}`,
+      );
+    }
+  }, [activeSection]);
   const [editingModel, setEditingModel] = useState<Model | null>(null);
   const [isModelDialogOpen, setIsModelDialogOpen] = useState(false);
   const [isSettingsDialogOpen, setIsSettingsDialogOpen] = useState(false);
@@ -822,9 +835,35 @@ export default function Admin() {
   const [resultsStartDateInput, setResultsStartDateInput] = useState('');
   const [resultsEndDateInput, setResultsEndDateInput] = useState('');
   const [resultsStatus, setResultsStatus] = useState<string>('completed'); // Default to completed only
-  const [resultsModelFilter, setResultsModelFilter] = useState<string>('all'); // Model filter
+  const [resultsModelFilter, setResultsModelFilter] = useState<string>(() => {
+    // Initialize the model filter from the URL so a refresh during a live
+    // session keeps watching the same model's results.
+    if (typeof window !== 'undefined') {
+      const fromUrl = new URLSearchParams(window.location.search).get('resultsModel');
+      if (fromUrl) return fromUrl;
+    }
+    return 'all';
+  }); // Model filter
   const [resultsProxyFilter, setResultsProxyFilter] = useState<string>('all'); // Proxy filter
   const [resultsTagFilter, setResultsTagFilter] = useState<string>('all'); // Tag filter
+  const [resultsAutoRefresh, setResultsAutoRefresh] = useState(false); // Live auto-refresh toggle
+
+  // Persist the selected results model in the URL (preserving the section hash).
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    if (resultsModelFilter && resultsModelFilter !== 'all') {
+      params.set('resultsModel', resultsModelFilter);
+    } else {
+      params.delete('resultsModel');
+    }
+    const search = params.toString();
+    window.history.replaceState(
+      null,
+      '',
+      `${window.location.pathname}${search ? `?${search}` : ''}${window.location.hash}`,
+    );
+  }, [resultsModelFilter]);
   const [reviewAssessmentId, setReviewAssessmentId] = useState<string | null>(null);
   
   // Fetch all tags for filtering
@@ -875,8 +914,10 @@ export default function Admin() {
   }, [resultsEndDateInput]);
 
   // Fetch all results with optimized single-query endpoint
-  const { data: results = [], isLoading: resultsLoading } = useQuery<AdminResult[]>({
+  const { data: results = [], isLoading: resultsLoading, isFetching: resultsFetching, refetch: refetchResults } = useQuery<AdminResult[]>({
     queryKey: ['/api/admin/results', resultsStartDate, resultsEndDate, resultsStatus, resultsModelFilter, resultsProxyFilter, resultsTagFilter],
+    placeholderData: keepPreviousData,
+    refetchInterval: resultsAutoRefresh ? 10000 : false,
     queryFn: async () => {
       // Build query params
       const params = new URLSearchParams();
@@ -4044,7 +4085,24 @@ export default function Admin() {
               <Card className="p-6">
                 <div className="flex justify-between items-center mb-6">
                   <h2 className="text-xl font-bold">Assessment Results</h2>
-                  <div className="flex gap-2 flex-wrap">
+                  <div className="flex gap-2 flex-wrap items-center">
+                    <Button
+                      variant="outline"
+                      onClick={() => refetchResults()}
+                      disabled={resultsFetching}
+                      data-testid="button-refresh-results"
+                    >
+                      <RefreshCw className={`mr-2 h-4 w-4 ${resultsFetching ? 'animate-spin' : ''}`} />
+                      Refresh
+                    </Button>
+                    <Button
+                      variant={resultsAutoRefresh ? 'default' : 'outline'}
+                      onClick={() => setResultsAutoRefresh((v) => !v)}
+                      data-testid="button-toggle-auto-refresh"
+                    >
+                      <Activity className={`mr-2 h-4 w-4 ${resultsAutoRefresh ? 'animate-pulse' : ''}`} />
+                      {resultsAutoRefresh ? 'Live: On' : 'Live: Off'}
+                    </Button>
                     <Button 
                       variant="default" 
                       onClick={generateInsights} 
