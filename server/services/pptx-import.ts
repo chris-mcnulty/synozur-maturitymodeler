@@ -20,6 +20,7 @@ import os from "os";
 import path from "path";
 import { randomUUID } from "crypto";
 import JSZip from "jszip";
+import { XMLParser, XMLBuilder } from "fast-xml-parser";
 import { ObjectStorageService } from "../objectStorage";
 import { genId, type Slide, type SlideBlock } from "@shared/slides";
 
@@ -73,6 +74,103 @@ export function extractText(xml: string): string {
 interface SlideTextInfo { title: string; text: string; notes: string; }
 
 /**
+ * Strip any relationship that points outside the package (TargetMode="External")
+ * from every `.rels` part in the OOXML container, and neutralize any raw
+ * `http(s)://` targets that show up unmodified in other XML parts.
+ *
+ * PPTX files can reference remote resources (linked images, OLE objects,
+ * hyperlinks, etc.) via `<Relationship ... TargetMode="External" Target="http://...">`.
+ * When LibreOffice renders such a file it will resolve those references,
+ * causing the server to make outbound HTTP(S) requests to attacker-chosen
+ * hosts (SSRF against internal services / cloud metadata endpoints). Since
+ * this import only needs the visual/text content of the deck, we remove all
+ * external relationships before the file ever reaches LibreOffice.
+ */
+const RELS_ATTR_PREFIX = "@_";
+
+const relsXmlParser = new XMLParser({
+  ignoreAttributes: false,
+  attributeNamePrefix: RELS_ATTR_PREFIX,
+  parseAttributeValue: false,
+  parseTagValue: false,
+  trimValues: false,
+});
+
+const relsXmlBuilder = new XMLBuilder({
+  ignoreAttributes: false,
+  attributeNamePrefix: RELS_ATTR_PREFIX,
+  suppressBooleanAttributes: false,
+  format: false,
+});
+
+/** Case/whitespace-insensitive lookup of an attribute value on a parsed XML node. */
+function getAttr(node: Record<string, any>, attrName: string): string | undefined {
+  const target = (RELS_ATTR_PREFIX + attrName).toLowerCase();
+  for (const key of Object.keys(node)) {
+    if (key.toLowerCase() === target) {
+      const value = node[key];
+      return typeof value === "string" ? value : String(value);
+    }
+  }
+  return undefined;
+}
+
+async function sanitizePptxZip(zip: JSZip): Promise<void> {
+  const relsPaths = Object.keys(zip.files).filter((p) => p.endsWith(".rels"));
+  for (const relsPath of relsPaths) {
+    const file = zip.file(relsPath);
+    if (!file) continue;
+    const xml = await file.async("string");
+    let parsed: any;
+    try {
+      parsed = relsXmlParser.parse(xml);
+    } catch {
+      // If the relationships part isn't well-formed XML, refuse to trust it
+      // rather than silently pass a potentially malicious/ambiguous part
+      // through to LibreOffice.
+      zip.file(relsPath, "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><Relationships xmlns=\"http://schemas.openxmlformats.org/package/2006/relationships\"/>");
+      continue;
+    }
+
+    const root = parsed?.Relationships;
+    if (!root || typeof root !== "object") continue;
+
+    const rawRelationships = root.Relationship;
+    if (rawRelationships === undefined) continue;
+    const list = Array.isArray(rawRelationships) ? rawRelationships : [rawRelationships];
+
+    // Drop any relationship pointing outside the package, however it is
+    // expressed (quote style, attribute order, self-closing vs. not, or
+    // case variations all normalize away once parsed as real XML).
+    const filtered = list.filter((rel) => {
+      if (typeof rel !== "object" || rel === null) return true;
+      const targetMode = (getAttr(rel, "TargetMode") || "").trim().toLowerCase();
+      if (targetMode === "external") return false;
+      const target = getAttr(rel, "Target") || "";
+      // Belt-and-braces: also drop anything with an absolute http(s)/ftp
+      // target even if TargetMode wasn't explicitly declared as External.
+      if (/^\s*(https?|ftp):\/\//i.test(target)) return false;
+      return true;
+    });
+
+    if (filtered.length === list.length) continue; // nothing changed
+
+    if (filtered.length === 0) {
+      delete root.Relationship;
+    } else {
+      root.Relationship = filtered;
+    }
+    // Drop any parsed XML declaration node so we don't emit it twice — we
+    // always prepend a fresh, well-formed declaration below.
+    delete parsed["?xml"];
+    const rebuilt =
+      '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+      relsXmlBuilder.build(parsed);
+    zip.file(relsPath, rebuilt);
+  }
+}
+
+/**
  * Read per-slide text + speaker notes from the .pptx, ordered by slide number.
  * Notes are resolved via each slide's relationship part for correctness.
  */
@@ -118,7 +216,20 @@ async function renderSlideImages(buffer: Buffer): Promise<Buffer[]> {
     await fs.writeFile(inputPath, buffer);
 
     // Isolate the LibreOffice user profile to this run to avoid lock contention.
-    const env = { ...process.env, HOME: work };
+    // Defense-in-depth: even though external relationships are stripped from the
+    // OOXML before we get here, force all HTTP(S) traffic through a bogus proxy
+    // so LibreOffice cannot reach the network (internal services, cloud metadata
+    // endpoints, etc.) if some other reference sneaks through.
+    const env = {
+      ...process.env,
+      HOME: work,
+      http_proxy: "http://127.0.0.1:1",
+      https_proxy: "http://127.0.0.1:1",
+      HTTP_PROXY: "http://127.0.0.1:1",
+      HTTPS_PROXY: "http://127.0.0.1:1",
+      no_proxy: "",
+      NO_PROXY: "",
+    };
     await run(
       SOFFICE_BIN,
       [
@@ -170,9 +281,11 @@ export async function importPptx(opts: {
   ownerUserId?: string;
 }): Promise<{ slides: Slide[] }> {
   const zip = await JSZip.loadAsync(opts.buffer);
+  await sanitizePptxZip(zip);
+  const sanitizedBuffer = await zip.generateAsync({ type: "nodebuffer" });
   const [texts, images] = await Promise.all([
     extractSlideTexts(zip).catch(() => [] as SlideTextInfo[]),
-    renderSlideImages(opts.buffer),
+    renderSlideImages(sanitizedBuffer),
   ]);
 
   const storage = new ObjectStorageService();
