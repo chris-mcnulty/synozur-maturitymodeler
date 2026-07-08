@@ -296,7 +296,8 @@ export function registerAdminRoutes(app: Express) {
       // Get country from IP using geoip-lite
       let country: string | null = null;
       try {
-        const geoip = await import('geoip-lite');
+        const geoipModule = await import('geoip-lite');
+        const geoip = (geoipModule as any).default ?? geoipModule;
         const geo = geoip.lookup(ip);
         country = geo?.country || null;
       } catch (e) {

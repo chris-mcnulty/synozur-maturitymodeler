@@ -74,7 +74,7 @@
     "connect-pg-simple": "^10.0.0",
     "date-fns": "^3.6.0",
     "dompurify": "^3.4.2",
-    "drizzle-orm": "^0.39.1",
+    "drizzle-orm": "^0.45.2",
     "drizzle-zod": "^0.7.0",
     "embla-carousel-react": "^8.6.0",
     "express": "^4.21.2",
@@ -82,12 +82,12 @@
     "fast-xml-parser": "^5.7.2",
     "fetch-cookie": "^3.1.0",
     "framer-motion": "^11.13.1",
-    "geoip-lite": "^1.4.10",
+    "geoip-lite": "^2.0.3",
     "i18next": "^26.0.8",
     "i18next-browser-languagedetector": "^8.2.1",
     "input-otp": "^1.4.2",
     "jsonwebtoken": "^9.0.2",
-    "jspdf": "^3.0.3",
+    "jspdf": "^4.2.1",
     "jszip": "^3.10.1",
     "lucide-react": "^0.453.0",
     "mammoth": "^1.11.0",
@@ -149,8 +149,8 @@
     "tailwindcss": "^3.4.17",
     "tsx": "^4.21.0",
     "typescript": "5.6.3",
-    "vite": "^5.4.20",
-    "vitest": "^2.1.9"
+    "vite": "^6.4.3",
+    "vitest": "^4.1.10"
   },
   "optionalDependencies": {
     "bufferutil": "^4.0.8"
