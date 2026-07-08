@@ -20,8 +20,26 @@ export default function CompleteProfile() {
   const { user, isLoading } = useAuth();
   const { toast } = useToast();
   
+  // Only allow same-origin relative paths as a post-profile-completion
+  // destination. This guards against the returnTo query param being used
+  // as an open redirect (e.g. someone linking directly to
+  // /complete-profile?returnTo=https://attacker.example).
+  const sanitizeReturnPath = (input: string | null): string => {
+    if (!input) return '/';
+    let decoded = input;
+    try {
+      decoded = decodeURIComponent(input);
+    } catch {
+      return '/';
+    }
+    if (!decoded.startsWith('/')) return '/';
+    if (decoded.startsWith('//') || decoded.startsWith('/\\')) return '/';
+    if (decoded.includes('://')) return '/';
+    return decoded;
+  };
+
   const queryParams = new URLSearchParams(window.location.search);
-  const returnTo = queryParams.get('returnTo') || '/';
+  const returnTo = sanitizeReturnPath(queryParams.get('returnTo'));
 
   const [profileForm, setProfileForm] = useState({
     company: "",
@@ -68,7 +86,7 @@ export default function CompleteProfile() {
         title: "Profile completed",
         description: "Thank you for completing your profile!",
       });
-      window.location.href = decodeURIComponent(returnTo);
+      window.location.href = returnTo;
     },
     onError: (error: any) => {
       toast({

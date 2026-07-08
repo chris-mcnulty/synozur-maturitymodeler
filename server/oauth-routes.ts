@@ -113,6 +113,17 @@ router.get('/oauth/authorize', async (req, res) => {
       });
     }
     
+    // Validate redirect URI against the client's registered redirect URIs.
+    // This must happen before any code is issued or the user is redirected
+    // anywhere, otherwise an attacker can supply an arbitrary redirect_uri
+    // and capture authorization codes for an already-consented client.
+    if (!client.redirectUris?.includes(redirect_uri as string)) {
+      return res.status(400).json({
+        error: 'invalid_request',
+        error_description: 'Invalid redirect URI',
+      });
+    }
+    
     // Check if PKCE is required
     if (client.pkceRequired && !code_challenge) {
       return res.status(400).json({

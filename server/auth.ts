@@ -21,6 +21,18 @@ async function hashPassword(password: string) {
   return `${buf.toString("hex")}.${salt}`;
 }
 
+// Only allow same-origin relative paths as post-auth redirect targets.
+// Rejects absolute URLs, protocol-relative URLs (//host), and backslash
+// tricks that browsers may treat as protocol-relative, to prevent SSO/OAuth
+// login flows from being abused as open redirects.
+function sanitizeReturnPath(input: string | undefined | null): string {
+  if (!input || typeof input !== 'string') return '/';
+  if (!input.startsWith('/')) return '/';
+  if (input.startsWith('//') || input.startsWith('/\\')) return '/';
+  if (input.includes('://')) return '/';
+  return input;
+}
+
 async function comparePasswords(supplied: string, stored: string) {
   try {
     const [hashed, salt] = stored.split(".");
@@ -265,7 +277,7 @@ export function setupAuth(app: Express) {
       }
       
       const redirectUri = `${req.protocol}://${req.get('host')}/auth/sso/callback`;
-      const returnUrl = (req.query.returnUrl as string) || '/';
+      const returnUrl = sanitizeReturnPath(req.query.returnUrl as string | undefined);
       
       const { url } = await getAuthorizationUrl(redirectUri, returnUrl);
       res.redirect(url);
@@ -338,15 +350,17 @@ export function setupAuth(app: Express) {
         }
         
         // Check if user needs to complete their profile (new SSO users)
+        // Re-validate the stored redirect target here too, in case older
+        // records were persisted before this check existed.
+        const safeDestination = sanitizeReturnPath(redirectUrl);
         if (result.isNewUser || !isProfileComplete(result.user, result.tenant)) {
           // Redirect to profile completion with the original destination
-          const returnTo = encodeURIComponent(redirectUrl || '/');
+          const returnTo = encodeURIComponent(safeDestination);
           return res.redirect(`/complete-profile?returnTo=${returnTo}`);
         }
         
         // Redirect to the original page or home
-        const destination = redirectUrl || '/';
-        res.redirect(destination);
+        res.redirect(safeDestination);
       });
     } catch (error: any) {
       console.error('SSO callback error:', error);
