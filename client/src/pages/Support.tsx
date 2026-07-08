@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { usePageTitle } from "@/hooks/use-page-title";
 import { ArrowLeft, Plus, Send, Ticket, Clock, CheckCircle2 } from "lucide-react";
 import { TICKET_CATEGORY_LABELS, TICKET_PRIORITY_LABELS, TICKET_STATUS_LABELS } from "@shared/constants";
 import { TICKET_CATEGORIES, TICKET_PRIORITIES } from "@shared/schema";
@@ -39,6 +40,7 @@ function getPriorityColor(priority: string) {
 }
 
 export default function Support() {
+  usePageTitle("Support");
   const { user } = useAuth();
   const { toast } = useToast();
   const [location] = useLocation();

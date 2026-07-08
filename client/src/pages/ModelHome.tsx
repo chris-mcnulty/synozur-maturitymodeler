@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { usePageTitle } from "@/hooks/use-page-title";
 import { useRoute, useLocation } from "wouter";
 import { Helmet } from "react-helmet-async";
 import { Footer } from "@/components/Footer";
@@ -33,6 +34,8 @@ export default function ModelHome() {
       return failureCount < 3;
     },
   });
+
+  usePageTitle(model?.name ?? "Model Overview");
 
   // Check error type from response
   useEffect(() => {

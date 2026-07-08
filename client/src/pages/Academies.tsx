@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { usePageTitle } from "@/hooks/use-page-title";
 import { Link } from "wouter";
 import { Helmet } from "react-helmet-async";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,6 +13,7 @@ interface AcademyListItem extends Academy {
 }
 
 export default function Academies() {
+  usePageTitle("Learning Academies");
   const { data: academies, isLoading } = useQuery<AcademyListItem[]>({
     queryKey: ["/api/academies"],
   });

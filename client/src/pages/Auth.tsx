@@ -22,8 +22,10 @@ function MicrosoftIcon({ className }: { className?: string }) {
 import { JOB_ROLES, INDUSTRIES, COMPANY_SIZES, COUNTRIES } from "@/lib/constants";
 import { useQuery } from "@tanstack/react-query";
 import { useDomainBranding, useTenantBranding, useBrandingPreview } from "@/hooks/use-tenant-branding";
+import { usePageTitle } from "@/hooks/use-page-title";
 
 export default function Auth() {
+  usePageTitle("Sign In");
   const [, setLocation] = useLocation();
   const { user, loginMutation, registerMutation, isLoading, claimAssessmentAndRedirect } = useAuth();
   const { toast } = useToast();

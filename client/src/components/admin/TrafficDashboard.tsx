@@ -271,6 +271,8 @@ export function TrafficDashboard() {
           </CardHeader>
           <CardContent className="h-[300px]">
             {data?.timeSeries && data.timeSeries.length > 0 ? (
+              <div role="img" aria-label="Line chart: Daily visit counts over the selected period" className="h-full">
+                <span className="sr-only">Line chart showing daily visit counts. See the summary cards above for totals.</span>
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={data.timeSeries}>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
@@ -291,6 +293,7 @@ export function TrafficDashboard() {
                   <Line type="monotone" dataKey="count" stroke="#810FFB" strokeWidth={2} dot={false} />
                 </LineChart>
               </ResponsiveContainer>
+              </div>
             ) : (
               <div className="flex items-center justify-center h-full text-muted-foreground">
                 No data available for the selected period
@@ -306,6 +309,8 @@ export function TrafficDashboard() {
           </CardHeader>
           <CardContent className="h-[300px]">
             {deviceData.length > 0 ? (
+              <div role="img" aria-label="Pie chart: Device distribution breakdown" className="h-full">
+                <span className="sr-only">Pie chart showing visitor distribution by device type such as desktop, mobile, and tablet.</span>
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
@@ -325,6 +330,7 @@ export function TrafficDashboard() {
                   <Tooltip />
                 </PieChart>
               </ResponsiveContainer>
+              </div>
             ) : (
               <div className="flex items-center justify-center h-full text-muted-foreground">
                 No data available
@@ -366,6 +372,8 @@ export function TrafficDashboard() {
           </CardHeader>
           <CardContent className="h-[300px]">
             {browserData.length > 0 ? (
+              <div role="img" aria-label="Bar chart: Top browsers by visitor count" className="h-full">
+                <span className="sr-only">Horizontal bar chart showing visitor distribution by browser type.</span>
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={browserData} layout="vertical">
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
@@ -381,6 +389,7 @@ export function TrafficDashboard() {
                   <Bar dataKey="value" fill="#E60CB3" radius={[0, 4, 4, 0]} />
                 </BarChart>
               </ResponsiveContainer>
+              </div>
             ) : (
               <div className="flex items-center justify-center h-full text-muted-foreground">
                 No browser data available

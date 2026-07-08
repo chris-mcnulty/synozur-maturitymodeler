@@ -12,6 +12,7 @@ import { ChevronLeft, ChevronRight, AlertCircle } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { usePageTitle } from "@/hooks/use-page-title";
 import { useTranslation } from "react-i18next";
 import type { Assessment as AssessmentType, Question, Answer, Dimension } from "@shared/schema";
 
@@ -56,6 +57,7 @@ function isAnswerComplete(question: Question, value: string | string[] | undefin
 }
 
 export default function Assessment() {
+  usePageTitle("Assessment in Progress");
   const [, params] = useRoute("/assessment/:assessmentId");
   const [, setLocation] = useLocation();
   const { toast } = useToast();

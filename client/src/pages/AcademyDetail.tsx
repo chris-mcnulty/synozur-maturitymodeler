@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { usePageTitle } from "@/hooks/use-page-title";
 import { Link, useRoute } from "wouter";
 import { Helmet } from "react-helmet-async";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -34,6 +35,7 @@ export default function AcademyDetail() {
     queryKey: [`/api/academies/${slug}`],
     enabled: !!slug,
   });
+  usePageTitle(academy?.title ?? "Academy");
 
   if (isLoading) {
     return (

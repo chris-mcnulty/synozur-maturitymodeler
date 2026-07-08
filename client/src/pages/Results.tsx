@@ -36,6 +36,7 @@ import { ProfileGate } from "@/components/ProfileGate";
 // pdfGenerator (and its jsPDF dependency) is heavy — it is loaded on demand
 // via a dynamic import() inside the PDF callbacks below.
 import { useToast } from "@/hooks/use-toast";
+import { usePageTitle } from "@/hooks/use-page-title";
 import { MarkdownContent } from "@/components/MarkdownContent";
 
 // Color palette for maturity levels (no emojis per design guidelines)
@@ -77,6 +78,7 @@ function getMaturityLevel(score: number, maturityScale?: Array<{
 }
 
 export default function Results() {
+  usePageTitle("Assessment Results");
   const { t } = useTranslation();
   const [, params] = useRoute("/results/:assessmentId");
   const [, setLocation] = useLocation();
@@ -1084,6 +1086,7 @@ export default function Results() {
           ) : (aiContentLoading || maturitySummary) && (
             <Card className="p-5 sm:p-6 md:p-8 mb-6 sm:mb-8">
               <h3 className="text-xl sm:text-2xl font-bold mb-4 text-primary">{t('results.executiveSummary')}</h3>
+              <div aria-live="polite" aria-atomic="false">
               {aiContentLoading && !maturitySummary ? (
                 <div className="space-y-3">
                   <div className="flex items-center gap-2 text-muted-foreground">
@@ -1099,6 +1102,7 @@ export default function Results() {
               ) : (
                 <MarkdownContent content={maturitySummary} className="text-muted-foreground prose prose-lg max-w-none" />
               )}
+              </div>
             </Card>
           )}
         </div>
@@ -1233,6 +1237,7 @@ export default function Results() {
           ) : (aiContentLoading || recommendationsSummary) && (
             <Card className="p-6 mb-8 bg-background">
               <h3 className="text-lg font-semibold mb-4 text-primary">{t('results.roadmapTitle')}</h3>
+              <div aria-live="polite" aria-atomic="false">
               {aiContentLoading && !recommendationsSummary ? (
                 <div className="space-y-3">
                   <div className="flex items-center gap-2 text-muted-foreground">
@@ -1248,6 +1253,7 @@ export default function Results() {
               ) : (
                 <MarkdownContent content={recommendationsSummary} className="text-muted-foreground" />
               )}
+              </div>
             </Card>
           )}
           

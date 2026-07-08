@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { usePageTitle } from "@/hooks/use-page-title";
 import { Link } from "wouter";
 import { Helmet } from "react-helmet-async";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,6 +15,7 @@ interface EnrollmentWithCourse extends CourseEnrollment {
 }
 
 export default function MyCourses() {
+  usePageTitle("My Courses");
   const { data: enrollments, isLoading } = useQuery<EnrollmentWithCourse[]>({
     queryKey: ["/api/me/courses"],
   });

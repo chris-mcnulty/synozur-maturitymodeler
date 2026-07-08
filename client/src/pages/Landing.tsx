@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { usePageTitle } from "@/hooks/use-page-title";
 import { useLocation } from "wouter";
 import { useTranslation } from "react-i18next";
 import { Footer } from "@/components/Footer";
@@ -106,6 +107,7 @@ function ModelCard({
 }
 
 export default function Landing() {
+  usePageTitle("Digital Transformation Assessments");
   const { t } = useTranslation();
   useEffect(() => {
     fetch('/api/traffic/track', {

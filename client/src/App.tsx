@@ -62,38 +62,47 @@ function Router() {
 
   return (
     <>
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-[9999] focus:px-4 focus:py-2 focus:bg-background focus:text-foreground focus:border focus:border-border focus:rounded-md focus:shadow-lg focus:font-medium"
+        data-testid="link-skip-to-main"
+      >
+        Skip to main content
+      </a>
       <BrandingApplier />
       <BrandingPreviewBanner />
       {showHeader && <Header />}
-      <ErrorBoundary>
-        <Suspense fallback={<RouteFallback />}>
-          <Switch>
-            <Route path="/" component={Landing} />
-            <Route path="/auth" component={Auth} />
-            <Route path="/forgot-password" component={ForgotPassword} />
-            <Route path="/reset-password" component={ResetPassword} />
-            <Route path="/verify-email" component={VerifyEmail} />
-            <Route path="/oauth/consent" component={OAuthConsent} />
-            <Route path="/complete-profile" component={CompleteProfile} />
-            <Route path="/help" component={UserGuide} />
-            <Route path="/changelog" component={Changelog} />
-            <ProtectedRoute path="/support" component={Support} />
-            <Route path="/courses" component={Courses} />
-            <ProtectedRoute path="/my-courses" component={MyCourses} />
-            <Route path="/courses/:slug" component={CourseDetail} />
-            <Route path="/academies" component={Academies} />
-            <Route path="/academies/:slug" component={AcademyDetail} />
-            <Route path="/assessment/:assessmentId" component={Assessment} />
-            <Route path="/results/:assessmentId" component={Results} />
-            <ProtectedRoute path="/me" component={Profile} />
-            <ProtectedRoute path="/profile" component={Profile} />
-            <ProtectedRoute path="/insights" component={Insights} />
-            <ProtectedRoute path="/admin" component={Admin} />
-            <Route path="/:modelSlug" component={ModelHome} />
-            <Route component={NotFound} />
-          </Switch>
-        </Suspense>
-      </ErrorBoundary>
+      <main id="main-content" tabIndex={-1} className="outline-none">
+        <ErrorBoundary>
+          <Suspense fallback={<RouteFallback />}>
+            <Switch>
+              <Route path="/" component={Landing} />
+              <Route path="/auth" component={Auth} />
+              <Route path="/forgot-password" component={ForgotPassword} />
+              <Route path="/reset-password" component={ResetPassword} />
+              <Route path="/verify-email" component={VerifyEmail} />
+              <Route path="/oauth/consent" component={OAuthConsent} />
+              <Route path="/complete-profile" component={CompleteProfile} />
+              <Route path="/help" component={UserGuide} />
+              <Route path="/changelog" component={Changelog} />
+              <ProtectedRoute path="/support" component={Support} />
+              <Route path="/courses" component={Courses} />
+              <ProtectedRoute path="/my-courses" component={MyCourses} />
+              <Route path="/courses/:slug" component={CourseDetail} />
+              <Route path="/academies" component={Academies} />
+              <Route path="/academies/:slug" component={AcademyDetail} />
+              <Route path="/assessment/:assessmentId" component={Assessment} />
+              <Route path="/results/:assessmentId" component={Results} />
+              <ProtectedRoute path="/me" component={Profile} />
+              <ProtectedRoute path="/profile" component={Profile} />
+              <ProtectedRoute path="/insights" component={Insights} />
+              <ProtectedRoute path="/admin" component={Admin} />
+              <Route path="/:modelSlug" component={ModelHome} />
+              <Route component={NotFound} />
+            </Switch>
+          </Suspense>
+        </ErrorBoundary>
+      </main>
       <WhatsNewModal />
     </>
   );

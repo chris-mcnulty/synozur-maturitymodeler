@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { usePageTitle } from "@/hooks/use-page-title";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Input } from "@/components/ui/input";
@@ -14,6 +15,7 @@ function slugify(text: string): string {
 }
 
 export default function UserGuide() {
+  usePageTitle("User Guide");
   const [search, setSearch] = useState("");
   const [showScrollTop, setShowScrollTop] = useState(false);
 

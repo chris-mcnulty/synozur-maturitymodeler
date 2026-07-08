@@ -344,6 +344,8 @@ export function AiUsageDashboard() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <Card className="p-6">
               <h3 className="text-lg font-semibold mb-4">Daily AI Usage (Last 14 Days)</h3>
+              <div role="img" aria-label="Bar chart: Daily AI usage over the last 14 days">
+                <span className="sr-only">Bar chart showing AI request counts per day over the last 14 days. See the summary cards above for totals and trends.</span>
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={dailyData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--muted-foreground) / 0.2)" />
@@ -359,10 +361,13 @@ export function AiUsageDashboard() {
                   <Bar dataKey="usage" fill="#810FFB" />
                 </BarChart>
               </ResponsiveContainer>
+              </div>
             </Card>
 
             <Card className="p-6">
               <h3 className="text-lg font-semibold mb-4">Usage by Operation Type</h3>
+              <div role="img" aria-label="Pie chart: AI usage breakdown by operation type">
+                <span className="sr-only">Pie chart showing the proportion of AI requests by operation type such as assessment summaries and roadmaps. See the legend below for category breakdown.</span>
               <ResponsiveContainer width="100%" height={300}>
                 <PieChart>
                   <Pie
@@ -387,6 +392,7 @@ export function AiUsageDashboard() {
                   />
                 </PieChart>
               </ResponsiveContainer>
+              </div>
               <div className="mt-4 grid grid-cols-2 gap-2">
                 {operationData.map((entry, index) => (
                   <div key={entry.name} className="flex items-center gap-2">

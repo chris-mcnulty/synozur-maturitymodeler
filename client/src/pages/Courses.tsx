@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/select";
 import { BookOpen, Clock, Users, Sparkles, Search, X } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
+import { usePageTitle } from "@/hooks/use-page-title";
 import type { Course, CourseTag, CourseEnrollment } from "@shared/schema";
 
 interface CourseListItem extends Course {
@@ -96,6 +97,7 @@ function CourseCard({ course, testIdPrefix = "card-course" }: { course: CourseLi
 }
 
 export default function Courses() {
+  usePageTitle("Learning Courses");
   const { user } = useAuth();
 
   const { data: courses, isLoading } = useQuery<CourseListItem[]>({

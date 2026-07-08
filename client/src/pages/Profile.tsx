@@ -10,6 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
+import { usePageTitle } from "@/hooks/use-page-title";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect, useMemo } from "react";
@@ -49,6 +50,7 @@ interface AssessmentHistoryItem {
 }
 
 export default function Profile() {
+  usePageTitle("My Profile");
   const [, setLocation] = useLocation();
   const { user, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
@@ -813,7 +815,12 @@ Thank you!`;
                       {completedForChart.length} assessment{completedForChart.length !== 1 ? 's' : ''}
                     </span>
                   </div>
-                  <div className="h-[220px]">
+                  <div
+                    className="h-[220px]"
+                    role="img"
+                    aria-label="Line chart: Your assessment score history"
+                  >
+                    <span className="sr-only">Line chart showing your score history across completed assessments over time.</span>
                     <ResponsiveContainer width="100%" height="100%">
                       <LineChart data={completedForChart} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
                         <CartesianGrid strokeDasharray="3 3" className="stroke-border" />

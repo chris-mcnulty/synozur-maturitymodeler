@@ -130,7 +130,7 @@ export function RichTextField({ value, onChange, placeholder, minHeight }: {
         onInput={(e) => onChange((e.target as HTMLDivElement).innerHTML)}
         data-placeholder={placeholder || "Type here…"}
         style={minHeight ? { minHeight } : undefined}
-        className="prose prose-sm dark:prose-invert max-w-none min-h-[80px] px-3 py-2 text-sm focus:outline-none empty:before:text-muted-foreground empty:before:content-[attr(data-placeholder)]"
+        className="prose prose-sm dark:prose-invert max-w-none min-h-[80px] px-3 py-2 text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 rounded-sm empty:before:text-muted-foreground empty:before:content-[attr(data-placeholder)]"
       />
     </div>
   );

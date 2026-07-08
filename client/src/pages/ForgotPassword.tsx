@@ -4,10 +4,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
+import { usePageTitle } from "@/hooks/use-page-title";
 import { Label } from "@/components/ui/label";
 import { ArrowLeft } from "lucide-react";
 
 export default function ForgotPassword() {
+  usePageTitle("Forgot Password");
   const [, setLocation] = useLocation();
   const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);

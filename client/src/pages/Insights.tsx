@@ -24,6 +24,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useAuth } from "@/hooks/use-auth";
+import { usePageTitle } from "@/hooks/use-page-title";
 import { useLocation } from "wouter";
 import { Footer } from "@/components/Footer";
 import { MarkdownContent } from "@/components/MarkdownContent";
@@ -177,7 +178,13 @@ function PerModelTrendCard({ model }: { model: ModelInsight }) {
       )}
 
       {model.assessmentCount >= 2 ? (
-        <div className="h-[200px]" data-testid={`chart-model-trend-${model.modelId}`}>
+        <div
+          className="h-[200px]"
+          role="img"
+          aria-label={`Line chart: ${model.modelName} score trend over time`}
+          data-testid={`chart-model-trend-${model.modelId}`}
+        >
+          <span className="sr-only">Line chart showing your score progression for {model.modelName} over multiple assessments.</span>
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={data} margin={{ top: 5, right: 16, left: 0, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
@@ -267,7 +274,12 @@ function CrossModelRadarCard({
           Normalized to % of max score across {data.length} dimension{data.length === 1 ? "" : "s"}
         </span>
       </div>
-      <div className="h-[360px]">
+      <div
+        className="h-[360px]"
+        role="img"
+        aria-label="Radar chart: Cross-model strengths compared to benchmarks"
+      >
+        <span className="sr-only">Radar chart comparing your normalized scores across model dimensions against organisational and peer averages.</span>
         <ResponsiveContainer width="100%" height="100%">
           <RadarChart data={data} outerRadius="75%">
             <PolarGrid stroke="hsl(var(--border))" />
@@ -636,6 +648,7 @@ function InsightsContent({
 }
 
 export default function Insights() {
+  usePageTitle("My Insights");
   const { user } = useAuth();
   const isTenantAdmin = user?.role === USER_ROLES.TENANT_ADMIN || user?.role === USER_ROLES.GLOBAL_ADMIN;
   const [tab, setTab] = useState<"user" | "tenant">("user");

@@ -12,8 +12,10 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import synozurLogo from "@assets/SynozurLogo_color 1400_1759973943542.png";
 import { JOB_ROLES, INDUSTRIES, COMPANY_SIZES, COUNTRIES } from "@/lib/constants";
+import { usePageTitle } from "@/hooks/use-page-title";
 
 export default function CompleteProfile() {
+  usePageTitle("Complete Your Profile");
   const [, setLocation] = useLocation();
   const { user, isLoading } = useAuth();
   const { toast } = useToast();

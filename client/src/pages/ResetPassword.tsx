@@ -4,10 +4,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
+import { usePageTitle } from "@/hooks/use-page-title";
 import { Label } from "@/components/ui/label";
 import { CheckCircle2 } from "lucide-react";
 
 export default function ResetPassword() {
+  usePageTitle("Reset Password");
   const [, setLocation] = useLocation();
   const [token, setToken] = useState<string | null>(null);
   const [newPassword, setNewPassword] = useState("");

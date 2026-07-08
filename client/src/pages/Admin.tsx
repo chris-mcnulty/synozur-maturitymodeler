@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuCheckboxItem } from "@/components/ui/dropdown-menu";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
+import { usePageTitle } from "@/hooks/use-page-title";
 import { useQuery, useMutation, keepPreviousData } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Download, Plus, Edit, Trash, FileSpreadsheet, Eye, EyeOff, BarChart3, Settings, FileDown, FileUp, ListOrdered, Users, Star, Upload, X, Sparkles, CheckCircle2, XCircle, Database, FileText, Brain, BookOpen, ClipboardList, Home, Building2, ChevronDown, Shield, Tag, Activity, Copy, Archive, ArchiveRestore, KeyRound, Clock, ExternalLink, Building, Ticket, Palette, GraduationCap, Bell, BellOff, Mail, RefreshCw } from "lucide-react";
@@ -473,7 +474,7 @@ function BenchmarksByModel() {
                 {benchmarks.length} benchmark segment{benchmarks.length !== 1 ? 's' : ''} calculated
               </p>
             </div>
-            <Table className="sticky-first-col">
+            <Table aria-label="Assessment benchmark data by segment" className="sticky-first-col">
               <TableHeader>
                 <TableRow>
                   <TableHead>Segment Type</TableHead>
@@ -511,6 +512,7 @@ function BenchmarksByModel() {
 }
 
 export default function Admin() {
+  usePageTitle("Administration");
   const { toast } = useToast();
   const { user: currentUser } = useAuth();
   const [activeSection, setActiveSection] = useState<string>(() => {
