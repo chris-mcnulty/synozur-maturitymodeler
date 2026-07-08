@@ -74,18 +74,27 @@ export function registerAuthUsersRoutes(app: Express) {
       const requestingUser = req.user!;
       const targetUserId = req.params.id;
 
-      // Check authorization: must be admin OR requesting own profile
-      const isAuthorized = 
-        requestingUser.id === targetUserId || 
-        hasAdminAccess(requestingUser);
-
-      if (!isAuthorized) {
-        return res.status(403).json({ error: "Access denied" });
+      // Requesting own profile is always allowed
+      if (requestingUser.id === targetUserId) {
+        const user = await storage.getUser(targetUserId);
+        if (!user) {
+          return res.status(404).json({ error: "User not found" });
+        }
+        const { password, verificationToken, verificationTokenExpiry, ...safeUser } = user;
+        return res.json(safeUser);
       }
 
+      // Otherwise, only global admins or tenant admins managing users within
+      // their own tenant may view another user's profile.
       const user = await storage.getUser(targetUserId);
       if (!user) {
         return res.status(404).json({ error: "User not found" });
+      }
+
+      const isAuthorized = canManageUsers(requestingUser, user.tenantId);
+
+      if (!isAuthorized) {
+        return res.status(403).json({ error: "Access denied" });
       }
 
       // Remove password and sensitive fields from response
