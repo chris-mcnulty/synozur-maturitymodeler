@@ -2,6 +2,10 @@ import { storage } from "../storage";
 import { db } from "../db";
 import { eq, inArray } from "drizzle-orm";
 import * as schema from "@shared/schema";
+import {
+  getAssessmentQuestionType,
+  getNumericQuestionBounds,
+} from "@shared/assessment-question-utils";
 import { calculateAssessmentScore, calculateTypeResult, type ScoringQuestion } from "./scoring";
 import { ServiceError } from "./service-error";
 
@@ -37,14 +41,20 @@ export async function calculateAssessmentResults(assessmentId: string) {
     answersByQuestionId.get(a.questionId)!.push({ id: a.id, score: a.score, typeKey: a.typeKey ?? null });
   }
 
-  const scoringQuestions: ScoringQuestion[] = questions.map(q => ({
-    id: q.id,
-    dimensionId: q.dimensionId ?? null,
-    type: q.type as ScoringQuestion['type'],
-    minValue: q.minValue ?? null,
-    maxValue: q.maxValue ?? null,
-    answers: answersByQuestionId.get(q.id) ?? [],
-  }));
+  const scoringQuestions: ScoringQuestion[] = questions.map(q => {
+    const answers = answersByQuestionId.get(q.id) ?? [];
+    const effectiveQuestion = { ...q, answers };
+    const numericBounds = getNumericQuestionBounds(effectiveQuestion);
+
+    return {
+      id: q.id,
+      dimensionId: q.dimensionId ?? null,
+      type: getAssessmentQuestionType(effectiveQuestion) as ScoringQuestion["type"],
+      minValue: numericBounds.minValue ?? null,
+      maxValue: numericBounds.maxValue ?? null,
+      answers,
+    };
+  });
 
   // ----- Type / propensity (archetype) models: tally votes instead of scoring -----
   if (model.assessmentMode === 'type') {

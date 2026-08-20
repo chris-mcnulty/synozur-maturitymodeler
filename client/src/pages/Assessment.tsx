@@ -15,6 +15,11 @@ import { useToast } from "@/hooks/use-toast";
 import { usePageTitle } from "@/hooks/use-page-title";
 import { useTranslation } from "react-i18next";
 import type { Assessment as AssessmentType, Question, Answer, Dimension } from "@shared/schema";
+import {
+  getAssessmentQuestionType,
+  getNumericQuestionBounds,
+  isLegacyM365AdoptionScoreQuestion,
+} from "@shared/assessment-question-utils";
 
 interface QuestionWithAnswers extends Question {
   answers: Answer[];
@@ -31,9 +36,12 @@ type SavePayload = {
   textValue?: string;
 };
 
-function isAnswerComplete(question: Question, value: string | string[] | undefined): boolean {
+function isAnswerComplete(
+  question: QuestionWithAnswers,
+  value: string | string[] | undefined,
+): boolean {
   if (value === undefined || value === null) return false;
-  switch (question.type) {
+  switch (getAssessmentQuestionType(question)) {
     case "numeric": {
       const v = typeof value === "string" ? value : "";
       const num = parseFloat(v);
@@ -279,11 +287,12 @@ export default function Assessment() {
     const question = questions[currentQuestionIndex];
     if (!question) return;
     const questionId = question.id;
+    const questionType = getAssessmentQuestionType(question);
     setSelectedAnswers(prev => ({ ...prev, [questionId]: value }));
 
     // Build payload by question type. Skip saves for clearly invalid input.
     const payload: SavePayload = { questionId };
-    if (question.type === 'numeric') {
+    if (questionType === 'numeric') {
       const num = parseFloat(value as string);
       if (Number.isNaN(num)) return;
       payload.numericValue = num;
@@ -527,6 +536,9 @@ export default function Assessment() {
   const currentQuestion = questions[currentQuestionIndex];
   const currentAnswer = selectedAnswers[currentQuestion.id];
   const currentDimension = dimensions.find(d => d.id === currentQuestion.dimensionId);
+  const currentQuestionType = getAssessmentQuestionType(currentQuestion);
+  const numericBounds = getNumericQuestionBounds(currentQuestion);
+  const isLegacyM365Score = isLegacyM365AdoptionScoreQuestion(currentQuestion);
 
   const isCurrentAnswered = isAnswerComplete(currentQuestion, currentAnswer);
   const canGoPrev = currentQuestionIndex > 0;
@@ -556,15 +568,15 @@ export default function Assessment() {
 
           <QuestionCard
             question={currentQuestion.text}
-            questionType={currentQuestion.type as 'multiple_choice' | 'multi_select' | 'numeric' | 'true_false' | 'text'}
-            answers={(currentQuestion.type === 'multiple_choice' || currentQuestion.type === 'multi_select') ? currentQuestion.answers.map(a => ({
+            questionType={currentQuestionType as 'multiple_choice' | 'multi_select' | 'numeric' | 'true_false' | 'text'}
+            answers={(currentQuestionType === 'multiple_choice' || currentQuestionType === 'multi_select') ? currentQuestion.answers.map(a => ({
               key: a.id,
               label: a.text,
               score: a.score,
             })) : undefined}
-            minValue={currentQuestion.minValue ?? undefined}
-            maxValue={currentQuestion.maxValue ?? undefined}
-            unit={currentQuestion.unit ?? undefined}
+            minValue={numericBounds.minValue}
+            maxValue={numericBounds.maxValue}
+            unit={currentQuestion.unit ?? (isLegacyM365Score ? "points" : undefined)}
             placeholder={currentQuestion.placeholder ?? undefined}
             onAnswer={handleAnswer}
             selectedAnswer={currentAnswer}
