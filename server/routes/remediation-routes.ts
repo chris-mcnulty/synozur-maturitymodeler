@@ -44,7 +44,7 @@ export function registerRemediationRoutes(app: Express) {
           overallScore: results.overallScore,
           storedLabel: results.label,
           resultId: results.id,
-          userName: users.displayName,
+          userName: users.name,
           userEmail: users.email,
         })
         .from(assessments)
@@ -139,7 +139,7 @@ export function registerRemediationRoutes(app: Express) {
         }
       }
 
-      res.json({ sent: sentTo.length, failed: failed.length, sentTo, failed });
+      res.json({ sent: sentTo.length, failed: failed.length, sentTo, failedRecipients: failed });
     } catch (error: any) {
       console.error('Remediation send error:', error);
       res.status(500).json({ error: error.message || 'Failed to send emails' });

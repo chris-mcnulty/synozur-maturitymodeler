@@ -120,7 +120,7 @@ export function RemediationMessaging({ models }: { models: Array<{ id: string; n
       });
     },
     onSuccess: (result: any) => {
-      setSendResult({ sent: result.sent, failed: result.failed, failedList: result.failed || [] });
+      setSendResult({ sent: result.sent, failed: result.failed, failedList: result.failedRecipients || [] });
       toast({ title: `Sent ${result.sent} email${result.sent !== 1 ? 's' : ''}`, description: result.failed > 0 ? `${result.failed} failed` : 'All delivered successfully' });
     },
     onError: (err: Error) => {
