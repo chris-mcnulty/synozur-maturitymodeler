@@ -161,24 +161,54 @@ export class ObjectStorageService {
     const { bucketName, objectName } = parseObjectPath(fullPath);
     const file = objectStorageClient.bucket(bucketName).file(objectName);
     await file.save(opts.data, { contentType: opts.contentType, resumable: false });
-    await setObjectAclPolicy(file, opts.acl);
+    try {
+      await setObjectAclPolicy(file, opts.acl);
+    } catch (error) {
+      // Do not strand bytes when ACL persistence fails before a caller receives
+      // the canonical path needed to clean them up.
+      await file.delete({ ignoreNotFound: true }).catch(() => {});
+      throw error;
+    }
     return `/objects/${opts.entityId}`;
   }
 
   /**
    * Best-effort delete of an object by its `/objects/<id>` path. Used to
    * garbage-collect narration audio / slide images that are no longer
-   * referenced. Never throws — a missing object or storage hiccup must not
-   * fail the originating request.
+   * referenced. Never throws. Returns false for a transient storage failure so
+   * background cleanup can leave its work pending and retry later.
    */
-  async deleteObjectByPath(objectPath: string): Promise<void> {
+  async deleteObjectByPath(objectPath: string): Promise<boolean> {
     try {
       const file = await this.getObjectEntityFile(objectPath);
       await file.delete({ ignoreNotFound: true });
+      return true;
     } catch (err) {
-      if (err instanceof ObjectNotFoundError) return;
+      if (err instanceof ObjectNotFoundError) return true;
       console.error("deleteObjectByPath failed", objectPath, err);
+      return false;
     }
+  }
+
+  /**
+   * Enumerate managed objects under a private entity prefix. Review previews
+   * use a session-specific prefix so cleanup can recover paths even when a
+   * process or database write fails immediately after an upload succeeds.
+   */
+  async listObjectPathsByPrefix(entityPrefix: string): Promise<string[]> {
+    const normalizedPrefix = entityPrefix.replace(/^\/+/, "");
+    if (!normalizedPrefix || normalizedPrefix.includes("..")) {
+      throw new Error("Invalid object prefix");
+    }
+    const privateDir = this.getPrivateObjectDir().replace(/\/$/, "");
+    const { bucketName, objectName } = parseObjectPath(`${privateDir}/${normalizedPrefix}`);
+    const privateBase = parseObjectPath(privateDir).objectName.replace(/\/$/, "");
+    const privateBasePrefix = privateBase ? `${privateBase}/` : "";
+    const [files] = await objectStorageClient.bucket(bucketName).getFiles({ prefix: objectName });
+    return files
+      .map((file) => file.name)
+      .filter((name) => name.startsWith(privateBasePrefix))
+      .map((name) => `/objects/${name.slice(privateBasePrefix.length)}`);
   }
 
   /**

@@ -371,6 +371,21 @@ describe("importCourse v1", () => {
     dbMock.select.mockReturnValue(makeSelect([]));
   });
 
+  it("rejects a PowerPoint review preview used as the course image", async () => {
+    const doc = makeV1Doc();
+    doc.course.imageUrl = "/objects/slides/preview/11111111-1111-4111-8111-111111111111/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa.png";
+
+    await expect(importCourse(doc)).rejects.toThrow(/cannot be used as imported course images/i);
+    expect(dbMock.insert).not.toHaveBeenCalled();
+  });
+
+  it("imports a historical flat PowerPoint preview as committed course media", async () => {
+    const legacyPreview = "/objects/slides/preview/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa.png";
+    const result = await importCourse(makeV1Doc({ imageUrl: legacyPreview }));
+
+    expect(result.course.imageUrl).toBe(legacyPreview);
+  });
+
   it("creates a draft course regardless of source status", async () => {
     const result = await importCourse(makeV1Doc({ status: "published" }));
     expect(result.course.status).toBe("draft");

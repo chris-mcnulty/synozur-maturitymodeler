@@ -52,6 +52,9 @@ interface PptxReviewSlide {
   title: string;
   text?: string;
   previewUrl?: string;
+  previewImageUrl?: string;
+  sourceIndex?: number;
+  narrationScript?: string;
   classification: string;
   reason?: string;
   include: boolean;
@@ -67,6 +70,8 @@ interface PptxReviewGroup {
 }
 
 interface PptxReview {
+  sessionId: string;
+  expiresAt: string;
   title: string;
   slug: string;
   summary: string;
@@ -174,6 +179,7 @@ export function CourseManagement() {
       });
       if (!response.ok) throw new Error((await response.text()) || "Could not review this PowerPoint.");
       const result = await response.json();
+      if (!result.sessionId) throw new Error("The server did not create a PowerPoint review session.");
       const review = (result.review ?? result) as Partial<PptxReview>;
       const sourceSlides = review.slides ?? (review.groups ?? []).flatMap((group: any) => group.slides ?? []);
       const slides = sourceSlides.map((slide: any, index) => ({
@@ -216,6 +222,8 @@ export function CourseManagement() {
         groups[0].slides.push(...slides.filter(slide => !groupedIds.has(slide.id)));
       }
       setPptxReview({
+        sessionId: result.sessionId,
+        expiresAt: result.expiresAt,
         title: review.title ?? file.name.replace(/\.pptx$/i, ""),
         slug: review.slug ?? "",
         summary: review.summary ?? "",
@@ -229,6 +237,21 @@ export function CourseManagement() {
       toast({ title: "PowerPoint review failed", description: error.message ?? "Could not inspect the deck.", variant: "destructive" });
     } finally {
       setPptxLoading(false);
+    }
+  }
+
+  async function cancelPptxReview() {
+    const sessionId = pptxReview?.sessionId;
+    setPptxReview(null);
+    if (!sessionId) return;
+    try {
+      await fetch(`/api/courses/pptx/review/${encodeURIComponent(sessionId)}`, {
+        method: "DELETE",
+        credentials: "include",
+        keepalive: true,
+      });
+    } catch {
+      // The server-side expiry job remains the fallback for abandoned reviews.
     }
   }
 
@@ -372,7 +395,7 @@ export function CourseManagement() {
         <PowerPointReviewDialog
           review={pptxReview}
           onChange={setPptxReview}
-          onClose={() => setPptxReview(null)}
+          onClose={() => { void cancelPptxReview(); }}
           onCommitted={(id) => { setPptxReview(null); setEditingId(id); }}
         />
       )}
@@ -404,6 +427,9 @@ function PowerPointReviewDialog({
     },
     onError: (error: Error) => toast({ title: "Could not create course", description: error.message, variant: "destructive" }),
   });
+  const closeReview = () => {
+    if (!commitMutation.isPending) onClose();
+  };
 
   const updateReview = (patch: Partial<PptxReview>) => onChange({ ...review, ...patch });
   const allSlides = review.slides;
@@ -463,7 +489,7 @@ function PowerPointReviewDialog({
   };
 
   return (
-    <Dialog open onOpenChange={(open) => { if (!open) onClose(); }}>
+    <Dialog open onOpenChange={(open) => { if (!open) closeReview(); }}>
       <DialogContent className="max-w-6xl p-0 gap-0 overflow-hidden">
         <DialogHeader className="border-b bg-muted/30 p-5 sm:p-6">
           <div className="flex items-start justify-between gap-4 pr-8">
@@ -515,7 +541,7 @@ function PowerPointReviewDialog({
           </section>
         </div>
         <DialogFooter className="border-t bg-muted/20 p-4 sm:p-6">
-          <Button variant="outline" onClick={onClose} data-testid="button-pptx-review-cancel">Cancel</Button>
+          <Button variant="outline" onClick={closeReview} disabled={commitMutation.isPending} data-testid="button-pptx-review-cancel">Cancel</Button>
           <Button onClick={() => commitMutation.mutate()} disabled={commitMutation.isPending || !review.title.trim() || !review.slug.trim() || includedCount === 0} data-testid="button-pptx-commit">
             {commitMutation.isPending ? <Loader2 className="animate-spin" /> : <Check />} Create draft course
           </Button>

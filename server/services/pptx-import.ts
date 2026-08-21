@@ -782,12 +782,49 @@ export function buildEnhancedBlocks(opts: {
 export interface ReviewPptxOptions {
   buffer: Buffer;
   ownerUserId?: string;
+  /** Session namespace used to make every uploaded preview recoverable by prefix. */
+  reviewSessionId?: string;
   /**
    * If true, rasterize slides and upload preview images to object storage.
    * Set to false in unit tests / dry runs where rendering is unavailable.
    * Default: true.
    */
   renderPreviews?: boolean;
+}
+
+interface ReviewPreviewStorage {
+  storeObjectBytes: ObjectStorageService["storeObjectBytes"];
+  deleteObjectByPath: ObjectStorageService["deleteObjectByPath"];
+}
+
+/**
+ * Store a rendered review deck without leaking earlier previews if a later
+ * upload fails. The caller decides whether rendering failure should be fatal.
+ */
+export async function storeReviewPreviewImages(opts: {
+  images: Buffer[];
+  ownerUserId?: string;
+  reviewSessionId?: string;
+  storage?: ReviewPreviewStorage;
+}): Promise<string[]> {
+  const storage = opts.storage ?? new ObjectStorageService();
+  const uploadedPaths: string[] = [];
+  try {
+    for (const image of opts.images) {
+      uploadedPaths.push(await storage.storeObjectBytes({
+        entityId: opts.reviewSessionId
+          ? `slides/preview/${opts.reviewSessionId}/${randomUUID()}.png`
+          : `slides/preview/${randomUUID()}.png`,
+        data: image,
+        contentType: "image/png",
+        acl: { owner: opts.ownerUserId || "system", visibility: "private" },
+      }));
+    }
+    return uploadedPaths;
+  } catch (error) {
+    await Promise.all(uploadedPaths.map((objectPath) => storage.deleteObjectByPath(objectPath)));
+    throw error;
+  }
 }
 
 /**
@@ -798,7 +835,7 @@ export interface ReviewPptxOptions {
  * the author can inspect and override every decision before committing.
  */
 export async function reviewPptx(opts: ReviewPptxOptions): Promise<ReviewResult> {
-  const { buffer, ownerUserId, renderPreviews = true } = opts;
+  const { buffer, ownerUserId, reviewSessionId, renderPreviews = true } = opts;
 
   const zip = await JSZip.loadAsync(buffer);
   await sanitizePptxZip(zip);
@@ -812,19 +849,10 @@ export async function reviewPptx(opts: ReviewPptxOptions): Promise<ReviewResult>
     try {
       const sanitizedBuffer = await zip.generateAsync({ type: "nodebuffer" });
       const images = await renderSlideImages(sanitizedBuffer);
-      const storage = new ObjectStorageService();
-      previewUrls = await Promise.all(
-        images.map((img) =>
-          storage.storeObjectBytes({
-            entityId: `slides/preview/${randomUUID()}.png`,
-            data: img,
-            contentType: "image/png",
-            acl: { owner: ownerUserId || "system", visibility: "private" },
-          }),
-        ),
-      );
-    } catch {
+      previewUrls = await storeReviewPreviewImages({ images, ownerUserId, reviewSessionId });
+    } catch (error) {
       // Preview rendering is best-effort; proceed without images.
+      console.warn("[PPTX Review] Preview rendering/upload failed; continuing without previews", error);
       previewUrls = [];
     }
   }

@@ -5,6 +5,7 @@ import { setupVite, serveStatic, log } from "./vite";
 import { initializeJWTService } from "./services/jwt-signing";
 import { startSsoStateCleanup } from "./services/sso-service";
 import { startMonthlyDigestSchedule } from "./services/digest-service";
+import { startPptxReviewSessionCleanup } from "./services/pptx-review-session-service";
 
 // Log availability of system binaries used by the PPTX import pipeline.
 // These lines appear in production logs so we can diagnose missing-binary issues.
@@ -94,6 +95,9 @@ app.use((req, res, next) => {
   
   // Initialize SSO auth state cleanup (database-backed for production scalability)
   startSsoStateCleanup();
+
+  // Remove previews from cancelled or abandoned PowerPoint review sessions.
+  startPptxReviewSessionCleanup();
 
   // Schedule the monthly Insights digest. Runs once on the 1st of each month.
   startMonthlyDigestSchedule();

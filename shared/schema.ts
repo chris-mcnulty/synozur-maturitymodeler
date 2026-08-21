@@ -1456,12 +1456,14 @@ export const COURSE_VISIBILITIES = ['public', 'private'] as const;
 export const LESSON_TYPES = ['slides', 'video', 'audio', 'rich_text', 'quiz', 'scorm', 'attestation'] as const;
 export const ENROLLMENT_STATUSES = ['enrolled', 'in_progress', 'completed', 'expired'] as const;
 export const LESSON_PROGRESS_STATUSES = ['not_started', 'in_progress', 'completed', 'failed'] as const;
+export const PPTX_REVIEW_STATUSES = ['active', 'committing', 'committed', 'cancelled', 'expired', 'failed'] as const;
 
 export type CourseStatus = typeof COURSE_STATUSES[number];
 export type CourseVisibility = typeof COURSE_VISIBILITIES[number];
 export type LessonType = typeof LESSON_TYPES[number];
 export type EnrollmentStatus = typeof ENROLLMENT_STATUSES[number];
 export type LessonProgressStatus = typeof LESSON_PROGRESS_STATUSES[number];
+export type PptxReviewStatus = typeof PPTX_REVIEW_STATUSES[number];
 
 // Courses table - top-level learning container
 export const courses = pgTable("courses", {
@@ -1530,6 +1532,25 @@ export const lessons = pgTable("lessons", {
   required: boolean("required").notNull().default(true),
 }, (table) => ({
   moduleIdx: index("idx_lessons_module").on(table.moduleId),
+}));
+
+// Expiring server-side ownership record for private PowerPoint review previews.
+export const pptxReviewSessions = pgTable("pptx_review_sessions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  ownerUserId: varchar("owner_user_id").notNull().references(() => users.id, { onDelete: "restrict" }),
+  ownerTenantId: varchar("owner_tenant_id"),
+  status: text("status").notNull().$type<PptxReviewStatus>().default("active"),
+  previewPaths: json("preview_paths").$type<string[]>().notNull().default(sql`'[]'::json`),
+  retainedPaths: json("retained_paths").$type<string[]>().notNull().default(sql`'[]'::json`),
+  courseId: varchar("course_id").references(() => courses.id, { onDelete: "set null" }),
+  expiresAt: timestamp("expires_at").notNull(),
+  cleanupCompletedAt: timestamp("cleanup_completed_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => ({
+  ownerIdx: index("idx_pptx_review_sessions_owner").on(table.ownerUserId),
+  statusExpiryIdx: index("idx_pptx_review_sessions_status_expiry").on(table.status, table.expiresAt),
+  pendingCleanupIdx: index("idx_pptx_review_sessions_pending_cleanup").on(table.status, table.cleanupCompletedAt),
 }));
 
 // Course enrollments - learner registration in a course
@@ -1661,6 +1682,9 @@ export const insertAssessmentCourseLinkSchema = createInsertSchema(assessmentCou
 export const insertAttestationRecordSchema = createInsertSchema(attestationRecords).omit({ id: true, signedAt: true });
 export const insertScormPackageSchema = createInsertSchema(scormPackages).omit({ id: true, uploadedAt: true });
 export const insertCourseTenantSchema = createInsertSchema(courseTenants).omit({ id: true, createdAt: true });
+export const insertPptxReviewSessionSchema = createInsertSchema(pptxReviewSessions).omit({
+  id: true, createdAt: true, updatedAt: true, cleanupCompletedAt: true,
+});
 
 export type Course = typeof courses.$inferSelect;
 export type InsertCourse = z.infer<typeof insertCourseSchema>;
@@ -1684,6 +1708,8 @@ export type ScormPackage = typeof scormPackages.$inferSelect;
 export type InsertScormPackage = z.infer<typeof insertScormPackageSchema>;
 export type CourseTenant = typeof courseTenants.$inferSelect;
 export type InsertCourseTenant = z.infer<typeof insertCourseTenantSchema>;
+export type PptxReviewSession = typeof pptxReviewSessions.$inferSelect;
+export type InsertPptxReviewSession = z.infer<typeof insertPptxReviewSessionSchema>;
 
 // ========== ACADEMIES (Learning Sequences) ==========
 //

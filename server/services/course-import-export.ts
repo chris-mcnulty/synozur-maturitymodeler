@@ -40,6 +40,10 @@ import { extractManagedObjectPaths } from "@shared/slides";
 import { ObjectStorageService } from "../objectStorage";
 import { ObjectAclPolicy } from "../objectAcl";
 import { randomUUID } from "crypto";
+import {
+  isPptxReviewPreviewPath,
+  isPptxReviewPreviewReference,
+} from "./pptx-review-paths";
 
 // ─── Size limits ──────────────────────────────────────────────────────────────
 
@@ -389,6 +393,8 @@ export interface ImportOptions {
   createdBy?: string;
   /** Override visibility (default: keep file value) */
   visibility?: "public" | "private";
+  /** Review-only preview paths authorized by a claimed PowerPoint commit. */
+  allowedPptxReviewPreviewPaths?: readonly string[];
 }
 
 export interface ImportResult {
@@ -487,6 +493,25 @@ export async function importCourse(doc: CourseExportDoc, opts: ImportOptions = {
     }
   }
 
+  // Review previews are temporary capabilities, not general-purpose course
+  // media. Only the claimed PowerPoint commit route may attach its own paths.
+  const allowedReviewPaths = new Set(opts.allowedPptxReviewPreviewPaths ?? []);
+  for (const module of c.modules ?? []) {
+    for (const lesson of module.lessons ?? []) {
+      const finalContent = pathMap.size > 0
+        ? rewriteMediaUrls(lesson.content ?? {}, pathMap)
+        : (lesson.content ?? {});
+      for (const objectPath of extractManagedObjectPaths(finalContent)) {
+        if (
+          isPptxReviewPreviewPath(objectPath) &&
+          !allowedReviewPaths.has(objectPath)
+        ) {
+          throw new Error("PowerPoint review previews can only be attached by their active review session.");
+        }
+      }
+    }
+  }
+
   // Resolve a unique slug
   const baseSlug = opts.slug ?? c.slug ?? slugify(c.title);
   const slug = await uniqueSlug(baseSlug);
@@ -514,6 +539,13 @@ export async function importCourse(doc: CourseExportDoc, opts: ImportOptions = {
   const importedImageUrl = c.imageUrl
     ? (pathMap.get(c.imageUrl) ?? c.imageUrl)
     : undefined;
+  if (
+    importedImageUrl &&
+    isPptxReviewPreviewReference(importedImageUrl) &&
+    !allowedReviewPaths.has(importedImageUrl)
+  ) {
+    throw new Error("PowerPoint review previews cannot be used as imported course images.");
+  }
 
   // Create the course — always imported as "draft" for safety
   const courseData: InsertCourse = {

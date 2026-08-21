@@ -30,6 +30,21 @@ import {
   buildFaithfulBlocks,
   buildEnhancedBlocks,
 } from "../services/pptx-import";
+import {
+  cancelPptxReviewSession,
+  claimPptxReviewSessionForCommit,
+  completePptxReviewSession,
+  createPptxReviewSession,
+  discardPptxReviewSession,
+  failPptxReviewSession,
+  getActivePptxReviewSession,
+  recordPptxReviewPreviewPaths,
+} from "../services/pptx-review-session-service";
+import {
+  isPptxReviewPreviewPath,
+  isPptxReviewPreviewReference,
+} from "../services/pptx-review-paths";
+import { ObjectNotFoundError, ObjectStorageService } from "../objectStorage";
 import { slidesContentSchema, slideSchema, extractManagedObjectPaths, genId } from "@shared/slides";
 
 /**
@@ -38,9 +53,18 @@ import { slidesContentSchema, slideSchema, extractManagedObjectPaths, genId } fr
  * hand-crafted request (the editor always sends valid data). Throws a ZodError
  * (→ 400) on failure.
  */
-function validateLessonContent(type: string, content: unknown): void {
+function validateLessonContent(
+  type: string,
+  content: unknown,
+  allowedReviewPreviewPaths: ReadonlySet<string> = new Set(),
+): void {
   if (type === "slides") {
     slidesContentSchema.parse(content);
+    for (const objectPath of extractManagedObjectPaths(content)) {
+      if (isPptxReviewPreviewPath(objectPath) && !allowedReviewPreviewPaths.has(objectPath)) {
+        throw new Error("PowerPoint review previews can only be attached by their active review session.");
+      }
+    }
   }
 }
 import * as schema from "@shared/schema";
@@ -441,6 +465,9 @@ export function registerCourseRoutes(app: Express) {
         createdBy: user.id,
         ownerTenantId,
       });
+      if (parsed.imageUrl && isPptxReviewPreviewReference(parsed.imageUrl)) {
+        return res.status(400).json({ error: "PowerPoint review previews cannot be used as course images." });
+      }
       const course = await courseSvc.createCourse(parsed);
       if (Array.isArray(req.body.tagIds)) {
         await courseSvc.setCourseTags(course.id, req.body.tagIds);
@@ -461,6 +488,13 @@ export function registerCourseRoutes(app: Express) {
 
       const { tagIds, ownerTenantId, visibility, ...rest } = req.body;
       const patch: any = { ...rest };
+      if (
+        typeof patch.imageUrl === "string" &&
+        patch.imageUrl !== course.imageUrl &&
+        isPptxReviewPreviewReference(patch.imageUrl)
+      ) {
+        return res.status(400).json({ error: "PowerPoint review previews cannot be used as course images." });
+      }
       if (isGlobal) {
         if (ownerTenantId !== undefined) patch.ownerTenantId = ownerTenantId;
         if (visibility !== undefined) patch.visibility = visibility;
@@ -566,7 +600,11 @@ export function registerCourseRoutes(app: Express) {
       if (!courseSvc.userCanManageCourse(user, ctx.course)) return res.status(403).json({ error: "Forbidden" });
       const { moduleId, ...patch } = req.body; // disallow moving lesson across modules via PUT
       if (patch.content !== undefined) {
-        validateLessonContent(patch.type ?? ctx.lesson.type, patch.content);
+        const existingReviewPaths = new Set(
+          Array.from(extractManagedObjectPaths(ctx.lesson.content))
+            .filter(isPptxReviewPreviewPath),
+        );
+        validateLessonContent(patch.type ?? ctx.lesson.type, patch.content, existingReviewPaths);
       }
       const lesson = await courseSvc.updateLesson(req.params.id, patch);
       if (!lesson) return res.status(404).json({ error: "Not found" });
@@ -612,6 +650,12 @@ export function registerCourseRoutes(app: Express) {
       const user = req.user as schema.User;
       const { ObjectStorageService } = await import("../objectStorage");
       const objectStorageService = new ObjectStorageService();
+      if (
+        typeof imageUrl === "string" &&
+        isPptxReviewPreviewReference(imageUrl)
+      ) {
+        return res.status(400).json({ error: "PowerPoint review previews cannot be used as course images." });
+      }
       const normalizedPath = await objectStorageService.trySetObjectEntityAclPolicy(
         imageUrl,
         { owner: user.id || "admin", visibility: "public" },
@@ -885,6 +929,8 @@ export function registerCourseRoutes(app: Express) {
       limit: "100mb",
     }),
     async (req, res) => {
+      let session: schema.PptxReviewSession | undefined;
+      let user: schema.User | undefined;
       try {
         const buffer = Buffer.isBuffer(req.body) ? req.body : undefined;
         if (!buffer?.length) {
@@ -900,14 +946,19 @@ export function registerCourseRoutes(app: Express) {
           return res.status(400).json({ error: "Unsupported file. Choose a valid PowerPoint .pptx file." });
         }
 
-        const user = req.user as schema.User;
+        user = req.user as schema.User;
+        session = await createPptxReviewSession({
+          ownerUserId: user.id,
+          ownerTenantId: user.tenantId,
+        });
         const analysis = await reviewPptx({
           buffer,
           ownerUserId: user.id,
+          reviewSessionId: session.id,
           renderPreviews: true,
         });
         if (!analysis.slides.length) {
-          return res.status(400).json({ error: "No slides could be read from this PowerPoint file." });
+          throw new Error("No slides could be read from this PowerPoint file.");
         }
 
         const boundaries = analysis.suggestedGroups.length
@@ -959,7 +1010,18 @@ export function registerCourseRoutes(app: Express) {
           .replace(/^-+|-+$/g, "")
           .slice(0, 80);
 
+        const previewPaths = slides
+          .map((slide) => slide.previewImageUrl)
+          .filter((objectPath): objectPath is string => Boolean(objectPath));
+        session = await recordPptxReviewPreviewPaths({
+          sessionId: session.id,
+          ownerUserId: user.id,
+          previewPaths,
+        });
+
         res.json({
+          sessionId: session.id,
+          expiresAt: session.expiresAt.toISOString(),
           review: {
             title,
             slug,
@@ -973,6 +1035,11 @@ export function registerCourseRoutes(app: Express) {
         });
       } catch (err: any) {
         console.error("pptx review error", err);
+        if (session && user) {
+          await discardPptxReviewSession(session.id, user.id).catch((cleanupError) => {
+            console.error("pptx review setup cleanup error", cleanupError);
+          });
+        }
         const message = err?.message || "Failed to inspect this PowerPoint file.";
         res.status(400).json({ error: message });
       }
@@ -980,6 +1047,7 @@ export function registerCourseRoutes(app: Express) {
   );
 
   const pptxCommitSchema = z.object({
+    sessionId: z.string().uuid(),
     title: z.string().trim().min(1).max(255),
     slug: z.string().trim().regex(/^[a-z0-9-]+$/).max(100).optional().or(z.literal("")),
     summary: z.string().max(500).optional().default(""),
@@ -1012,14 +1080,33 @@ export function registerCourseRoutes(app: Express) {
     })).min(1).max(250),
   });
 
+  app.delete("/api/courses/pptx/review/:sessionId", ensureAdminOrModeler, async (req, res) => {
+    try {
+      const user = req.user as schema.User;
+      await cancelPptxReviewSession(req.params.sessionId, user.id);
+      res.status(204).end();
+    } catch (err) {
+      console.error("pptx review cancel error", err);
+      res.status(500).json({ error: "Could not cancel this PowerPoint review." });
+    }
+  });
+
   app.post("/api/courses/pptx/commit", ensureAdminOrModeler, async (req, res) => {
+    let claimedSession: schema.PptxReviewSession | undefined;
+    let committingUserId: string | undefined;
     try {
       const plan = pptxCommitSchema.parse(req.body);
       const user = req.user as schema.User;
+      committingUserId = user.id;
       const isGlobal = checkIsGlobalAdmin(user);
       if (!isGlobal && !user.tenantId) {
         return res.status(403).json({ error: "Tenant admins must be assigned to a tenant." });
       }
+      const reviewSession = await getActivePptxReviewSession(plan.sessionId, user.id);
+      if (!reviewSession) {
+        return res.status(409).json({ error: "This PowerPoint review has expired or is no longer active. Start a new review." });
+      }
+      const allowedPreviewPaths = new Set(reviewSession.previewPaths);
       const includedByGroup = new Map<string, typeof plan.slides>();
       for (const slide of plan.slides) {
         if (!slide.include) continue;
@@ -1029,26 +1116,11 @@ export function registerCourseRoutes(app: Express) {
       }
 
       if (plan.treatment === "faithful") {
-        const { ObjectStorageService, ObjectNotFoundError } = await import("../objectStorage");
-        const storage = new ObjectStorageService();
-        const checked = new Set<string>();
         for (const slide of plan.slides) {
           if (!slide.include) continue;
           const imageUrl = slide.previewImageUrl || slide.previewUrl;
-          if (!imageUrl.startsWith("/objects/slides/")) {
-            return res.status(400).json({ error: "Faithful slides must use a managed PowerPoint preview image." });
-          }
-          if (checked.has(imageUrl)) continue;
-          checked.add(imageUrl);
-          try {
-            const file = await storage.getObjectEntityFile(imageUrl);
-            const allowed = await storage.canAccessObjectEntity({ objectFile: file, userId: user.id });
-            if (!allowed) return res.status(404).json({ error: "A PowerPoint preview image could not be found." });
-          } catch (error) {
-            if (error instanceof ObjectNotFoundError) {
-              return res.status(404).json({ error: "A PowerPoint preview image could not be found." });
-            }
-            throw error;
+          if (!allowedPreviewPaths.has(imageUrl)) {
+            return res.status(400).json({ error: "Faithful slides must use a preview from this PowerPoint review." });
           }
         }
       }
@@ -1098,6 +1170,34 @@ export function registerCourseRoutes(app: Express) {
         return res.status(400).json({ error: "Include at least one slide before creating the course." });
       }
 
+      claimedSession = await claimPptxReviewSessionForCommit(plan.sessionId, user.id);
+      if (!claimedSession) {
+        return res.status(409).json({ error: "This PowerPoint review has expired or is already being committed." });
+      }
+
+      if (plan.treatment === "faithful") {
+        const storage = new ObjectStorageService();
+        const checked = new Set<string>();
+        for (const slide of plan.slides) {
+          if (!slide.include) continue;
+          const imageUrl = slide.previewImageUrl || slide.previewUrl;
+          if (checked.has(imageUrl)) continue;
+          checked.add(imageUrl);
+          try {
+            const file = await storage.getObjectEntityFile(imageUrl);
+            const allowed = await storage.canAccessObjectEntity({ objectFile: file, userId: user.id });
+            if (!allowed) throw new ObjectNotFoundError();
+          } catch (error) {
+            if (error instanceof ObjectNotFoundError) {
+              const notFoundError = new Error("A PowerPoint preview image could not be found.") as Error & { statusCode: number };
+              notFoundError.statusCode = 404;
+              throw notFoundError;
+            }
+            throw error;
+          }
+        }
+      }
+
       const doc: courseIE.CourseExportDocV1 = {
         format: "orion-course",
         version: "1",
@@ -1121,11 +1221,29 @@ export function registerCourseRoutes(app: Express) {
         ownerTenantId: isGlobal ? null : user.tenantId,
         createdBy: user.id,
         visibility: "private",
+        allowedPptxReviewPreviewPaths: Array.from(allowedPreviewPaths),
       });
+      const retainedPaths = Array.from(new Set(
+        modules.flatMap((module) =>
+          module.lessons.flatMap((lesson) => Array.from(extractManagedObjectPaths(lesson.content))),
+        ),
+      )).filter((objectPath) => allowedPreviewPaths.has(objectPath));
+      await completePptxReviewSession({
+        sessionId: claimedSession.id,
+        ownerUserId: user.id,
+        courseId: result.course.id,
+        retainedPaths,
+      });
+      claimedSession = undefined;
       res.status(201).json(result);
     } catch (err: any) {
       console.error("pptx course commit error", err);
-      const status = err instanceof z.ZodError ? 400 : 400;
+      if (claimedSession && committingUserId) {
+        await failPptxReviewSession(claimedSession.id, committingUserId).catch((cleanupError) => {
+          console.error("pptx failed-commit cleanup error", cleanupError);
+        });
+      }
+      const status = err instanceof z.ZodError ? 400 : (err?.statusCode ?? 400);
       res.status(status).json({ error: err?.message || "Failed to create a course from this PowerPoint review." });
     }
   });

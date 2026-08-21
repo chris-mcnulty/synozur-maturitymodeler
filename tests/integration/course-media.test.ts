@@ -3,6 +3,9 @@ import request from 'supertest';
 
 // ----- Mocks for the service layer the course routes depend on -----
 const course = { id: 'c1', title: 'C', status: 'published', visibility: 'public', ownerTenantId: null };
+const reviewSessionId = '11111111-1111-4111-8111-111111111111';
+const previewOne = `/objects/slides/preview/${reviewSessionId}/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa.png`;
+const previewTwo = `/objects/slides/preview/${reviewSessionId}/bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb.png`;
 
 const courseSvcMock = {
   getCourseById: vi.fn(async () => course),
@@ -10,6 +13,7 @@ const courseSvcMock = {
   userCanViewCourse: vi.fn(async () => true),
   getCourseForModule: vi.fn(async () => course),
   createLesson: vi.fn(async (data: any) => ({ id: 'l1', ...data })),
+  updateCourse: vi.fn(async (_id: string, patch: any) => ({ ...course, ...patch })),
   getOrCreateEnrollment: vi.fn(async () => ({ id: 'enrollment-1', courseId: 'c1', userId: 'u' })),
   getCourseFull: vi.fn(async () => ({
     modules: [{ lessons: [{ content: { slides: [{ id: 's', blocks: [{ id: 'b', type: 'image_slide', url: '/objects/slides/known.png' }] }] } }] }],
@@ -35,7 +39,7 @@ const pptxMock = {
         title: 'Getting Started',
         text: 'Getting Started\nWelcome',
         notes: '',
-        previewImageUrl: '/objects/slides/preview/one.png',
+        previewImageUrl: previewOne,
         recommendation: 'cover',
         includedDefault: true,
         rationale: 'Opening cover',
@@ -46,7 +50,7 @@ const pptxMock = {
         title: 'Section',
         text: 'Section',
         notes: '',
-        previewImageUrl: '/objects/slides/preview/two.png',
+        previewImageUrl: previewTwo,
         recommendation: 'divider',
         includedDefault: false,
         rationale: 'Section divider',
@@ -85,22 +89,72 @@ const objectStorageMock = {
       return url.replace('https://storage.googleapis.com/bucket/private', '/objects');
     }
     async trySetObjectEntityAclPolicy(url: string) {
-      return this.normalizeObjectEntityPath(url);
+      return trySetObjectEntityAclPolicy(url);
     }
     async getObjectEntityFile(p: string) { return { path: p }; }
     async downloadObject(_file: any, res: any) { res.status(200).send('BINARY'); }
     async canAccessObjectEntity() { return objectAclAllows; }
+    async deleteObjectByPath() { return true; }
   },
   ObjectNotFoundError: class extends Error {},
 };
+const pptxReviewSessionMock = {
+  createPptxReviewSession: vi.fn(async () => ({
+    id: reviewSessionId,
+    ownerUserId: 'u',
+    ownerTenantId: null,
+    status: 'active',
+    previewPaths: [],
+    retainedPaths: [],
+    courseId: null,
+    expiresAt: new Date(Date.now() + 60_000),
+    cleanupCompletedAt: null,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  })),
+  recordPptxReviewPreviewPaths: vi.fn(async ({ previewPaths }: any) => ({
+    id: reviewSessionId,
+    ownerUserId: 'u',
+    ownerTenantId: null,
+    status: 'active',
+    previewPaths,
+    retainedPaths: [],
+    courseId: null,
+    expiresAt: new Date(Date.now() + 60_000),
+    cleanupCompletedAt: null,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  })),
+  getActivePptxReviewSession: vi.fn(async () => ({
+    id: reviewSessionId,
+    ownerUserId: 'u',
+    status: 'active',
+    previewPaths: [
+      previewOne,
+      previewTwo,
+    ],
+  })),
+  claimPptxReviewSessionForCommit: vi.fn(async () => ({
+    id: reviewSessionId,
+    ownerUserId: 'u',
+    status: 'committing',
+  })),
+  completePptxReviewSession: vi.fn(async () => {}),
+  failPptxReviewSession: vi.fn(async () => {}),
+  discardPptxReviewSession: vi.fn(async () => {}),
+  cancelPptxReviewSession: vi.fn(async () => true),
+};
 // Toggled per-test to simulate the object's own ACL granting/denying the user.
 let objectAclAllows = true;
+const trySetObjectEntityAclPolicy = vi.fn(async (url: string) =>
+  url.replace('https://storage.googleapis.com/bucket/private', '/objects'));
 
 vi.mock('../../server/services/course-service', () => courseSvcMock);
 vi.mock('../../server/services/tts-service', () => ttsMock);
 vi.mock('../../server/services/pptx-import', () => pptxMock);
 vi.mock('../../server/services/course-import-export', () => courseIEMock);
 vi.mock('../../server/objectStorage', () => objectStorageMock);
+vi.mock('../../server/services/pptx-review-session-service', () => pptxReviewSessionMock);
 vi.mock('../../server/db', () => ({ db: {}, pool: {} }));
 vi.mock('../../server/storage', () => ({ storage: {} }));
 vi.mock('../../server/permissions', () => ({
@@ -176,6 +230,30 @@ describe('course media + narration + import routes', () => {
     });
   });
 
+  describe('PUT /api/courses/:id/image', () => {
+    it('rejects review previews before making them public', async () => {
+      const app = await buildApp();
+      const res = await request(app)
+        .put('/api/courses/c1/image')
+        .send({ imageUrl: previewOne });
+
+      expect(res.status).toBe(400);
+      expect(res.body.error).toMatch(/cannot be used as course images/i);
+      expect(trySetObjectEntityAclPolicy).not.toHaveBeenCalled();
+    });
+
+    it('continues accepting historical flat previews as committed media', async () => {
+      const app = await buildApp();
+      const legacyPreview = '/objects/slides/preview/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa.png';
+      const res = await request(app)
+        .put('/api/courses/c1/image')
+        .send({ imageUrl: legacyPreview });
+
+      expect(res.status).toBe(200);
+      expect(trySetObjectEntityAclPolicy).toHaveBeenCalledWith(legacyPreview);
+    });
+  });
+
   describe('POST /api/courses/:id/enroll', () => {
     it('allows a course manager to enroll for a draft preview', async () => {
       const originalStatus = course.status;
@@ -236,6 +314,7 @@ describe('course media + narration + import routes', () => {
         .send(pk);
 
       expect(res.status).toBe(200);
+      expect(res.body.sessionId).toBe(reviewSessionId);
       expect(res.body.review.slides).toHaveLength(2);
       expect(res.body.review.slides[1]).toMatchObject({
         classification: 'divider',
@@ -250,6 +329,7 @@ describe('course media + narration + import routes', () => {
       const res = await request(app)
         .post('/api/courses/pptx/commit')
         .send({
+          sessionId: reviewSessionId,
           title: 'Imported course',
           slug: 'imported-course',
           summary: 'Summary',
@@ -263,7 +343,7 @@ describe('course media + narration + import routes', () => {
               index: 1,
               title: 'Welcome',
               text: 'Welcome\nUseful body',
-              previewImageUrl: '/objects/slides/preview/one.png',
+              previewImageUrl: previewOne,
               narrationScript: 'A useful transcript.',
               include: true,
               groupId: 'group-1',
@@ -274,7 +354,7 @@ describe('course media + narration + import routes', () => {
               index: 2,
               title: 'Divider',
               text: 'Divider',
-              previewImageUrl: '/objects/slides/preview/two.png',
+              previewImageUrl: previewTwo,
               narrationScript: 'Next section.',
               include: false,
               groupId: 'group-1',
@@ -299,6 +379,54 @@ describe('course media + narration + import routes', () => {
         expect.objectContaining({ type: 'heading' }),
       ]);
       expect(pptxMock.buildFaithfulBlocks).not.toHaveBeenCalled();
+      expect(pptxReviewSessionMock.completePptxReviewSession).toHaveBeenCalledWith(
+        expect.objectContaining({ retainedPaths: [] }),
+      );
+    });
+
+    it('retains only included previews used by faithful output', async () => {
+      const app = await buildApp();
+      const res = await request(app)
+        .post('/api/courses/pptx/commit')
+        .send({
+          sessionId: reviewSessionId,
+          title: 'Faithful course',
+          slug: 'faithful-course',
+          treatment: 'faithful',
+          slides: [
+            {
+              id: 'source-1',
+              sourceIndex: 0,
+              index: 1,
+              title: 'Included',
+              text: 'Included',
+              previewImageUrl: previewOne,
+              narrationScript: '',
+              include: true,
+              groupId: 'group-1',
+            },
+            {
+              id: 'source-2',
+              sourceIndex: 1,
+              index: 2,
+              title: 'Excluded',
+              text: 'Excluded',
+              previewImageUrl: previewTwo,
+              narrationScript: '',
+              include: false,
+              groupId: 'group-1',
+            },
+          ],
+          groups: [{ id: 'group-1', name: 'Introduction' }],
+        });
+
+      expect(res.status).toBe(201);
+      expect(pptxReviewSessionMock.completePptxReviewSession).toHaveBeenCalledWith({
+        sessionId: reviewSessionId,
+        ownerUserId: 'u',
+        courseId: 'created-course',
+        retainedPaths: [previewOne],
+      });
     });
 
     it('rejects commit plans that exclude every source slide', async () => {
@@ -306,6 +434,7 @@ describe('course media + narration + import routes', () => {
       const res = await request(app)
         .post('/api/courses/pptx/commit')
         .send({
+          sessionId: reviewSessionId,
           title: 'Empty course',
           slug: 'empty-course',
           treatment: 'faithful',
@@ -314,7 +443,7 @@ describe('course media + narration + import routes', () => {
             index: 1,
             title: 'Only slide',
             text: '',
-            previewImageUrl: '/objects/slides/preview/one.png',
+            previewImageUrl: previewOne,
             narrationScript: '',
             include: false,
             groupId: 'group-1',
@@ -331,6 +460,7 @@ describe('course media + narration + import routes', () => {
       const res = await request(app)
         .post('/api/courses/pptx/commit')
         .send({
+          sessionId: reviewSessionId,
           title: 'Faithful course',
           slug: 'faithful-course',
           treatment: 'faithful',
@@ -339,7 +469,7 @@ describe('course media + narration + import routes', () => {
             index: 1,
             title: 'Only slide',
             text: 'Content',
-            previewImageUrl: '/objects/slides/preview/one.png',
+            previewImageUrl: previewOne,
             narrationScript: 'Content.',
             include: true,
             groupId: 'group-1',
@@ -349,6 +479,64 @@ describe('course media + narration + import routes', () => {
       expect(res.status).toBe(404);
       expect(courseIEMock.importCourse).not.toHaveBeenCalled();
       objectAclAllows = true;
+    });
+
+    it('cancels the server-side review session', async () => {
+      const app = await buildApp();
+      const res = await request(app).delete(`/api/courses/pptx/review/${reviewSessionId}`);
+      expect(res.status).toBe(204);
+      expect(pptxReviewSessionMock.cancelPptxReviewSession).toHaveBeenCalledWith(reviewSessionId, 'u');
+    });
+
+    it('blocks review-only previews from being attached through lesson creation', async () => {
+      const app = await buildApp();
+      const res = await request(app)
+        .post('/api/course-modules/module-1/lessons')
+        .send({
+          title: 'Bypass attempt',
+          type: 'slides',
+          content: {
+            slides: [{
+              id: 'slide-1',
+              blocks: [{
+                id: 'block-1',
+                type: 'image_slide',
+                url: previewOne,
+                alt: 'Temporary preview',
+              }],
+              narration: { mode: 'none' },
+            }],
+          },
+        });
+
+      expect(res.status).toBe(400);
+      expect(res.body.error).toMatch(/active review session/i);
+      expect(courseSvcMock.createLesson).not.toHaveBeenCalled();
+    });
+
+    it('continues accepting historical flat previews in lesson content', async () => {
+      const app = await buildApp();
+      const res = await request(app)
+        .post('/api/course-modules/module-1/lessons')
+        .send({
+          title: 'Historical course slide',
+          type: 'slides',
+          content: {
+            slides: [{
+              id: 'slide-1',
+              blocks: [{
+                id: 'block-1',
+                type: 'image_slide',
+                url: '/objects/slides/preview/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa.png',
+                alt: 'Committed preview',
+              }],
+              narration: { mode: 'none' },
+            }],
+          },
+        });
+
+      expect(res.status).toBe(200);
+      expect(courseSvcMock.createLesson).toHaveBeenCalledOnce();
     });
   });
 
