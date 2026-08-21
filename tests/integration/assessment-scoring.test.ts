@@ -32,6 +32,15 @@ const storageMock = {
     state.results.push(r);
     return r;
   },
+  async getResult(assessmentId: string) {
+    return state.results.find(r => r.assessmentId === assessmentId);
+  },
+  async updateResult(id: string, data: any) {
+    const result = state.results.find(r => r.id === id);
+    if (!result) return undefined;
+    Object.assign(result, data);
+    return result;
+  },
   async updateAssessment(id: string, data: any) {
     const a = state.assessments.find(x => x.id === id);
     if (!a) return undefined;

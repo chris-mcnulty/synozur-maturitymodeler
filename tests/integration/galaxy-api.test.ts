@@ -25,6 +25,7 @@ import {
   models,
   assessments,
   results,
+  courses,
   oauthClients,
   oauthTokens,
   galaxyExposurePolicies,
@@ -162,6 +163,7 @@ async function seed(over: SeedOverrides = {}): Promise<SeedContext> {
 const seededTenantIds: string[] = [];
 const seededUserIds: string[] = [];
 const seededModelIds: string[] = [];
+const seededCourseIds: string[] = [];
 
 function track(ctx: SeedContext) {
   seededTenantIds.push(ctx.tenantId);
@@ -195,6 +197,7 @@ async function cleanupAll() {
   await db.delete(oauthTokens).where(inArray(oauthTokens.userId, us));
   await db.delete(oauthClients).where(eq(oauthClients.id, SHARED_CLIENT_ROW_ID));
   await db.delete(assessments).where(inArray(assessments.tenantId, ts));
+  await db.delete(courses).where(inArray(courses.id, seededCourseIds));
   await db.delete(models).where(inArray(models.id, ms));
   await db.delete(users).where(inArray(users.id, us));
   await db.delete(tenants).where(inArray(tenants.id, ts));
@@ -644,12 +647,36 @@ describe('Galaxy API contract (real DB)', () => {
   });
 
   describe('forward-compat stubs', () => {
-    it('GET /courses returns an empty envelope', async () => {
+    it('GET /courses returns a published course available to the caller', async () => {
       const ctx = track(await seed());
+      const courseId = `${SUITE_PREFIX}_course_${suiteCounter}`;
+      const slug = `${courseId}-slug`;
+      seededCourseIds.push(courseId);
+      await db.insert(courses).values({
+        id: courseId,
+        slug,
+        title: 'Galaxy Test Course',
+        description: 'A course fixture for the Galaxy API contract suite.',
+        summary: 'Galaxy course fixture',
+        estimatedMinutes: 15,
+        status: 'published',
+        visibility: 'public',
+      });
+
       const app = await buildGalaxyApp();
       const res = await request(app).get('/api/galaxy/v1/courses').set(ctx.authHeader);
       expect(res.status).toBe(200);
-      expect(res.body.data).toEqual([]);
+      expect(res.body.data).toContainEqual(expect.objectContaining({
+        id: courseId,
+        slug,
+        title: 'Galaxy Test Course',
+        enrollment: {
+          status: 'not_started',
+          progressPercent: 0,
+          startedAt: null,
+          completedAt: null,
+        },
+      }));
     });
 
     it('GET /attestations returns an empty envelope', async () => {
