@@ -1,13 +1,9 @@
 /**
  * Text-to-speech narration service.
  *
- * Provider priority:
- *   1. Azure Cognitive Services Speech (REST) — primary
- *      Config: DB settings azureSpeechKey + (azureSpeechRegion | azureSpeechEndpoint)
- *      Env fallback: AZURE_SPEECH_KEY + (AZURE_SPEECH_REGION | AZURE_SPEECH_ENDPOINT)
- *   2. OpenAI TTS — fallback when Azure is not configured
- *      Uses the Replit AI integration proxy:
- *        AI_INTEGRATIONS_OPENAI_BASE_URL / AI_INTEGRATIONS_OPENAI_API_KEY
+ * Provider: Azure Cognitive Services Speech (REST) — only supported provider.
+ *   Config: DB settings azureSpeechKey + (azureSpeechRegion | azureSpeechEndpoint)
+ *   Env fallback: AZURE_SPEECH_KEY + (AZURE_SPEECH_REGION | AZURE_SPEECH_ENDPOINT)
  *
  * Generated audio is stored in object storage at `narration/<uuid>.mp3` and
  * returned as a `/objects/narration/...` path that the slide player loads via
@@ -21,7 +17,6 @@
  *
  * Env overrides (used if DB setting is absent):
  *   AZURE_SPEECH_KEY / AZURE_SPEECH_REGION / AZURE_SPEECH_ENDPOINT / AZURE_SPEECH_VOICE
- *   OPENAI_TTS_VOICE / OPENAI_TTS_MODEL
  */
 import { randomUUID } from "crypto";
 import { ObjectStorageService } from "../objectStorage";
@@ -76,8 +71,16 @@ export async function getAzureConfig(): Promise<AzureTtsConfig> {
 
 // ─── Azure Speech ────────────────────────────────────────────────────────────
 
-export async function isAzureTtsConfigured(): Promise<boolean> {
-  const { key, region, endpoint } = await getAzureConfig();
+/**
+ * Synchronous env-only check for Azure TTS configuration.
+ * Returns true when AZURE_SPEECH_KEY and (AZURE_SPEECH_REGION or
+ * AZURE_SPEECH_ENDPOINT) are present in the environment.
+ * The async synthesizeNarration path also checks DB settings.
+ */
+export function isAzureTtsConfigured(): boolean {
+  const key = process.env.AZURE_SPEECH_KEY || "";
+  const region = process.env.AZURE_SPEECH_REGION || "";
+  const endpoint = process.env.AZURE_SPEECH_ENDPOINT || "";
   return Boolean(key && (region || endpoint));
 }
 
@@ -123,57 +126,6 @@ async function synthesizeChunkAzure(
   return Buffer.from(await resp.arrayBuffer());
 }
 
-// ─── OpenAI TTS ──────────────────────────────────────────────────────────────
-
-const OPENAI_TTS_VOICES = new Set(["alloy", "echo", "fable", "onyx", "nova", "shimmer"]);
-const OPENAI_DEFAULT_VOICE = process.env.OPENAI_TTS_VOICE || "nova";
-const OPENAI_TTS_MODEL = process.env.OPENAI_TTS_MODEL || "tts-1";
-const OPENAI_CHUNK_LIMIT = 4000;
-
-export function isOpenAITtsConfigured(): boolean {
-  return Boolean(
-    process.env.AI_INTEGRATIONS_OPENAI_BASE_URL &&
-      process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
-  );
-}
-
-function toOpenAIVoice(voice: string | undefined): string {
-  if (!voice) return OPENAI_DEFAULT_VOICE;
-  const lower = voice.toLowerCase();
-  if (OPENAI_TTS_VOICES.has(lower)) return lower;
-  if (/jenny|aria|ana|emma|michelle|elizabeth|clara|jane|sara/i.test(lower))
-    return "nova";
-  if (/guy|davis|tony|andrew|brandon/i.test(lower)) return "onyx";
-  return OPENAI_DEFAULT_VOICE;
-}
-
-async function synthesizeChunkOpenAI(
-  text: string,
-  voice: string,
-): Promise<Buffer> {
-  const baseUrl = (
-    process.env.AI_INTEGRATIONS_OPENAI_BASE_URL as string
-  ).replace(/\/$/, "");
-  const apiKey = process.env.AI_INTEGRATIONS_OPENAI_API_KEY as string;
-
-  const resp = await fetch(`${baseUrl}/v1/audio/speech`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ model: OPENAI_TTS_MODEL, voice, input: text }),
-  });
-
-  if (!resp.ok) {
-    const detail = await resp.text().catch(() => "");
-    throw new Error(
-      `OpenAI TTS request failed (${resp.status}). ${detail.slice(0, 200)}`,
-    );
-  }
-  return Buffer.from(await resp.arrayBuffer());
-}
-
 // ─── Shared chunker ──────────────────────────────────────────────────────────
 
 export function splitTextForTts(text: string, limit: number): string[] {
@@ -208,27 +160,44 @@ export function splitTextForTts(text: string, limit: number): string[] {
 
 const MAX_TEXT_LENGTH = 50000;
 
-export async function isTtsConfigured(): Promise<boolean> {
-  return (await isAzureTtsConfigured()) || isOpenAITtsConfigured();
+/**
+ * Returns true when Azure TTS is available via env vars.
+ * Synchronous; can be awaited by callers that expect a Promise.
+ */
+export function isTtsConfigured(): boolean {
+  return isAzureTtsConfigured();
 }
 
-export async function getTtsProvider(): Promise<"azure" | "openai" | null> {
-  if (await isAzureTtsConfigured()) return "azure";
-  if (isOpenAITtsConfigured()) return "openai";
+/**
+ * Returns "azure" when Azure TTS is configured via env vars, otherwise null.
+ * Synchronous; can be awaited by callers that expect a Promise.
+ * OpenAI is no longer a supported narration provider.
+ */
+export function getTtsProvider(): "azure" | null {
+  if (isAzureTtsConfigured()) return "azure";
   return null;
 }
 
+/**
+ * Synthesize narration using Azure Cognitive Services Speech.
+ * Throws a clear error when Azure is not configured — there is no OpenAI
+ * fallback. Configure Azure via Admin → AI & Speech settings or the
+ * AZURE_SPEECH_KEY / AZURE_SPEECH_REGION env vars.
+ */
 export async function synthesizeNarration(opts: {
   text: string;
   voice?: string;
   ownerUserId?: string;
 }): Promise<{ audioUrl: string; voice: string; provider: string }> {
-  const provider = await getTtsProvider();
-  if (!provider) {
+  // Read full config (env + DB) to check if Azure is available.
+  const azureConfig = await getAzureConfig();
+  const azureAvailable = Boolean(azureConfig.key && (azureConfig.region || azureConfig.endpoint));
+
+  if (!azureAvailable) {
     throw new Error(
-      "No TTS provider is configured. " +
+      "Azure Speech is not configured. " +
         "Add your Azure Speech Key and Region in Admin → AI & Speech settings, " +
-        "or ensure the OpenAI AI integration is active.",
+        "or set the AZURE_SPEECH_KEY and AZURE_SPEECH_REGION environment variables.",
     );
   }
 
@@ -238,26 +207,13 @@ export async function synthesizeNarration(opts: {
     throw new Error(`Narration text is too long (max ${MAX_TEXT_LENGTH} characters).`);
   }
 
-  let resolvedVoice: string;
-  let chunkLimit: number;
-  let synthesizeChunk: (chunk: string, voice: string) => Promise<Buffer>;
-
-  if (provider === "azure") {
-    const azureConfig = await getAzureConfig();
-    resolvedVoice = opts.voice || azureConfig.voice;
-    chunkLimit = 3500;
-    synthesizeChunk = (chunk, voice) =>
-      synthesizeChunkAzure(chunk, voice, azureConfig);
-  } else {
-    resolvedVoice = toOpenAIVoice(opts.voice);
-    chunkLimit = OPENAI_CHUNK_LIMIT;
-    synthesizeChunk = synthesizeChunkOpenAI;
-  }
+  const resolvedVoice = opts.voice || azureConfig.voice;
+  const chunkLimit = 3500;
 
   const chunks = splitTextForTts(text, chunkLimit);
   const parts: Buffer[] = [];
   for (const chunk of chunks) {
-    parts.push(await synthesizeChunk(chunk, resolvedVoice));
+    parts.push(await synthesizeChunkAzure(chunk, resolvedVoice, azureConfig));
   }
   const buf = Buffer.concat(parts);
 
@@ -269,5 +225,5 @@ export async function synthesizeNarration(opts: {
     acl: { owner: opts.ownerUserId || "system", visibility: "private" },
   });
 
-  return { audioUrl, voice: resolvedVoice, provider };
+  return { audioUrl, voice: resolvedVoice, provider: "azure" };
 }

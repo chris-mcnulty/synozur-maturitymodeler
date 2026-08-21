@@ -181,6 +181,32 @@ export class ObjectStorageService {
     }
   }
 
+  /**
+   * Read all bytes of a managed object path (`/objects/...`) into a Buffer.
+   * Returns `null` when the object does not exist (safe for export use-cases
+   * where a dangling reference should be skipped rather than aborting).
+   * Throws for genuine I/O errors so callers can decide how to surface them.
+   */
+  async readObjectBytes(objectPath: string): Promise<{ data: Buffer; contentType: string } | null> {
+    let file: File;
+    try {
+      file = await this.getObjectEntityFile(objectPath);
+    } catch (err) {
+      if (err instanceof ObjectNotFoundError) return null;
+      throw err;
+    }
+    const [metadata] = await file.getMetadata();
+    const contentType: string = (metadata.contentType as string) || "application/octet-stream";
+    const chunks: Buffer[] = [];
+    await new Promise<void>((resolve, reject) => {
+      const stream = file.createReadStream();
+      stream.on("data", (chunk: Buffer) => chunks.push(chunk));
+      stream.on("end", resolve);
+      stream.on("error", reject);
+    });
+    return { data: Buffer.concat(chunks), contentType };
+  }
+
   async getObjectEntityFile(objectPath: string): Promise<File> {
     if (!objectPath.startsWith("/objects/")) {
       throw new ObjectNotFoundError();

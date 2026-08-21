@@ -13,7 +13,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Plus, Edit, Trash, Users, ChevronLeft, FileText, Save, Loader2, Upload, Download, X, ChevronDown, Share2, Sparkles } from "lucide-react";
+import { Plus, Edit, Trash, Users, ChevronLeft, FileText, Save, Loader2, Upload, Download, X, ChevronDown, Share2, Sparkles, ArrowUp, ArrowDown, Merge, Split, RotateCcw, Check, Eye } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ObjectUploader } from "@/components/ObjectUploader";
 import { SlideEditor } from "@/components/admin/SlideEditor";
@@ -46,6 +46,37 @@ interface CourseFull extends Course {
   tags: CourseTag[];
 }
 
+interface PptxReviewSlide {
+  id: string;
+  index: number;
+  title: string;
+  text?: string;
+  previewUrl?: string;
+  classification: string;
+  reason?: string;
+  include: boolean;
+  groupId: string;
+}
+
+interface PptxReviewGroup {
+  id: string;
+  name: string;
+  moduleTitle: string;
+  lessonTitle: string;
+  slides: PptxReviewSlide[];
+}
+
+interface PptxReview {
+  title: string;
+  slug: string;
+  summary: string;
+  description: string;
+  estimatedMinutes: number | null;
+  treatment: "faithful" | "enhanced";
+  slides: PptxReviewSlide[];
+  groups: PptxReviewGroup[];
+}
+
 const LESSON_TYPE_OPTIONS: { value: LessonType; label: string }[] = [
   { value: "rich_text", label: "Rich text" },
   { value: "slides", label: "Slides" },
@@ -61,8 +92,11 @@ export function CourseManagement() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
   const [importing, setImporting] = useState(false);
+  const [pptxReview, setPptxReview] = useState<PptxReview | null>(null);
+  const [pptxLoading, setPptxLoading] = useState(false);
   const [showArchived, setShowArchived] = useState(false);
   const importFileRef = useRef<HTMLInputElement>(null);
+  const pptxFileRef = useRef<HTMLInputElement>(null);
 
   const listUrl = showArchived
     ? "/api/courses?manageable=true&includeArchived=true"
@@ -122,6 +156,82 @@ export function CourseManagement() {
     }
   }
 
+  async function handlePptxFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    if (!file.name.toLowerCase().endsWith(".pptx")) {
+      toast({ title: "Unsupported file", description: "Choose a PowerPoint .pptx file.", variant: "destructive" });
+      return;
+    }
+    setPptxLoading(true);
+    try {
+      const response = await fetch("/api/courses/pptx/review", {
+        method: "POST",
+        body: file,
+        headers: { "Content-Type": "application/vnd.openxmlformats-officedocument.presentationml.presentation" },
+        credentials: "include",
+      });
+      if (!response.ok) throw new Error((await response.text()) || "Could not review this PowerPoint.");
+      const result = await response.json();
+      const review = (result.review ?? result) as Partial<PptxReview>;
+      const sourceSlides = review.slides ?? (review.groups ?? []).flatMap((group: any) => group.slides ?? []);
+      const slides = sourceSlides.map((slide: any, index) => ({
+        ...slide,
+        id: String(slide.id ?? `slide-${index + 1}`),
+        index: slide.index ?? index + 1,
+        title: slide.title ?? `Slide ${index + 1}`,
+        previewUrl: slide.previewUrl ?? slide.imageUrl ?? slide.preview,
+        classification: slide.classification ?? slide.category ?? "content",
+        reason: slide.reason ?? slide.recommendation,
+        include: slide.include !== false && slide.included !== false,
+        groupId: String(slide.groupId ?? "group-1"),
+      }));
+      const groups: PptxReviewGroup[] = (review.groups ?? [{
+        id: "group-1",
+        name: "Imported lesson",
+        moduleTitle: "Imported section",
+        lessonTitle: "Imported lesson",
+        slides,
+      }]).map((group: any, index) => ({
+        ...group,
+        id: String(group.id ?? `group-${index + 1}`),
+        name: group.name ?? `Lesson ${index + 1}`,
+        moduleTitle: group.moduleTitle ?? group.name ?? `Section ${index + 1}`,
+        lessonTitle: group.lessonTitle ?? group.name ?? `Lesson ${index + 1}`,
+        slides: slides.filter(slide => String(slide.groupId) === String(group.id ?? `group-${index + 1}`)),
+      }));
+      if (review.groups?.length && sourceSlides.some((slide: any) => !slide.groupId)) {
+        groups.forEach((group, index) => {
+          const sourceGroup = review.groups?.[index] as any;
+          const sourceIds = new Set((sourceGroup?.slides ?? []).map((slide: any) => String(slide.id)));
+          group.slides = slides.filter(slide => sourceIds.has(slide.id)).map(slide => {
+            slide.groupId = group.id;
+            return slide;
+          });
+        });
+      }
+      const groupedIds = new Set(groups.flatMap((group: PptxReviewGroup) => group.slides.map((slide: PptxReviewSlide) => slide.id)));
+      if (groups.length && slides.some(slide => !groupedIds.has(slide.id))) {
+        groups[0].slides.push(...slides.filter(slide => !groupedIds.has(slide.id)));
+      }
+      setPptxReview({
+        title: review.title ?? file.name.replace(/\.pptx$/i, ""),
+        slug: review.slug ?? "",
+        summary: review.summary ?? "",
+        description: review.description ?? "",
+        estimatedMinutes: review.estimatedMinutes ?? null,
+        treatment: review.treatment === "enhanced" ? "enhanced" : "faithful",
+        slides,
+        groups,
+      });
+    } catch (error: any) {
+      toast({ title: "PowerPoint review failed", description: error.message ?? "Could not inspect the deck.", variant: "destructive" });
+    } finally {
+      setPptxLoading(false);
+    }
+  }
+
   if (editingId) {
     return <CourseBuilder courseId={editingId} onClose={() => setEditingId(null)} />;
   }
@@ -137,6 +247,7 @@ export function CourseManagement() {
         onChange={handleImportFile}
         data-testid="input-import-course-file"
       />
+       <input ref={pptxFileRef} type="file" accept=".pptx,application/vnd.openxmlformats-officedocument.presentationml.presentation" className="hidden" onChange={handlePptxFile} data-testid="input-import-course-pptx" />
 
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
@@ -163,6 +274,10 @@ export function CourseManagement() {
               ? <Loader2 className="h-4 w-4 mr-1 animate-spin" />
               : <Upload className="h-4 w-4 mr-1" />}
             Import
+          </Button>
+          <Button variant="outline" onClick={() => pptxFileRef.current?.click()} disabled={pptxLoading} data-testid="button-import-course-pptx">
+            {pptxLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+            Import PowerPoint
           </Button>
           <Button onClick={() => setCreating(true)} data-testid="button-new-course">
             <Plus className="h-4 w-4 mr-1" /> New course
@@ -253,6 +368,175 @@ export function CourseManagement() {
           onCreated={(id) => { setCreating(false); setEditingId(id); }}
         />
       )}
+      {pptxReview && (
+        <PowerPointReviewDialog
+          review={pptxReview}
+          onChange={setPptxReview}
+          onClose={() => setPptxReview(null)}
+          onCommitted={(id) => { setPptxReview(null); setEditingId(id); }}
+        />
+      )}
+    </div>
+  );
+}
+
+function PowerPointReviewDialog({
+  review,
+  onChange,
+  onClose,
+  onCommitted,
+}: {
+  review: PptxReview;
+  onChange: (review: PptxReview) => void;
+  onClose: () => void;
+  onCommitted: (id: string) => void;
+}) {
+  const { toast } = useToast();
+  const [selectedGroupId, setSelectedGroupId] = useState(review.groups[0]?.id ?? "");
+  const [selectedSlideId, setSelectedSlideId] = useState<string | null>(null);
+  const commitMutation = useMutation({
+    mutationFn: async () => apiRequest("/api/courses/pptx/commit", "POST", review),
+    onSuccess: (result: any) => {
+      const course = result.course ?? result;
+      queryClient.invalidateQueries({ queryKey: ["/api/courses"] });
+      toast({ title: "Course imported", description: "Your PowerPoint is now a private draft course." });
+      onCommitted(course.id);
+    },
+    onError: (error: Error) => toast({ title: "Could not create course", description: error.message, variant: "destructive" }),
+  });
+
+  const updateReview = (patch: Partial<PptxReview>) => onChange({ ...review, ...patch });
+  const allSlides = review.slides;
+  const includedCount = allSlides.filter(slide => slide.include).length;
+  const updateSlide = (id: string, patch: Partial<PptxReviewSlide>) => {
+    const slides = review.slides.map(slide => slide.id === id ? { ...slide, ...patch } : slide);
+    const groups = review.groups.map(group => ({ ...group, slides: group.slides.map(slide => slide.id === id ? { ...slide, ...patch } : slide) }));
+    onChange({ ...review, slides, groups });
+  };
+  const updateGroup = (id: string, patch: Partial<PptxReviewGroup>) =>
+    onChange({ ...review, groups: review.groups.map(group => group.id === id ? { ...group, ...patch } : group) });
+
+  const moveGroup = (index: number, direction: -1 | 1) => {
+    const next = index + direction;
+    if (next < 0 || next >= review.groups.length) return;
+    const groups = [...review.groups];
+    [groups[index], groups[next]] = [groups[next], groups[index]];
+    onChange({ ...review, groups });
+  };
+  const splitSlide = () => {
+    if (!selectedSlideId) return;
+    const source = review.groups.find(group => group.slides.some(slide => slide.id === selectedSlideId));
+    const splitIndex = source?.slides.findIndex(slide => slide.id === selectedSlideId) ?? -1;
+    if (!source || splitIndex <= 0) return;
+    const movedSlides = source.slides.slice(splitIndex);
+    const title = `${source.lessonTitle || source.name} · New lesson`;
+    const newGroup: PptxReviewGroup = {
+      id: `group-${Date.now()}`,
+      name: title,
+      moduleTitle: source.moduleTitle || source.name,
+      lessonTitle: title,
+      slides: movedSlides.map(slide => ({ ...slide })),
+    };
+    const sourceGroupIndex = review.groups.findIndex(group => group.id === source.id);
+    const groups = [...review.groups];
+    groups[sourceGroupIndex] = { ...source, slides: source.slides.slice(0, splitIndex) };
+    groups.splice(sourceGroupIndex + 1, 0, newGroup);
+    const movedIds = new Set(movedSlides.map(slide => slide.id));
+    onChange({
+      ...review,
+      groups,
+      slides: review.slides.map(slide => movedIds.has(slide.id) ? { ...slide, groupId: newGroup.id } : slide),
+    });
+    setSelectedGroupId(newGroup.id);
+  };
+  const mergeWithPrevious = (index: number) => {
+    if (index < 1) return;
+    const current = review.groups[index];
+    const previous = review.groups[index - 1];
+    const mergedId = previous.id;
+    const groups = review.groups.filter(group => group.id !== current.id).map(group =>
+      group.id === mergedId
+        ? { ...group, slides: [...group.slides, ...current.slides.map(slide => ({ ...slide, groupId: mergedId }))] }
+        : group);
+    onChange({ ...review, groups, slides: review.slides.map(slide => slide.groupId === current.id ? { ...slide, groupId: mergedId } : slide) });
+    setSelectedGroupId(mergedId);
+  };
+
+  return (
+    <Dialog open onOpenChange={(open) => { if (!open) onClose(); }}>
+      <DialogContent className="max-w-6xl p-0 gap-0 overflow-hidden">
+        <DialogHeader className="border-b bg-muted/30 p-5 sm:p-6">
+          <div className="flex items-start justify-between gap-4 pr-8">
+            <div>
+              <DialogTitle className="text-xl">Review PowerPoint course</DialogTitle>
+              <DialogDescription className="mt-1">Shape the deck before it becomes a course. Every source slide stays visible and reversible.</DialogDescription>
+            </div>
+            <Badge variant="secondary" className="shrink-0">{includedCount} of {allSlides.length} slides included</Badge>
+          </div>
+        </DialogHeader>
+        <div className="max-h-[calc(90vh-8rem)] overflow-y-auto p-4 sm:p-6 space-y-6">
+          <section aria-labelledby="pptx-metadata-heading" className="space-y-3">
+            <div className="flex items-center justify-between"><h3 id="pptx-metadata-heading" className="font-semibold">Course details</h3><span className="text-xs text-muted-foreground">Saved as a private draft</span></div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div><Label htmlFor="pptx-review-title">Title</Label><Input id="pptx-review-title" value={review.title} onChange={e => updateReview({ title: e.target.value })} data-testid="input-pptx-review-title" /></div>
+              <div><Label htmlFor="pptx-review-slug">Slug</Label><Input id="pptx-review-slug" value={review.slug} onChange={e => updateReview({ slug: e.target.value })} data-testid="input-pptx-review-slug" /></div>
+              <div><Label htmlFor="pptx-review-summary">Summary</Label><Input id="pptx-review-summary" value={review.summary} onChange={e => updateReview({ summary: e.target.value })} data-testid="input-pptx-review-summary" /></div>
+              <div><Label htmlFor="pptx-review-minutes">Estimated minutes</Label><Input id="pptx-review-minutes" type="number" min="1" value={review.estimatedMinutes ?? ""} onChange={e => updateReview({ estimatedMinutes: e.target.value ? Number(e.target.value) : null })} data-testid="input-pptx-review-minutes" /></div>
+            </div>
+            <div><Label htmlFor="pptx-review-description">Description</Label><Textarea id="pptx-review-description" rows={3} value={review.description} onChange={e => updateReview({ description: e.target.value })} data-testid="input-pptx-review-description" /></div>
+            <fieldset className="space-y-2"><legend className="text-sm font-medium">Slide treatment</legend><div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {(["faithful", "enhanced"] as const).map(mode => (
+                <label key={mode} className={`flex cursor-pointer items-start gap-3 rounded-md border p-3 transition-colors ${review.treatment === mode ? "border-primary bg-primary/5" : "hover:bg-muted/50"}`}>
+                  <input type="radio" name="pptx-treatment" value={mode} checked={review.treatment === mode} onChange={() => updateReview({ treatment: mode })} className="mt-1" data-testid={`radio-pptx-treatment-${mode}`} />
+                  <span><span className="block font-medium capitalize">{mode}</span><span className="block text-xs text-muted-foreground">{mode === "faithful" ? "Keep the original slide artwork as the learner-facing visual." : "Use clean, site-styled editable content without repeating the source image."}</span></span>
+                </label>
+              ))}
+            </div></fieldset>
+          </section>
+
+          <section aria-labelledby="pptx-structure-heading" className="space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-2"><div><h3 id="pptx-structure-heading" className="font-semibold">Course structure</h3><p className="text-xs text-muted-foreground">Rename module and lesson boundaries, reorder them, merge them, or split at a selected slide.</p></div><Button size="sm" variant="outline" onClick={splitSlide} disabled={!selectedSlideId} data-testid="button-pptx-split-group"><Split className="h-4 w-4" />Split at selected slide</Button></div>
+            <div className="space-y-3">
+              {review.groups.map((group, index) => (
+                <Card key={group.id} className={selectedGroupId === group.id ? "border-primary/60" : ""} data-testid={`card-pptx-group-${group.id}`}>
+                  <CardHeader className="py-3">
+                    <div className="grid flex-1 grid-cols-1 gap-2 sm:grid-cols-2">
+                      <div><Label htmlFor={`pptx-module-${group.id}`} className="text-xs">Module title</Label><Input id={`pptx-module-${group.id}`} value={group.moduleTitle} onChange={e => updateGroup(group.id, { moduleTitle: e.target.value, name: e.target.value })} data-testid={`input-pptx-module-title-${group.id}`} /></div>
+                      <div><Label htmlFor={`pptx-lesson-${group.id}`} className="text-xs">Lesson title</Label><Input id={`pptx-lesson-${group.id}`} value={group.lessonTitle} onChange={e => updateGroup(group.id, { lessonTitle: e.target.value })} data-testid={`input-pptx-lesson-title-${group.id}`} /></div>
+                    </div>
+                    <div className="mt-2 flex items-center gap-2 flex-wrap"><Badge variant="outline">{group.slides.length} slides</Badge><div className="ml-auto flex gap-1"><Button size="icon" variant="ghost" aria-label="Move group up" onClick={() => moveGroup(index, -1)} disabled={index === 0} data-testid={`button-pptx-group-up-${group.id}`}><ArrowUp /></Button><Button size="icon" variant="ghost" aria-label="Move group down" onClick={() => moveGroup(index, 1)} disabled={index === review.groups.length - 1} data-testid={`button-pptx-group-down-${group.id}`}><ArrowDown /></Button><Button size="sm" variant="outline" onClick={() => mergeWithPrevious(index)} disabled={index === 0} data-testid={`button-pptx-merge-group-${group.id}`}><Merge className="h-4 w-4" />Merge</Button></div></div>
+                  </CardHeader>
+                  <CardContent className="pt-0"><div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                    {group.slides.map(slide => <PptxSlideReview key={slide.id} slide={slide} selected={selectedSlideId === slide.id} onSelect={() => { setSelectedSlideId(slide.id); setSelectedGroupId(group.id); }} onToggle={() => updateSlide(slide.id, { include: !slide.include })} />)}
+                  </div></CardContent>
+                </Card>
+              ))}
+            </div>
+          </section>
+        </div>
+        <DialogFooter className="border-t bg-muted/20 p-4 sm:p-6">
+          <Button variant="outline" onClick={onClose} data-testid="button-pptx-review-cancel">Cancel</Button>
+          <Button onClick={() => commitMutation.mutate()} disabled={commitMutation.isPending || !review.title.trim() || !review.slug.trim() || includedCount === 0} data-testid="button-pptx-commit">
+            {commitMutation.isPending ? <Loader2 className="animate-spin" /> : <Check />} Create draft course
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function PptxSlideReview({ slide, selected, onSelect, onToggle }: { slide: PptxReviewSlide; selected: boolean; onSelect: () => void; onToggle: () => void }) {
+  const classification = slide.classification.replace(/_/g, " ");
+  return (
+    <div className={`rounded-md border p-2 ${selected ? "border-primary ring-1 ring-primary/30" : ""} ${!slide.include ? "opacity-60" : ""}`} data-testid={`card-pptx-slide-${slide.id}`}>
+      <button type="button" className="block w-full text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded" onClick={onSelect} aria-pressed={selected} aria-label={`Select source slide ${slide.index}`}>
+        <div className="aspect-video rounded bg-muted overflow-hidden flex items-center justify-center">
+          {slide.previewUrl ? <img src={slide.previewUrl} alt={`Preview of source slide ${slide.index}`} className="h-full w-full object-cover" /> : <Eye className="h-5 w-5 text-muted-foreground" />}
+        </div>
+        <div className="mt-2 flex items-start justify-between gap-2"><span className="font-medium text-sm line-clamp-2">{slide.title}</span><Badge variant="outline" className="shrink-0 text-[10px]">{classification}</Badge></div>
+        {slide.reason && <p className="mt-1 text-xs text-muted-foreground line-clamp-2">{slide.reason}</p>}
+      </button>
+      <div className="mt-2 flex items-center justify-between border-t pt-2"><span className="text-xs text-muted-foreground">Source slide {slide.index}</span><Button size="sm" variant={slide.include ? "secondary" : "outline"} onClick={onToggle} data-testid={`button-pptx-toggle-slide-${slide.id}`}><RotateCcw className="h-3 w-3" />{slide.include ? "Included" : "Excluded"}</Button></div>
     </div>
   );
 }
@@ -830,9 +1114,9 @@ function getSlideHeading(slide: Slide): string {
   const b = (slide.blocks as any[])?.find((x: any) => x.type === "heading");
   return (b?.text as string) || "";
 }
-function getSlideThumbnailUrl(slide: Slide): string | undefined {
+function getSlideThumbnailUrl(courseId: string, slide: Slide): string | undefined {
   const b = (slide.blocks as any[])?.find((x: any) => x.type === "image_slide");
-  return b?.url ? courseMediaUrl(b.url as string) : undefined;
+  return b?.url ? courseMediaUrl(courseId, b.url as string) : undefined;
 }
 
 function PptxSplitDialog({
@@ -947,7 +1231,7 @@ function PptxSplitDialog({
 
                 {grp.map((slide, si) => {
                   const absIdx = absStart + si;
-                  const thumb = getSlideThumbnailUrl(slide);
+                  const thumb = getSlideThumbnailUrl(courseId, slide);
                   const heading = getSlideHeading(slide);
                   const isLastSlide = absIdx === slides.length - 1;
                   return (
@@ -1135,7 +1419,10 @@ function LessonEditorDialog({
       return await apiRequest(`/api/course-modules/${moduleId}/lessons`, "POST", body);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/courses", courseId] });
+      // Invalidate both ID-based admin queries and slug-based learner queries;
+      // otherwise navigating straight from the editor can show stale lesson
+      // media even though the save succeeded.
+      queryClient.invalidateQueries({ queryKey: ["/api/courses"] });
       toast({ title: "Saved" });
       onClose();
     },

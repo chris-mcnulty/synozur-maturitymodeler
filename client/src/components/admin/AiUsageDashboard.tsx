@@ -48,7 +48,8 @@ interface TtsConfig {
   voice: string;
   endpoint: string;
   azureConfigured: boolean;
-  openAiConfigured: boolean;
+  requiredProvider: 'azure';
+  openAiFallbackSupported: false;
 }
 
 export function AiUsageDashboard() {
@@ -221,10 +222,6 @@ export function AiUsageDashboard() {
             <Badge variant="outline" className="text-green-500 border-green-500 ml-1">
               <CheckCircle2 className="h-3 w-3 mr-1" /> Configured
             </Badge>
-          ) : ttsConfig?.openAiConfigured ? (
-            <Badge variant="outline" className="text-yellow-500 border-yellow-500 ml-1">
-              OpenAI fallback active
-            </Badge>
           ) : ttsConfig !== undefined ? (
             <Badge variant="outline" className="text-destructive border-destructive ml-1">
               <XCircle className="h-3 w-3 mr-1" /> Not configured
@@ -232,7 +229,8 @@ export function AiUsageDashboard() {
           ) : null}
         </div>
         <p className="text-sm text-muted-foreground mb-4">
-          Azure Cognitive Services Speech is used to generate AI narration audio for course slides.
+          Azure Cognitive Services Speech is required to generate narration audio for course slides.
+          OpenAI credentials are not used as a narration fallback.
           {ttsConfig?.keyConfigured && !speechKey && (
             <span className="text-green-500 ml-1">A key is already saved — leave the field blank to keep it.</span>
           )}

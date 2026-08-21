@@ -1249,15 +1249,18 @@ export function registerAdminRoutes(app: Express) {
   // Returns current TTS config for the admin UI (key masked for security).
   app.get("/api/admin/tts/config", ensureAdmin, async (_req, res) => {
     try {
-      const { getAzureConfig, isAzureTtsConfigured, isOpenAITtsConfigured } = await import("../services/tts-service");
+      const { getAzureConfig } = await import("../services/tts-service");
       const cfg = await getAzureConfig();
+      const azureConfigured = Boolean(cfg.key && cfg.endpoint);
       res.json({
         keyConfigured: Boolean(cfg.key),
         region: cfg.region,
         voice: cfg.voice,
         endpoint: cfg.endpoint,
-        azureConfigured: await isAzureTtsConfigured(),
-        openAiConfigured: isOpenAITtsConfigured(),
+        azureConfigured,
+        provider: azureConfigured ? "azure" : null,
+        requiredProvider: "azure",
+        openAiFallbackSupported: false,
       });
     } catch (err: any) {
       res.status(500).json({ error: err.message ?? "Failed to fetch TTS config" });

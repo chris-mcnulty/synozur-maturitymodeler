@@ -450,6 +450,9 @@ function CoursePlayer({ course, lesson, currentIndex, total, progress, onPrev, o
   const [autoAdvance, setAutoAdvance] = useState(false);
   const [submittedScore, setSubmittedScore] = useState<number | null>(progress?.score ?? null);
   const [submittedStatus, setSubmittedStatus] = useState<string | null>(progress?.status ?? null);
+  const [quizFeedback, setQuizFeedback] = useState<Array<{ questionId: string; correct: boolean; explanation: string }>>(
+    () => ((progress?.data as any)?.feedback ?? []),
+  );
 
   const completeMutation = useMutation({
     mutationFn: async (body: any) => {
@@ -463,6 +466,7 @@ function CoursePlayer({ course, lesson, currentIndex, total, progress, onPrev, o
         setSubmittedStatus(data.progress.status);
         setSubmittedScore(data.progress.score ?? null);
       }
+      if (Array.isArray(data?.quizFeedback)) setQuizFeedback(data.quizFeedback);
     },
     onError: (err: Error) => toast({ title: "Failed", description: err.message, variant: "destructive" }),
   });
@@ -505,6 +509,9 @@ function CoursePlayer({ course, lesson, currentIndex, total, progress, onPrev, o
         if (slides.length === 0) return <p>No slides.</p>;
         const slide = slides[Math.min(slideIdx, slides.length - 1)];
         const narrationUrl = courseMediaUrl(course.id, slide.narration?.audioUrl);
+        const hasTranscript = Boolean(slide.narration?.text?.trim());
+        // Show the narration panel when there is audio OR a transcript (or both).
+        const showNarrationPanel = narrationUrl || hasTranscript;
         return (
           <div
             data-testid="content-slides"
@@ -521,39 +528,45 @@ function CoursePlayer({ course, lesson, currentIndex, total, progress, onPrev, o
             <div aria-live="polite">
               {slide.blocks.map((b) => <SlideBlockView key={b.id} block={b} courseId={course.id} />)}
             </div>
-            {narrationUrl && (
-              <div className="mt-4 rounded-md border bg-muted/40 p-3" data-testid="slide-narration">
-                <div className="flex items-center justify-between mb-1">
+            {showNarrationPanel && (
+              <div className="mt-4 rounded-md border bg-muted/40 p-3 space-y-2" data-testid="slide-narration">
+                <div className="flex flex-wrap items-center justify-between gap-2">
                   <p className="text-xs font-medium text-muted-foreground flex items-center gap-1">
                     <Music className="h-3.5 w-3.5" /> Narration
                   </p>
-                  <label className="flex items-center gap-1.5 text-xs text-muted-foreground cursor-pointer">
-                    <Checkbox
-                      checked={autoAdvance}
-                      onCheckedChange={(v) => setAutoAdvance(v === true)}
-                      data-testid="checkbox-auto-advance"
-                    />
-                    Auto-play &amp; advance
-                  </label>
+                  {narrationUrl && (
+                    <label className="flex items-center gap-1.5 text-xs text-muted-foreground cursor-pointer">
+                      <Checkbox
+                        checked={autoAdvance}
+                        onCheckedChange={(v) => setAutoAdvance(v === true)}
+                        data-testid="checkbox-auto-advance"
+                      />
+                      Auto-play &amp; advance
+                    </label>
+                  )}
                 </div>
-                <audio
-                  key={slide.id}
-                  src={narrationUrl}
-                  controls
-                  autoPlay={autoAdvance}
-                  onEnded={() => { if (autoAdvance && slideIdx < slides.length - 1) setSlideIdx(i => i + 1); }}
-                  className="w-full"
-                  aria-label={`Narration for slide ${slideIdx + 1}`}
-                />
-                {slide.narration?.text && (
-                  <details className="mt-2">
-                    <summary className="text-xs text-muted-foreground cursor-pointer">Transcript</summary>
-                    <p className="text-sm mt-1 whitespace-pre-wrap">{slide.narration.text}</p>
+                {narrationUrl && (
+                  <audio
+                    key={slide.id}
+                    src={narrationUrl}
+                    controls
+                    autoPlay={autoAdvance}
+                    onEnded={() => { if (autoAdvance && slideIdx < slides.length - 1) setSlideIdx(i => i + 1); }}
+                    className="w-full"
+                    aria-label="Narration audio"
+                  />
+                )}
+                {hasTranscript && (
+                  <details className="mt-1" data-testid="slide-transcript">
+                    <summary className="text-xs text-muted-foreground cursor-pointer select-none">
+                      Transcript
+                    </summary>
+                    <p className="text-sm mt-1 whitespace-pre-wrap">{slide.narration!.text}</p>
                   </details>
                 )}
               </div>
             )}
-            <div className="flex items-center justify-between gap-2 mt-4">
+            <div className="flex flex-wrap items-center justify-between gap-2 mt-4">
               <Button variant="outline" size="sm" disabled={slideIdx === 0} onClick={() => setSlideIdx(i => i - 1)} data-testid="button-slide-prev" aria-label="Previous slide">
                 Previous slide
               </Button>
@@ -636,8 +649,23 @@ function CoursePlayer({ course, lesson, currentIndex, total, progress, onPrev, o
               <p className="text-lg text-muted-foreground mb-4">
                 Score: {submittedScore} / 100 &nbsp;·&nbsp; Passing: {passing}
               </p>
+              {quizFeedback.length > 0 && (
+                <div className="mx-auto mb-5 max-w-2xl space-y-2 text-left" data-testid="quiz-answer-feedback">
+                  {quizFeedback.map((feedback, index) => (
+                    <div
+                      key={feedback.questionId}
+                      className={`rounded-md border p-3 ${feedback.correct ? "border-green-500/40 bg-green-500/5" : "border-amber-500/40 bg-amber-500/5"}`}
+                    >
+                      <p className="text-sm font-medium">
+                        Question {index + 1}: {feedback.correct ? "Correct" : "Review the answer"}
+                      </p>
+                      <p className="mt-1 text-sm text-muted-foreground">{feedback.explanation}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
               {!passed && (
-                <Button onClick={() => { setSubmittedScore(null); setSubmittedStatus(null); setQuizResponses({}); }} data-testid="button-quiz-retry">
+                <Button onClick={() => { setSubmittedScore(null); setSubmittedStatus(null); setQuizResponses({}); setQuizFeedback([]); }} data-testid="button-quiz-retry">
                   Retry
                 </Button>
               )}

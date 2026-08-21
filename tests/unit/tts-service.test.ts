@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import { isTtsConfigured, isAzureTtsConfigured, isOpenAITtsConfigured, getTtsProvider, splitTextForTts } from '../../server/services/tts-service';
+import { isTtsConfigured, isAzureTtsConfigured, getTtsProvider, splitTextForTts } from '../../server/services/tts-service';
 
 const AZURE_KEYS = ['AZURE_SPEECH_KEY', 'AZURE_SPEECH_REGION', 'AZURE_SPEECH_ENDPOINT'] as const;
 const OPENAI_KEYS = ['AI_INTEGRATIONS_OPENAI_BASE_URL', 'AI_INTEGRATIONS_OPENAI_API_KEY'] as const;
@@ -47,43 +47,30 @@ describe('isAzureTtsConfigured', () => {
   });
 });
 
-describe('isOpenAITtsConfigured', () => {
-  it('is false without any openai vars', () => {
-    clearAll();
-    expect(isOpenAITtsConfigured()).toBe(false);
-  });
-
-  it('is false with only base url', () => {
-    clearAll();
-    process.env.AI_INTEGRATIONS_OPENAI_BASE_URL = 'http://localhost:1106/modelfarm/openai';
-    expect(isOpenAITtsConfigured()).toBe(false);
-  });
-
-  it('is true with base url + api key', () => {
-    clearAll();
-    process.env.AI_INTEGRATIONS_OPENAI_BASE_URL = 'http://localhost:1106/modelfarm/openai';
-    process.env.AI_INTEGRATIONS_OPENAI_API_KEY = '_DUMMY_';
-    expect(isOpenAITtsConfigured()).toBe(true);
-  });
-});
-
 describe('isTtsConfigured', () => {
-  it('is false when neither provider is configured', () => {
+  it('is false when Azure is not configured', () => {
     clearAll();
     expect(isTtsConfigured()).toBe(false);
   });
 
-  it('is true when only Azure is configured', () => {
+  it('is false when only OpenAI env vars are present (OpenAI is not a TTS provider)', () => {
+    clearAll();
+    process.env.AI_INTEGRATIONS_OPENAI_BASE_URL = 'http://localhost:1106/modelfarm/openai';
+    process.env.AI_INTEGRATIONS_OPENAI_API_KEY = '_DUMMY_';
+    expect(isTtsConfigured()).toBe(false);
+  });
+
+  it('is true when Azure is configured', () => {
     clearAll();
     process.env.AZURE_SPEECH_KEY = 'k';
     process.env.AZURE_SPEECH_REGION = 'eastus';
     expect(isTtsConfigured()).toBe(true);
   });
 
-  it('is true when only OpenAI is configured', () => {
+  it('is true when Azure key + endpoint (no region) is configured', () => {
     clearAll();
-    process.env.AI_INTEGRATIONS_OPENAI_BASE_URL = 'http://localhost:1106/modelfarm/openai';
-    process.env.AI_INTEGRATIONS_OPENAI_API_KEY = '_DUMMY_';
+    process.env.AZURE_SPEECH_KEY = 'k';
+    process.env.AZURE_SPEECH_ENDPOINT = 'https://custom.example.com/cognitiveservices/v1';
     expect(isTtsConfigured()).toBe(true);
   });
 });
@@ -94,6 +81,13 @@ describe('getTtsProvider', () => {
     expect(getTtsProvider()).toBeNull();
   });
 
+  it('returns null when only OpenAI env vars are present', () => {
+    clearAll();
+    process.env.AI_INTEGRATIONS_OPENAI_BASE_URL = 'http://localhost:1106/modelfarm/openai';
+    process.env.AI_INTEGRATIONS_OPENAI_API_KEY = '_DUMMY_';
+    expect(getTtsProvider()).toBeNull();
+  });
+
   it('returns azure when Azure is configured', () => {
     clearAll();
     process.env.AZURE_SPEECH_KEY = 'k';
@@ -101,14 +95,7 @@ describe('getTtsProvider', () => {
     expect(getTtsProvider()).toBe('azure');
   });
 
-  it('returns openai when only OpenAI is configured', () => {
-    clearAll();
-    process.env.AI_INTEGRATIONS_OPENAI_BASE_URL = 'http://localhost:1106/modelfarm/openai';
-    process.env.AI_INTEGRATIONS_OPENAI_API_KEY = '_DUMMY_';
-    expect(getTtsProvider()).toBe('openai');
-  });
-
-  it('prefers azure over openai when both configured', () => {
+  it('returns azure even when OpenAI env vars are also present', () => {
     clearAll();
     process.env.AZURE_SPEECH_KEY = 'k';
     process.env.AZURE_SPEECH_REGION = 'eastus';
@@ -141,5 +128,20 @@ describe('splitTextForTts', () => {
     expect(chunks.length).toBeGreaterThanOrEqual(3);
     for (const c of chunks) expect(c.length).toBeLessThanOrEqual(100);
     expect(chunks.join('').length).toBe(250);
+  });
+
+  it('handles text with only newlines as separators', () => {
+    const text = 'Line one\nLine two\nLine three';
+    const chunks = splitTextForTts(text, 15);
+    expect(chunks.length).toBeGreaterThan(1);
+    for (const c of chunks) expect(c.length).toBeLessThanOrEqual(15);
+  });
+
+  it('preserves all text content across chunks', () => {
+    const text = 'Alpha beta. Gamma delta. Epsilon zeta. Eta theta.';
+    const chunks = splitTextForTts(text, 20);
+    const rejoined = chunks.join(' ').replace(/\s+/g, ' ');
+    expect(rejoined).toContain('Alpha');
+    expect(rejoined).toContain('Eta theta.');
   });
 });

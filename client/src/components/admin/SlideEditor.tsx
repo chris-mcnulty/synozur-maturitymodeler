@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import {
   Plus, Trash, ChevronUp, ChevronDown, Image as ImageIcon, Video, Type, Heading,
-  Lightbulb, Upload, Mic, Loader2, Sparkles,
+  Lightbulb, Upload, Mic, Loader2, Sparkles, AlertTriangle,
 } from "lucide-react";
 import { ObjectUploader } from "@/components/ObjectUploader";
 import { useToast } from "@/hooks/use-toast";
@@ -141,6 +141,14 @@ function newBlock(type: string): SlideBlock {
   }
 }
 
+/**
+ * NarrationPanel — always shows the transcript/script textarea regardless of
+ * mode or whether audio has been generated. Supports:
+ *   - Editable transcript/script visible at all times
+ *   - Azure TTS generate/regenerate with stale-state indicator
+ *   - Upload to replace generated or recorded audio
+ *   - Same controls for every slide type
+ */
 function NarrationPanel({ slide, courseId, onChange }: {
   slide: Slide;
   courseId: string;
@@ -150,16 +158,33 @@ function NarrationPanel({ slide, courseId, onChange }: {
   const [generating, setGenerating] = useState(false);
   const narration = slide.narration ?? { mode: "none" as SlideNarrationMode };
 
+  // Track whether the script changed after audio was last generated.
+  // We store the text that was used to generate the current audioUrl in
+  // narration.generatedFromText (written by generateTts below). If the
+  // current text differs, flag as stale.
+  const scriptText = (narration.text || "").trim();
+  const hasAudio = Boolean(narration.audioUrl);
+  const isStale = hasAudio && narration.mode === "tts" &&
+    ((narration as any).generatedFromText ?? null) !== null &&
+    (narration as any).generatedFromText !== scriptText;
+
   const generateTts = async () => {
-    const text = (narration.text || "").trim();
-    if (!text) {
+    if (!scriptText) {
       toast({ title: "Add a narration script first", variant: "destructive" });
       return;
     }
     setGenerating(true);
     try {
-      const data = await requestTts(courseId, text, narration.voice || DEFAULT_VOICE);
-      onChange({ ...narration, mode: "tts", audioUrl: data.audioUrl, voice: data.voice, status: "ready" });
+      const data = await requestTts(courseId, scriptText, narration.voice || DEFAULT_VOICE);
+      onChange({
+        ...narration,
+        mode: "tts",
+        audioUrl: data.audioUrl,
+        voice: data.voice,
+        status: "ready",
+        // Record which text was used to generate this audio so we can detect staleness.
+        generatedFromText: scriptText,
+      } as any);
       toast({ title: "Narration generated" });
     } catch (err: any) {
       toast({ title: "TTS failed", description: err.message, variant: "destructive" });
@@ -168,88 +193,150 @@ function NarrationPanel({ slide, courseId, onChange }: {
     }
   };
 
+  const handleScriptChange = (text: string) => {
+    onChange({ ...narration, text } as any);
+  };
+
+  const handleUploadComplete = async (r: any) => {
+    const u = await finalizeUploaded(r);
+    if (u) {
+      onChange({
+        ...narration,
+        audioUrl: u,
+        status: "ready",
+        // Clear generatedFromText so the stale indicator resets after upload.
+        generatedFromText: undefined,
+      } as any);
+    }
+  };
+
   return (
-    <div className="rounded-md border p-3 space-y-2">
+    <div className="rounded-md border p-3 space-y-3">
       <div className="flex items-center gap-2">
         <Mic className="h-4 w-4 text-muted-foreground" />
         <Label className="text-sm font-medium">Narration</Label>
       </div>
+
       <Select
         value={narration.mode}
-        onValueChange={(v) => onChange({ ...narration, mode: v as SlideNarrationMode })}
+        onValueChange={(v) => onChange({ ...narration, mode: v as SlideNarrationMode } as any)}
       >
         <SelectTrigger className="w-56"><SelectValue /></SelectTrigger>
         <SelectContent>
           <SelectItem value="none">None</SelectItem>
           <SelectItem value="recorded">Recorded / uploaded audio</SelectItem>
-          <SelectItem value="tts">Machine voice (TTS)</SelectItem>
+          <SelectItem value="tts">Machine voice (Azure TTS)</SelectItem>
         </SelectContent>
       </Select>
 
-      {narration.mode === "recorded" && (
-        <div className="space-y-2">
-          <div className="flex items-end gap-2">
-            <div className="flex-1">
-              <Label className="text-xs">Audio URL</Label>
-              <Input
-                value={narration.audioUrl || ""}
-                onChange={(e) => onChange({ ...narration, audioUrl: e.target.value, status: "ready" })}
-                placeholder="https://… or upload"
-              />
-            </div>
-            <ObjectUploader
-              maxNumberOfFiles={1}
-              maxFileSize={104857600 /* 100MB */}
-              allowedFileTypes={["audio/mpeg", "audio/mp3", "audio/wav", "audio/webm", "audio/ogg", "audio/m4a", "audio/mp4"]}
-              onGetUploadParameters={getUploadParameters}
-              onComplete={async (r) => { const u = await finalizeUploaded(r); if (u) onChange({ ...narration, audioUrl: u, status: "ready" }); }}
-              buttonVariant="outline"
-            >
-              <Upload className="h-4 w-4" aria-label="Upload narration audio" />
-            </ObjectUploader>
-          </div>
-          {narration.audioUrl && <audio src={courseMediaUrl(courseId, narration.audioUrl)} controls className="w-full" />}
-        </div>
-      )}
-
-      {narration.mode === "tts" && (
-        <div className="space-y-2">
-          <Label className="text-xs">Narration script (read aloud by the machine voice)</Label>
-          <Textarea
-            rows={3}
-            value={narration.text || ""}
-            onChange={(e) => onChange({ ...narration, text: e.target.value })}
-            placeholder="Type the words to be narrated…"
-          />
+      {/* Transcript / script — always visible regardless of mode or audio state */}
+      <div className="space-y-1">
+        <Label className="text-xs">
+          {narration.mode === "tts"
+            ? "Narration script (spoken by Azure TTS; also shown to learners as transcript)"
+            : "Transcript (accessibility — shown to learners alongside audio)"}
+        </Label>
+        <Textarea
+          rows={3}
+          value={narration.text || ""}
+          onChange={(e) => handleScriptChange(e.target.value)}
+          placeholder={
+            narration.mode === "tts"
+              ? "Type the words to be narrated by Azure TTS…"
+              : "Optional: type a transcript to show learners alongside the audio"
+          }
+          aria-label="Narration transcript or script"
+        />
+        {narration.mode === "tts" && (
           <p className="text-xs text-muted-foreground">
             The script is also shown to learners as the narration transcript.
           </p>
-          <div className="flex items-center gap-2">
-            <Label className="text-xs">Voice</Label>
-            <Select value={narration.voice || DEFAULT_VOICE} onValueChange={(v) => onChange({ ...narration, voice: v })}>
-              <SelectTrigger className="w-56" data-testid="select-tts-voice"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {TTS_VOICES.map((v) => <SelectItem key={v.id} value={v.id}>{v.label}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
-          <Button type="button" variant="outline" size="sm" onClick={generateTts} disabled={generating} data-testid="button-generate-tts">
-            {generating ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
-            Generate narration (Azure TTS)
-          </Button>
-          {narration.audioUrl && <audio src={courseMediaUrl(courseId, narration.audioUrl)} controls className="w-full" />}
-        </div>
-      )}
+        )}
+      </div>
 
-      {narration.mode === "recorded" && (
-        <div>
-          <Label className="text-xs">Transcript (accessibility, optional)</Label>
-          <Textarea
-            rows={2}
-            value={narration.text || ""}
-            onChange={(e) => onChange({ ...narration, text: e.target.value })}
-            placeholder="Shown to learners as a transcript"
-          />
+      {/* Audio controls — shown when mode is tts or recorded */}
+      {narration.mode !== "none" && (
+        <div className="space-y-2">
+          {/* Stale indicator */}
+          {isStale && (
+            <div className="flex items-center gap-1.5 text-xs text-amber-600 dark:text-amber-500">
+              <AlertTriangle className="h-3.5 w-3.5 flex-shrink-0" />
+              Script changed — regenerate to update the audio.
+            </div>
+          )}
+
+          {/* Audio URL input + upload button (for recorded mode or to replace TTS audio) */}
+          {narration.mode === "recorded" && (
+            <div className="flex items-end gap-2">
+              <div className="flex-1">
+                <Label className="text-xs">Audio URL</Label>
+                <Input
+                  value={narration.audioUrl || ""}
+                  onChange={(e) => onChange({ ...narration, audioUrl: e.target.value, status: "ready" } as any)}
+                  placeholder="https://… or upload below"
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Voice selector for TTS mode */}
+          {narration.mode === "tts" && (
+            <div className="flex items-center gap-2">
+              <Label className="text-xs">Voice</Label>
+              <Select
+                value={narration.voice || DEFAULT_VOICE}
+                onValueChange={(v) => onChange({ ...narration, voice: v } as any)}
+              >
+                <SelectTrigger className="w-56" data-testid="select-tts-voice"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {TTS_VOICES.map((v) => <SelectItem key={v.id} value={v.id}>{v.label}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          {/* Generate / Regenerate Azure TTS button */}
+          {narration.mode === "tts" && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={generateTts}
+              disabled={generating || !scriptText}
+              data-testid="button-generate-tts"
+            >
+              {generating ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
+              {hasAudio ? "Regenerate narration (Azure TTS)" : "Generate narration (Azure TTS)"}
+            </Button>
+          )}
+
+          {/* Upload button — available for both modes to replace audio with a recording */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-xs text-muted-foreground">
+              {narration.mode === "tts" ? "Or replace with an uploaded recording:" : "Upload audio:"}
+            </span>
+            <ObjectUploader
+              maxNumberOfFiles={1}
+              maxFileSize={104857600 /* 100 MB */}
+              allowedFileTypes={["audio/mpeg", "audio/mp3", "audio/wav", "audio/webm", "audio/ogg", "audio/m4a", "audio/mp4"]}
+              onGetUploadParameters={getUploadParameters}
+              onComplete={handleUploadComplete}
+              buttonVariant="outline"
+            >
+              <Upload className="h-4 w-4 mr-1" aria-hidden="true" />
+              Upload audio
+            </ObjectUploader>
+          </div>
+
+          {/* Audio player */}
+          {narration.audioUrl && (
+            <audio
+              src={courseMediaUrl(courseId, narration.audioUrl)}
+              controls
+              className="w-full"
+              aria-label="Narration audio preview"
+            />
+          )}
         </div>
       )}
     </div>
@@ -285,21 +372,48 @@ export function SlideEditor({ value, courseId, onChange, initialActiveIdx }: {
     setBulkProgress({ done: 0, total: targets.length });
     const next = [...slides];
     let failures = 0;
+    let firstFailureMessage = "";
     for (let k = 0; k < targets.length; k++) {
       const { s, i } = targets[k];
+      const scriptText = (s.narration!.text || "").trim();
       try {
-        const data = await requestTts(courseId, (s.narration!.text || "").trim(), s.narration?.voice || bulkVoice);
-        next[i] = { ...next[i], narration: { ...next[i].narration!, mode: "tts", audioUrl: data.audioUrl, voice: data.voice, status: "ready" } };
+        const data = await requestTts(courseId, scriptText, s.narration?.voice || bulkVoice);
+        next[i] = {
+          ...next[i],
+          narration: {
+            ...next[i].narration!,
+            mode: "tts",
+            audioUrl: data.audioUrl,
+            voice: data.voice,
+            status: "ready",
+            generatedFromText: scriptText,
+          } as any,
+        };
         commit([...next]);
-      } catch {
+      } catch (error: any) {
         failures++;
+        const message = error?.message || "Azure Speech generation failed.";
+        if (!firstFailureMessage) firstFailureMessage = message;
+        if (/Azure Speech is not configured/i.test(message)) {
+          setBulkProgress(null);
+          toast({
+            title: "Azure Speech is not configured",
+            description: message,
+            variant: "destructive",
+          });
+          return;
+        }
       }
       setBulkProgress({ done: k + 1, total: targets.length });
     }
     setBulkProgress(null);
     toast(
       failures
-        ? { title: `Generated ${targets.length - failures}/${targets.length}`, description: `${failures} slide(s) failed`, variant: "destructive" }
+        ? {
+            title: `Generated ${targets.length - failures}/${targets.length}`,
+            description: firstFailureMessage || `${failures} slide(s) failed`,
+            variant: "destructive",
+          }
         : { title: `Generated narration for ${targets.length} slide(s)` },
     );
   };
@@ -379,7 +493,7 @@ export function SlideEditor({ value, courseId, onChange, initialActiveIdx }: {
           >
             {bulkProgress
               ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> {bulkProgress.done}/{bulkProgress.total}</>
-              : <><Sparkles className="h-4 w-4 mr-2" /> Generate all narration</>}
+              : <><Sparkles className="h-4 w-4 mr-2" /> Generate all narration (Azure TTS)</>}
           </Button>
           <span className="text-xs text-muted-foreground">(voice applies to slides without their own)</span>
         </div>

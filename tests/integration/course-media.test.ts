@@ -10,6 +10,7 @@ const courseSvcMock = {
   userCanViewCourse: vi.fn(async () => true),
   getCourseForModule: vi.fn(async () => course),
   createLesson: vi.fn(async (data: any) => ({ id: 'l1', ...data })),
+  getOrCreateEnrollment: vi.fn(async () => ({ id: 'enrollment-1', courseId: 'c1', userId: 'u' })),
   getCourseFull: vi.fn(async () => ({
     modules: [{ lessons: [{ content: { slides: [{ id: 's', blocks: [{ id: 'b', type: 'image_slide', url: '/objects/slides/known.png' }] }] } }] }],
   })),
@@ -17,11 +18,64 @@ const courseSvcMock = {
 
 const ttsMock = {
   synthesizeNarration: vi.fn(async () => ({ audioUrl: '/objects/narration/x.mp3', voice: 'en-US-JennyNeural' })),
-  isTtsConfigured: vi.fn(() => true),
+  getAzureConfig: vi.fn(async () => ({
+    key: 'configured',
+    region: 'eastus',
+    endpoint: 'https://eastus.tts.speech.microsoft.com/cognitiveservices/v1',
+    voice: 'en-US-JennyNeural',
+  })),
 };
 
 const pptxMock = {
   importPptx: vi.fn(async () => ({ slides: [{ id: 's1', blocks: [], narration: { mode: 'none' } }] })),
+  reviewPptx: vi.fn(async () => ({
+    slides: [
+      {
+        sourceIndex: 0,
+        title: 'Getting Started',
+        text: 'Getting Started\nWelcome',
+        notes: '',
+        previewImageUrl: '/objects/slides/preview/one.png',
+        recommendation: 'cover',
+        includedDefault: true,
+        rationale: 'Opening cover',
+        narrationScript: 'Welcome to the course.',
+      },
+      {
+        sourceIndex: 1,
+        title: 'Section',
+        text: 'Section',
+        notes: '',
+        previewImageUrl: '/objects/slides/preview/two.png',
+        recommendation: 'divider',
+        includedDefault: false,
+        rationale: 'Section divider',
+        narrationScript: 'Next section.',
+      },
+    ],
+    suggestedGroups: [
+      { startIndex: 0, suggestedTitle: 'Introduction' },
+      { startIndex: 1, suggestedTitle: 'Section' },
+    ],
+  })),
+  buildFaithfulBlocks: vi.fn(({ imageUrl, title }: any) => [
+    { id: 'faithful', type: 'image_slide', url: imageUrl, alt: title },
+  ]),
+  buildEnhancedBlocks: vi.fn(({ title }: any) => [
+    { id: 'enhanced', type: 'heading', level: 2, text: title },
+  ]),
+};
+
+const courseIEMock = {
+  exportCourse: vi.fn(),
+  validateCourseExportDoc: vi.fn(),
+  importCourse: vi.fn(async (doc: any) => ({
+    course: { id: 'created-course', ...doc.course, status: 'draft', visibility: 'private' },
+    moduleCount: doc.course.modules.length,
+    lessonCount: doc.course.modules.reduce((sum: number, module: any) => sum + module.lessons.length, 0),
+    tagCount: 0,
+    restoredAssetCount: 0,
+  })),
 };
 
 const objectStorageMock = {
@@ -45,6 +99,7 @@ let objectAclAllows = true;
 vi.mock('../../server/services/course-service', () => courseSvcMock);
 vi.mock('../../server/services/tts-service', () => ttsMock);
 vi.mock('../../server/services/pptx-import', () => pptxMock);
+vi.mock('../../server/services/course-import-export', () => courseIEMock);
 vi.mock('../../server/objectStorage', () => objectStorageMock);
 vi.mock('../../server/db', () => ({ db: {}, pool: {} }));
 vi.mock('../../server/storage', () => ({ storage: {} }));
@@ -94,6 +149,18 @@ describe('course media + narration + import routes', () => {
   });
 
   describe('POST /api/courses/:id/narration/tts', () => {
+    it('reports Azure as the only configured narration provider', async () => {
+      const app = await buildApp();
+      const res = await request(app).get('/api/courses/tts/status');
+      expect(res.status).toBe(200);
+      expect(res.body).toEqual({
+        configured: true,
+        provider: 'azure',
+        requiredProvider: 'azure',
+        openAiFallbackSupported: false,
+      });
+    });
+
     it('400s without text', async () => {
       const app = await buildApp();
       const res = await request(app).post('/api/courses/c1/narration/tts').send({});
@@ -106,6 +173,32 @@ describe('course media + narration + import routes', () => {
       expect(res.status).toBe(200);
       expect(res.body.audioUrl).toBe('/objects/narration/x.mp3');
       expect(ttsMock.synthesizeNarration).toHaveBeenCalledOnce();
+    });
+  });
+
+  describe('POST /api/courses/:id/enroll', () => {
+    it('allows a course manager to enroll for a draft preview', async () => {
+      const originalStatus = course.status;
+      course.status = 'draft';
+      const app = await buildApp();
+      const res = await request(app).post('/api/courses/c1/enroll');
+      course.status = originalStatus;
+
+      expect(res.status).toBe(200);
+      expect(res.body.id).toBe('enrollment-1');
+      expect(courseSvcMock.getOrCreateEnrollment).toHaveBeenCalledOnce();
+    });
+
+    it('still blocks non-managers from enrolling in drafts', async () => {
+      const originalStatus = course.status;
+      course.status = 'draft';
+      courseSvcMock.userCanManageCourse.mockReturnValueOnce(false);
+      const app = await buildApp('user');
+      const res = await request(app).post('/api/courses/c1/enroll');
+      course.status = originalStatus;
+
+      expect(res.status).toBe(403);
+      expect(res.body.error).toMatch(/not available/i);
     });
   });
 
@@ -130,6 +223,132 @@ describe('course media + narration + import routes', () => {
       expect(res.status).toBe(200);
       expect(res.body.slides).toHaveLength(1);
       expect(pptxMock.importPptx).toHaveBeenCalledOnce();
+    });
+  });
+
+  describe('course-level PowerPoint review and commit', () => {
+    it('reviews every source slide and keeps cleanup recommendations reversible', async () => {
+      const app = await buildApp();
+      const pk = Buffer.from([0x50, 0x4b, 0x03, 0x04, 0x00, 0x00]);
+      const res = await request(app)
+        .post('/api/courses/pptx/review')
+        .set('Content-Type', 'application/octet-stream')
+        .send(pk);
+
+      expect(res.status).toBe(200);
+      expect(res.body.review.slides).toHaveLength(2);
+      expect(res.body.review.slides[1]).toMatchObject({
+        classification: 'divider',
+        include: false,
+      });
+      expect(res.body.review.groups).toHaveLength(2);
+      expect(pptxMock.reviewPptx).toHaveBeenCalledOnce();
+    });
+
+    it('creates a private draft from author overrides using enhanced blocks only', async () => {
+      const app = await buildApp();
+      const res = await request(app)
+        .post('/api/courses/pptx/commit')
+        .send({
+          title: 'Imported course',
+          slug: 'imported-course',
+          summary: 'Summary',
+          description: 'Description',
+          estimatedMinutes: 20,
+          treatment: 'enhanced',
+          slides: [
+            {
+              id: 'source-1',
+              sourceIndex: 0,
+              index: 1,
+              title: 'Welcome',
+              text: 'Welcome\nUseful body',
+              previewImageUrl: '/objects/slides/preview/one.png',
+              narrationScript: 'A useful transcript.',
+              include: true,
+              groupId: 'group-1',
+            },
+            {
+              id: 'source-2',
+              sourceIndex: 1,
+              index: 2,
+              title: 'Divider',
+              text: 'Divider',
+              previewImageUrl: '/objects/slides/preview/two.png',
+              narrationScript: 'Next section.',
+              include: false,
+              groupId: 'group-1',
+            },
+          ],
+          groups: [{
+            id: 'group-1',
+            name: 'Introduction',
+            moduleTitle: 'Introduction module',
+            lessonTitle: 'Welcome lesson',
+            slides: [{ id: 'source-1' }, { id: 'source-2' }],
+          }],
+        });
+
+      expect(res.status).toBe(201);
+      expect(res.body.course).toMatchObject({ id: 'created-course', status: 'draft', visibility: 'private' });
+      const doc = courseIEMock.importCourse.mock.calls[0][0];
+      expect(doc.course.modules[0].title).toBe('Introduction module');
+      expect(doc.course.modules[0].lessons[0].title).toBe('Welcome lesson');
+      expect(doc.course.modules[0].lessons[0].content.slides).toHaveLength(1);
+      expect(doc.course.modules[0].lessons[0].content.slides[0].blocks).toEqual([
+        expect.objectContaining({ type: 'heading' }),
+      ]);
+      expect(pptxMock.buildFaithfulBlocks).not.toHaveBeenCalled();
+    });
+
+    it('rejects commit plans that exclude every source slide', async () => {
+      const app = await buildApp();
+      const res = await request(app)
+        .post('/api/courses/pptx/commit')
+        .send({
+          title: 'Empty course',
+          slug: 'empty-course',
+          treatment: 'faithful',
+          slides: [{
+            id: 'source-1',
+            index: 1,
+            title: 'Only slide',
+            text: '',
+            previewImageUrl: '/objects/slides/preview/one.png',
+            narrationScript: '',
+            include: false,
+            groupId: 'group-1',
+          }],
+          groups: [{ id: 'group-1', name: 'Empty', slides: [{ id: 'source-1' }] }],
+        });
+      expect(res.status).toBe(400);
+      expect(res.body.error).toMatch(/include at least one slide/i);
+    });
+
+    it('does not let a faithful import publish a preview the author cannot access', async () => {
+      objectAclAllows = false;
+      const app = await buildApp();
+      const res = await request(app)
+        .post('/api/courses/pptx/commit')
+        .send({
+          title: 'Faithful course',
+          slug: 'faithful-course',
+          treatment: 'faithful',
+          slides: [{
+            id: 'source-1',
+            index: 1,
+            title: 'Only slide',
+            text: 'Content',
+            previewImageUrl: '/objects/slides/preview/one.png',
+            narrationScript: 'Content.',
+            include: true,
+            groupId: 'group-1',
+          }],
+          groups: [{ id: 'group-1', name: 'Introduction', slides: [{ id: 'source-1' }] }],
+        });
+      expect(res.status).toBe(404);
+      expect(courseIEMock.importCourse).not.toHaveBeenCalled();
+      objectAclAllows = true;
     });
   });
 

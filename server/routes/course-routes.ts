@@ -23,9 +23,14 @@ import { getAccessibleTenantIds, checkIsGlobalAdmin, canManageModels } from "../
 import * as courseSvc from "../services/course-service";
 import * as scormSvc from "../services/scorm-service";
 import * as courseIE from "../services/course-import-export";
-import { synthesizeNarration, isTtsConfigured, getTtsProvider } from "../services/tts-service";
-import { importPptx } from "../services/pptx-import";
-import { slidesContentSchema, extractManagedObjectPaths } from "@shared/slides";
+import { synthesizeNarration, getAzureConfig } from "../services/tts-service";
+import {
+  importPptx,
+  reviewPptx,
+  buildFaithfulBlocks,
+  buildEnhancedBlocks,
+} from "../services/pptx-import";
+import { slidesContentSchema, slideSchema, extractManagedObjectPaths, genId } from "@shared/slides";
 
 /**
  * Validate a lesson's content payload against its type. Currently enforces the
@@ -203,7 +208,8 @@ export function registerCourseRoutes(app: Express) {
       const user = req.user as schema.User;
       const course = await courseSvc.getCourseById(req.params.id);
       if (!course) return res.status(404).json({ error: "Course not found" });
-      if (course.status !== "published") {
+      const isManager = courseSvc.userCanManageCourse(user, course);
+      if (course.status !== "published" && !isManager) {
         return res.status(403).json({ error: "Course is not available for enrollment" });
       }
       const canView = await courseSvc.userCanViewCourse(user, course);
@@ -301,6 +307,7 @@ export function registerCourseRoutes(app: Express) {
       // paths that produce the required server-validated artifacts
       // (graded score, signed attestation record, SCORM cmi state).
       let finalPatch: any = parsed;
+      let quizFeedback: Array<{ questionId: string; correct: boolean; explanation: string }> | undefined;
       if (lesson.type === "quiz") {
         if (!parsed.data?.responses) {
           return res.status(400).json({
@@ -310,8 +317,26 @@ export function registerCourseRoutes(app: Express) {
         const questions = (lesson.content as any)?.questions || [];
         const { score } = courseSvc.scoreQuiz(questions, parsed.data.responses);
         const passingScore = (lesson.content as any)?.passingScore ?? 70;
+        quizFeedback = questions.map((question: any) => {
+          const expected = question.correctIds
+            ?? question.correctAnswerIds
+            ?? (question.correctAnswerId ? [question.correctAnswerId] : []);
+          const response = parsed.data.responses[question.id];
+          const selected = Array.isArray(response) ? response : response ? [response] : [];
+          const correct = expected.length === selected.length
+            && [...expected].sort().every((id: string, index: number) => id === [...selected].sort()[index]);
+          return {
+            questionId: String(question.id),
+            correct,
+            explanation: typeof question.explanation === "string"
+              ? question.explanation
+              : correct
+                ? "Correct."
+                : "Review this section and try again.",
+          };
+        });
         finalPatch = {
-          data: parsed.data,
+          data: { ...parsed.data, feedback: quizFeedback },
           score,
           status: score >= passingScore ? "completed" : "failed",
         };
@@ -335,7 +360,7 @@ export function registerCourseRoutes(app: Express) {
 
       const progress = await courseSvc.upsertLessonProgress(enrollment.id, lesson.id, finalPatch);
       const updated = await courseSvc.recalculateEnrollment(enrollment.id);
-      res.json({ progress, enrollment: updated });
+      res.json({ progress, enrollment: updated, ...(quizFeedback ? { quizFeedback } : {}) });
     } catch (err: any) {
       console.error("progress error", err);
       res.status(400).json({ error: err.message ?? "Failed to record progress" });
@@ -817,7 +842,14 @@ export function registerCourseRoutes(app: Express) {
   // the object URL. The client patches it onto the slide's narration and saves
   // the lesson as usual.
   app.get("/api/courses/tts/status", ensureAdminOrModeler, async (_req, res) => {
-    res.json({ configured: await isTtsConfigured(), provider: await getTtsProvider() });
+    const config = await getAzureConfig();
+    const configured = Boolean(config.key && config.endpoint);
+    res.json({
+      configured,
+      provider: configured ? "azure" : null,
+      requiredProvider: "azure",
+      openAiFallbackSupported: false,
+    });
   });
 
   app.post("/api/courses/:id/narration/tts", ensureAdminOrModeler, async (req, res) => {
@@ -834,6 +866,267 @@ export function registerCourseRoutes(app: Express) {
     } catch (err: any) {
       console.error("tts narration error", err);
       res.status(400).json({ error: err.message ?? "Failed to generate narration" });
+    }
+  });
+
+  // ----- Course-level PowerPoint intake -----
+  // Analyze first and persist nothing except private preview media. The review
+  // response includes every source slide so an author can reverse any cleanup
+  // recommendation before committing a private draft.
+  app.post(
+    "/api/courses/pptx/review",
+    ensureAdminOrModeler,
+    express.raw({
+      type: [
+        "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+        "application/octet-stream",
+        "application/zip",
+      ],
+      limit: "100mb",
+    }),
+    async (req, res) => {
+      try {
+        const buffer = Buffer.isBuffer(req.body) ? req.body : undefined;
+        if (!buffer?.length) {
+          return res.status(400).json({ error: "Choose a non-empty .pptx file." });
+        }
+        if (
+          buffer.length < 4 ||
+          buffer[0] !== 0x50 ||
+          buffer[1] !== 0x4b ||
+          buffer[2] !== 0x03 ||
+          buffer[3] !== 0x04
+        ) {
+          return res.status(400).json({ error: "Unsupported file. Choose a valid PowerPoint .pptx file." });
+        }
+
+        const user = req.user as schema.User;
+        const analysis = await reviewPptx({
+          buffer,
+          ownerUserId: user.id,
+          renderPreviews: true,
+        });
+        if (!analysis.slides.length) {
+          return res.status(400).json({ error: "No slides could be read from this PowerPoint file." });
+        }
+
+        const boundaries = analysis.suggestedGroups.length
+          ? analysis.suggestedGroups
+          : [{ startIndex: 0, suggestedTitle: "Introduction" }];
+        const groupForIndex = (sourceIndex: number) => {
+          let selected = 0;
+          for (let i = 0; i < boundaries.length; i++) {
+            if (boundaries[i].startIndex <= sourceIndex) selected = i;
+          }
+          return `group-${selected + 1}`;
+        };
+        const slides = analysis.slides.map((slide) => ({
+          id: `source-slide-${slide.sourceIndex + 1}`,
+          index: slide.sourceIndex + 1,
+          sourceIndex: slide.sourceIndex,
+          title: slide.title || `Untitled slide ${slide.sourceIndex + 1}`,
+          text: slide.text,
+          notes: slide.notes,
+          previewUrl: slide.previewImageUrl,
+          previewImageUrl: slide.previewImageUrl,
+          classification: slide.recommendation,
+          recommendation: slide.recommendation,
+          reason: slide.rationale,
+          rationale: slide.rationale,
+          include: slide.includedDefault,
+          includedDefault: slide.includedDefault,
+          narrationScript: slide.narrationScript,
+          groupId: groupForIndex(slide.sourceIndex),
+        }));
+        const groups = boundaries.map((boundary, index) => {
+          const id = `group-${index + 1}`;
+          const title = boundary.suggestedTitle || `Section ${index + 1}`;
+          return {
+            id,
+            name: title,
+            moduleTitle: title,
+            lessonTitle: title,
+            slides: slides.filter((slide) => slide.groupId === id),
+          };
+        });
+        const sourceTitle = analysis.slides[0]?.title || "Imported PowerPoint course";
+        const title = sourceTitle
+          .replace(/\bM365\b/gi, "Microsoft 365")
+          .replace(/\s+/g, " ")
+          .trim();
+        const slug = title.toLowerCase()
+          .replace(/[^a-z0-9]+/g, "-")
+          .replace(/^-+|-+$/g, "")
+          .slice(0, 80);
+
+        res.json({
+          review: {
+            title,
+            slug,
+            summary: "",
+            description: "",
+            estimatedMinutes: Math.max(5, Math.round(analysis.slides.length * 0.65)),
+            treatment: "enhanced",
+            slides,
+            groups,
+          },
+        });
+      } catch (err: any) {
+        console.error("pptx review error", err);
+        const message = err?.message || "Failed to inspect this PowerPoint file.";
+        res.status(400).json({ error: message });
+      }
+    },
+  );
+
+  const pptxCommitSchema = z.object({
+    title: z.string().trim().min(1).max(255),
+    slug: z.string().trim().regex(/^[a-z0-9-]+$/).max(100).optional().or(z.literal("")),
+    summary: z.string().max(500).optional().default(""),
+    description: z.string().max(10000).optional().default(""),
+    estimatedMinutes: z.number().int().min(1).max(10000).nullable().optional(),
+    treatment: z.enum(["faithful", "enhanced"]),
+    slides: z.array(z.object({
+      id: z.string().min(1).max(120),
+      sourceIndex: z.number().int().min(0).optional(),
+      index: z.number().int().min(1).optional(),
+      title: z.string().max(1000).optional().default(""),
+      text: z.string().max(100000).optional().default(""),
+      notes: z.string().max(100000).optional().default(""),
+      previewUrl: z.string().max(2000).optional().default(""),
+      previewImageUrl: z.string().max(2000).optional().default(""),
+      classification: z.string().max(80).optional(),
+      recommendation: z.string().max(80).optional(),
+      reason: z.string().max(2000).optional(),
+      rationale: z.string().max(2000).optional(),
+      narrationScript: z.string().max(100000).optional().default(""),
+      include: z.boolean(),
+      groupId: z.string().min(1).max(120),
+    })).min(1).max(1000),
+    groups: z.array(z.object({
+      id: z.string().min(1).max(120),
+      name: z.string().max(255).optional(),
+      moduleTitle: z.string().max(255).optional(),
+      lessonTitle: z.string().max(255).optional(),
+      slides: z.array(z.object({ id: z.string() }).passthrough()).optional(),
+    })).min(1).max(250),
+  });
+
+  app.post("/api/courses/pptx/commit", ensureAdminOrModeler, async (req, res) => {
+    try {
+      const plan = pptxCommitSchema.parse(req.body);
+      const user = req.user as schema.User;
+      const isGlobal = checkIsGlobalAdmin(user);
+      if (!isGlobal && !user.tenantId) {
+        return res.status(403).json({ error: "Tenant admins must be assigned to a tenant." });
+      }
+      const includedByGroup = new Map<string, typeof plan.slides>();
+      for (const slide of plan.slides) {
+        if (!slide.include) continue;
+        const current = includedByGroup.get(slide.groupId) ?? [];
+        current.push(slide);
+        includedByGroup.set(slide.groupId, current);
+      }
+
+      if (plan.treatment === "faithful") {
+        const { ObjectStorageService, ObjectNotFoundError } = await import("../objectStorage");
+        const storage = new ObjectStorageService();
+        const checked = new Set<string>();
+        for (const slide of plan.slides) {
+          if (!slide.include) continue;
+          const imageUrl = slide.previewImageUrl || slide.previewUrl;
+          if (!imageUrl.startsWith("/objects/slides/")) {
+            return res.status(400).json({ error: "Faithful slides must use a managed PowerPoint preview image." });
+          }
+          if (checked.has(imageUrl)) continue;
+          checked.add(imageUrl);
+          try {
+            const file = await storage.getObjectEntityFile(imageUrl);
+            const allowed = await storage.canAccessObjectEntity({ objectFile: file, userId: user.id });
+            if (!allowed) return res.status(404).json({ error: "A PowerPoint preview image could not be found." });
+          } catch (error) {
+            if (error instanceof ObjectNotFoundError) {
+              return res.status(404).json({ error: "A PowerPoint preview image could not be found." });
+            }
+            throw error;
+          }
+        }
+      }
+
+      const modules: courseIE.CourseExportModule[] = [];
+      for (let groupIndex = 0; groupIndex < plan.groups.length; groupIndex++) {
+        const group = plan.groups[groupIndex];
+        const sourceSlides = includedByGroup.get(group.id) ?? [];
+        if (!sourceSlides.length) continue;
+        const outputSlides = sourceSlides
+          .sort((a, b) => (a.sourceIndex ?? a.index ?? 0) - (b.sourceIndex ?? b.index ?? 0))
+          .map((source) => {
+            const imageUrl = source.previewImageUrl || source.previewUrl;
+            const blocks = plan.treatment === "faithful"
+              ? buildFaithfulBlocks({ imageUrl, title: source.title, text: source.text })
+              : buildEnhancedBlocks({ title: source.title, text: source.text });
+            if (plan.treatment === "faithful" && !imageUrl) {
+              throw new Error(`Slide ${source.index ?? "preview"} cannot use faithful treatment because its preview image is unavailable.`);
+            }
+            return slideSchema.parse({
+              id: genId("slide"),
+              blocks,
+              narration: {
+                mode: "none",
+                text: source.narrationScript,
+              },
+            });
+          });
+        if (!outputSlides.length) continue;
+        const moduleTitle = (group.moduleTitle || group.name || `Section ${groupIndex + 1}`).trim();
+        const lessonTitle = (group.lessonTitle || group.name || moduleTitle).trim();
+        modules.push({
+          title: moduleTitle || `Section ${groupIndex + 1}`,
+          description: null,
+          order: modules.length,
+          lessons: [{
+            title: lessonTitle || moduleTitle || `Lesson ${groupIndex + 1}`,
+            type: "slides",
+            order: 0,
+            estimatedMinutes: Math.max(1, Math.round(sourceSlides.length * 0.65)),
+            required: true,
+            content: slidesContentSchema.parse({ slides: outputSlides }),
+          }],
+        });
+      }
+      if (!modules.length) {
+        return res.status(400).json({ error: "Include at least one slide before creating the course." });
+      }
+
+      const doc: courseIE.CourseExportDocV1 = {
+        format: "orion-course",
+        version: "1",
+        exportedAt: new Date().toISOString(),
+        course: {
+          title: plan.title,
+          slug: plan.slug || plan.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, ""),
+          summary: plan.summary || null,
+          description: plan.description,
+          imageUrl: null,
+          estimatedMinutes: plan.estimatedMinutes ?? null,
+          status: "draft",
+          visibility: "private",
+          passingScore: 80,
+          certificateEnabled: false,
+          tags: [],
+          modules,
+        },
+      };
+      const result = await courseIE.importCourse(doc, {
+        ownerTenantId: isGlobal ? null : user.tenantId,
+        createdBy: user.id,
+        visibility: "private",
+      });
+      res.status(201).json(result);
+    } catch (err: any) {
+      console.error("pptx course commit error", err);
+      const status = err instanceof z.ZodError ? 400 : 400;
+      res.status(status).json({ error: err?.message || "Failed to create a course from this PowerPoint review." });
     }
   });
 

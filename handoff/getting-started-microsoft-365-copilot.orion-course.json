@@ -1,0 +1,786 @@
+{
+  "format": "orion-course",
+  "version": "2",
+  "exportedAt": "2026-08-21T18:25:53.966Z",
+  "assets": {
+    "/objects/slides/copilot-hero-ab738732-47f0-4570-86a6-d26013134082.svg": {
+      "originalPath": "/objects/slides/copilot-hero-ab738732-47f0-4570-86a6-d26013134082.svg",
+      "contentType": "image/svg+xml",
+      "data": "PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNjAwIiBoZWlnaHQ9IjkwMCIgdmlld0JveD0iMCAwIDE2MDAgOTAwIiByb2xlPSJpbWciIGFyaWEtbGFiZWxsZWRieT0idGl0bGUgZGVzYyI+CiAgPHRpdGxlIGlkPSJ0aXRsZSI+R2V0dGluZyBzdGFydGVkIHdpdGggTWljcm9zb2Z0IDM2NSBDb3BpbG90PC90aXRsZT4KICA8ZGVzYyBpZD0iZGVzYyI+QSBzaW1wbGUgY29tcGFzcyBmb3JtIHNpdHMgc2xpZ2h0bHkgbGVmdCBvZiBjZW50ZXIsIHdpdGggc29mdCBkaXJlY3Rpb25hbCByYXlzIGV4dGVuZGluZyBvdXR3YXJkIGFjcm9zcyBvcGVuIHNwYWNlLCBzdWdnZXN0aW5nIG9yaWVudGF0aW9uLCBjYWxtIG1vbWVudHVtLCBhbmQgYSBjbGVhciBzdGFydGluZyBwb2ludC48L2Rlc2M+CiAgPGRlZnM+CiAgICA8bGluZWFyR3JhZGllbnQgaWQ9ImJnIiB4MT0iMCIgeTE9IjAiIHgyPSIxIiB5Mj0iMSI+PHN0b3Agc3RvcC1jb2xvcj0iIzBCMEIxMCIvPjxzdG9wIG9mZnNldD0iMSIgc3RvcC1jb2xvcj0iIzIxMTMyRiIvPjwvbGluZWFyR3JhZGllbnQ+CiAgICA8bGluZWFyR3JhZGllbnQgaWQ9ImFjY2VudCIgeDE9IjAiIHkxPSIwIiB4Mj0iMSIgeTI9IjEiPjxzdG9wIHN0b3AtY29sb3I9IiM4MTBGRkIiLz48c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IiNFNjBDQjMiLz48L2xpbmVhckdyYWRpZW50PgogICAgPHJhZGlhbEdyYWRpZW50IGlkPSJnbG93Ij48c3RvcCBzdG9wLWNvbG9yPSIjODEwRkZCIiBzdG9wLW9wYWNpdHk9Ii4zMiIvPjxzdG9wIG9mZnNldD0iMSIgc3RvcC1jb2xvcj0iIzgxMEZGQiIgc3RvcC1vcGFjaXR5PSIwIi8+PC9yYWRpYWxHcmFkaWVudD4KICA8L2RlZnM+CiAgPHJlY3Qgd2lkdGg9IjE2MDAiIGhlaWdodD0iOTAwIiByeD0iMzIiIGZpbGw9InVybCgjYmcpIi8+CiAgPGNpcmNsZSBjeD0iMzIwIiBjeT0iMTkwIiByPSI0MzAiIGZpbGw9InVybCgjZ2xvdykiLz4KICA8Y2lyY2xlIGN4PSIxMzMwIiBjeT0iNzYwIiByPSIzNjAiIGZpbGw9InVybCgjZ2xvdykiIG9wYWNpdHk9Ii42MiIvPgogIDxnIHRyYW5zZm9ybT0idHJhbnNsYXRlKDgwMCA0NTApIHJvdGF0ZSgwKSI+PGNpcmNsZSByPSIyOTIiIGZpbGw9Im5vbmUiIHN0cm9rZT0idXJsKCNhY2NlbnQpIiBzdHJva2Utd2lkdGg9IjI2IiBvcGFjaXR5PSIuNzIiLz48cGF0aCBkPSJNMC0yNDUgOTIgMCAwIDI0NS05MiAwWiIgZmlsbD0iI0VERURGMiIgb3BhY2l0eT0iLjkiLz48cGF0aCBkPSJNMC0yNDUgOTIgMCAwIDBaIiBmaWxsPSIjRTYwQ0IzIi8+PGNpcmNsZSByPSIzOCIgZmlsbD0iIzBCMEIxMCIvPjwvZz4KPC9zdmc+"
+    },
+    "/objects/slides/copilot-intro-97eba09a-434e-427a-89a2-a7afcec6e0c4.svg": {
+      "originalPath": "/objects/slides/copilot-intro-97eba09a-434e-427a-89a2-a7afcec6e0c4.svg",
+      "contentType": "image/svg+xml",
+      "data": "PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNjAwIiBoZWlnaHQ9IjkwMCIgdmlld0JveD0iMCAwIDE2MDAgOTAwIiByb2xlPSJpbWciIGFyaWEtbGFiZWxsZWRieT0idGl0bGUgZGVzYyI+CiAgPHRpdGxlIGlkPSJ0aXRsZSI+UmVzcG9uc2libGUgZ2VuZXJhdGl2ZSBBSTwvdGl0bGU+CiAgPGRlc2MgaWQ9ImRlc2MiPlNldmVyYWwgdHJhbnNsdWNlbnQgbGF5ZXJzIG92ZXJsYXAgZnJvbSBsb3dlciBsZWZ0IHRvIHVwcGVyIHJpZ2h0LCBlYWNoIGV2ZW5seSBzcGFjZWQgYW5kIHNvZnRseSBib3VuZGVkLCBjb252ZXlpbmcgc3RydWN0dXJlZCBzYWZlZ3VhcmRzLCBiYWxhbmNlLCBhbmQgdGhvdWdodGZ1bCBkZXB0aCB3aXRoaW4gYW4gYWJzdHJhY3Qgc3lzdGVtLjwvZGVzYz4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iYmciIHgxPSIwIiB5MT0iMCIgeDI9IjEiIHkyPSIxIj48c3RvcCBzdG9wLWNvbG9yPSIjMEIwQjEwIi8+PHN0b3Agb2Zmc2V0PSIxIiBzdG9wLWNvbG9yPSIjMjExMzJGIi8+PC9saW5lYXJHcmFkaWVudD4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iYWNjZW50IiB4MT0iMCIgeTE9IjAiIHgyPSIxIiB5Mj0iMSI+PHN0b3Agc3RvcC1jb2xvcj0iIzgxMEZGQiIvPjxzdG9wIG9mZnNldD0iMSIgc3RvcC1jb2xvcj0iI0U2MENCMyIvPjwvbGluZWFyR3JhZGllbnQ+CiAgICA8cmFkaWFsR3JhZGllbnQgaWQ9Imdsb3ciPjxzdG9wIHN0b3AtY29sb3I9IiM4MTBGRkIiIHN0b3Atb3BhY2l0eT0iLjMyIi8+PHN0b3Agb2Zmc2V0PSIxIiBzdG9wLWNvbG9yPSIjODEwRkZCIiBzdG9wLW9wYWNpdHk9IjAiLz48L3JhZGlhbEdyYWRpZW50PgogIDwvZGVmcz4KICA8cmVjdCB3aWR0aD0iMTYwMCIgaGVpZ2h0PSI5MDAiIHJ4PSIzMiIgZmlsbD0idXJsKCNiZykiLz4KICA8Y2lyY2xlIGN4PSIzMjAiIGN5PSIxOTAiIHI9IjQzMCIgZmlsbD0idXJsKCNnbG93KSIvPgogIDxjaXJjbGUgY3g9IjEzMzAiIGN5PSI3NjAiIHI9IjM2MCIgZmlsbD0idXJsKCNnbG93KSIgb3BhY2l0eT0iLjYyIi8+CiAgPGcgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoODAwIDQ1MCkgcm90YXRlKC04KSI+PHJlY3QgeD0iLTM2MCIgeT0iLTIzMCIgd2lkdGg9IjcyMCIgaGVpZ2h0PSIyNjAiIHJ4PSI1NCIgZmlsbD0iIzgxMEZGQiIgb3BhY2l0eT0iLjY0Ii8+PHJlY3QgeD0iLTMwMCIgeT0iLTcwIiB3aWR0aD0iNzIwIiBoZWlnaHQ9IjI2MCIgcng9IjU0IiBmaWxsPSIjRTYwQ0IzIiBvcGFjaXR5PSIuNTYiLz48cmVjdCB4PSItMjQwIiB5PSI5MCIgd2lkdGg9IjcyMCIgaGVpZ2h0PSIyNjAiIHJ4PSI1NCIgZmlsbD0iI0VERURGMiIgb3BhY2l0eT0iLjIyIi8+PC9nPgo8L3N2Zz4="
+    },
+    "/objects/slides/copilot-app-5dce64eb-7424-4df1-935c-4cba257d9930.svg": {
+      "originalPath": "/objects/slides/copilot-app-5dce64eb-7424-4df1-935c-4cba257d9930.svg",
+      "contentType": "image/svg+xml",
+      "data": "PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNjAwIiBoZWlnaHQ9IjkwMCIgdmlld0JveD0iMCAwIDE2MDAgOTAwIiByb2xlPSJpbWciIGFyaWEtbGFiZWxsZWRieT0idGl0bGUgZGVzYyI+CiAgPHRpdGxlIGlkPSJ0aXRsZSI+Q29waWxvdCBhcHAgYW5kIGVmZmVjdGl2ZSBwcm9tcHRpbmc8L3RpdGxlPgogIDxkZXNjIGlkPSJkZXNjIj5BIHNpbmdsZSBjdXJ2ZWQgcGF0aCBiZWdpbnMgYXQgdGhlIGxvd2VyIGxlZnQsIGJlbmRzIHRocm91Z2ggdHdvIHN1YnRsZSB3YXlwb2ludHMsIGFuZCBvcGVucyB0b3dhcmQgdGhlIHVwcGVyIHJpZ2h0LCBleHByZXNzaW5nIGd1aWRlZCBwcm9ncmVzcyBhbmQgaW5jcmVhc2luZ2x5IHByZWNpc2UgZGlyZWN0aW9uLjwvZGVzYz4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iYmciIHgxPSIwIiB5MT0iMCIgeDI9IjEiIHkyPSIxIj48c3RvcCBzdG9wLWNvbG9yPSIjMEIwQjEwIi8+PHN0b3Agb2Zmc2V0PSIxIiBzdG9wLWNvbG9yPSIjMjExMzJGIi8+PC9saW5lYXJHcmFkaWVudD4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iYWNjZW50IiB4MT0iMCIgeTE9IjAiIHgyPSIxIiB5Mj0iMSI+PHN0b3Agc3RvcC1jb2xvcj0iIzgxMEZGQiIvPjxzdG9wIG9mZnNldD0iMSIgc3RvcC1jb2xvcj0iI0U2MENCMyIvPjwvbGluZWFyR3JhZGllbnQ+CiAgICA8cmFkaWFsR3JhZGllbnQgaWQ9Imdsb3ciPjxzdG9wIHN0b3AtY29sb3I9IiM4MTBGRkIiIHN0b3Atb3BhY2l0eT0iLjMyIi8+PHN0b3Agb2Zmc2V0PSIxIiBzdG9wLWNvbG9yPSIjODEwRkZCIiBzdG9wLW9wYWNpdHk9IjAiLz48L3JhZGlhbEdyYWRpZW50PgogIDwvZGVmcz4KICA8cmVjdCB3aWR0aD0iMTYwMCIgaGVpZ2h0PSI5MDAiIHJ4PSIzMiIgZmlsbD0idXJsKCNiZykiLz4KICA8Y2lyY2xlIGN4PSIzMjAiIGN5PSIxOTAiIHI9IjQzMCIgZmlsbD0idXJsKCNnbG93KSIvPgogIDxjaXJjbGUgY3g9IjEzMzAiIGN5PSI3NjAiIHI9IjM2MCIgZmlsbD0idXJsKCNnbG93KSIgb3BhY2l0eT0iLjYyIi8+CiAgPHBhdGggZD0iTTIyMCA2OTAgQzQyMCAyMTAgNzIwIDc2MCA5ODAgMzEwIFMxMzIwIDE3MCAxNDIwIDI2MCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJ1cmwoI2FjY2VudCkiIHN0cm9rZS13aWR0aD0iMzQiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPjxjaXJjbGUgY3g9IjIyMCIgY3k9IjY5MCIgcj0iMzQiIGZpbGw9IiNFREVERjIiLz48Y2lyY2xlIGN4PSIxNDIwIiBjeT0iMjYwIiByPSI0NiIgZmlsbD0iI0ZGQzI0QSIvPgo8L3N2Zz4="
+    },
+    "/objects/slides/copilot-agents-f58a0190-f5c4-4b6f-ae57-1942acdc3404.svg": {
+      "originalPath": "/objects/slides/copilot-agents-f58a0190-f5c4-4b6f-ae57-1942acdc3404.svg",
+      "contentType": "image/svg+xml",
+      "data": "PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNjAwIiBoZWlnaHQ9IjkwMCIgdmlld0JveD0iMCAwIDE2MDAgOTAwIiByb2xlPSJpbWciIGFyaWEtbGFiZWxsZWRieT0idGl0bGUgZGVzYyI+CiAgPHRpdGxlIGlkPSJ0aXRsZSI+UmVzZWFyY2hlciBhbmQgQW5hbHlzdDwvdGl0bGU+CiAgPGRlc2MgaWQ9ImRlc2MiPkEgc3BhcnNlIGNvbnN0ZWxsYXRpb24gb2YgcG9pbnRzIHNwYW5zIHRoZSB1cHBlciBoYWxmIG9mIHRoZSBjb21wb3NpdGlvbiwgd2l0aCBmaW5lIGNvbm5lY3RpbmcgbGluZXMgY2x1c3RlcmluZyBpbnRvIHR3byByZWxhdGVkIHJlZ2lvbnMsIHN1Z2dlc3RpbmcgZGlzY292ZXJ5LCBjb21wYXJpc29uLCBhbmQgaW5zaWdodCBhY3Jvc3MgZGlzdGFuY2UuPC9kZXNjPgogIDxkZWZzPgogICAgPGxpbmVhckdyYWRpZW50IGlkPSJiZyIgeDE9IjAiIHkxPSIwIiB4Mj0iMSIgeTI9IjEiPjxzdG9wIHN0b3AtY29sb3I9IiMwQjBCMTAiLz48c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IiMyMTEzMkYiLz48L2xpbmVhckdyYWRpZW50PgogICAgPGxpbmVhckdyYWRpZW50IGlkPSJhY2NlbnQiIHgxPSIwIiB5MT0iMCIgeDI9IjEiIHkyPSIxIj48c3RvcCBzdG9wLWNvbG9yPSIjODEwRkZCIi8+PHN0b3Agb2Zmc2V0PSIxIiBzdG9wLWNvbG9yPSIjRTYwQ0IzIi8+PC9saW5lYXJHcmFkaWVudD4KICAgIDxyYWRpYWxHcmFkaWVudCBpZD0iZ2xvdyI+PHN0b3Agc3RvcC1jb2xvcj0iIzgxMEZGQiIgc3RvcC1vcGFjaXR5PSIuMzIiLz48c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IiM4MTBGRkIiIHN0b3Atb3BhY2l0eT0iMCIvPjwvcmFkaWFsR3JhZGllbnQ+CiAgPC9kZWZzPgogIDxyZWN0IHdpZHRoPSIxNjAwIiBoZWlnaHQ9IjkwMCIgcng9IjMyIiBmaWxsPSJ1cmwoI2JnKSIvPgogIDxjaXJjbGUgY3g9IjMyMCIgY3k9IjE5MCIgcj0iNDMwIiBmaWxsPSJ1cmwoI2dsb3cpIi8+CiAgPGNpcmNsZSBjeD0iMTMzMCIgY3k9Ijc2MCIgcj0iMzYwIiBmaWxsPSJ1cmwoI2dsb3cpIiBvcGFjaXR5PSIuNjIiLz4KICA8ZyBzdHJva2U9IiNCNUI3QzIiIHN0cm9rZS13aWR0aD0iNyIgb3BhY2l0eT0iLjYyIj48cGF0aCBkPSJNMjkwIDYwMCA1NjAgMjUwIDgyMCA1MjAgMTExMCAyMjAgMTMzMCA2MDAiLz48cGF0aCBkPSJNNTYwIDI1MCAxMTEwIDIyME04MjAgNTIwIDEzMzAgNjAwIi8+PC9nPjxnIGZpbGw9IiNFNjBDQjMiPjxjaXJjbGUgY3g9IjI5MCIgY3k9IjYwMCIgcj0iMzQiLz48Y2lyY2xlIGN4PSI1NjAiIGN5PSIyNTAiIHI9IjQ4Ii8+PGNpcmNsZSBjeD0iODIwIiBjeT0iNTIwIiByPSI1NiIvPjxjaXJjbGUgY3g9IjExMTAiIGN5PSIyMjAiIHI9IjQyIi8+PGNpcmNsZSBjeD0iMTMzMCIgY3k9IjYwMCIgcj0iMzYiLz48L2c+Cjwvc3ZnPg=="
+    },
+    "/objects/slides/copilot-custom-e374dcf5-2a1a-4db9-8f01-d3a5ece25f70.svg": {
+      "originalPath": "/objects/slides/copilot-custom-e374dcf5-2a1a-4db9-8f01-d3a5ece25f70.svg",
+      "contentType": "image/svg+xml",
+      "data": "PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNjAwIiBoZWlnaHQ9IjkwMCIgdmlld0JveD0iMCAwIDE2MDAgOTAwIiByb2xlPSJpbWciIGFyaWEtbGFiZWxsZWRieT0idGl0bGUgZGVzYyI+CiAgPHRpdGxlIGlkPSJ0aXRsZSI+Q3VzdG9tIGFnZW50cyBncm91bmRlZCBpbiB0cnVzdGVkIGNvbnRlbnQ8L3RpdGxlPgogIDxkZXNjIGlkPSJkZXNjIj5TdGFja2VkIGdlb21ldHJpYyBibG9ja3MgYW5jaG9yIHRoZSBsb3dlciBjZW50ZXIgd2hpbGUgc21hbGxlciBhbGlnbmVkIGJsb2NrcyBleHRlbmQgb3V0d2FyZCBpbiBtZWFzdXJlZCByb3dzLCBpbmRpY2F0aW5nIGEgc3RhYmxlIGZvdW5kYXRpb24sIGNvbnRyb2xsZWQgZXhwYW5zaW9uLCBhbmQgZGVwZW5kYWJsZSBzdHJ1Y3R1cmUuPC9kZXNjPgogIDxkZWZzPgogICAgPGxpbmVhckdyYWRpZW50IGlkPSJiZyIgeDE9IjAiIHkxPSIwIiB4Mj0iMSIgeTI9IjEiPjxzdG9wIHN0b3AtY29sb3I9IiMwQjBCMTAiLz48c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IiMyMTEzMkYiLz48L2xpbmVhckdyYWRpZW50PgogICAgPGxpbmVhckdyYWRpZW50IGlkPSJhY2NlbnQiIHgxPSIwIiB5MT0iMCIgeDI9IjEiIHkyPSIxIj48c3RvcCBzdG9wLWNvbG9yPSIjODEwRkZCIi8+PHN0b3Agb2Zmc2V0PSIxIiBzdG9wLWNvbG9yPSIjRTYwQ0IzIi8+PC9saW5lYXJHcmFkaWVudD4KICAgIDxyYWRpYWxHcmFkaWVudCBpZD0iZ2xvdyI+PHN0b3Agc3RvcC1jb2xvcj0iIzgxMEZGQiIgc3RvcC1vcGFjaXR5PSIuMzIiLz48c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IiM4MTBGRkIiIHN0b3Atb3BhY2l0eT0iMCIvPjwvcmFkaWFsR3JhZGllbnQ+CiAgPC9kZWZzPgogIDxyZWN0IHdpZHRoPSIxNjAwIiBoZWlnaHQ9IjkwMCIgcng9IjMyIiBmaWxsPSJ1cmwoI2JnKSIvPgogIDxjaXJjbGUgY3g9IjMyMCIgY3k9IjE5MCIgcj0iNDMwIiBmaWxsPSJ1cmwoI2dsb3cpIi8+CiAgPGNpcmNsZSBjeD0iMTMzMCIgY3k9Ijc2MCIgcj0iMzYwIiBmaWxsPSJ1cmwoI2dsb3cpIiBvcGFjaXR5PSIuNjIiLz4KICA8ZyB0cmFuc2Zvcm09InRyYW5zbGF0ZSg4MDAgNDUwKSI+PHJlY3QgeD0iLTM5MCIgeT0iLTI0MCIgd2lkdGg9IjI0MCIgaGVpZ2h0PSIyNDAiIHJ4PSI0NCIgZmlsbD0iIzgxMEZGQiIvPjxyZWN0IHg9Ii0xMTAiIHk9Ii0yNDAiIHdpZHRoPSI1MDAiIGhlaWdodD0iMjQwIiByeD0iNDQiIGZpbGw9IiNFNjBDQjMiIG9wYWNpdHk9Ii44Ii8+PHJlY3QgeD0iLTM5MCIgeT0iNDAiIHdpZHRoPSI1MDAiIGhlaWdodD0iMjQwIiByeD0iNDQiIGZpbGw9IiNFREVERjIiIG9wYWNpdHk9Ii4xOCIvPjxyZWN0IHg9IjE1MCIgeT0iNDAiIHdpZHRoPSIyNDAiIGhlaWdodD0iMjQwIiByeD0iNDQiIGZpbGw9IiNGRkMyNEEiIG9wYWNpdHk9Ii44OCIvPjwvZz4KPC9zdmc+"
+    },
+    "/objects/slides/copilot-cowork-6b6dcbe0-7b56-46eb-90e4-2629bdd3753c.svg": {
+      "originalPath": "/objects/slides/copilot-cowork-6b6dcbe0-7b56-46eb-90e4-2629bdd3753c.svg",
+      "contentType": "image/svg+xml",
+      "data": "PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNjAwIiBoZWlnaHQ9IjkwMCIgdmlld0JveD0iMCAwIDE2MDAgOTAwIiByb2xlPSJpbWciIGFyaWEtbGFiZWxsZWRieT0idGl0bGUgZGVzYyI+CiAgPHRpdGxlIGlkPSJ0aXRsZSI+Q29waWxvdCBDb3dvcmsgYW5kIHJldXNhYmxlIHNraWxsczwvdGl0bGU+CiAgPGRlc2MgaWQ9ImRlc2MiPkEgY2VudHJhbCBjaXJjbGUgaXMgc3Vycm91bmRlZCBieSB0aHJlZSBldmVubHkgc3BhY2VkIG9yYml0YWwgYXJjcywgZWFjaCB0cmFjaW5nIGEgZGlzdGluY3QgbG9vcCB0aGF0IHJldHVybnMgaW53YXJkLCBzdWdnZXN0aW5nIHNoYXJlZCBtb3Rpb24sIGNvb3JkaW5hdGlvbiwgYW5kIHJlcGVhdGFibGUgcGF0dGVybnMgYXJvdW5kIGEgY29tbW9uIGNvcmUuPC9kZXNjPgogIDxkZWZzPgogICAgPGxpbmVhckdyYWRpZW50IGlkPSJiZyIgeDE9IjAiIHkxPSIwIiB4Mj0iMSIgeTI9IjEiPjxzdG9wIHN0b3AtY29sb3I9IiMwQjBCMTAiLz48c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IiMyMTEzMkYiLz48L2xpbmVhckdyYWRpZW50PgogICAgPGxpbmVhckdyYWRpZW50IGlkPSJhY2NlbnQiIHgxPSIwIiB5MT0iMCIgeDI9IjEiIHkyPSIxIj48c3RvcCBzdG9wLWNvbG9yPSIjODEwRkZCIi8+PHN0b3Agb2Zmc2V0PSIxIiBzdG9wLWNvbG9yPSIjRTYwQ0IzIi8+PC9saW5lYXJHcmFkaWVudD4KICAgIDxyYWRpYWxHcmFkaWVudCBpZD0iZ2xvdyI+PHN0b3Agc3RvcC1jb2xvcj0iIzgxMEZGQiIgc3RvcC1vcGFjaXR5PSIuMzIiLz48c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IiM4MTBGRkIiIHN0b3Atb3BhY2l0eT0iMCIvPjwvcmFkaWFsR3JhZGllbnQ+CiAgPC9kZWZzPgogIDxyZWN0IHdpZHRoPSIxNjAwIiBoZWlnaHQ9IjkwMCIgcng9IjMyIiBmaWxsPSJ1cmwoI2JnKSIvPgogIDxjaXJjbGUgY3g9IjMyMCIgY3k9IjE5MCIgcj0iNDMwIiBmaWxsPSJ1cmwoI2dsb3cpIi8+CiAgPGNpcmNsZSBjeD0iMTMzMCIgY3k9Ijc2MCIgcj0iMzYwIiBmaWxsPSJ1cmwoI2dsb3cpIiBvcGFjaXR5PSIuNjIiLz4KICA8ZyB0cmFuc2Zvcm09InRyYW5zbGF0ZSg4MDAgNDUwKSByb3RhdGUoNTUpIj48ZWxsaXBzZSByeD0iMzMwIiByeT0iMTY1IiBmaWxsPSJub25lIiBzdHJva2U9IiNFNjBDQjMiIHN0cm9rZS13aWR0aD0iMTQiIG9wYWNpdHk9Ii43Ii8+PGVsbGlwc2Ugcng9IjI0MCIgcnk9IjMwMCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjODEwRkZCIiBzdHJva2Utd2lkdGg9IjEwIiBvcGFjaXR5PSIuNTUiLz48Y2lyY2xlIGN4PSIzMzAiIGN5PSIwIiByPSIzOCIgZmlsbD0iI0ZGQzI0QSIvPjxjaXJjbGUgY3g9Ii0xMjAiIGN5PSItMjYwIiByPSIyOCIgZmlsbD0iI0VERURGMiIvPjwvZz4KPC9zdmc+"
+    },
+    "/objects/slides/copilot-recap-7d385fa1-289c-4e73-be54-78d59f626a2a.svg": {
+      "originalPath": "/objects/slides/copilot-recap-7d385fa1-289c-4e73-be54-78d59f626a2a.svg",
+      "contentType": "image/svg+xml",
+      "data": "PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNjAwIiBoZWlnaHQ9IjkwMCIgdmlld0JveD0iMCAwIDE2MDAgOTAwIiByb2xlPSJpbWciIGFyaWEtbGFiZWxsZWRieT0idGl0bGUgZGVzYyI+CiAgPHRpdGxlIGlkPSJ0aXRsZSI+QSBwcmFjdGljYWwgbmV4dC1zdGVwIGxlYXJuaW5nIHBhdGg8L3RpdGxlPgogIDxkZXNjIGlkPSJkZXNjIj5BIHJlZmluZWQgY29tcGFzcyBzaGFwZSByZXN0cyBuZWFyIHRoZSBib3R0b20gY2VudGVyLCB3aGlsZSBhIHN1YnRsZSBmb3J3YXJkIGFyYyByaXNlcyBhYm92ZSBpdCwgY29tYmluaW5nIG9yaWVudGF0aW9uIHdpdGggbW90aW9uIHRvIHN1Z2dlc3QgY29uZmlkZW50IG5leHQgc3RlcHMgYW5kIGNvbnRpbnVlZCBsZWFybmluZy48L2Rlc2M+CiAgPGRlZnM+CiAgICA8bGluZWFyR3JhZGllbnQgaWQ9ImJnIiB4MT0iMCIgeTE9IjAiIHgyPSIxIiB5Mj0iMSI+PHN0b3Agc3RvcC1jb2xvcj0iIzBCMEIxMCIvPjxzdG9wIG9mZnNldD0iMSIgc3RvcC1jb2xvcj0iIzIxMTMyRiIvPjwvbGluZWFyR3JhZGllbnQ+CiAgICA8bGluZWFyR3JhZGllbnQgaWQ9ImFjY2VudCIgeDE9IjAiIHkxPSIwIiB4Mj0iMSIgeTI9IjEiPjxzdG9wIHN0b3AtY29sb3I9IiM4MTBGRkIiLz48c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IiNFNjBDQjMiLz48L2xpbmVhckdyYWRpZW50PgogICAgPHJhZGlhbEdyYWRpZW50IGlkPSJnbG93Ij48c3RvcCBzdG9wLWNvbG9yPSIjODEwRkZCIiBzdG9wLW9wYWNpdHk9Ii4zMiIvPjxzdG9wIG9mZnNldD0iMSIgc3RvcC1jb2xvcj0iIzgxMEZGQiIgc3RvcC1vcGFjaXR5PSIwIi8+PC9yYWRpYWxHcmFkaWVudD4KICA8L2RlZnM+CiAgPHJlY3Qgd2lkdGg9IjE2MDAiIGhlaWdodD0iOTAwIiByeD0iMzIiIGZpbGw9InVybCgjYmcpIi8+CiAgPGNpcmNsZSBjeD0iMzIwIiBjeT0iMTkwIiByPSI0MzAiIGZpbGw9InVybCgjZ2xvdykiLz4KICA8Y2lyY2xlIGN4PSIxMzMwIiBjeT0iNzYwIiByPSIzNjAiIGZpbGw9InVybCgjZ2xvdykiIG9wYWNpdHk9Ii42MiIvPgogIDxnIHRyYW5zZm9ybT0idHJhbnNsYXRlKDgwMCA0NTApIHJvdGF0ZSg2NikiPjxjaXJjbGUgcj0iMjkyIiBmaWxsPSJub25lIiBzdHJva2U9InVybCgjYWNjZW50KSIgc3Ryb2tlLXdpZHRoPSIyNiIgb3BhY2l0eT0iLjcyIi8+PHBhdGggZD0iTTAtMjQ1IDkyIDAgMCAyNDUtOTIgMFoiIGZpbGw9IiNFREVERjIiIG9wYWNpdHk9Ii45Ii8+PHBhdGggZD0iTTAtMjQ1IDkyIDAgMCAwWiIgZmlsbD0iI0U2MENCMyIvPjxjaXJjbGUgcj0iMzgiIGZpbGw9IiMwQjBCMTAiLz48L2c+Cjwvc3ZnPg=="
+    }
+  },
+  "course": {
+    "title": "Getting Started with Microsoft 365 Copilot",
+    "slug": "getting-started-with-microsoft-365-copilot",
+    "description": "A concise, practical introduction to Microsoft 365 Copilot. Learn how to use approved AI safely, write effective prompts, work with Researcher and Analyst, create focused custom agents, and apply Copilot Cowork and reusable skills.",
+    "summary": "Build safe, effective Copilot habits—from a strong first prompt to specialized agents and delegated work.",
+    "imageUrl": "/objects/slides/copilot-hero-ab738732-47f0-4570-86a6-d26013134082.svg",
+    "estimatedMinutes": 20,
+    "status": "draft",
+    "visibility": "private",
+    "passingScore": 67,
+    "certificateEnabled": false,
+    "tags": [
+      "Microsoft 365 Copilot",
+      "AI productivity",
+      "foundations"
+    ],
+    "modules": [
+      {
+        "title": "Introduction",
+        "description": "Understand what Copilot is, how generative AI works, and the guardrails that protect work data.",
+        "order": 0,
+        "lessons": [
+          {
+            "title": "Start safely with Copilot",
+            "type": "slides",
+            "order": 0,
+            "estimatedMinutes": 3,
+            "required": true,
+            "content": {
+              "slides": [
+                {
+                  "id": "slide_mt3a5k7g_jhrg8i",
+                  "blocks": [
+                    {
+                      "id": "b_mt3a5k7g_883sha",
+                      "type": "heading",
+                      "level": 2,
+                      "text": "Your Copilot starting point"
+                    },
+                    {
+                      "id": "b_mt3a5k7g_wevlix",
+                      "type": "image",
+                      "url": "/objects/slides/copilot-intro-97eba09a-434e-427a-89a2-a7afcec6e0c4.svg",
+                      "alt": "Several translucent layers overlap from lower left to upper right, each evenly spaced and softly bounded, conveying structured safeguards, balance, and thoughtful depth within an abstract system."
+                    },
+                    {
+                      "id": "b_mt3a5k7g_dcs1vc",
+                      "type": "text",
+                      "html": "<p>Microsoft 365 Copilot is a thinking and drafting partner grounded in the work you can already access.</p><p>Use it to move from a blank page to a useful first draft—then apply your judgment before sharing or acting.</p>"
+                    }
+                  ],
+                  "narration": {
+                    "mode": "none",
+                    "text": "This opening illustration uses a compass surrounded by a purple-to-pink field to represent a guided first step. Copilot helps you find direction, but you remain responsible for the destination."
+                  }
+                },
+                {
+                  "id": "slide_mt3a5k7g_bw9s79",
+                  "blocks": [
+                    {
+                      "id": "b_mt3a5k7g_clt6ta",
+                      "type": "heading",
+                      "level": 2,
+                      "text": "Generative AI creates; it does not verify"
+                    },
+                    {
+                      "id": "b_mt3a5k7g_kjdihn",
+                      "type": "text",
+                      "html": "<p>Generative AI predicts useful language and patterns. It can summarize, draft, compare, and brainstorm.</p><p><strong>Always review the result.</strong> Check important facts, dates, calculations, sources, and tone.</p>"
+                    }
+                  ],
+                  "narration": {
+                    "mode": "none",
+                    "text": "Generative AI is a capable drafting partner, not an authority. Review important claims and confirm that the output fits the purpose."
+                  }
+                },
+                {
+                  "id": "slide_mt3a5k7g_iadt8h",
+                  "blocks": [
+                    {
+                      "id": "b_mt3a5k7g_5muurk",
+                      "type": "heading",
+                      "level": 2,
+                      "text": "Keep work data safe"
+                    },
+                    {
+                      "id": "b_mt3a5k7g_w2gprv",
+                      "type": "text",
+                      "html": "<p>Use your organization’s approved Copilot experience for work. Do not paste confidential work into consumer AI tools.</p><p>Copilot respects the permissions already applied to Microsoft 365 content; it does not grant access to information you could not otherwise open.</p>"
+                    }
+                  ],
+                  "narration": {
+                    "mode": "none",
+                    "text": "Three overlapping layers represent approved tools, existing access permissions, and human review. Together they form the safe boundary for using Copilot at work."
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "title": "Copilot app and prompting",
+        "description": "Find the core experiences, write stronger prompts, choose work or web grounding, and reuse useful results.",
+        "order": 1,
+        "lessons": [
+          {
+            "title": "Work effectively in the Copilot app",
+            "type": "slides",
+            "order": 0,
+            "estimatedMinutes": 5,
+            "required": true,
+            "content": {
+              "slides": [
+                {
+                  "id": "slide_mt3a5k7g_ml1exd",
+                  "blocks": [
+                    {
+                      "id": "b_mt3a5k7g_g9fml7",
+                      "type": "heading",
+                      "level": 2,
+                      "text": "One app, several ways to work"
+                    },
+                    {
+                      "id": "b_mt3a5k7g_0t8zx8",
+                      "type": "image",
+                      "url": "/objects/slides/copilot-app-5dce64eb-7424-4df1-935c-4cba257d9930.svg",
+                      "alt": "A single curved path begins at the lower left, bends through two subtle waypoints, and opens toward the upper right, expressing guided progress and increasingly precise direction."
+                    },
+                    {
+                      "id": "b_mt3a5k7g_ozpu3k",
+                      "type": "text",
+                      "html": "<p>The Copilot app brings together chat, content creation, agents, pages, and connected Microsoft 365 apps.</p><p>Availability and labels can vary by license and administrator settings, so focus on the task rather than memorizing a screen.</p>"
+                    }
+                  ],
+                  "narration": {
+                    "mode": "none",
+                    "text": "An abstract pathway branches into several connected destinations. It represents chat, creation, agents, pages, and apps without recreating a product interface."
+                  }
+                },
+                {
+                  "id": "slide_mt3a5k7g_88mbot",
+                  "blocks": [
+                    {
+                      "id": "b_mt3a5k7g_2f6yru",
+                      "type": "heading",
+                      "level": 2,
+                      "text": "Build prompts with G-C-S-E"
+                    },
+                    {
+                      "id": "b_mt3a5k7g_4f4xuu",
+                      "type": "text",
+                      "html": "<p><strong>Goal:</strong> what you need. <strong>Context:</strong> why and for whom. <strong>Source:</strong> the files, messages, or web information to use. <strong>Expectations:</strong> format, tone, and constraints.</p><p>Example: “Draft a five-bullet briefing for the leadership team using the attached project update. Highlight decisions, risks, and owners.”</p>"
+                    }
+                  ],
+                  "narration": {
+                    "mode": "none",
+                    "text": "A strong prompt names the goal, context, source, and expectations. Specific instructions give Copilot a clearer target."
+                  }
+                },
+                {
+                  "id": "slide_mt3a5k7g_15ufkk",
+                  "blocks": [
+                    {
+                      "id": "b_mt3a5k7g_v25vt6",
+                      "type": "heading",
+                      "level": 2,
+                      "text": "Use two prompting habits"
+                    },
+                    {
+                      "id": "b_mt3a5k7g_uq78dj",
+                      "type": "text",
+                      "html": "<p>Be specific enough to establish the first direction, then iterate: ask Copilot to shorten, compare, challenge, reformat, or explain.</p><p>Reference trusted context when available. Use the app’s file, person, email, or agent references instead of copying large amounts of content.</p>"
+                    }
+                  ],
+                  "narration": {
+                    "mode": "none",
+                    "text": "Start with a clear first request, then refine the result through short follow-up prompts. Reference trusted work content instead of pasting it repeatedly."
+                  }
+                },
+                {
+                  "id": "slide_mt3a5k7g_uw8sz0",
+                  "blocks": [
+                    {
+                      "id": "b_mt3a5k7g_6e4ft8",
+                      "type": "heading",
+                      "level": 2,
+                      "text": "Choose the right grounding"
+                    },
+                    {
+                      "id": "b_mt3a5k7g_d0jp7z",
+                      "type": "text",
+                      "html": "<p>Use work grounding when the answer should reflect your organization’s files, messages, meetings, and people.</p><p>Use web grounding for current public information. Treat both as starting points and verify material decisions.</p>"
+                    }
+                  ],
+                  "narration": {
+                    "mode": "none",
+                    "text": "Two converging paths represent work content and public web information. The destination is a reviewed answer shaped by the learner’s judgment."
+                  }
+                },
+                {
+                  "id": "slide_mt3a5k7g_239kx1",
+                  "blocks": [
+                    {
+                      "id": "b_mt3a5k7g_nee1qi",
+                      "type": "heading",
+                      "level": 2,
+                      "text": "Keep and reuse useful results"
+                    },
+                    {
+                      "id": "b_mt3a5k7g_2om160",
+                      "type": "text",
+                      "html": "<p>Turn longer responses into a page when you want to refine and share them. Export only when the target format helps the next step.</p><p>Conversation history can preserve continuity. Settings and custom instructions can improve consistency, subject to your organization’s policies.</p>"
+                    }
+                  ],
+                  "narration": {
+                    "mode": "none",
+                    "text": "Useful results move from conversation into a reusable working document, an export, or a later conversation. The learner chooses the form that supports the next action."
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "title": "Knowledge check: prompting",
+            "type": "quiz",
+            "order": 1,
+            "estimatedMinutes": 1,
+            "required": true,
+            "content": {
+              "passingScore": 67,
+              "questions": [
+                {
+                  "id": "prompt-grounding",
+                  "text": "Which prompt gives Copilot the clearest direction?",
+                  "type": "single",
+                  "options": [
+                    {
+                      "id": "prompt-grounding-1",
+                      "text": "Tell me about this project."
+                    },
+                    {
+                      "id": "prompt-grounding-2",
+                      "text": "Write something professional."
+                    },
+                    {
+                      "id": "prompt-grounding-3",
+                      "text": "Draft a five-bullet leadership briefing from the attached update, highlighting decisions, risks, and owners."
+                    }
+                  ],
+                  "correctIds": [
+                    "prompt-grounding-3"
+                  ],
+                  "explanation": "The third prompt supplies a goal, audience context, source, and clear output expectations."
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "title": "Researcher and Analyst",
+        "description": "Choose the right first-party agent for evidence-rich research or data analysis.",
+        "order": 2,
+        "lessons": [
+          {
+            "title": "Go deeper with first-party agents",
+            "type": "slides",
+            "order": 0,
+            "estimatedMinutes": 3,
+            "required": true,
+            "content": {
+              "slides": [
+                {
+                  "id": "slide_mt3a5k7g_4dbihp",
+                  "blocks": [
+                    {
+                      "id": "b_mt3a5k7g_2ktrpm",
+                      "type": "heading",
+                      "level": 2,
+                      "text": "Agents specialize the work"
+                    },
+                    {
+                      "id": "b_mt3a5k7g_l1fg2p",
+                      "type": "image",
+                      "url": "/objects/slides/copilot-agents-f58a0190-f5c4-4b6f-ae57-1942acdc3404.svg",
+                      "alt": "A sparse constellation of points spans the upper half of the composition, with fine connecting lines clustering into two related regions, suggesting discovery, comparison, and insight across distance."
+                    },
+                    {
+                      "id": "b_mt3a5k7g_p351dx",
+                      "type": "text",
+                      "html": "<p>First-party agents extend Copilot with focused reasoning patterns and tools. Researcher supports evidence-rich inquiry; Analyst supports structured data exploration.</p><p>Start with a clear question, provide the right sources, and review the result before using it.</p>"
+                    }
+                  ],
+                  "narration": {
+                    "mode": "none",
+                    "text": "A constellation connects two larger nodes to a shared center. The nodes represent specialized research and analysis capabilities working from trusted context."
+                  }
+                },
+                {
+                  "id": "slide_mt3a5k7g_92jbdz",
+                  "blocks": [
+                    {
+                      "id": "b_mt3a5k7g_r32zcg",
+                      "type": "heading",
+                      "level": 2,
+                      "text": "Use Researcher for a sourced brief"
+                    },
+                    {
+                      "id": "b_mt3a5k7g_irsjmo",
+                      "type": "text",
+                      "html": "<p>Ask Researcher to investigate a question across permitted work content and relevant public sources, then synthesize themes and cite evidence.</p><p>Use it for market scans, issue briefs, options analysis, and topics that need depth rather than a quick answer.</p>"
+                    }
+                  ],
+                  "narration": {
+                    "mode": "none",
+                    "text": "Researcher follows multiple evidence paths and brings them together into a sourced brief. Check that each important conclusion is supported."
+                  }
+                },
+                {
+                  "id": "slide_mt3a5k7g_vz23gq",
+                  "blocks": [
+                    {
+                      "id": "b_mt3a5k7g_muq9cz",
+                      "type": "heading",
+                      "level": 2,
+                      "text": "Use Analyst to understand data"
+                    },
+                    {
+                      "id": "b_mt3a5k7g_6zin4z",
+                      "type": "text",
+                      "html": "<p>Give Analyst a clear business question and a well-structured spreadsheet or CSV. Ask it to identify patterns, exceptions, comparisons, and useful visual summaries.</p><p>Confirm definitions, filters, and calculations—especially when the result will influence a decision.</p>"
+                    }
+                  ],
+                  "narration": {
+                    "mode": "none",
+                    "text": "Analyst organizes data into patterns and exceptions. The essential accessibility message is to confirm the inputs, definitions, filters, and calculations."
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "title": "Knowledge check: specialized agents",
+            "type": "quiz",
+            "order": 1,
+            "estimatedMinutes": 1,
+            "required": true,
+            "content": {
+              "passingScore": 67,
+              "questions": [
+                {
+                  "id": "agent-choice",
+                  "text": "Which agent is the better starting point for finding patterns in a structured spreadsheet?",
+                  "type": "single",
+                  "options": [
+                    {
+                      "id": "agent-choice-1",
+                      "text": "Researcher"
+                    },
+                    {
+                      "id": "agent-choice-2",
+                      "text": "Analyst"
+                    },
+                    {
+                      "id": "agent-choice-3",
+                      "text": "A custom communications agent"
+                    }
+                  ],
+                  "correctIds": [
+                    "agent-choice-2"
+                  ],
+                  "explanation": "Analyst is designed to reason over structured data and help surface patterns, comparisons, and exceptions."
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "title": "Custom agents",
+        "description": "Build a reusable specialist grounded in instructions and trusted knowledge.",
+        "order": 3,
+        "lessons": [
+          {
+            "title": "Create a focused custom agent",
+            "type": "slides",
+            "order": 0,
+            "estimatedMinutes": 3,
+            "required": true,
+            "content": {
+              "slides": [
+                {
+                  "id": "slide_mt3a5k7g_o4a4u3",
+                  "blocks": [
+                    {
+                      "id": "b_mt3a5k7g_1viuti",
+                      "type": "heading",
+                      "level": 2,
+                      "text": "A reusable expert for a repeated job"
+                    },
+                    {
+                      "id": "b_mt3a5k7g_xmew5j",
+                      "type": "image",
+                      "url": "/objects/slides/copilot-custom-e374dcf5-2a1a-4db9-8f01-d3a5ece25f70.svg",
+                      "alt": "Stacked geometric blocks anchor the lower center while smaller aligned blocks extend outward in measured rows, indicating a stable foundation, controlled expansion, and dependable structure."
+                    },
+                    {
+                      "id": "b_mt3a5k7g_tpsdz8",
+                      "type": "text",
+                      "html": "<p>A custom agent combines a clear purpose, durable instructions, and selected knowledge so people do not have to rebuild the same prompt every time.</p><p>Good candidates are frequent, bounded tasks with trusted source material and an identifiable owner.</p>"
+                    }
+                  ],
+                  "narration": {
+                    "mode": "none",
+                    "text": "Four interlocking blocks represent purpose, instructions, trusted knowledge, and ownership. Together they create a bounded reusable specialist."
+                  }
+                },
+                {
+                  "id": "slide_mt3a5k7g_7xi6c0",
+                  "blocks": [
+                    {
+                      "id": "b_mt3a5k7g_xteaiw",
+                      "type": "heading",
+                      "level": 2,
+                      "text": "Build in five deliberate steps"
+                    },
+                    {
+                      "id": "b_mt3a5k7g_n86nk6",
+                      "type": "text",
+                      "html": "<p>1. Name the job and audience. 2. Define what success looks like. 3. Add trusted knowledge. 4. Write boundaries and response instructions. 5. Test realistic questions.</p><p>Improve the agent when it fails a test; do not hide ambiguity behind a longer description.</p>"
+                    }
+                  ],
+                  "narration": {
+                    "mode": "none",
+                    "text": "The five-step sequence moves from job definition through success criteria, knowledge, boundaries, and realistic testing."
+                  }
+                },
+                {
+                  "id": "slide_mt3a5k7g_rwhy7w",
+                  "blocks": [
+                    {
+                      "id": "b_mt3a5k7g_fggvm8",
+                      "type": "heading",
+                      "level": 2,
+                      "text": "Ground the agent in maintained content"
+                    },
+                    {
+                      "id": "b_mt3a5k7g_5q0r8z",
+                      "type": "text",
+                      "html": "<p>An agent built on policy, product, or process content is only as reliable as those sources.</p><p>Assign an owner, remove obsolete material, and retest when the underlying content or business process changes.</p>"
+                    }
+                  ],
+                  "narration": {
+                    "mode": "none",
+                    "text": "A central source connects to a reusable agent and several outputs. Ownership and maintenance keep every output tied to current trusted content."
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "title": "Knowledge check: custom agents",
+            "type": "quiz",
+            "order": 1,
+            "estimatedMinutes": 1,
+            "required": true,
+            "content": {
+              "passingScore": 67,
+              "questions": [
+                {
+                  "id": "agent-maintenance",
+                  "text": "What makes a custom agent dependable over time?",
+                  "type": "single",
+                  "options": [
+                    {
+                      "id": "agent-maintenance-1",
+                      "text": "A very long name and description"
+                    },
+                    {
+                      "id": "agent-maintenance-2",
+                      "text": "More source files, whether current or not"
+                    },
+                    {
+                      "id": "agent-maintenance-3",
+                      "text": "A clear purpose, trusted maintained knowledge, boundaries, an owner, and realistic testing"
+                    }
+                  ],
+                  "correctIds": [
+                    "agent-maintenance-3"
+                  ],
+                  "explanation": "Dependability comes from bounded purpose, maintained sources, clear instructions, ownership, and testing—not volume."
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "title": "Copilot Cowork and skills",
+        "description": "Delegate larger outcomes and package instructions into reusable skills.",
+        "order": 4,
+        "lessons": [
+          {
+            "title": "Move from prompts to delegated work",
+            "type": "slides",
+            "order": 0,
+            "estimatedMinutes": 3,
+            "required": true,
+            "content": {
+              "slides": [
+                {
+                  "id": "slide_mt3a5k7g_7pan7y",
+                  "blocks": [
+                    {
+                      "id": "b_mt3a5k7g_uz42cd",
+                      "type": "heading",
+                      "level": 2,
+                      "text": "Delegate a larger outcome with Cowork"
+                    },
+                    {
+                      "id": "b_mt3a5k7g_ywz6ko",
+                      "type": "image",
+                      "url": "/objects/slides/copilot-cowork-6b6dcbe0-7b56-46eb-90e4-2629bdd3753c.svg",
+                      "alt": "A central circle is surrounded by three evenly spaced orbital arcs, each tracing a distinct loop that returns inward, suggesting shared motion, coordination, and repeatable patterns around a common core."
+                    },
+                    {
+                      "id": "b_mt3a5k7g_0hsw94",
+                      "type": "text",
+                      "html": "<p>Copilot Cowork is designed for work that needs planning and multiple coordinated steps rather than one response.</p><p>Define the desired outcome, available context, checkpoints, and boundaries. Review the plan and the resulting work before it moves forward.</p>"
+                    }
+                  ],
+                  "narration": {
+                    "mode": "none",
+                    "text": "Several orbiting work elements move around a clearly bounded center. The image represents coordinated steps, checkpoints, and human oversight without showing software screens."
+                  }
+                },
+                {
+                  "id": "slide_mt3a5k7g_jdzkcv",
+                  "blocks": [
+                    {
+                      "id": "b_mt3a5k7g_3onnf5",
+                      "type": "heading",
+                      "level": 2,
+                      "text": "Turn reliable instructions into skills"
+                    },
+                    {
+                      "id": "b_mt3a5k7g_gxg515",
+                      "type": "text",
+                      "html": "<p>A skill is a reusable block of instructions for a task you expect to repeat. It can capture sequence, quality criteria, format, and guardrails.</p><p>Keep skills narrow enough to test. Update them when the process, source material, or expected output changes.</p>"
+                    }
+                  ],
+                  "narration": {
+                    "mode": "none",
+                    "text": "A reusable instruction block feeds several consistent outputs. The visual emphasizes repeatability, quality criteria, and guardrails."
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "title": "Knowledge check: delegated work",
+            "type": "quiz",
+            "order": 1,
+            "estimatedMinutes": 1,
+            "required": true,
+            "content": {
+              "passingScore": 67,
+              "questions": [
+                {
+                  "id": "cowork-skill",
+                  "text": "When should you prefer a reusable skill over an ad hoc prompt?",
+                  "type": "single",
+                  "options": [
+                    {
+                      "id": "cowork-skill-1",
+                      "text": "When a bounded task repeats and the same sequence, quality criteria, and guardrails should apply"
+                    },
+                    {
+                      "id": "cowork-skill-2",
+                      "text": "Whenever the task contains more than one sentence"
+                    },
+                    {
+                      "id": "cowork-skill-3",
+                      "text": "Only when no source material exists"
+                    }
+                  ],
+                  "correctIds": [
+                    "cowork-skill-1"
+                  ],
+                  "explanation": "A skill is valuable when a repeatable task benefits from consistent instructions, criteria, and boundaries."
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "title": "Recap and next steps",
+        "description": "Consolidate the core habits and choose one safe, useful task to try next.",
+        "order": 5,
+        "lessons": [
+          {
+            "title": "Put Copilot to work",
+            "type": "slides",
+            "order": 0,
+            "estimatedMinutes": 1,
+            "required": true,
+            "content": {
+              "slides": [
+                {
+                  "id": "slide_mt3a5k7g_8ve5ql",
+                  "blocks": [
+                    {
+                      "id": "b_mt3a5k7g_qki7y5",
+                      "type": "heading",
+                      "level": 2,
+                      "text": "Five habits to carry forward"
+                    },
+                    {
+                      "id": "b_mt3a5k7g_u18zcz",
+                      "type": "image",
+                      "url": "/objects/slides/copilot-recap-7d385fa1-289c-4e73-be54-78d59f626a2a.svg",
+                      "alt": "A refined compass shape rests near the bottom center, while a subtle forward arc rises above it, combining orientation with motion to suggest confident next steps and continued learning."
+                    },
+                    {
+                      "id": "b_mt3a5k7g_u7qsxq",
+                      "type": "text",
+                      "html": "<p>Use approved tools and protect confidential data. Give Copilot a clear goal and trusted context. Choose the right agent for the work. Review important outputs. Turn effective instructions into a reusable practice.</p><p>Your next step: choose one low-risk task this week, define what a good result looks like, and compare the time and quality with your current approach.</p>"
+                    }
+                  ],
+                  "narration": {
+                    "mode": "none",
+                    "text": "A compass points along a short path with five milestones, representing safe use, clear prompts, the right capability, human review, and repeatable practice."
+                  }
+                },
+                {
+                  "id": "slide_mt3a5k7g_h3lhqc",
+                  "blocks": [
+                    {
+                      "id": "b_mt3a5k7g_cqw461",
+                      "type": "heading",
+                      "level": 2,
+                      "text": "Keep learning in context"
+                    },
+                    {
+                      "id": "b_mt3a5k7g_dh9g0p",
+                      "type": "text",
+                      "html": "<p>Use Microsoft Learn, the Microsoft Adoption site, and your organization’s enablement resources to stay current.</p><p>Product availability and labels change. Treat current documentation and your administrator’s guidance as the source of truth.</p>"
+                    }
+                  ],
+                  "narration": {
+                    "mode": "none",
+                    "text": "A simple learning path continues beyond the course. Current documentation and organizational guidance remain the source of truth as Copilot evolves."
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "title": "Final recap",
+            "type": "quiz",
+            "order": 1,
+            "estimatedMinutes": 1,
+            "required": true,
+            "content": {
+              "passingScore": 67,
+              "questions": [
+                {
+                  "id": "recap-safe",
+                  "text": "What is the best first step before using work information with generative AI?",
+                  "type": "single",
+                  "options": [
+                    {
+                      "id": "recap-safe-1",
+                      "text": "Paste it into any available chatbot"
+                    },
+                    {
+                      "id": "recap-safe-2",
+                      "text": "Confirm that you are using your organization’s approved Copilot experience"
+                    },
+                    {
+                      "id": "recap-safe-3",
+                      "text": "Remove the document title and proceed"
+                    }
+                  ],
+                  "correctIds": [
+                    "recap-safe-2"
+                  ],
+                  "explanation": "Approved work tools apply the organization’s protections and policies. Removing a title does not make confidential content safe for consumer tools."
+                },
+                {
+                  "id": "recap-research",
+                  "text": "You need an evidence-rich brief across work content and public sources. Where should you start?",
+                  "type": "single",
+                  "options": [
+                    {
+                      "id": "recap-research-1",
+                      "text": "Researcher"
+                    },
+                    {
+                      "id": "recap-research-2",
+                      "text": "Analyst"
+                    },
+                    {
+                      "id": "recap-research-3",
+                      "text": "A spreadsheet formula"
+                    }
+                  ],
+                  "correctIds": [
+                    "recap-research-1"
+                  ],
+                  "explanation": "Researcher is the appropriate starting point for deeper, sourced inquiry across permitted work and public information."
+                },
+                {
+                  "id": "recap-review",
+                  "text": "Who remains accountable for checking a Copilot output before it is used?",
+                  "type": "single",
+                  "options": [
+                    {
+                      "id": "recap-review-1",
+                      "text": "The person using and sharing the result"
+                    },
+                    {
+                      "id": "recap-review-2",
+                      "text": "The language model"
+                    },
+                    {
+                      "id": "recap-review-3",
+                      "text": "The source document owner only"
+                    }
+                  ],
+                  "correctIds": [
+                    "recap-review-1"
+                  ],
+                  "explanation": "Copilot accelerates the work, but the user remains responsible for checking accuracy, context, permissions, and suitability."
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  }
+}
