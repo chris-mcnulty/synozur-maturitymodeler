@@ -6,3 +6,10 @@ id = "UrA04J8daL7V_Llgqml4A"
 uri = "file://champion-type-quiz-corrected.model.json"
 type = "unspecified"
 title = "Champion Type Quiz — corrected export (type mode + 5 archetypes + answer mappings)"
+
+[[outputs]]
+id = "rg8CrLG244sTckQ9ZXwlH"
+uri = "file://handoff/from-list-to-live-dashboard-copilot-sharepoint.orion-course.json"
+type = "unspecified"
+title = "From List to Live Dashboard — Orion course package"
+description = "Validated v2 Orion import package: 6 modules, 29 lessons, 8 embedded downloads, labeled screenshot/diagram placeholders, assessments, and required capstone evidence submission. Imports as draft/private."

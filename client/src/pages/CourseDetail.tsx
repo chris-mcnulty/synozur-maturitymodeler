@@ -13,6 +13,7 @@ import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Loader2, BookOpen, CheckCircle2, Clock, PlayCircle, FileText, Music, Lock, Award, ChevronLeft, ChevronRight, Download } from "lucide-react";
@@ -132,6 +133,57 @@ function computeUnlocked(allLessons: Lesson[], progressByLesson: Map<string, Les
 interface CourseFull extends Course {
   modules: (CourseModule & { lessons: Lesson[] })[];
   tags: CourseTag[];
+  resources?: CourseResource[];
+}
+
+interface CourseResource {
+  id: string;
+  title: string;
+  description?: string;
+  filename: string;
+  mimeType?: string;
+  dataBase64: string;
+}
+
+function collectCourseResources(course: CourseFull): CourseResource[] {
+  if (Array.isArray(course.resources)) return course.resources;
+  const seen = new Set<string>();
+  const resources: CourseResource[] = [];
+
+  for (const lesson of course.modules.flatMap(module => module.lessons)) {
+    const lessonResources = (lesson.content as any)?.courseResources;
+    if (!Array.isArray(lessonResources)) continue;
+
+    for (const resource of lessonResources) {
+      if (
+        !resource ||
+        typeof resource.id !== "string" ||
+        typeof resource.title !== "string" ||
+        typeof resource.filename !== "string" ||
+        typeof resource.dataBase64 !== "string" ||
+        seen.has(resource.id)
+      ) {
+        continue;
+      }
+      seen.add(resource.id);
+      resources.push(resource);
+    }
+  }
+
+  return resources;
+}
+
+function lessonActivityType(lesson: Lesson): string {
+  return (lesson as any).activityType
+    ?? (lesson.content as any)?.activityType
+    ?? lesson.type.replace("_", " ");
+}
+
+function resourceDownloadUrl(resource: CourseResource): string {
+  const mimeType = /^[\w.+-]+\/[\w.+-]+$/.test(resource.mimeType || "")
+    ? resource.mimeType
+    : "application/octet-stream";
+  return `data:${mimeType};base64,${resource.dataBase64}`;
 }
 
 interface ProgressData {
@@ -229,6 +281,7 @@ export default function CourseDetail() {
   }
 
   const allLessons = course.modules.flatMap(m => m.lessons);
+  const courseResources = collectCourseResources(course);
   const progressByLesson = new Map<string, LessonProgress>(
     (progressData?.progress ?? []).map(p => [p.lessonId, p])
   );
@@ -274,6 +327,15 @@ export default function CourseDetail() {
         </Button>
       </Link>
 
+      {course.imageUrl && (
+        <img
+          src={course.imageUrl}
+          alt={`${course.title} dashboard preview`}
+          className="mb-6 aspect-[16/7] w-full rounded-lg border object-cover"
+          data-testid="image-course-hero"
+        />
+      )}
+
       <div className="mb-6">
         <div className="flex flex-wrap items-start justify-between gap-2 mb-2">
           <h1 className="text-3xl font-bold" data-testid="text-course-title">{course.title}</h1>
@@ -293,6 +355,37 @@ export default function CourseDetail() {
         <Card className="mb-6">
           <CardContent className="pt-6 prose prose-sm dark:prose-invert max-w-none whitespace-pre-wrap" data-testid="text-course-description">
             {course.description}
+          </CardContent>
+        </Card>
+      )}
+
+      {courseResources.length > 0 && (
+        <Card className="mb-6" data-testid="card-course-resources">
+          <CardHeader>
+            <CardTitle className="text-lg">Course resources</CardTitle>
+            <p className="text-sm text-muted-foreground">
+              Download the datasets, skill files, guides, and rubrics used throughout the course.
+            </p>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {courseResources.map(resource => (
+                <div key={resource.id} className="flex items-start justify-between gap-3 rounded-md border p-3">
+                  <div>
+                    <p className="font-medium">{resource.title}</p>
+                    {resource.description && (
+                      <p className="mt-1 text-sm text-muted-foreground">{resource.description}</p>
+                    )}
+                    <p className="mt-1 text-xs text-muted-foreground">{resource.filename}</p>
+                  </div>
+                  <a href={resourceDownloadUrl(resource)} download={resource.filename}>
+                    <Button variant="outline" size="sm" aria-label={`Download ${resource.title}`}>
+                      <Download className="h-4 w-4" />
+                    </Button>
+                  </a>
+                </div>
+              ))}
+            </div>
           </CardContent>
         </Card>
       )}
@@ -412,7 +505,7 @@ export default function CourseDetail() {
                       <div className="flex-1">
                         <div className="font-medium">{l.title}</div>
                         <div className="text-xs text-muted-foreground capitalize">
-                          {l.type.replace("_", " ")}{locked ? " · locked" : ""}
+                          {lessonActivityType(l)}{locked ? " · locked" : ""}
                         </div>
                       </div>
                       {completed && <Badge variant="secondary"><CheckCircle2 className="h-3 w-3 mr-1" />Complete</Badge>}
@@ -450,6 +543,9 @@ function CoursePlayer({ course, lesson, currentIndex, total, progress, onPrev, o
   const [autoAdvance, setAutoAdvance] = useState(false);
   const [submittedScore, setSubmittedScore] = useState<number | null>(progress?.score ?? null);
   const [submittedStatus, setSubmittedStatus] = useState<string | null>(progress?.status ?? null);
+  const [submissionValues, setSubmissionValues] = useState<Record<string, string>>(
+    () => ((progress?.data as any)?.submission ?? {}),
+  );
   const [quizFeedback, setQuizFeedback] = useState<Array<{ questionId: string; correct: boolean; explanation: string }>>(
     () => ((progress?.data as any)?.feedback ?? []),
   );
@@ -489,21 +585,96 @@ function CoursePlayer({ course, lesson, currentIndex, total, progress, onPrev, o
     completeMutation.mutate({ status: "completed" });
   };
 
+  const skipLesson = () => {
+    completeMutation.mutate({
+      status: "completed",
+      data: { skipped: true, skippedAt: new Date().toISOString() },
+    });
+  };
+
   const submitQuiz = () => {
     completeMutation.mutate({ data: { responses: quizResponses } });
+  };
+
+  const submitLessonWork = () => {
+    completeMutation.mutate({
+      status: "completed",
+      data: { submission: submissionValues, submittedAt: new Date().toISOString() },
+    });
   };
 
   const renderContent = () => {
     const c = (lesson.content as any) || {};
     switch (lesson.type) {
-      case "rich_text":
-        return (
-          <div
-            className="prose prose-sm dark:prose-invert max-w-none"
-            dangerouslySetInnerHTML={{ __html: sanitizeHtml(c.html || "<p>No content.</p>") }}
-            data-testid="content-rich-text"
-          />
+      case "rich_text": {
+        const submission = c.submission;
+        const fields: any[] = Array.isArray(submission?.fields) ? submission.fields : [];
+        const canSubmit = fields.every(field =>
+          !field.required || (submissionValues[field.id] ?? "").trim().length > 0
         );
+        return (
+          <>
+            <div
+              className="prose prose-sm dark:prose-invert max-w-none"
+              dangerouslySetInnerHTML={{ __html: sanitizeHtml(c.html || "<p>No content.</p>") }}
+              data-testid="content-rich-text"
+            />
+            {submission && (
+              <div className="mt-6 space-y-4 rounded-lg border bg-muted/30 p-5" data-testid="content-submission">
+                <div>
+                  <h2 className="text-lg font-semibold">{submission.title ?? "Submit your work"}</h2>
+                  {submission.description && (
+                    <p className="mt-1 text-sm text-muted-foreground">{submission.description}</p>
+                  )}
+                </div>
+                {submittedStatus === "completed" ? (
+                  <div className="flex items-center gap-2 text-sm font-medium text-green-700 dark:text-green-400">
+                    <CheckCircle2 className="h-4 w-4" /> Submission received
+                  </div>
+                ) : (
+                  <>
+                    {fields.map(field => (
+                      <div key={field.id} className="space-y-2">
+                        <Label htmlFor={`submission-${field.id}`}>
+                          {field.label}{field.required ? " *" : ""}
+                        </Label>
+                        {field.type === "textarea" ? (
+                          <Textarea
+                            id={`submission-${field.id}`}
+                            value={submissionValues[field.id] ?? ""}
+                            onChange={event => setSubmissionValues(values => ({ ...values, [field.id]: event.target.value }))}
+                            placeholder={field.placeholder}
+                            rows={field.rows ?? 5}
+                            data-testid={`textarea-submission-${field.id}`}
+                          />
+                        ) : (
+                          <Input
+                            id={`submission-${field.id}`}
+                            type={field.type === "url" ? "url" : "text"}
+                            value={submissionValues[field.id] ?? ""}
+                            onChange={event => setSubmissionValues(values => ({ ...values, [field.id]: event.target.value }))}
+                            placeholder={field.placeholder}
+                            data-testid={`input-submission-${field.id}`}
+                          />
+                        )}
+                        {field.helpText && <p className="text-xs text-muted-foreground">{field.helpText}</p>}
+                      </div>
+                    ))}
+                    <Button
+                      onClick={submitLessonWork}
+                      disabled={completeMutation.isPending || !canSubmit}
+                      data-testid="button-submit-lesson-work"
+                    >
+                      {completeMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                      {submission.submitLabel ?? "Submit work"}
+                    </Button>
+                  </>
+                )}
+              </div>
+            )}
+          </>
+        );
+      }
       case "slides": {
         const slides = normalizeSlides(c);
         if (slides.length === 0) return <p>No slides.</p>;
@@ -634,42 +805,52 @@ function CoursePlayer({ course, lesson, currentIndex, total, progress, onPrev, o
       }
       case "quiz": {
         const questions: any[] = c.questions || [];
+        const quizIntro = c.introHtml ? (
+          <div
+            className="prose prose-sm dark:prose-invert max-w-none mb-6"
+            dangerouslySetInnerHTML={{ __html: sanitizeHtml(c.introHtml) }}
+            data-testid="content-quiz-intro"
+          />
+        ) : null;
         if (submittedScore !== null) {
           const passing = c.passingScore ?? 70;
           const passed = submittedStatus === "completed";
           return (
-            <div className="text-center py-8" data-testid="content-quiz-result">
-              <div className="mb-3">
-                {passed
-                  ? <CheckCircle2 className="h-12 w-12 text-green-500 mx-auto" />
-                  : <div className="h-12 w-12 rounded-full border-4 border-muted mx-auto flex items-center justify-center text-muted-foreground text-xl font-bold">✕</div>
-                }
-              </div>
-              <h3 className="text-2xl font-bold mb-2">{passed ? "Passed!" : "Not quite — try again"}</h3>
-              <p className="text-lg text-muted-foreground mb-4">
-                Score: {submittedScore} / 100 &nbsp;·&nbsp; Passing: {passing}
-              </p>
-              {quizFeedback.length > 0 && (
-                <div className="mx-auto mb-5 max-w-2xl space-y-2 text-left" data-testid="quiz-answer-feedback">
-                  {quizFeedback.map((feedback, index) => (
-                    <div
-                      key={feedback.questionId}
-                      className={`rounded-md border p-3 ${feedback.correct ? "border-green-500/40 bg-green-500/5" : "border-amber-500/40 bg-amber-500/5"}`}
-                    >
-                      <p className="text-sm font-medium">
-                        Question {index + 1}: {feedback.correct ? "Correct" : "Review the answer"}
-                      </p>
-                      <p className="mt-1 text-sm text-muted-foreground">{feedback.explanation}</p>
-                    </div>
-                  ))}
+            <>
+              {quizIntro}
+              <div className="text-center py-8" data-testid="content-quiz-result">
+                <div className="mb-3">
+                  {passed
+                    ? <CheckCircle2 className="h-12 w-12 text-green-500 mx-auto" />
+                    : <div className="h-12 w-12 rounded-full border-4 border-muted mx-auto flex items-center justify-center text-muted-foreground text-xl font-bold">✕</div>
+                  }
                 </div>
-              )}
-              {!passed && (
-                <Button onClick={() => { setSubmittedScore(null); setSubmittedStatus(null); setQuizResponses({}); setQuizFeedback([]); }} data-testid="button-quiz-retry">
-                  Retry
-                </Button>
-              )}
-            </div>
+                <h3 className="text-2xl font-bold mb-2">{passed ? "Passed!" : "Not quite — try again"}</h3>
+                <p className="text-lg text-muted-foreground mb-4">
+                  Score: {submittedScore} / 100 &nbsp;·&nbsp; Passing: {passing}
+                </p>
+                {quizFeedback.length > 0 && (
+                  <div className="mx-auto mb-5 max-w-2xl space-y-2 text-left" data-testid="quiz-answer-feedback">
+                    {quizFeedback.map((feedback, index) => (
+                      <div
+                        key={feedback.questionId}
+                        className={`rounded-md border p-3 ${feedback.correct ? "border-green-500/40 bg-green-500/5" : "border-amber-500/40 bg-amber-500/5"}`}
+                      >
+                        <p className="text-sm font-medium">
+                          Question {index + 1}: {feedback.correct ? "Correct" : "Review the answer"}
+                        </p>
+                        <p className="mt-1 text-sm text-muted-foreground">{feedback.explanation}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {!passed && (
+                  <Button onClick={() => { setSubmittedScore(null); setSubmittedStatus(null); setQuizResponses({}); setQuizFeedback([]); }} data-testid="button-quiz-retry">
+                    Retry
+                  </Button>
+                )}
+              </div>
+            </>
           );
         }
 
@@ -677,72 +858,75 @@ function CoursePlayer({ course, lesson, currentIndex, total, progress, onPrev, o
           questions.every(q => (quizResponses[q.id]?.length ?? 0) > 0);
 
         return (
-          <div className="space-y-6" data-testid="content-quiz">
-            {questions.map((q: any, qi: number) => {
-              // Server normalises choices to `answers`; fall back to `options`
-              // in case the lesson was loaded without the redact transform.
-              const choices: any[] = q.answers || q.options || [];
-              const isMultiple = q.type === "multiple";
-              const selected = quizResponses[q.id] ?? [];
+          <>
+            {quizIntro}
+            <div className="space-y-6" data-testid="content-quiz">
+              {questions.map((q: any, qi: number) => {
+                // Server normalises choices to `answers`; fall back to `options`
+                // in case the lesson was loaded without the redact transform.
+                const choices: any[] = q.answers || q.options || [];
+                const isMultiple = q.type === "multiple";
+                const selected = quizResponses[q.id] ?? [];
 
-              return (
-                <div key={q.id || qi} className="space-y-2">
-                  <p className="font-medium">
-                    {qi + 1}. {q.text}
-                    {isMultiple && (
-                      <span className="ml-2 text-xs font-normal text-muted-foreground">(select all that apply)</span>
-                    )}
-                  </p>
-                  {isMultiple ? (
-                    <div className="space-y-2">
-                      {choices.map((a: any) => {
-                        const checked = selected.includes(a.id);
-                        return (
+                return (
+                  <div key={q.id || qi} className="space-y-2">
+                    <p className="font-medium">
+                      {qi + 1}. {q.text}
+                      {isMultiple && (
+                        <span className="ml-2 text-xs font-normal text-muted-foreground">(select all that apply)</span>
+                      )}
+                    </p>
+                    {isMultiple ? (
+                      <div className="space-y-2">
+                        {choices.map((a: any) => {
+                          const checked = selected.includes(a.id);
+                          return (
+                            <div key={a.id} className="flex items-center gap-2">
+                              <Checkbox
+                                id={`${q.id}-${a.id}`}
+                                checked={checked}
+                                onCheckedChange={on => {
+                                  setQuizResponses(r => {
+                                    const prev = r[q.id] ?? [];
+                                    const next = on
+                                      ? [...prev, a.id]
+                                      : prev.filter(x => x !== a.id);
+                                    return { ...r, [q.id]: next };
+                                  });
+                                }}
+                                data-testid={`checkbox-quiz-${q.id}-${a.id}`}
+                              />
+                              <Label htmlFor={`${q.id}-${a.id}`} className="cursor-pointer">{a.text}</Label>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <RadioGroup
+                        value={selected[0] ?? ""}
+                        onValueChange={v => setQuizResponses(r => ({ ...r, [q.id]: [v] }))}
+                      >
+                        {choices.map((a: any) => (
                           <div key={a.id} className="flex items-center gap-2">
-                            <Checkbox
-                              id={`${q.id}-${a.id}`}
-                              checked={checked}
-                              onCheckedChange={on => {
-                                setQuizResponses(r => {
-                                  const prev = r[q.id] ?? [];
-                                  const next = on
-                                    ? [...prev, a.id]
-                                    : prev.filter(x => x !== a.id);
-                                  return { ...r, [q.id]: next };
-                                });
-                              }}
-                              data-testid={`checkbox-quiz-${q.id}-${a.id}`}
-                            />
+                            <RadioGroupItem value={a.id} id={`${q.id}-${a.id}`} data-testid={`radio-quiz-${q.id}-${a.id}`} />
                             <Label htmlFor={`${q.id}-${a.id}`} className="cursor-pointer">{a.text}</Label>
                           </div>
-                        );
-                      })}
-                    </div>
-                  ) : (
-                    <RadioGroup
-                      value={selected[0] ?? ""}
-                      onValueChange={v => setQuizResponses(r => ({ ...r, [q.id]: [v] }))}
-                    >
-                      {choices.map((a: any) => (
-                        <div key={a.id} className="flex items-center gap-2">
-                          <RadioGroupItem value={a.id} id={`${q.id}-${a.id}`} data-testid={`radio-quiz-${q.id}-${a.id}`} />
-                          <Label htmlFor={`${q.id}-${a.id}`} className="cursor-pointer">{a.text}</Label>
-                        </div>
-                      ))}
-                    </RadioGroup>
-                  )}
-                </div>
-              );
-            })}
-            <Button
-              onClick={submitQuiz}
-              disabled={completeMutation.isPending || !allAnswered}
-              data-testid="button-quiz-submit"
-            >
-              {completeMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              Submit quiz
-            </Button>
-          </div>
+                        ))}
+                      </RadioGroup>
+                    )}
+                  </div>
+                );
+              })}
+              <Button
+                onClick={submitQuiz}
+                disabled={completeMutation.isPending || !allAnswered}
+                data-testid="button-quiz-submit"
+              >
+                {completeMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                Submit quiz
+              </Button>
+            </div>
+          </>
         );
       }
       case "attestation": {
@@ -796,7 +980,9 @@ function CoursePlayer({ course, lesson, currentIndex, total, progress, onPrev, o
   };
 
   const isCompleted = submittedStatus === "completed";
-  const showCompleteButton = ["rich_text", "slides", "video", "audio"].includes(lesson.type);
+  const hasSubmission = Boolean((lesson.content as any)?.submission);
+  const showCompleteButton = ["rich_text", "slides", "video", "audio"].includes(lesson.type) && !hasSubmission;
+  const allowSkip = Boolean((lesson.content as any)?.allowSkip);
 
   return (
     <div className="container mx-auto px-4 py-6 max-w-4xl">
@@ -809,7 +995,7 @@ function CoursePlayer({ course, lesson, currentIndex, total, progress, onPrev, o
       <Card>
         <CardHeader>
           <CardTitle data-testid="text-lesson-title">{lesson.title}</CardTitle>
-          <p className="text-sm text-muted-foreground capitalize">{lesson.type.replace("_", " ")}</p>
+          <p className="text-sm text-muted-foreground capitalize">{lessonActivityType(lesson)}</p>
         </CardHeader>
         <CardContent>{renderContent()}</CardContent>
       </Card>
@@ -818,6 +1004,16 @@ function CoursePlayer({ course, lesson, currentIndex, total, progress, onPrev, o
           <ChevronLeft className="h-4 w-4 mr-1" /> Previous
         </Button>
         <div className="flex items-center gap-2">
+          {allowSkip && !isCompleted && (
+            <Button
+              variant="outline"
+              onClick={skipLesson}
+              disabled={completeMutation.isPending}
+              data-testid="button-skip-lesson"
+            >
+              Skip lab
+            </Button>
+          )}
           {showCompleteButton && !isCompleted && (
             <Button
               onClick={markComplete}

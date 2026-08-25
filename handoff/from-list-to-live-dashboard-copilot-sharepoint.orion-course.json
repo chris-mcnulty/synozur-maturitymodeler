@@ -1,0 +1,937 @@
+{
+  "format": "orion-course",
+  "version": "2",
+  "exportedAt": "2026-08-25T18:03:56.543Z",
+  "assets": {},
+  "course": {
+    "title": "From List to Live Dashboard: Copilot in SharePoint",
+    "slug": "from-list-to-live-dashboard-copilot-sharepoint",
+    "description": "Build a repeatable SharePoint reporting pattern from a governed list, an organization-specific Copilot skill, and a verified self-contained HTML dashboard.\n\nPublisher: Synozur\nAuthor and instructor: Chris McNulty, CTO, Synozur\nLevel: Intermediate\nPrerequisites: SharePoint site ownership on a practice site and a Microsoft 365 Copilot license. A browser is sufficient for the core path.",
+    "summary": "Turn a dashboard-ready SharePoint list and a custom Copilot skill into a governed, styled HTML dashboard.",
+    "imageUrl": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNjAwIiBoZWlnaHQ9IjcwMCIgdmlld0JveD0iMCAwIDE2MDAgNzAwIj4KICAgIDxkZWZzPjxsaW5lYXJHcmFkaWVudCBpZD0iZyIgeDE9IjAiIHgyPSIxIj48c3RvcCBzdG9wLWNvbG9yPSIjNjAwM0MzIi8+PHN0b3Agb2Zmc2V0PSIxIiBzdG9wLWNvbG9yPSIjRTYwQ0IzIi8+PC9saW5lYXJHcmFkaWVudD48L2RlZnM+CiAgICA8cmVjdCB3aWR0aD0iMTYwMCIgaGVpZ2h0PSI3MDAiIGZpbGw9InVybCgjZykiLz48dGV4dCB4PSI5MCIgeT0iMTE1IiBmaWxsPSIjZmZmIiBmb250LWZhbWlseT0iU2Vnb2UgVUksQXJpYWwiIGZvbnQtc2l6ZT0iMzAiPkZST00gTElTVCBUTyBMSVZFIERBU0hCT0FSRDwvdGV4dD4KICAgIDx0ZXh0IHg9IjkwIiB5PSIxODAiIGZpbGw9IiNmZmYiIGZvbnQtZmFtaWx5PSJTZWdvZSBVSSxBcmlhbCIgZm9udC1zaXplPSI1OCIgZm9udC13ZWlnaHQ9IjcwMCI+Q29waWxvdCBpbiBTaGFyZVBvaW50PC90ZXh0PgogICAgPGcgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoOTAgMjUwKSI+PHJlY3Qgd2lkdGg9IjE0MjAiIGhlaWdodD0iMzYwIiByeD0iMjgiIGZpbGw9IiNmZmYiLz4KICAgICAgPGcgZmlsbD0iI2Y2ZWZmZiI+PHJlY3QgeD0iMzUiIHk9IjM1IiB3aWR0aD0iMzEwIiBoZWlnaHQ9IjEwMCIgcng9IjE4Ii8+PHJlY3QgeD0iMzcwIiB5PSIzNSIgd2lkdGg9IjMxMCIgaGVpZ2h0PSIxMDAiIHJ4PSIxOCIvPjxyZWN0IHg9IjcwNSIgeT0iMzUiIHdpZHRoPSIzMTAiIGhlaWdodD0iMTAwIiByeD0iMTgiLz48cmVjdCB4PSIxMDQwIiB5PSIzNSIgd2lkdGg9IjM0NSIgaGVpZ2h0PSIxMDAiIHJ4PSIxOCIvPjwvZz4KICAgICAgPGcgZmlsbD0iIzgxMEZGQiI+PHJlY3QgeD0iMzUiIHk9IjE4MCIgd2lkdGg9IjYyMCIgaGVpZ2h0PSIxNDAiIHJ4PSIxOCIvPjxyZWN0IHg9IjY4MCIgeT0iMTgwIiB3aWR0aD0iNzA1IiBoZWlnaHQ9IjE0MCIgcng9IjE4Ii8+PC9nPgogICAgICA8dGV4dCB4PSI2MCIgeT0iOTAiIGZpbGw9IiMxMTEiIGZvbnQtZmFtaWx5PSJTZWdvZSBVSSxBcmlhbCIgZm9udC1zaXplPSIyNCI+QWN0aXZlIGVuZ2FnZW1lbnRzPC90ZXh0Pjx0ZXh0IHg9IjYwIiB5PSIxMjUiIGZpbGw9IiM2MDAzQzMiIGZvbnQtZmFtaWx5PSJTZWdvZSBVSSxBcmlhbCIgZm9udC1zaXplPSIzNCIgZm9udC13ZWlnaHQ9IjcwMCI+NDI8L3RleHQ+CiAgICAgIDx0ZXh0IHg9IjM5NSIgeT0iOTAiIGZpbGw9IiMxMTEiIGZvbnQtZmFtaWx5PSJTZWdvZSBVSSxBcmlhbCIgZm9udC1zaXplPSIyNCI+UG9ydGZvbGlvIHZhbHVlPC90ZXh0Pjx0ZXh0IHg9IjM5NSIgeT0iMTI1IiBmaWxsPSIjNjAwM0MzIiBmb250LWZhbWlseT0iU2Vnb2UgVUksQXJpYWwiIGZvbnQtc2l6ZT0iMzQiIGZvbnQtd2VpZ2h0PSI3MDAiPiQ0LjhNPC90ZXh0PgogICAgPC9nPjwvc3ZnPg==",
+    "estimatedMinutes": 195,
+    "status": "draft",
+    "visibility": "private",
+    "passingScore": 75,
+    "certificateEnabled": false,
+    "tags": [
+      "SharePoint",
+      "Microsoft 365 Copilot",
+      "Dashboard",
+      "Intermediate"
+    ],
+    "modules": [
+      {
+        "title": "Orientation: The Three-Part Pattern",
+        "description": "Understand what the pattern produces and where it fits.",
+        "order": 0,
+        "lessons": [
+          {
+            "title": "1.1 Why list → skill → dashboard",
+            "type": "rich_text",
+            "order": 0,
+            "estimatedMinutes": 5,
+            "required": true,
+            "content": {
+              "slug": "1-1-why-list-skill-dashboard",
+              "activityType": "video",
+              "screenshotIds": [
+                "D1"
+              ],
+              "allowSkip": false,
+              "html": "\n    <article>\n      <p style=\"color:#6003C3;font-weight:700\">Lesson 1.1 · video</p>\n      <h1>Why list → skill → dashboard</h1>\n      <section><h2>The mental model</h2><p>The list is the data contract, the skill is the presentation contract, and the prompt is the assembly step.</p></section><section><h2>What live means</h2><p>Copilot reads the list when you run the request and returns an HTML artifact. It is not a continuously refreshing Power BI semantic model.</p></section><section><h2>The working loop</h2><p>Change the list, rerun the request, inspect the result, and reconcile it to the source before sharing.</p></section><aside style=\"border-left:5px solid #E60CB3;background:#fff1fb;padding:16px 20px;border-radius:12px\"><strong>Practitioner note:</strong> Use Power BI when you need governed semantic models, scheduled refresh, large-scale analytics, or row-level security beyond the requesting user's visible list data.</aside>\n      <figure style=\"margin:24px 0\">\n        <div role=\"img\" aria-label=\"Diagram placeholder D1: The three-part pattern: List → Skill → Dashboard\"\n          style=\"min-height:260px;border:2px dashed #810FFB;border-radius:16px;background:linear-gradient(135deg,#f7efff,#fff1fb);display:flex;align-items:center;justify-content:center;padding:32px;text-align:center;color:#6003C3\">\n          <div><strong style=\"font-size:22px\">Diagram placeholder D1</strong><br/>The three-part pattern: List → Skill → Dashboard<br/><span style=\"font-size:13px\">Replace with a 1600×1000+ light-theme capture; blur tenant and user identifiers.</span></div>\n        </div>\n        <figcaption style=\"margin-top:8px;color:#555\">D1 — The three-part pattern: List → Skill → Dashboard</figcaption>\n      </figure>\n    </article>"
+            }
+          },
+          {
+            "title": "1.2 Tour of the finished artifact",
+            "type": "rich_text",
+            "order": 1,
+            "estimatedMinutes": 6,
+            "required": true,
+            "content": {
+              "slug": "1-2-tour-of-the-finished-artifact",
+              "activityType": "video",
+              "screenshotIds": [
+                "1.2-a",
+                "1.2-b",
+                "1.2-c"
+              ],
+              "allowSkip": false,
+              "html": "\n    <article>\n      <p style=\"color:#6003C3;font-weight:700\">Lesson 1.2 · video</p>\n      <h1>Tour of the finished artifact</h1>\n      <section><h2>Read from summary to detail</h2><p>Start with KPI tiles, move through status and trend charts, then drill into the record table.</p></section><section><h2>Trust through traceability</h2><p>Every displayed number should reconcile to visible list items and the same filter context.</p></section><section><h2>Know the destination</h2><p>The end product is intentionally simple: one source list, one repeatable skill, and one self-contained HTML output.</p></section>\n      <figure style=\"margin:24px 0\">\n        <div role=\"img\" aria-label=\"Screenshot placeholder 1.2-a: Finished dashboard, full view\"\n          style=\"min-height:260px;border:2px dashed #810FFB;border-radius:16px;background:linear-gradient(135deg,#f7efff,#fff1fb);display:flex;align-items:center;justify-content:center;padding:32px;text-align:center;color:#6003C3\">\n          <div><strong style=\"font-size:22px\">Screenshot placeholder 1.2-a</strong><br/>Finished dashboard, full view<br/><span style=\"font-size:13px\">Replace with a 1600×1000+ light-theme capture; blur tenant and user identifiers.</span></div>\n        </div>\n        <figcaption style=\"margin-top:8px;color:#555\">1.2-a — Finished dashboard, full view</figcaption>\n      </figure>\n      <figure style=\"margin:24px 0\">\n        <div role=\"img\" aria-label=\"Screenshot placeholder 1.2-b: Finished dashboard KPI tile row\"\n          style=\"min-height:260px;border:2px dashed #810FFB;border-radius:16px;background:linear-gradient(135deg,#f7efff,#fff1fb);display:flex;align-items:center;justify-content:center;padding:32px;text-align:center;color:#6003C3\">\n          <div><strong style=\"font-size:22px\">Screenshot placeholder 1.2-b</strong><br/>Finished dashboard KPI tile row<br/><span style=\"font-size:13px\">Replace with a 1600×1000+ light-theme capture; blur tenant and user identifiers.</span></div>\n        </div>\n        <figcaption style=\"margin-top:8px;color:#555\">1.2-b — Finished dashboard KPI tile row</figcaption>\n      </figure>\n      <figure style=\"margin:24px 0\">\n        <div role=\"img\" aria-label=\"Screenshot placeholder 1.2-c: Dashboard drill table with a filter applied\"\n          style=\"min-height:260px;border:2px dashed #810FFB;border-radius:16px;background:linear-gradient(135deg,#f7efff,#fff1fb);display:flex;align-items:center;justify-content:center;padding:32px;text-align:center;color:#6003C3\">\n          <div><strong style=\"font-size:22px\">Screenshot placeholder 1.2-c</strong><br/>Dashboard drill table with a filter applied<br/><span style=\"font-size:13px\">Replace with a 1600×1000+ light-theme capture; blur tenant and user identifiers.</span></div>\n        </div>\n        <figcaption style=\"margin-top:8px;color:#555\">1.2-c — Dashboard drill table with a filter applied</figcaption>\n      </figure>\n    </article>"
+            }
+          },
+          {
+            "title": "1.3 Where Copilot in SharePoint fits",
+            "type": "rich_text",
+            "order": 2,
+            "estimatedMinutes": 5,
+            "required": true,
+            "content": {
+              "slug": "1-3-where-copilot-in-sharepoint-fits",
+              "activityType": "video",
+              "screenshotIds": [
+                "1.3-a"
+              ],
+              "allowSkip": false,
+              "html": "\n    <article>\n      <p style=\"color:#6003C3;font-weight:700\">Lesson 1.3 · video</p>\n      <h1>Where Copilot in SharePoint fits</h1>\n      <section><h2>Choose the right surface</h2><p>SharePoint Copilot is the course surface; Copilot Chat, Copilot Cowork, and agents serve different scopes and work patterns.</p></section><section><h2>Verify in your tenant</h2><p>Microsoft placement, registration, and availability can change by tenant and rollout. Confirm the current entry point and supported skill location before a production handoff.</p></section><section><h2>Keep the source close</h2><p>A SharePoint-centered experience reduces ambiguity about which site, list, and permission context the request should use.</p></section>\n      <figure style=\"margin:24px 0\">\n        <div role=\"img\" aria-label=\"Screenshot placeholder 1.3-a: Copilot pane open on a SharePoint site\"\n          style=\"min-height:260px;border:2px dashed #810FFB;border-radius:16px;background:linear-gradient(135deg,#f7efff,#fff1fb);display:flex;align-items:center;justify-content:center;padding:32px;text-align:center;color:#6003C3\">\n          <div><strong style=\"font-size:22px\">Screenshot placeholder 1.3-a</strong><br/>Copilot pane open on a SharePoint site<br/><span style=\"font-size:13px\">Replace with a 1600×1000+ light-theme capture; blur tenant and user identifiers.</span></div>\n        </div>\n        <figcaption style=\"margin-top:8px;color:#555\">1.3-a — Copilot pane open on a SharePoint site</figcaption>\n      </figure>\n    </article>"
+            }
+          },
+          {
+            "title": "1.4 Course project brief",
+            "type": "rich_text",
+            "order": 3,
+            "estimatedMinutes": 4,
+            "required": true,
+            "content": {
+              "slug": "1-4-course-project-brief",
+              "activityType": "reading",
+              "screenshotIds": [],
+              "allowSkip": false,
+              "html": "\n    <article>\n      <p style=\"color:#6003C3;font-weight:700\">Lesson 1.4 · reading</p>\n      <h1>Course project brief</h1>\n      <section><h2>Scenario</h2><p>You are building a consulting delivery portfolio with engagements, status, owner, client, value, health, and dates.</p></section><section><h2>Deliverables</h2><p>By the end you will have a production-ready list, an organization-specific SKILL.md, a verified dashboard, and a short operating note.</p></section><section><h2>Fictional data</h2><p>All supplied client and person names are synthetic. Replace them only with approved practice or production data.</p></section>\n    </article>",
+              "courseResources": [
+                {
+                  "id": "engagements",
+                  "title": "Engagements sample workbook",
+                  "description": "60-row fictional consulting portfolio with three fields that require type review.",
+                  "filename": "engagements.xlsx",
+                  "mimeType": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                  "dataBase64": "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"
+                },
+                {
+                  "id": "health-signals",
+                  "title": "Client health signals dataset",
+                  "description": "Fictional CSV for natural-language and List agent labs.",
+                  "filename": "client-health-signals.csv",
+                  "mimeType": "text/csv",
+                  "dataBase64": "U2lnbmFsSUQsQ2xpZW50LFNpZ25hbERhdGUsU2lnbmFsVHlwZSxTZXZlcml0eSxTdW1tYXJ5LE93bmVyClNJRy0wMDEsTm9ydGh3aW5kIEhlYWx0aCwyMDI2LTAxLTAxLFNwb25zb3IgY2hhbmdlLExvdywiRmljdGlvbmFsIHByYWN0aWNlIHNpZ25hbCAxIixBdmVyeSBDaGVuClNJRy0wMDIsRmFicmlrYW0gUmV0YWlsLDIwMjYtMDItMDIsRGVsaXZlcnkgcmlzayxNZWRpdW0sIkZpY3Rpb25hbCBwcmFjdGljZSBzaWduYWwgMiIsSm9yZGFuIFBhdGVsClNJRy0wMDMsQ29udG9zbyBFbmVyZ3ksMjAyNi0wMy0wMyxFeHBhbnNpb24gb3Bwb3J0dW5pdHksSGlnaCwiRmljdGlvbmFsIHByYWN0aWNlIHNpZ25hbCAzIixNb3JnYW4gUmVlZApTSUctMDA0LE5vcnRod2luZCBIZWFsdGgsMjAyNi0wNC0wNCxBZG9wdGlvbiBzaWduYWwsTG93LCJGaWN0aW9uYWwgcHJhY3RpY2Ugc2lnbmFsIDQiLEF2ZXJ5IENoZW4KU0lHLTAwNSxGYWJyaWthbSBSZXRhaWwsMjAyNi0wNS0wNSxTcG9uc29yIGNoYW5nZSxNZWRpdW0sIkZpY3Rpb25hbCBwcmFjdGljZSBzaWduYWwgNSIsSm9yZGFuIFBhdGVsClNJRy0wMDYsQ29udG9zbyBFbmVyZ3ksMjAyNi0wNi0wNixEZWxpdmVyeSByaXNrLEhpZ2gsIkZpY3Rpb25hbCBwcmFjdGljZSBzaWduYWwgNiIsTW9yZ2FuIFJlZWQKU0lHLTAwNyxOb3J0aHdpbmQgSGVhbHRoLDIwMjYtMDctMDcsRXhwYW5zaW9uIG9wcG9ydHVuaXR5LExvdywiRmljdGlvbmFsIHByYWN0aWNlIHNpZ25hbCA3IixBdmVyeSBDaGVuClNJRy0wMDgsRmFicmlrYW0gUmV0YWlsLDIwMjYtMDgtMDgsQWRvcHRpb24gc2lnbmFsLE1lZGl1bSwiRmljdGlvbmFsIHByYWN0aWNlIHNpZ25hbCA4IixKb3JkYW4gUGF0ZWwKU0lHLTAwOSxDb250b3NvIEVuZXJneSwyMDI2LTAxLTA5LFNwb25zb3IgY2hhbmdlLEhpZ2gsIkZpY3Rpb25hbCBwcmFjdGljZSBzaWduYWwgOSIsTW9yZ2FuIFJlZWQKU0lHLTAxMCxOb3J0aHdpbmQgSGVhbHRoLDIwMjYtMDItMTAsRGVsaXZlcnkgcmlzayxMb3csIkZpY3Rpb25hbCBwcmFjdGljZSBzaWduYWwgMTAiLEF2ZXJ5IENoZW4KU0lHLTAxMSxGYWJyaWthbSBSZXRhaWwsMjAyNi0wMy0xMSxFeHBhbnNpb24gb3Bwb3J0dW5pdHksTWVkaXVtLCJGaWN0aW9uYWwgcHJhY3RpY2Ugc2lnbmFsIDExIixKb3JkYW4gUGF0ZWwKU0lHLTAxMixDb250b3NvIEVuZXJneSwyMDI2LTA0LTEyLEFkb3B0aW9uIHNpZ25hbCxIaWdoLCJGaWN0aW9uYWwgcHJhY3RpY2Ugc2lnbmFsIDEyIixNb3JnYW4gUmVlZApTSUctMDEzLE5vcnRod2luZCBIZWFsdGgsMjAyNi0wNS0xMyxTcG9uc29yIGNoYW5nZSxMb3csIkZpY3Rpb25hbCBwcmFjdGljZSBzaWduYWwgMTMiLEF2ZXJ5IENoZW4KU0lHLTAxNCxGYWJyaWthbSBSZXRhaWwsMjAyNi0wNi0xNCxEZWxpdmVyeSByaXNrLE1lZGl1bSwiRmljdGlvbmFsIHByYWN0aWNlIHNpZ25hbCAxNCIsSm9yZGFuIFBhdGVsClNJRy0wMTUsQ29udG9zbyBFbmVyZ3ksMjAyNi0wNy0xNSxFeHBhbnNpb24gb3Bwb3J0dW5pdHksSGlnaCwiRmljdGlvbmFsIHByYWN0aWNlIHNpZ25hbCAxNSIsTW9yZ2FuIFJlZWQKU0lHLTAxNixOb3J0aHdpbmQgSGVhbHRoLDIwMjYtMDgtMTYsQWRvcHRpb24gc2lnbmFsLExvdywiRmljdGlvbmFsIHByYWN0aWNlIHNpZ25hbCAxNiIsQXZlcnkgQ2hlbgpTSUctMDE3LEZhYnJpa2FtIFJldGFpbCwyMDI2LTAxLTE3LFNwb25zb3IgY2hhbmdlLE1lZGl1bSwiRmljdGlvbmFsIHByYWN0aWNlIHNpZ25hbCAxNyIsSm9yZGFuIFBhdGVsClNJRy0wMTgsQ29udG9zbyBFbmVyZ3ksMjAyNi0wMi0xOCxEZWxpdmVyeSByaXNrLEhpZ2gsIkZpY3Rpb25hbCBwcmFjdGljZSBzaWduYWwgMTgiLE1vcmdhbiBSZWVkClNJRy0wMTksTm9ydGh3aW5kIEhlYWx0aCwyMDI2LTAzLTE5LEV4cGFuc2lvbiBvcHBvcnR1bml0eSxMb3csIkZpY3Rpb25hbCBwcmFjdGljZSBzaWduYWwgMTkiLEF2ZXJ5IENoZW4KU0lHLTAyMCxGYWJyaWthbSBSZXRhaWwsMjAyNi0wNC0yMCxBZG9wdGlvbiBzaWduYWwsTWVkaXVtLCJGaWN0aW9uYWwgcHJhY3RpY2Ugc2lnbmFsIDIwIixKb3JkYW4gUGF0ZWwKU0lHLTAyMSxDb250b3NvIEVuZXJneSwyMDI2LTA1LTIxLFNwb25zb3IgY2hhbmdlLEhpZ2gsIkZpY3Rpb25hbCBwcmFjdGljZSBzaWduYWwgMjEiLE1vcmdhbiBSZWVkClNJRy0wMjIsTm9ydGh3aW5kIEhlYWx0aCwyMDI2LTA2LTIyLERlbGl2ZXJ5IHJpc2ssTG93LCJGaWN0aW9uYWwgcHJhY3RpY2Ugc2lnbmFsIDIyIixBdmVyeSBDaGVuClNJRy0wMjMsRmFicmlrYW0gUmV0YWlsLDIwMjYtMDctMjMsRXhwYW5zaW9uIG9wcG9ydHVuaXR5LE1lZGl1bSwiRmljdGlvbmFsIHByYWN0aWNlIHNpZ25hbCAyMyIsSm9yZGFuIFBhdGVsClNJRy0wMjQsQ29udG9zbyBFbmVyZ3ksMjAyNi0wOC0yNCxBZG9wdGlvbiBzaWduYWwsSGlnaCwiRmljdGlvbmFsIHByYWN0aWNlIHNpZ25hbCAyNCIsTW9yZ2FuIFJlZWQ="
+                },
+                {
+                  "id": "skill-starter",
+                  "title": "SKILL.md starter",
+                  "description": "Teaching version with TODO markers.",
+                  "filename": "SKILL-starter.md",
+                  "mimeType": "text/markdown",
+                  "dataBase64": "LS0tCm5hbWU6IGNvbnN1bHRpbmctcG9ydGZvbGlvLWRhc2hib2FyZApkZXNjcmlwdGlvbjogVE9ETzogU3RhdGUgdGhlIHBvc2l0aXZlIHRyaWdnZXIgcGhyYXNlcyBhbmQgd2hlbiB0aGlzIHNraWxsIG11c3Qgbm90IGJlIHVzZWQuCi0tLQojIENvbnN1bHRpbmcgcG9ydGZvbGlvIGRhc2hib2FyZAojIyBEYXRhIHNvdXJjZQotIFRPRE86IE5hbWUgdGhlIFNoYXJlUG9pbnQgbGlzdCBhbmQgaXRzIGludGVybmFsIGNvbHVtbiBuYW1lcy4KIyMgSW5zdHJ1Y3Rpb25zCjEuIFJlYWQgb25seSBpdGVtcyB0aGUgcmVxdWVzdGluZyB1c2VyIGlzIHBlcm1pdHRlZCB0byBhY2Nlc3MuCjIuIFRPRE86IERlZmluZSBLUEkgY2FsY3VsYXRpb25zIGFuZCBjaGFydCBncm91cGluZ3MuCjMuIFN0b3AgYW5kIHJlcG9ydCBtaXNzaW5nIHJlcXVpcmVkIGNvbHVtbnM7IGRvIG5vdCBpbnZlbnQgdmFsdWVzLgojIyBTdHlsaW5nCi0gUHJpbWFyeTogVE9ETwotIEFjY2VudDogVE9ETwojIyBPdXRwdXQgY29udHJhY3QKLSBSZXR1cm4gc2VsZi1jb250YWluZWQgSFRNTCB3aXRoIG5vIGV4dGVybmFsIGRlcGVuZGVuY2llcy4KLSBJbmNsdWRlIGFjY2Vzc2libGUgbGFiZWxzLCBhIGRhdGEtYXMtb2Ygbm90ZSwgYW5kIGEgZGV0YWlsIHRhYmxlLgo="
+                },
+                {
+                  "id": "skill-complete",
+                  "title": "SKILL.md complete",
+                  "description": "Finished reference implementation for the course scenario.",
+                  "filename": "SKILL-complete.md",
+                  "mimeType": "text/markdown",
+                  "dataBase64": "LS0tCm5hbWU6IGNvbnN1bHRpbmctcG9ydGZvbGlvLWRhc2hib2FyZApkZXNjcmlwdGlvbjogVXNlIHdoZW4gYSBjb2xsZWFndWUgYXNrcyB0byBzdW1tYXJpemUsIGNoYXJ0LCB2aXN1YWxpemUsIG9yIGJ1aWxkIGFuIEhUTUwgZGFzaGJvYXJkIGZyb20gdGhlIEVuZ2FnZW1lbnRzIFNoYXJlUG9pbnQgbGlzdC4gRG8gbm90IHVzZSBmb3IgdW5yZWxhdGVkIGxpc3RzLCBkb2N1bWVudCBsaWJyYXJpZXMsIG9yIHJlcXVlc3RzIHRoYXQgcmVxdWlyZSBhIFBvd2VyIEJJIHNlbWFudGljIG1vZGVsLgotLS0KIyBDb25zdWx0aW5nIHBvcnRmb2xpbyBkYXNoYm9hcmQKIyMgRGF0YSBzb3VyY2UgYW5kIGNvbnRyYWN0ClJlYWQgdGhlIEVuZ2FnZW1lbnRzIGxpc3QgdXNpbmcgaW50ZXJuYWwgY29sdW1ucyBFbmdhZ2VtZW50SUQsIEVuZ2FnZW1lbnROYW1lLCBDbGllbnQsIE93bmVyLCBTdGF0dXMsIFN0YXJ0RGF0ZSwgRW5kRGF0ZSwgVmFsdWUsIEhlYWx0aCwgYW5kIFJlZ2lvbi4gUmVzcGVjdCB0aGUgcmVxdWVzdGluZyB1c2VyJ3MgcGVybWlzc2lvbnMuIElmIGEgcmVxdWlyZWQgY29sdW1uIGlzIG1pc3NpbmcsIHN0b3AgYW5kIG5hbWUgaXQuCiMjIEluc3RydWN0aW9ucwoxLiBDYWxjdWxhdGUgZW5nYWdlbWVudCBjb3VudCwgYWN0aXZlIHZhbHVlLCBhdC1yaXNrIGNvdW50LCBhbmQgY29tcGxldGlvbiByYXRlIGZyb20gdmlzaWJsZSBpdGVtcy4KMi4gR3JvdXAgc3RhdHVzIGFuZCBoZWFsdGggYnkgdGhlaXIgZXhhY3QgQ2hvaWNlIHZhbHVlcy4KMy4gQnVpbGQgYSBtb250aGx5IHRyZW5kIGZyb20gU3RhcnREYXRlIGZvciB0aGUgbW9zdCByZWNlbnQgdHdlbHZlIG1vbnRocyBwcmVzZW50Lgo0LiBJbmNsdWRlIGEgZmlsdGVyYWJsZSBkZXRhaWwgdGFibGUuIFJlY29uY2lsZSBldmVyeSBLUEkgdG8gdGhlIHNhbWUgdmlzaWJsZSBpdGVtIHNldC4KIyMgU3R5bGluZwpVc2UgIzgxMEZGQiBwcmltYXJ5LCAjRTYwQ0IzIGFjY2VudCwgIzYwMDNDMyBoZWFkZXJzLCAjMTExMTExIHRleHQsIGFuZCAjRkZGRkZGIHN1cmZhY2VzLiBVc2Ugcm91bmRlZCBjYXJkcywgZ2VuZXJvdXMgc3BhY2luZywgZXhwbGljaXQgY2hhcnQgbGFiZWxzLCBhbmQgV0NBRyBBQSBjb250cmFzdC4KIyMgT3V0cHV0IGNvbnRyYWN0ClJldHVybiBvbmUgc2VsZi1jb250YWluZWQgSFRNTCBkb2N1bWVudCB3aXRoIGlubGluZSBDU1MgYW5kIEphdmFTY3JpcHQsIG5vIGV4dGVybmFsIGRlcGVuZGVuY2llcywgYWNjZXNzaWJsZSBuYW1lcywgYSBkYXRhLWFzLW9mIG5vdGUsIGFuZCBhIHN0YXRlbWVudCB0aGF0IHJlLXJ1bm5pbmcgaXMgcmVxdWlyZWQgYWZ0ZXIgc291cmNlIGNoYW5nZXMuCg=="
+                },
+                {
+                  "id": "path-guide",
+                  "title": "Ingestion path decision guide",
+                  "description": "One-page decision support for the three ingestion paths.",
+                  "filename": "sharepoint-list-path-guide.pdf",
+                  "mimeType": "application/pdf",
+                  "dataBase64": "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"
+                },
+                {
+                  "id": "prompts",
+                  "title": "Prompt library",
+                  "description": "Copy-ready assembly, refinement, and verification prompts.",
+                  "filename": "prompt-library.md",
+                  "mimeType": "text/markdown",
+                  "dataBase64": "IyBQcm9tcHQgbGlicmFyeQoKIyMgQXNzZW1ibHkKLSBVc2UgdGhlIGNvbnN1bHRpbmcgcG9ydGZvbGlvIGRhc2hib2FyZCBza2lsbCB0byBidWlsZCBhIHNlbGYtY29udGFpbmVkIEhUTUwgZGFzaGJvYXJkIGZyb20gdGhlIEVuZ2FnZW1lbnRzIGxpc3QuIFNob3cgS1BJcywgc3RhdHVzLCBhIDEyLW1vbnRoIHRyZW5kLCBhbmQgYSBmaWx0ZXJhYmxlIGRldGFpbCB0YWJsZS4KLSBCdWlsZCB0aGUgRW5nYWdlbWVudHMgZGFzaGJvYXJkIHVzaW5nIHRoZSByZWdpc3RlcmVkIHNraWxsLiBTdG9wIGFuZCBsaXN0IGFueSBtaXNzaW5nIGNvbnRyYWN0IGNvbHVtbnMgYmVmb3JlIHJlbmRlcmluZy4KCiMjIFJlZmluZW1lbnQKLSBDaGFuZ2UgdGhlIHN0YXR1cyBjaGFydCB0byBob3Jpem9udGFsIGJhcnMgd2l0aG91dCBjaGFuZ2luZyBhbnkgY2FsY3VsYXRpb25zLgotIEFkZCBhIEtQSSBmb3IgQW1iZXIgb3IgUmVkIGhlYWx0aCBhbmQgcmVjb25jaWxlIGl0IHRvIHRoZSBkZXRhaWwgdGFibGUuCi0gRmlsdGVyIHRoZSBhcnRpZmFjdCB0byBlbmdhZ2VtZW50cyB0aGF0IHN0YXJ0ZWQgaW4gdGhlIGxhc3QgMTIgbW9udGhzLgotIFJhbmsgY2xpZW50cyBieSBhY3RpdmUgdmFsdWUgYW5kIHNob3cgdGhlIHRvcCBmaXZlLgoKIyMgVmVyaWZpY2F0aW9uCi0gU2hvdyB0aGUgaXRlbSBJRHMgaW5jbHVkZWQgaW4gZWFjaCBLUEkgc28gSSBjYW4gcmVjb25jaWxlIHRoZSByZXN1bHQuCi0gU3RhdGUgdGhlIHZpc2libGUgcm93IGNvdW50IGFuZCB0aGUgbGF0ZXN0IHNvdXJjZSBkYXRlIHVzZWQuCg=="
+                },
+                {
+                  "id": "rubric",
+                  "title": "Capstone rubric",
+                  "description": "Scoring dimensions and evidence expectations.",
+                  "filename": "capstone-rubric.pdf",
+                  "mimeType": "application/pdf",
+                  "dataBase64": "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"
+                },
+                {
+                  "id": "glossary",
+                  "title": "Course glossary",
+                  "description": "Plain-language definitions for core terms.",
+                  "filename": "glossary.md",
+                  "mimeType": "text/markdown",
+                  "dataBase64": "IyBHbG9zc2FyeQoKLSAqKlNraWxsOioqIEEgbWFya2Rvd24gaW5zdHJ1Y3Rpb24gZmlsZSB0aGF0IGhlbHBzIENvcGlsb3QgcmVjb2duaXplIGEgdGFzayBhbmQgZm9sbG93IGEgcmVwZWF0YWJsZSBtZXRob2QuCi0gKipBZ2VudDoqKiBBIGNvbmZpZ3VyZWQgQUkgZXhwZXJpZW5jZSB3aXRoIGEgc2NvcGUsIGtub3dsZWRnZSwgaW5zdHJ1Y3Rpb25zLCBhbmQgYWN0aW9ucy4KLSAqKkRhdGEgY29udHJhY3Q6KiogVGhlIHN0YWJsZSBmaWVsZCBuYW1lcywgdHlwZXMsIGFsbG93ZWQgdmFsdWVzLCBhbmQgbWVhbmluZyBleHBlY3RlZCBieSBhIGRvd25zdHJlYW0gcHJvY2Vzcy4KLSAqKkludGVybmFsIGNvbHVtbiBuYW1lOioqIFRoZSBTaGFyZVBvaW50IGZpZWxkIGlkZW50aWZpZXIgdGhhdCBtYXkgcmVtYWluIHVuY2hhbmdlZCBhZnRlciBhIGRpc3BsYXktbmFtZSBlZGl0LgotICoqU2VsZi1jb250YWluZWQgSFRNTDoqKiBPbmUgSFRNTCBkb2N1bWVudCB3aG9zZSByZXF1aXJlZCBDU1MgYW5kIEphdmFTY3JpcHQgYXJlIGVtYmVkZGVkIHJhdGhlciB0aGFuIGZldGNoZWQgZXh0ZXJuYWxseS4KLSAqKlBlcm1pc3Npb24gdHJpbW1pbmc6KiogUmVzdHJpY3RpbmcgcmVzdWx0cyB0byBjb250ZW50IHRoZSByZXF1ZXN0aW5nIHVzZXIgaXMgYXV0aG9yaXplZCB0byBzZWUuCi0gKipMaXZlIGFydGlmYWN0OioqIEluIHRoaXMgY291cnNlLCBhbiBIVE1MIHJlc3VsdCBnZW5lcmF0ZWQgZnJvbSBjdXJyZW50IHZpc2libGUgbGlzdCBkYXRhIHdoZW4gdGhlIHByb21wdCBpcyBydW47IGl0IGlzIG5vdCBhIGNvbnRpbnVvdXNseSByZWZyZXNoaW5nIHNlbWFudGljIG1vZGVsLgo="
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "title": "Getting Business-Critical Data Into SharePoint",
+        "description": "Choose an ingestion path and lock a dashboard-ready data contract.",
+        "order": 1,
+        "lessons": [
+          {
+            "title": "2.1 What makes data dashboard-ready",
+            "type": "rich_text",
+            "order": 0,
+            "estimatedMinutes": 7,
+            "required": true,
+            "content": {
+              "slug": "2-1-what-makes-data-dashboard-ready",
+              "activityType": "video",
+              "screenshotIds": [
+                "2.1-a",
+                "2.1-b",
+                "D4"
+              ],
+              "allowSkip": false,
+              "html": "\n    <article>\n      <p style=\"color:#6003C3;font-weight:700\">Lesson 2.1 · video</p>\n      <h1>What makes data dashboard-ready</h1>\n      <section><h2>Types are behavior</h2><p>Use Choice for grouped categories, Date for dates, and Number or Currency for measures. Text that merely looks like a date or number is not equivalent.</p></section><section><h2>One fact, one field</h2><p>Avoid duplicated facts and inconsistent category spellings. Stable, machine-friendly names reduce downstream ambiguity.</p></section><section><h2>Plan for drift</h2><p>Display names can change while internal names remain. Capture the internal contract before the skill references it.</p></section>\n      <figure style=\"margin:24px 0\">\n        <div role=\"img\" aria-label=\"Screenshot placeholder 2.1-a: List settings with Choice, Date, and Currency columns\"\n          style=\"min-height:260px;border:2px dashed #810FFB;border-radius:16px;background:linear-gradient(135deg,#f7efff,#fff1fb);display:flex;align-items:center;justify-content:center;padding:32px;text-align:center;color:#6003C3\">\n          <div><strong style=\"font-size:22px\">Screenshot placeholder 2.1-a</strong><br/>List settings with Choice, Date, and Currency columns<br/><span style=\"font-size:13px\">Replace with a 1600×1000+ light-theme capture; blur tenant and user identifiers.</span></div>\n        </div>\n        <figcaption style=\"margin-top:8px;color:#555\">2.1-a — List settings with Choice, Date, and Currency columns</figcaption>\n      </figure>\n      <figure style=\"margin:24px 0\">\n        <div role=\"img\" aria-label=\"Screenshot placeholder 2.1-b: Bad list schema compared with a dashboard-ready schema\"\n          style=\"min-height:260px;border:2px dashed #810FFB;border-radius:16px;background:linear-gradient(135deg,#f7efff,#fff1fb);display:flex;align-items:center;justify-content:center;padding:32px;text-align:center;color:#6003C3\">\n          <div><strong style=\"font-size:22px\">Screenshot placeholder 2.1-b</strong><br/>Bad list schema compared with a dashboard-ready schema<br/><span style=\"font-size:13px\">Replace with a 1600×1000+ light-theme capture; blur tenant and user identifiers.</span></div>\n        </div>\n        <figcaption style=\"margin-top:8px;color:#555\">2.1-b — Bad list schema compared with a dashboard-ready schema</figcaption>\n      </figure>\n      <figure style=\"margin:24px 0\">\n        <div role=\"img\" aria-label=\"Diagram placeholder D4: Data-contract drift after a column rename\"\n          style=\"min-height:260px;border:2px dashed #810FFB;border-radius:16px;background:linear-gradient(135deg,#f7efff,#fff1fb);display:flex;align-items:center;justify-content:center;padding:32px;text-align:center;color:#6003C3\">\n          <div><strong style=\"font-size:22px\">Diagram placeholder D4</strong><br/>Data-contract drift after a column rename<br/><span style=\"font-size:13px\">Replace with a 1600×1000+ light-theme capture; blur tenant and user identifiers.</span></div>\n        </div>\n        <figcaption style=\"margin-top:8px;color:#555\">D4 — Data-contract drift after a column rename</figcaption>\n      </figure>\n    </article>"
+            }
+          },
+          {
+            "title": "2.2 Path A — Import from Excel or CSV",
+            "type": "rich_text",
+            "order": 1,
+            "estimatedMinutes": 12,
+            "required": true,
+            "content": {
+              "slug": "2-2-path-a-import-from-excel-or-csv",
+              "activityType": "lab",
+              "screenshotIds": [
+                "2.2-a",
+                "2.2-b",
+                "2.2-c",
+                "2.2-d",
+                "2.2-e"
+              ],
+              "allowSkip": true,
+              "html": "\n    <article>\n      <p style=\"color:#6003C3;font-weight:700\">Lesson 2.2 · lab</p>\n      <h1>Path A — Import from Excel or CSV</h1>\n      <section><h2>Prepare the file</h2><p>Use one clean header row, one table, no merged cells, no totals, and no presentation-only rows.</p></section><section><h2>Review inferred types</h2><p>The supplied workbook intentionally encourages review of Status, StartDate, and Value. Correct the target SharePoint types before accepting the import.</p></section><section><h2>Clean up after import</h2><p>Convert grouping fields to Choice, confirm date locale behavior, set Currency, and choose a useful Title field.</p></section><aside style=\"border-left:5px solid #810FFB;background:#f7efff;padding:18px 22px;border-radius:12px;margin:24px 0\">\n        <h2>Try it</h2><ol><li>Download engagements.xlsx from Course resources.</li><li>Start a new list from the workbook using the current import path in your tenant.</li><li>Review every inferred type; set Status to Choice, StartDate to Date, and Value to Currency.</li><li>Create the list and inspect at least five rows against the workbook.</li></ol>\n        <p><strong>Completion:</strong> mark the lesson complete to unlock the next lesson, or use Skip lab if you need to return later.</p>\n      </aside>\n      <figure style=\"margin:24px 0\">\n        <div role=\"img\" aria-label=\"Screenshot placeholder 2.2-a: New List dialog with From Excel and From CSV\"\n          style=\"min-height:260px;border:2px dashed #810FFB;border-radius:16px;background:linear-gradient(135deg,#f7efff,#fff1fb);display:flex;align-items:center;justify-content:center;padding:32px;text-align:center;color:#6003C3\">\n          <div><strong style=\"font-size:22px\">Screenshot placeholder 2.2-a</strong><br/>New List dialog with From Excel and From CSV<br/><span style=\"font-size:13px\">Replace with a 1600×1000+ light-theme capture; blur tenant and user identifiers.</span></div>\n        </div>\n        <figcaption style=\"margin-top:8px;color:#555\">2.2-a — New List dialog with From Excel and From CSV</figcaption>\n      </figure>\n      <figure style=\"margin:24px 0\">\n        <div role=\"img\" aria-label=\"Screenshot placeholder 2.2-b: Prepared Excel file with a clean header row\"\n          style=\"min-height:260px;border:2px dashed #810FFB;border-radius:16px;background:linear-gradient(135deg,#f7efff,#fff1fb);display:flex;align-items:center;justify-content:center;padding:32px;text-align:center;color:#6003C3\">\n          <div><strong style=\"font-size:22px\">Screenshot placeholder 2.2-b</strong><br/>Prepared Excel file with a clean header row<br/><span style=\"font-size:13px\">Replace with a 1600×1000+ light-theme capture; blur tenant and user identifiers.</span></div>\n        </div>\n        <figcaption style=\"margin-top:8px;color:#555\">2.2-b — Prepared Excel file with a clean header row</figcaption>\n      </figure>\n      <figure style=\"margin:24px 0\">\n        <div role=\"img\" aria-label=\"Screenshot placeholder 2.2-c: Import preview with inferred column types\"\n          style=\"min-height:260px;border:2px dashed #810FFB;border-radius:16px;background:linear-gradient(135deg,#f7efff,#fff1fb);display:flex;align-items:center;justify-content:center;padding:32px;text-align:center;color:#6003C3\">\n          <div><strong style=\"font-size:22px\">Screenshot placeholder 2.2-c</strong><br/>Import preview with inferred column types<br/><span style=\"font-size:13px\">Replace with a 1600×1000+ light-theme capture; blur tenant and user identifiers.</span></div>\n        </div>\n        <figcaption style=\"margin-top:8px;color:#555\">2.2-c — Import preview with inferred column types</figcaption>\n      </figure>\n      <figure style=\"margin:24px 0\">\n        <div role=\"img\" aria-label=\"Screenshot placeholder 2.2-d: Corrected import preview with three type fixes\"\n          style=\"min-height:260px;border:2px dashed #810FFB;border-radius:16px;background:linear-gradient(135deg,#f7efff,#fff1fb);display:flex;align-items:center;justify-content:center;padding:32px;text-align:center;color:#6003C3\">\n          <div><strong style=\"font-size:22px\">Screenshot placeholder 2.2-d</strong><br/>Corrected import preview with three type fixes<br/><span style=\"font-size:13px\">Replace with a 1600×1000+ light-theme capture; blur tenant and user identifiers.</span></div>\n        </div>\n        <figcaption style=\"margin-top:8px;color:#555\">2.2-d — Corrected import preview with three type fixes</figcaption>\n      </figure>\n      <figure style=\"margin:24px 0\">\n        <div role=\"img\" aria-label=\"Screenshot placeholder 2.2-e: Imported engagements list in its default view\"\n          style=\"min-height:260px;border:2px dashed #810FFB;border-radius:16px;background:linear-gradient(135deg,#f7efff,#fff1fb);display:flex;align-items:center;justify-content:center;padding:32px;text-align:center;color:#6003C3\">\n          <div><strong style=\"font-size:22px\">Screenshot placeholder 2.2-e</strong><br/>Imported engagements list in its default view<br/><span style=\"font-size:13px\">Replace with a 1600×1000+ light-theme capture; blur tenant and user identifiers.</span></div>\n        </div>\n        <figcaption style=\"margin-top:8px;color:#555\">2.2-e — Imported engagements list in its default view</figcaption>\n      </figure>\n    </article>"
+            }
+          },
+          {
+            "title": "2.3 Path B — Natural-language list creation in SharePoint",
+            "type": "rich_text",
+            "order": 2,
+            "estimatedMinutes": 10,
+            "required": true,
+            "content": {
+              "slug": "2-3-path-b-natural-language-list-creation-in-sharepoint",
+              "activityType": "lab",
+              "screenshotIds": [
+                "2.3-a",
+                "2.3-b",
+                "2.3-c",
+                "2.3-d"
+              ],
+              "allowSkip": true,
+              "html": "\n    <article>\n      <p style=\"color:#6003C3;font-weight:700\">Lesson 2.3 · lab</p>\n      <h1>Path B — Natural-language list creation in SharePoint</h1>\n      <section><h2>Prompt the schema, not the decoration</h2><p>Describe the entity, fields, types, and sample values. Treat the generated schema as a draft.</p></section><section><h2>A strong request</h2><p>Create a Client Health Signals list with Signal ID text, Client text, Signal Date date, Signal Type choice, Severity choice, Summary multiline text, and Owner person.</p></section><section><h2>Edit before accepting</h2><p>Check names, types, allowed values, required fields, and defaults before data entry begins.</p></section><aside style=\"border-left:5px solid #810FFB;background:#f7efff;padding:18px 22px;border-radius:12px;margin:24px 0\">\n        <h2>Try it</h2><ol><li>Download client-health-signals.csv for sample values.</li><li>Create the list from the written schema request.</li><li>Change any incorrectly generated types before accepting.</li><li>Add three sample records and verify the default view.</li></ol>\n        <p><strong>Completion:</strong> mark the lesson complete to unlock the next lesson, or use Skip lab if you need to return later.</p>\n      </aside>\n      <figure style=\"margin:24px 0\">\n        <div role=\"img\" aria-label=\"Screenshot placeholder 2.3-a: Natural-language list creation entry point\"\n          style=\"min-height:260px;border:2px dashed #810FFB;border-radius:16px;background:linear-gradient(135deg,#f7efff,#fff1fb);display:flex;align-items:center;justify-content:center;padding:32px;text-align:center;color:#6003C3\">\n          <div><strong style=\"font-size:22px\">Screenshot placeholder 2.3-a</strong><br/>Natural-language list creation entry point<br/><span style=\"font-size:13px\">Replace with a 1600×1000+ light-theme capture; blur tenant and user identifiers.</span></div>\n        </div>\n        <figcaption style=\"margin-top:8px;color:#555\">2.3-a — Natural-language list creation entry point</figcaption>\n      </figure>\n      <figure style=\"margin:24px 0\">\n        <div role=\"img\" aria-label=\"Screenshot placeholder 2.3-b: Complete natural-language list prompt\"\n          style=\"min-height:260px;border:2px dashed #810FFB;border-radius:16px;background:linear-gradient(135deg,#f7efff,#fff1fb);display:flex;align-items:center;justify-content:center;padding:32px;text-align:center;color:#6003C3\">\n          <div><strong style=\"font-size:22px\">Screenshot placeholder 2.3-b</strong><br/>Complete natural-language list prompt<br/><span style=\"font-size:13px\">Replace with a 1600×1000+ light-theme capture; blur tenant and user identifiers.</span></div>\n        </div>\n        <figcaption style=\"margin-top:8px;color:#555\">2.3-b — Complete natural-language list prompt</figcaption>\n      </figure>\n      <figure style=\"margin:24px 0\">\n        <div role=\"img\" aria-label=\"Screenshot placeholder 2.3-c: Generated schema preview\"\n          style=\"min-height:260px;border:2px dashed #810FFB;border-radius:16px;background:linear-gradient(135deg,#f7efff,#fff1fb);display:flex;align-items:center;justify-content:center;padding:32px;text-align:center;color:#6003C3\">\n          <div><strong style=\"font-size:22px\">Screenshot placeholder 2.3-c</strong><br/>Generated schema preview<br/><span style=\"font-size:13px\">Replace with a 1600×1000+ light-theme capture; blur tenant and user identifiers.</span></div>\n        </div>\n        <figcaption style=\"margin-top:8px;color:#555\">2.3-c — Generated schema preview</figcaption>\n      </figure>\n      <figure style=\"margin:24px 0\">\n        <div role=\"img\" aria-label=\"Screenshot placeholder 2.3-d: Editing a generated column before accepting\"\n          style=\"min-height:260px;border:2px dashed #810FFB;border-radius:16px;background:linear-gradient(135deg,#f7efff,#fff1fb);display:flex;align-items:center;justify-content:center;padding:32px;text-align:center;color:#6003C3\">\n          <div><strong style=\"font-size:22px\">Screenshot placeholder 2.3-d</strong><br/>Editing a generated column before accepting<br/><span style=\"font-size:13px\">Replace with a 1600×1000+ light-theme capture; blur tenant and user identifiers.</span></div>\n        </div>\n        <figcaption style=\"margin-top:8px;color:#555\">2.3-d — Editing a generated column before accepting</figcaption>\n      </figure>\n    </article>"
+            }
+          },
+          {
+            "title": "2.4 Path C — The List agent in Copilot",
+            "type": "rich_text",
+            "order": 3,
+            "estimatedMinutes": 10,
+            "required": true,
+            "content": {
+              "slug": "2-4-path-c-the-list-agent-in-copilot",
+              "activityType": "lab",
+              "screenshotIds": [
+                "2.4-a",
+                "2.4-b",
+                "2.4-c",
+                "2.4-d"
+              ],
+              "allowSkip": true,
+              "html": "\n    <article>\n      <p style=\"color:#6003C3;font-weight:700\">Lesson 2.4 · lab</p>\n      <h1>Path C — The List agent in Copilot</h1>\n      <section><h2>Use conversation for refinement</h2><p>The List agent can add columns, enrich an existing structure, and correct rows iteratively.</p></section><section><h2>Review before applying</h2><p>Agent-generated schema and bulk changes affect downstream consumers. Read the proposed change and sample values first.</p></section><section><h2>Enrich the course list</h2><p>Add Health as a controlled Choice with Green, Amber, and Red, then backfill only after agreeing on the rule.</p></section><aside style=\"border-left:5px solid #810FFB;background:#f7efff;padding:18px 22px;border-radius:12px;margin:24px 0\">\n        <h2>Try it</h2><ol><li>Open the List agent for the practice list using the current tenant entry point.</li><li>Ask it to propose a Health Choice field with Green, Amber, and Red.</li><li>Review the proposed schema change without immediately applying it.</li><li>Apply in the practice site and inspect every backfilled category.</li></ol>\n        <p><strong>Completion:</strong> mark the lesson complete to unlock the next lesson, or use Skip lab if you need to return later.</p>\n      </aside>\n      <figure style=\"margin:24px 0\">\n        <div role=\"img\" aria-label=\"Screenshot placeholder 2.4-a: Invoking the List agent in Copilot\"\n          style=\"min-height:260px;border:2px dashed #810FFB;border-radius:16px;background:linear-gradient(135deg,#f7efff,#fff1fb);display:flex;align-items:center;justify-content:center;padding:32px;text-align:center;color:#6003C3\">\n          <div><strong style=\"font-size:22px\">Screenshot placeholder 2.4-a</strong><br/>Invoking the List agent in Copilot<br/><span style=\"font-size:13px\">Replace with a 1600×1000+ light-theme capture; blur tenant and user identifiers.</span></div>\n        </div>\n        <figcaption style=\"margin-top:8px;color:#555\">2.4-a — Invoking the List agent in Copilot</figcaption>\n      </figure>\n      <figure style=\"margin:24px 0\">\n        <div role=\"img\" aria-label=\"Screenshot placeholder 2.4-b: Conversational exchange that adds a Health column\"\n          style=\"min-height:260px;border:2px dashed #810FFB;border-radius:16px;background:linear-gradient(135deg,#f7efff,#fff1fb);display:flex;align-items:center;justify-content:center;padding:32px;text-align:center;color:#6003C3\">\n          <div><strong style=\"font-size:22px\">Screenshot placeholder 2.4-b</strong><br/>Conversational exchange that adds a Health column<br/><span style=\"font-size:13px\">Replace with a 1600×1000+ light-theme capture; blur tenant and user identifiers.</span></div>\n        </div>\n        <figcaption style=\"margin-top:8px;color:#555\">2.4-b — Conversational exchange that adds a Health column</figcaption>\n      </figure>\n      <figure style=\"margin:24px 0\">\n        <div role=\"img\" aria-label=\"Screenshot placeholder 2.4-c: Agent-proposed schema change awaiting review\"\n          style=\"min-height:260px;border:2px dashed #810FFB;border-radius:16px;background:linear-gradient(135deg,#f7efff,#fff1fb);display:flex;align-items:center;justify-content:center;padding:32px;text-align:center;color:#6003C3\">\n          <div><strong style=\"font-size:22px\">Screenshot placeholder 2.4-c</strong><br/>Agent-proposed schema change awaiting review<br/><span style=\"font-size:13px\">Replace with a 1600×1000+ light-theme capture; blur tenant and user identifiers.</span></div>\n        </div>\n        <figcaption style=\"margin-top:8px;color:#555\">2.4-c — Agent-proposed schema change awaiting review</figcaption>\n      </figure>\n      <figure style=\"margin:24px 0\">\n        <div role=\"img\" aria-label=\"Screenshot placeholder 2.4-d: Enriched list with the Health column populated\"\n          style=\"min-height:260px;border:2px dashed #810FFB;border-radius:16px;background:linear-gradient(135deg,#f7efff,#fff1fb);display:flex;align-items:center;justify-content:center;padding:32px;text-align:center;color:#6003C3\">\n          <div><strong style=\"font-size:22px\">Screenshot placeholder 2.4-d</strong><br/>Enriched list with the Health column populated<br/><span style=\"font-size:13px\">Replace with a 1600×1000+ light-theme capture; blur tenant and user identifiers.</span></div>\n        </div>\n        <figcaption style=\"margin-top:8px;color:#555\">2.4-d — Enriched list with the Health column populated</figcaption>\n      </figure>\n    </article>"
+            }
+          },
+          {
+            "title": "2.5 Choosing your path — decision guide",
+            "type": "rich_text",
+            "order": 4,
+            "estimatedMinutes": 6,
+            "required": true,
+            "content": {
+              "slug": "2-5-choosing-your-path-decision-guide",
+              "activityType": "reading",
+              "screenshotIds": [
+                "D2"
+              ],
+              "allowSkip": false,
+              "html": "\n    <article>\n      <p style=\"color:#6003C3;font-weight:700\">Lesson 2.5 · reading</p>\n      <h1>Choosing your path — decision guide</h1>\n      <section><h2>Existing clean file</h2><p>Prefer Excel or CSV import when the source already exists and the one-time mapping can be reviewed.</p></section><section><h2>No file yet</h2><p>Prefer natural-language creation when the schema can be described and corrected before use.</p></section><section><h2>Iterative enrichment</h2><p>Prefer the List agent when the work is conversational and changes an existing list over several steps.</p></section><aside style=\"border-left:5px solid #E60CB3;background:#fff1fb;padding:16px 20px;border-radius:12px\"><strong>Practitioner note:</strong> Governance posture can override convenience. Use the path your organization has approved for the data classification involved.</aside>\n      <figure style=\"margin:24px 0\">\n        <div role=\"img\" aria-label=\"Diagram placeholder D2: Ingestion decision tree for the three data paths\"\n          style=\"min-height:260px;border:2px dashed #810FFB;border-radius:16px;background:linear-gradient(135deg,#f7efff,#fff1fb);display:flex;align-items:center;justify-content:center;padding:32px;text-align:center;color:#6003C3\">\n          <div><strong style=\"font-size:22px\">Diagram placeholder D2</strong><br/>Ingestion decision tree for the three data paths<br/><span style=\"font-size:13px\">Replace with a 1600×1000+ light-theme capture; blur tenant and user identifiers.</span></div>\n        </div>\n        <figcaption style=\"margin-top:8px;color:#555\">D2 — Ingestion decision tree for the three data paths</figcaption>\n      </figure>\n    </article>"
+            }
+          },
+          {
+            "title": "2.6 Locking the data contract — knowledge check",
+            "type": "quiz",
+            "order": 5,
+            "estimatedMinutes": 8,
+            "required": true,
+            "content": {
+              "slug": "2-6-locking-the-data-contract-knowledge-check",
+              "activityType": "assessment",
+              "screenshotIds": [
+                "2.6-a",
+                "2.6-b",
+                "2.6-c"
+              ],
+              "passingScore": 75,
+              "introHtml": "\n      <figure style=\"margin:24px 0\">\n        <div role=\"img\" aria-label=\"Screenshot placeholder 2.6-a: List permissions panel\"\n          style=\"min-height:260px;border:2px dashed #810FFB;border-radius:16px;background:linear-gradient(135deg,#f7efff,#fff1fb);display:flex;align-items:center;justify-content:center;padding:32px;text-align:center;color:#6003C3\">\n          <div><strong style=\"font-size:22px\">Screenshot placeholder 2.6-a</strong><br/>List permissions panel<br/><span style=\"font-size:13px\">Replace with a 1600×1000+ light-theme capture; blur tenant and user identifiers.</span></div>\n        </div>\n        <figcaption style=\"margin-top:8px;color:#555\">2.6-a — List permissions panel</figcaption>\n      </figure>\n      <figure style=\"margin:24px 0\">\n        <div role=\"img\" aria-label=\"Screenshot placeholder 2.6-b: Sensitivity label applied to the list or site\"\n          style=\"min-height:260px;border:2px dashed #810FFB;border-radius:16px;background:linear-gradient(135deg,#f7efff,#fff1fb);display:flex;align-items:center;justify-content:center;padding:32px;text-align:center;color:#6003C3\">\n          <div><strong style=\"font-size:22px\">Screenshot placeholder 2.6-b</strong><br/>Sensitivity label applied to the list or site<br/><span style=\"font-size:13px\">Replace with a 1600×1000+ light-theme capture; blur tenant and user identifiers.</span></div>\n        </div>\n        <figcaption style=\"margin-top:8px;color:#555\">2.6-b — Sensitivity label applied to the list or site</figcaption>\n      </figure>\n      <figure style=\"margin:24px 0\">\n        <div role=\"img\" aria-label=\"Screenshot placeholder 2.6-c: Internal column names used as the data contract\"\n          style=\"min-height:260px;border:2px dashed #810FFB;border-radius:16px;background:linear-gradient(135deg,#f7efff,#fff1fb);display:flex;align-items:center;justify-content:center;padding:32px;text-align:center;color:#6003C3\">\n          <div><strong style=\"font-size:22px\">Screenshot placeholder 2.6-c</strong><br/>Internal column names used as the data contract<br/><span style=\"font-size:13px\">Replace with a 1600×1000+ light-theme capture; blur tenant and user identifiers.</span></div>\n        </div>\n        <figcaption style=\"margin-top:8px;color:#555\">2.6-c — Internal column names used as the data contract</figcaption>\n      </figure>",
+              "questions": [
+                {
+                  "id": "m2q1",
+                  "type": "single",
+                  "text": "Which SharePoint type is the best default for a status used in chart grouping?",
+                  "options": [
+                    {
+                      "id": "a",
+                      "text": "Single line of text"
+                    },
+                    {
+                      "id": "b",
+                      "text": "Choice"
+                    },
+                    {
+                      "id": "c",
+                      "text": "Multiline text"
+                    }
+                  ],
+                  "correctAnswerId": "b",
+                  "explanation": "Choice controls the values used for grouping."
+                },
+                {
+                  "id": "m2q2",
+                  "type": "single",
+                  "text": "A currency amount imported as text should be:",
+                  "options": [
+                    {
+                      "id": "a",
+                      "text": "Left as text"
+                    },
+                    {
+                      "id": "b",
+                      "text": "Converted to Number or Currency"
+                    },
+                    {
+                      "id": "c",
+                      "text": "Moved into the Title column"
+                    }
+                  ],
+                  "correctAnswerId": "b",
+                  "explanation": "Numeric types support reliable totals and sorting."
+                },
+                {
+                  "id": "m2q3",
+                  "type": "single",
+                  "text": "Why capture internal column names?",
+                  "options": [
+                    {
+                      "id": "a",
+                      "text": "They are shorter"
+                    },
+                    {
+                      "id": "b",
+                      "text": "They remain the stable identifiers referenced by the skill"
+                    },
+                    {
+                      "id": "c",
+                      "text": "They remove permissions"
+                    }
+                  ],
+                  "correctAnswerId": "b",
+                  "explanation": "A display-name change does not necessarily change the internal identifier."
+                },
+                {
+                  "id": "m2q4",
+                  "type": "single",
+                  "text": "When should permissions and sensitivity be set?",
+                  "options": [
+                    {
+                      "id": "a",
+                      "text": "Before building downstream artifacts"
+                    },
+                    {
+                      "id": "b",
+                      "text": "Only after the first dashboard"
+                    },
+                    {
+                      "id": "c",
+                      "text": "Never on practice lists"
+                    }
+                  ],
+                  "correctAnswerId": "a",
+                  "explanation": "Set the governance boundary before others build on the list."
+                },
+                {
+                  "id": "m2q5",
+                  "type": "single",
+                  "text": "Which file layout is import-ready?",
+                  "options": [
+                    {
+                      "id": "a",
+                      "text": "Merged headings and totals"
+                    },
+                    {
+                      "id": "b",
+                      "text": "One header row and one clean table"
+                    },
+                    {
+                      "id": "c",
+                      "text": "Several unrelated tables per sheet"
+                    }
+                  ],
+                  "correctAnswerId": "b",
+                  "explanation": "A simple tabular shape produces the most predictable import."
+                },
+                {
+                  "id": "m2q6",
+                  "type": "single",
+                  "text": "A generated natural-language schema should be treated as:",
+                  "options": [
+                    {
+                      "id": "a",
+                      "text": "A draft to review"
+                    },
+                    {
+                      "id": "b",
+                      "text": "An immutable production contract"
+                    },
+                    {
+                      "id": "c",
+                      "text": "A replacement for permissions"
+                    }
+                  ],
+                  "correctAnswerId": "a",
+                  "explanation": "Review names, types, and allowed values before accepting."
+                },
+                {
+                  "id": "m2q7",
+                  "type": "single",
+                  "text": "What is the safest response to a List agent schema proposal?",
+                  "options": [
+                    {
+                      "id": "a",
+                      "text": "Apply immediately"
+                    },
+                    {
+                      "id": "b",
+                      "text": "Review the change and sample impact first"
+                    },
+                    {
+                      "id": "c",
+                      "text": "Ask it to hide the change"
+                    }
+                  ],
+                  "correctAnswerId": "b",
+                  "explanation": "Human review is the governance checkpoint."
+                },
+                {
+                  "id": "m2q8",
+                  "type": "single",
+                  "text": "Which field is not dashboard-ready for monthly trends?",
+                  "options": [
+                    {
+                      "id": "a",
+                      "text": "A Date column"
+                    },
+                    {
+                      "id": "b",
+                      "text": "A text field containing mixed dates and TBD"
+                    },
+                    {
+                      "id": "c",
+                      "text": "A calculated month derived from a Date"
+                    }
+                  ],
+                  "correctAnswerId": "b",
+                  "explanation": "Mixed free text cannot be grouped chronologically with confidence."
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "title": "Anatomy of a Copilot Skill",
+        "description": "Read, adapt, and test a maintainable SKILL.md.",
+        "order": 2,
+        "lessons": [
+          {
+            "title": "3.1 What a custom skill actually is",
+            "type": "rich_text",
+            "order": 0,
+            "estimatedMinutes": 6,
+            "required": true,
+            "content": {
+              "slug": "3-1-what-a-custom-skill-actually-is",
+              "activityType": "video",
+              "screenshotIds": [
+                "D3"
+              ],
+              "allowSkip": false,
+              "html": "\n    <article>\n      <p style=\"color:#6003C3;font-weight:700\">Lesson 3.1 · video</p>\n      <h1>What a custom skill actually is</h1>\n      <section><h2>A markdown contract</h2><p>A skill is a readable instruction file: name, description, instructions, and an output agreement.</p></section><section><h2>Description drives selection</h2><p>Write the description in the language colleagues use and state when the skill should not be used.</p></section><section><h2>Keep it legible</h2><p>A reviewer should be able to explain the source, calculations, failure behavior, and output without running code.</p></section>\n      <figure style=\"margin:24px 0\">\n        <div role=\"img\" aria-label=\"Diagram placeholder D3: SKILL.md anatomy, exploded and labeled\"\n          style=\"min-height:260px;border:2px dashed #810FFB;border-radius:16px;background:linear-gradient(135deg,#f7efff,#fff1fb);display:flex;align-items:center;justify-content:center;padding:32px;text-align:center;color:#6003C3\">\n          <div><strong style=\"font-size:22px\">Diagram placeholder D3</strong><br/>SKILL.md anatomy, exploded and labeled<br/><span style=\"font-size:13px\">Replace with a 1600×1000+ light-theme capture; blur tenant and user identifiers.</span></div>\n        </div>\n        <figcaption style=\"margin-top:8px;color:#555\">D3 — SKILL.md anatomy, exploded and labeled</figcaption>\n      </figure>\n    </article>"
+            }
+          },
+          {
+            "title": "3.2 Walkthrough — the Synozur sharepoint-list-dashboard skill",
+            "type": "rich_text",
+            "order": 1,
+            "estimatedMinutes": 12,
+            "required": true,
+            "content": {
+              "slug": "3-2-walkthrough-the-synozur-sharepoint-list-dashboard-skill",
+              "activityType": "video",
+              "screenshotIds": [
+                "3.2-a",
+                "3.2-b",
+                "3.2-c",
+                "3.2-d",
+                "3.2-e"
+              ],
+              "allowSkip": false,
+              "html": "\n    <article>\n      <p style=\"color:#6003C3;font-weight:700\">Lesson 3.2 · video</p>\n      <h1>Walkthrough — the Synozur sharepoint-list-dashboard skill</h1>\n      <section><h2>Front matter</h2><p>Read name and description first. Trigger vocabulary should align with dashboard and SharePoint list requests.</p></section><section><h2>Grounding and layout</h2><p>Find the data-access rules, KPI row, chart region, detail table, and missing-column guidance.</p></section><section><h2>Styling and output</h2><p>The reference pattern uses explicit tokens and asks for self-contained HTML so the artifact is portable.</p></section><aside style=\"border-left:5px solid #E60CB3;background:#fff1fb;padding:16px 20px;border-radius:12px\"><strong>Practitioner note:</strong> Repository paths and Microsoft feature behavior can evolve. Verify the current public repository and your tenant documentation during recording.</aside>\n      <figure style=\"margin:24px 0\">\n        <div role=\"img\" aria-label=\"Screenshot placeholder 3.2-a: GitHub repo tree at sharepoint/sharepoint-list-dashboard\"\n          style=\"min-height:260px;border:2px dashed #810FFB;border-radius:16px;background:linear-gradient(135deg,#f7efff,#fff1fb);display:flex;align-items:center;justify-content:center;padding:32px;text-align:center;color:#6003C3\">\n          <div><strong style=\"font-size:22px\">Screenshot placeholder 3.2-a</strong><br/>GitHub repo tree at sharepoint/sharepoint-list-dashboard<br/><span style=\"font-size:13px\">Replace with a 1600×1000+ light-theme capture; blur tenant and user identifiers.</span></div>\n        </div>\n        <figcaption style=\"margin-top:8px;color:#555\">3.2-a — GitHub repo tree at sharepoint/sharepoint-list-dashboard</figcaption>\n      </figure>\n      <figure style=\"margin:24px 0\">\n        <div role=\"img\" aria-label=\"Screenshot placeholder 3.2-b: SKILL.md front matter in GitHub\"\n          style=\"min-height:260px;border:2px dashed #810FFB;border-radius:16px;background:linear-gradient(135deg,#f7efff,#fff1fb);display:flex;align-items:center;justify-content:center;padding:32px;text-align:center;color:#6003C3\">\n          <div><strong style=\"font-size:22px\">Screenshot placeholder 3.2-b</strong><br/>SKILL.md front matter in GitHub<br/><span style=\"font-size:13px\">Replace with a 1600×1000+ light-theme capture; blur tenant and user identifiers.</span></div>\n        </div>\n        <figcaption style=\"margin-top:8px;color:#555\">3.2-b — SKILL.md front matter in GitHub</figcaption>\n      </figure>\n      <figure style=\"margin:24px 0\">\n        <div role=\"img\" aria-label=\"Screenshot placeholder 3.2-c: SKILL.md instructions section\"\n          style=\"min-height:260px;border:2px dashed #810FFB;border-radius:16px;background:linear-gradient(135deg,#f7efff,#fff1fb);display:flex;align-items:center;justify-content:center;padding:32px;text-align:center;color:#6003C3\">\n          <div><strong style=\"font-size:22px\">Screenshot placeholder 3.2-c</strong><br/>SKILL.md instructions section<br/><span style=\"font-size:13px\">Replace with a 1600×1000+ light-theme capture; blur tenant and user identifiers.</span></div>\n        </div>\n        <figcaption style=\"margin-top:8px;color:#555\">3.2-c — SKILL.md instructions section</figcaption>\n      </figure>\n      <figure style=\"margin:24px 0\">\n        <div role=\"img\" aria-label=\"Screenshot placeholder 3.2-d: SKILL.md styling and output contract\"\n          style=\"min-height:260px;border:2px dashed #810FFB;border-radius:16px;background:linear-gradient(135deg,#f7efff,#fff1fb);display:flex;align-items:center;justify-content:center;padding:32px;text-align:center;color:#6003C3\">\n          <div><strong style=\"font-size:22px\">Screenshot placeholder 3.2-d</strong><br/>SKILL.md styling and output contract<br/><span style=\"font-size:13px\">Replace with a 1600×1000+ light-theme capture; blur tenant and user identifiers.</span></div>\n        </div>\n        <figcaption style=\"margin-top:8px;color:#555\">3.2-d — SKILL.md styling and output contract</figcaption>\n      </figure>\n      <figure style=\"margin:24px 0\">\n        <div role=\"img\" aria-label=\"Screenshot placeholder 3.2-e: Skill file beside its rendered dashboard\"\n          style=\"min-height:260px;border:2px dashed #810FFB;border-radius:16px;background:linear-gradient(135deg,#f7efff,#fff1fb);display:flex;align-items:center;justify-content:center;padding:32px;text-align:center;color:#6003C3\">\n          <div><strong style=\"font-size:22px\">Screenshot placeholder 3.2-e</strong><br/>Skill file beside its rendered dashboard<br/><span style=\"font-size:13px\">Replace with a 1600×1000+ light-theme capture; blur tenant and user identifiers.</span></div>\n        </div>\n        <figcaption style=\"margin-top:8px;color:#555\">3.2-e — Skill file beside its rendered dashboard</figcaption>\n      </figure>\n    </article>"
+            }
+          },
+          {
+            "title": "3.3 Trigger design — making a skill fire when you want it to",
+            "type": "rich_text",
+            "order": 2,
+            "estimatedMinutes": 7,
+            "required": true,
+            "content": {
+              "slug": "3-3-trigger-design-making-a-skill-fire-when-you-want-it-to",
+              "activityType": "video",
+              "screenshotIds": [
+                "3.3-a"
+              ],
+              "allowSkip": false,
+              "html": "\n    <article>\n      <p style=\"color:#6003C3;font-weight:700\">Lesson 3.3 · video</p>\n      <h1>Trigger design — making a skill fire when you want it to</h1>\n      <section><h2>Use real request language</h2><p>Include verbs such as summarize, chart, visualize, and build a dashboard, plus the intended SharePoint list context.</p></section><section><h2>Set negative boundaries</h2><p>State unrelated sources and outcomes for which the skill must not be selected.</p></section><section><h2>Test variation</h2><p>Use several natural phrasings rather than repeating one scripted sentence.</p></section>\n      <figure style=\"margin:24px 0\">\n        <div role=\"img\" aria-label=\"Screenshot placeholder 3.3-a: Description field with positive and negative trigger phrases\"\n          style=\"min-height:260px;border:2px dashed #810FFB;border-radius:16px;background:linear-gradient(135deg,#f7efff,#fff1fb);display:flex;align-items:center;justify-content:center;padding:32px;text-align:center;color:#6003C3\">\n          <div><strong style=\"font-size:22px\">Screenshot placeholder 3.3-a</strong><br/>Description field with positive and negative trigger phrases<br/><span style=\"font-size:13px\">Replace with a 1600×1000+ light-theme capture; blur tenant and user identifiers.</span></div>\n        </div>\n        <figcaption style=\"margin-top:8px;color:#555\">3.3-a — Description field with positive and negative trigger phrases</figcaption>\n      </figure>\n    </article>"
+            }
+          },
+          {
+            "title": "3.4 Other patterns worth borrowing",
+            "type": "rich_text",
+            "order": 3,
+            "estimatedMinutes": 6,
+            "required": true,
+            "content": {
+              "slug": "3-4-other-patterns-worth-borrowing",
+              "activityType": "video",
+              "screenshotIds": [
+                "3.4-a"
+              ],
+              "allowSkip": false,
+              "html": "\n    <article>\n      <p style=\"color:#6003C3;font-weight:700\">Lesson 3.4 · video</p>\n      <h1>Other patterns worth borrowing</h1>\n      <section><h2>Borrow contracts</h2><p>Output, styling, error handling, and accessibility patterns often transfer across skills.</p></section><section><h2>Rewrite source specifics</h2><p>List names, internal fields, calculations, and permission assumptions belong to your own contract.</p></section><section><h2>Prefer small composable rules</h2><p>Short explicit instructions are easier to test and review than a long narrative.</p></section>\n      <figure style=\"margin:24px 0\">\n        <div role=\"img\" aria-label=\"Screenshot placeholder 3.4-a: Sibling skill patterns in the public repository\"\n          style=\"min-height:260px;border:2px dashed #810FFB;border-radius:16px;background:linear-gradient(135deg,#f7efff,#fff1fb);display:flex;align-items:center;justify-content:center;padding:32px;text-align:center;color:#6003C3\">\n          <div><strong style=\"font-size:22px\">Screenshot placeholder 3.4-a</strong><br/>Sibling skill patterns in the public repository<br/><span style=\"font-size:13px\">Replace with a 1600×1000+ light-theme capture; blur tenant and user identifiers.</span></div>\n        </div>\n        <figcaption style=\"margin-top:8px;color:#555\">3.4-a — Sibling skill patterns in the public repository</figcaption>\n      </figure>\n    </article>"
+            }
+          },
+          {
+            "title": "3.5 Fork it — build your own skill file",
+            "type": "rich_text",
+            "order": 4,
+            "estimatedMinutes": 9,
+            "required": true,
+            "content": {
+              "slug": "3-5-fork-it-build-your-own-skill-file",
+              "activityType": "lab",
+              "screenshotIds": [
+                "3.5-a"
+              ],
+              "allowSkip": true,
+              "html": "\n    <article>\n      <p style=\"color:#6003C3;font-weight:700\">Lesson 3.5 · lab</p>\n      <h1>Fork it — build your own skill file</h1>\n      <section><h2>Start from the teaching file</h2><p>Use the starter resource, rename the skill, and complete the trigger description.</p></section><section><h2>Bind the contract</h2><p>Insert the exact internal names from your practice list and define how missing fields should fail.</p></section><section><h2>Make a visible adaptation</h2><p>Swap the palette to your approved tokens and add one chart that answers a real question.</p></section><aside style=\"border-left:5px solid #810FFB;background:#f7efff;padding:18px 22px;border-radius:12px;margin:24px 0\">\n        <h2>Try it</h2><ol><li>Download SKILL-starter.md and save a working copy as SKILL.md.</li><li>Complete the description with positive and negative triggers.</li><li>Add the practice list internal names and KPI rules.</li><li>Replace the TODO palette and define one additional chart.</li><li>Compare with SKILL-complete.md, preserving deliberate differences.</li></ol>\n        <p><strong>Completion:</strong> mark the lesson complete to unlock the next lesson, or use Skip lab if you need to return later.</p>\n      </aside>\n      <figure style=\"margin:24px 0\">\n        <div role=\"img\" aria-label=\"Screenshot placeholder 3.5-a: Forked skill file with organization brand tokens\"\n          style=\"min-height:260px;border:2px dashed #810FFB;border-radius:16px;background:linear-gradient(135deg,#f7efff,#fff1fb);display:flex;align-items:center;justify-content:center;padding:32px;text-align:center;color:#6003C3\">\n          <div><strong style=\"font-size:22px\">Screenshot placeholder 3.5-a</strong><br/>Forked skill file with organization brand tokens<br/><span style=\"font-size:13px\">Replace with a 1600×1000+ light-theme capture; blur tenant and user identifiers.</span></div>\n        </div>\n        <figcaption style=\"margin-top:8px;color:#555\">3.5-a — Forked skill file with organization brand tokens</figcaption>\n      </figure>\n    </article>"
+            }
+          }
+        ]
+      },
+      {
+        "title": "Installing and Testing the Skill",
+        "description": "Register, version, smoke-test, and debug the skill.",
+        "order": 3,
+        "lessons": [
+          {
+            "title": "4.1 Where skills live",
+            "type": "rich_text",
+            "order": 0,
+            "estimatedMinutes": 8,
+            "required": true,
+            "content": {
+              "slug": "4-1-where-skills-live",
+              "activityType": "video",
+              "screenshotIds": [
+                "4.1-a",
+                "4.1-b"
+              ],
+              "allowSkip": false,
+              "html": "\n    <article>\n      <p style=\"color:#6003C3;font-weight:700\">Lesson 4.1 · video</p>\n      <h1>Where skills live</h1>\n      <section><h2>Registration and placement</h2><p>Put the skill in the location supported by the current Copilot in SharePoint experience.</p></section><section><h2>Scope deliberately</h2><p>Choose who can use it and which site or organizational boundary it applies to.</p></section><section><h2>Confirm current guidance</h2><p>Registration controls are subject to Microsoft rollout and tenant policy; verify before recording or production use.</p></section>\n      <figure style=\"margin:24px 0\">\n        <div role=\"img\" aria-label=\"Screenshot placeholder 4.1-a: Skill file in its registration location\"\n          style=\"min-height:260px;border:2px dashed #810FFB;border-radius:16px;background:linear-gradient(135deg,#f7efff,#fff1fb);display:flex;align-items:center;justify-content:center;padding:32px;text-align:center;color:#6003C3\">\n          <div><strong style=\"font-size:22px\">Screenshot placeholder 4.1-a</strong><br/>Skill file in its registration location<br/><span style=\"font-size:13px\">Replace with a 1600×1000+ light-theme capture; blur tenant and user identifiers.</span></div>\n        </div>\n        <figcaption style=\"margin-top:8px;color:#555\">4.1-a — Skill file in its registration location</figcaption>\n      </figure>\n      <figure style=\"margin:24px 0\">\n        <div role=\"img\" aria-label=\"Screenshot placeholder 4.1-b: Skill scope and audience configuration\"\n          style=\"min-height:260px;border:2px dashed #810FFB;border-radius:16px;background:linear-gradient(135deg,#f7efff,#fff1fb);display:flex;align-items:center;justify-content:center;padding:32px;text-align:center;color:#6003C3\">\n          <div><strong style=\"font-size:22px\">Screenshot placeholder 4.1-b</strong><br/>Skill scope and audience configuration<br/><span style=\"font-size:13px\">Replace with a 1600×1000+ light-theme capture; blur tenant and user identifiers.</span></div>\n        </div>\n        <figcaption style=\"margin-top:8px;color:#555\">4.1-b — Skill scope and audience configuration</figcaption>\n      </figure>\n    </article>"
+            }
+          },
+          {
+            "title": "4.2 Versioning in GitHub",
+            "type": "rich_text",
+            "order": 1,
+            "estimatedMinutes": 6,
+            "required": true,
+            "content": {
+              "slug": "4-2-versioning-in-github",
+              "activityType": "reading",
+              "screenshotIds": [
+                "4.2-a",
+                "4.2-b"
+              ],
+              "allowSkip": false,
+              "html": "\n    <article>\n      <p style=\"color:#6003C3;font-weight:700\">Lesson 4.2 · reading</p>\n      <h1>Versioning in GitHub</h1>\n      <section><h2>Treat instructions as production assets</h2><p>A skill that reads business-critical data deserves history, ownership, and review.</p></section><section><h2>Keep a predictable structure</h2><p>Organize one folder per skill with the skill file, examples, owner, and test phrases.</p></section><section><h2>Review meaningful diffs</h2><p>Trigger, data-contract, calculation, output, and brand changes should be visible in pull requests.</p></section>\n      <figure style=\"margin:24px 0\">\n        <div role=\"img\" aria-label=\"Screenshot placeholder 4.2-a: GitHub structure for a personal skill library\"\n          style=\"min-height:260px;border:2px dashed #810FFB;border-radius:16px;background:linear-gradient(135deg,#f7efff,#fff1fb);display:flex;align-items:center;justify-content:center;padding:32px;text-align:center;color:#6003C3\">\n          <div><strong style=\"font-size:22px\">Screenshot placeholder 4.2-a</strong><br/>GitHub structure for a personal skill library<br/><span style=\"font-size:13px\">Replace with a 1600×1000+ light-theme capture; blur tenant and user identifiers.</span></div>\n        </div>\n        <figcaption style=\"margin-top:8px;color:#555\">4.2-a — GitHub structure for a personal skill library</figcaption>\n      </figure>\n      <figure style=\"margin:24px 0\">\n        <div role=\"img\" aria-label=\"Screenshot placeholder 4.2-b: Pull request diff for a skill file\"\n          style=\"min-height:260px;border:2px dashed #810FFB;border-radius:16px;background:linear-gradient(135deg,#f7efff,#fff1fb);display:flex;align-items:center;justify-content:center;padding:32px;text-align:center;color:#6003C3\">\n          <div><strong style=\"font-size:22px\">Screenshot placeholder 4.2-b</strong><br/>Pull request diff for a skill file<br/><span style=\"font-size:13px\">Replace with a 1600×1000+ light-theme capture; blur tenant and user identifiers.</span></div>\n        </div>\n        <figcaption style=\"margin-top:8px;color:#555\">4.2-b — Pull request diff for a skill file</figcaption>\n      </figure>\n    </article>"
+            }
+          },
+          {
+            "title": "4.3 The trigger smoke test",
+            "type": "rich_text",
+            "order": 2,
+            "estimatedMinutes": 8,
+            "required": true,
+            "content": {
+              "slug": "4-3-the-trigger-smoke-test",
+              "activityType": "lab",
+              "screenshotIds": [
+                "4.3-a",
+                "4.3-b"
+              ],
+              "allowSkip": true,
+              "html": "\n    <article>\n      <p style=\"color:#6003C3;font-weight:700\">Lesson 4.3 · lab</p>\n      <h1>The trigger smoke test</h1>\n      <section><h2>Five phrasings, one intent</h2><p>Test direct, conversational, shorthand, outcome-first, and list-first requests.</p></section><section><h2>Look for evidence</h2><p>Confirm the response follows the source contract, layout, styling, and failure rules rather than improvising.</p></section><section><h2>Record the result</h2><p>Keep a small trigger test table so future description edits can be compared.</p></section><aside style=\"border-left:5px solid #810FFB;background:#f7efff;padding:18px 22px;border-radius:12px;margin:24px 0\">\n        <h2>Try it</h2><ol><li>Run five distinct trigger phrases from the prompt library.</li><li>Record whether the skill loaded and what evidence supports the conclusion.</li><li>Revise the description once if a reasonable phrase misses.</li><li>Repeat the full set and keep the result with the skill.</li></ol>\n        <p><strong>Completion:</strong> mark the lesson complete to unlock the next lesson, or use Skip lab if you need to return later.</p>\n      </aside>\n      <figure style=\"margin:24px 0\">\n        <div role=\"img\" aria-label=\"Screenshot placeholder 4.3-a: Five trigger phrases and their test results\"\n          style=\"min-height:260px;border:2px dashed #810FFB;border-radius:16px;background:linear-gradient(135deg,#f7efff,#fff1fb);display:flex;align-items:center;justify-content:center;padding:32px;text-align:center;color:#6003C3\">\n          <div><strong style=\"font-size:22px\">Screenshot placeholder 4.3-a</strong><br/>Five trigger phrases and their test results<br/><span style=\"font-size:13px\">Replace with a 1600×1000+ light-theme capture; blur tenant and user identifiers.</span></div>\n        </div>\n        <figcaption style=\"margin-top:8px;color:#555\">4.3-a — Five trigger phrases and their test results</figcaption>\n      </figure>\n      <figure style=\"margin:24px 0\">\n        <div role=\"img\" aria-label=\"Screenshot placeholder 4.3-b: Copilot response with evidence that the skill loaded\"\n          style=\"min-height:260px;border:2px dashed #810FFB;border-radius:16px;background:linear-gradient(135deg,#f7efff,#fff1fb);display:flex;align-items:center;justify-content:center;padding:32px;text-align:center;color:#6003C3\">\n          <div><strong style=\"font-size:22px\">Screenshot placeholder 4.3-b</strong><br/>Copilot response with evidence that the skill loaded<br/><span style=\"font-size:13px\">Replace with a 1600×1000+ light-theme capture; blur tenant and user identifiers.</span></div>\n        </div>\n        <figcaption style=\"margin-top:8px;color:#555\">4.3-b — Copilot response with evidence that the skill loaded</figcaption>\n      </figure>\n    </article>"
+            }
+          },
+          {
+            "title": "4.4 Debugging a skill that will not fire or behave",
+            "type": "quiz",
+            "order": 3,
+            "estimatedMinutes": 8,
+            "required": true,
+            "content": {
+              "slug": "4-4-debugging-a-skill-that-will-not-fire-or-behave",
+              "activityType": "assessment",
+              "screenshotIds": [
+                "4.4-a",
+                "4.4-b",
+                "4.4-c",
+                "4.4-d"
+              ],
+              "passingScore": 75,
+              "introHtml": "\n      <figure style=\"margin:24px 0\">\n        <div role=\"img\" aria-label=\"Screenshot placeholder 4.4-a: Failure state: generic answer because the skill did not trigger\"\n          style=\"min-height:260px;border:2px dashed #810FFB;border-radius:16px;background:linear-gradient(135deg,#f7efff,#fff1fb);display:flex;align-items:center;justify-content:center;padding:32px;text-align:center;color:#6003C3\">\n          <div><strong style=\"font-size:22px\">Screenshot placeholder 4.4-a</strong><br/>Failure state: generic answer because the skill did not trigger<br/><span style=\"font-size:13px\">Replace with a 1600×1000+ light-theme capture; blur tenant and user identifiers.</span></div>\n        </div>\n        <figcaption style=\"margin-top:8px;color:#555\">4.4-a — Failure state: generic answer because the skill did not trigger</figcaption>\n      </figure>\n      <figure style=\"margin:24px 0\">\n        <div role=\"img\" aria-label=\"Screenshot placeholder 4.4-b: Failure state: unstyled output\"\n          style=\"min-height:260px;border:2px dashed #810FFB;border-radius:16px;background:linear-gradient(135deg,#f7efff,#fff1fb);display:flex;align-items:center;justify-content:center;padding:32px;text-align:center;color:#6003C3\">\n          <div><strong style=\"font-size:22px\">Screenshot placeholder 4.4-b</strong><br/>Failure state: unstyled output<br/><span style=\"font-size:13px\">Replace with a 1600×1000+ light-theme capture; blur tenant and user identifiers.</span></div>\n        </div>\n        <figcaption style=\"margin-top:8px;color:#555\">4.4-b — Failure state: unstyled output</figcaption>\n      </figure>\n      <figure style=\"margin:24px 0\">\n        <div role=\"img\" aria-label=\"Screenshot placeholder 4.4-c: Failure state: wrong or missing columns after schema drift\"\n          style=\"min-height:260px;border:2px dashed #810FFB;border-radius:16px;background:linear-gradient(135deg,#f7efff,#fff1fb);display:flex;align-items:center;justify-content:center;padding:32px;text-align:center;color:#6003C3\">\n          <div><strong style=\"font-size:22px\">Screenshot placeholder 4.4-c</strong><br/>Failure state: wrong or missing columns after schema drift<br/><span style=\"font-size:13px\">Replace with a 1600×1000+ light-theme capture; blur tenant and user identifiers.</span></div>\n        </div>\n        <figcaption style=\"margin-top:8px;color:#555\">4.4-c — Failure state: wrong or missing columns after schema drift</figcaption>\n      </figure>\n      <figure style=\"margin:24px 0\">\n        <div role=\"img\" aria-label=\"Screenshot placeholder 4.4-d: Corrected render after the skill fix\"\n          style=\"min-height:260px;border:2px dashed #810FFB;border-radius:16px;background:linear-gradient(135deg,#f7efff,#fff1fb);display:flex;align-items:center;justify-content:center;padding:32px;text-align:center;color:#6003C3\">\n          <div><strong style=\"font-size:22px\">Screenshot placeholder 4.4-d</strong><br/>Corrected render after the skill fix<br/><span style=\"font-size:13px\">Replace with a 1600×1000+ light-theme capture; blur tenant and user identifiers.</span></div>\n        </div>\n        <figcaption style=\"margin-top:8px;color:#555\">4.4-d — Corrected render after the skill fix</figcaption>\n      </figure>",
+              "questions": [
+                {
+                  "id": "m4q1",
+                  "type": "single",
+                  "text": "The skill never loads. What should you inspect first?",
+                  "options": [
+                    {
+                      "id": "a",
+                      "text": "The description and trigger vocabulary"
+                    },
+                    {
+                      "id": "b",
+                      "text": "The chart colors"
+                    },
+                    {
+                      "id": "c",
+                      "text": "The list item count"
+                    }
+                  ],
+                  "correctAnswerId": "a",
+                  "explanation": "Selection failures most often begin with the description."
+                },
+                {
+                  "id": "m4q2",
+                  "type": "single",
+                  "text": "The skill loads but ignores key rules. What is the best first change?",
+                  "options": [
+                    {
+                      "id": "a",
+                      "text": "Make the instructions shorter and more explicit"
+                    },
+                    {
+                      "id": "b",
+                      "text": "Rename every list field"
+                    },
+                    {
+                      "id": "c",
+                      "text": "Remove the output contract"
+                    }
+                  ],
+                  "correctAnswerId": "a",
+                  "explanation": "Concrete, prioritized instructions are easier to follow."
+                },
+                {
+                  "id": "m4q3",
+                  "type": "single",
+                  "text": "The output shows wrong or missing columns after a rename. Likely cause?",
+                  "options": [
+                    {
+                      "id": "a",
+                      "text": "Brand drift"
+                    },
+                    {
+                      "id": "b",
+                      "text": "Data-contract drift"
+                    },
+                    {
+                      "id": "c",
+                      "text": "A browser theme"
+                    }
+                  ],
+                  "correctAnswerId": "b",
+                  "explanation": "The skill may reference a field that no longer matches the contract."
+                },
+                {
+                  "id": "m4q4",
+                  "type": "single",
+                  "text": "The dashboard is unstyled. What should be strengthened?",
+                  "options": [
+                    {
+                      "id": "a",
+                      "text": "Explicit styling and output requirements"
+                    },
+                    {
+                      "id": "b",
+                      "text": "The list permission level"
+                    },
+                    {
+                      "id": "c",
+                      "text": "The dataset row count"
+                    }
+                  ],
+                  "correctAnswerId": "a",
+                  "explanation": "Persistent presentation rules belong in the skill."
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "title": "Building the Live HTML Dashboard",
+        "description": "Assemble, verify, refine, refresh, and brand the dashboard.",
+        "order": 4,
+        "lessons": [
+          {
+            "title": "5.1 The assembly prompt",
+            "type": "rich_text",
+            "order": 0,
+            "estimatedMinutes": 8,
+            "required": true,
+            "content": {
+              "slug": "5-1-the-assembly-prompt",
+              "activityType": "video",
+              "screenshotIds": [
+                "5.1-a",
+                "5.1-b"
+              ],
+              "allowSkip": false,
+              "html": "\n    <article>\n      <p style=\"color:#6003C3;font-weight:700\">Lesson 5.1 · video</p>\n      <h1>The assembly prompt</h1>\n      <section><h2>Name source and outcome</h2><p>A strong prompt names the Engagements list and requests the dashboard outcome. The skill supplies the repeatable method.</p></section><section><h2>Avoid vague requests</h2><p>Make it clear which list, which artifact, and which verification behavior you expect.</p></section><section><h2>Keep permanent rules out of one-off prompts</h2><p>If every dashboard needs the rule, move it into the skill.</p></section>\n      <figure style=\"margin:24px 0\">\n        <div role=\"img\" aria-label=\"Screenshot placeholder 5.1-a: Strong assembly prompt in the Copilot box\"\n          style=\"min-height:260px;border:2px dashed #810FFB;border-radius:16px;background:linear-gradient(135deg,#f7efff,#fff1fb);display:flex;align-items:center;justify-content:center;padding:32px;text-align:center;color:#6003C3\">\n          <div><strong style=\"font-size:22px\">Screenshot placeholder 5.1-a</strong><br/>Strong assembly prompt in the Copilot box<br/><span style=\"font-size:13px\">Replace with a 1600×1000+ light-theme capture; blur tenant and user identifiers.</span></div>\n        </div>\n        <figcaption style=\"margin-top:8px;color:#555\">5.1-a — Strong assembly prompt in the Copilot box</figcaption>\n      </figure>\n      <figure style=\"margin:24px 0\">\n        <div role=\"img\" aria-label=\"Screenshot placeholder 5.1-b: Weak assembly prompt beside its poor output\"\n          style=\"min-height:260px;border:2px dashed #810FFB;border-radius:16px;background:linear-gradient(135deg,#f7efff,#fff1fb);display:flex;align-items:center;justify-content:center;padding:32px;text-align:center;color:#6003C3\">\n          <div><strong style=\"font-size:22px\">Screenshot placeholder 5.1-b</strong><br/>Weak assembly prompt beside its poor output<br/><span style=\"font-size:13px\">Replace with a 1600×1000+ light-theme capture; blur tenant and user identifiers.</span></div>\n        </div>\n        <figcaption style=\"margin-top:8px;color:#555\">5.1-b — Weak assembly prompt beside its poor output</figcaption>\n      </figure>\n    </article>"
+            }
+          },
+          {
+            "title": "5.2 First render",
+            "type": "rich_text",
+            "order": 1,
+            "estimatedMinutes": 10,
+            "required": true,
+            "content": {
+              "slug": "5-2-first-render",
+              "activityType": "lab",
+              "screenshotIds": [
+                "5.2-a",
+                "5.2-b"
+              ],
+              "allowSkip": true,
+              "html": "\n    <article>\n      <p style=\"color:#6003C3;font-weight:700\">Lesson 5.2 · lab</p>\n      <h1>First render</h1>\n      <section><h2>Run, then verify</h2><p>Do not trust a polished tile until it reconciles to the source rows visible to the requester.</p></section><section><h2>Use one filter context</h2><p>Counts, values, charts, and detail rows must describe the same record set.</p></section><section><h2>Capture evidence</h2><p>Record the visible row count, latest date, and at least one manual calculation.</p></section><aside style=\"border-left:5px solid #810FFB;background:#f7efff;padding:18px 22px;border-radius:12px;margin:24px 0\">\n        <h2>Try it</h2><ol><li>Run the strong assembly prompt against the practice list.</li><li>Reconcile engagement count, active value, and at-risk count to the list.</li><li>Check one chart segment against filtered source rows.</li><li>Do not continue until discrepancies are explained or corrected.</li></ol>\n        <p><strong>Completion:</strong> mark the lesson complete to unlock the next lesson, or use Skip lab if you need to return later.</p>\n      </aside>\n      <figure style=\"margin:24px 0\">\n        <div role=\"img\" aria-label=\"Screenshot placeholder 5.2-a: First generated dashboard render\"\n          style=\"min-height:260px;border:2px dashed #810FFB;border-radius:16px;background:linear-gradient(135deg,#f7efff,#fff1fb);display:flex;align-items:center;justify-content:center;padding:32px;text-align:center;color:#6003C3\">\n          <div><strong style=\"font-size:22px\">Screenshot placeholder 5.2-a</strong><br/>First generated dashboard render<br/><span style=\"font-size:13px\">Replace with a 1600×1000+ light-theme capture; blur tenant and user identifiers.</span></div>\n        </div>\n        <figcaption style=\"margin-top:8px;color:#555\">5.2-a — First generated dashboard render</figcaption>\n      </figure>\n      <figure style=\"margin:24px 0\">\n        <div role=\"img\" aria-label=\"Screenshot placeholder 5.2-b: Dashboard KPI verified against the source list\"\n          style=\"min-height:260px;border:2px dashed #810FFB;border-radius:16px;background:linear-gradient(135deg,#f7efff,#fff1fb);display:flex;align-items:center;justify-content:center;padding:32px;text-align:center;color:#6003C3\">\n          <div><strong style=\"font-size:22px\">Screenshot placeholder 5.2-b</strong><br/>Dashboard KPI verified against the source list<br/><span style=\"font-size:13px\">Replace with a 1600×1000+ light-theme capture; blur tenant and user identifiers.</span></div>\n        </div>\n        <figcaption style=\"margin-top:8px;color:#555\">5.2-b — Dashboard KPI verified against the source list</figcaption>\n      </figure>\n    </article>"
+            }
+          },
+          {
+            "title": "5.3 Iterating on the output",
+            "type": "rich_text",
+            "order": 2,
+            "estimatedMinutes": 12,
+            "required": true,
+            "content": {
+              "slug": "5-3-iterating-on-the-output",
+              "activityType": "lab",
+              "screenshotIds": [
+                "5.3-a",
+                "5.3-b",
+                "5.3-c"
+              ],
+              "allowSkip": true,
+              "html": "\n    <article>\n      <p style=\"color:#6003C3;font-weight:700\">Lesson 5.3 · lab</p>\n      <h1>Iterating on the output</h1>\n      <section><h2>Refine one dimension at a time</h2><p>Change a chart type, add a segment, apply a date window, re-rank, or add a KPI with explicit criteria.</p></section><section><h2>Prompt versus skill</h2><p>Use the prompt for a one-off adjustment. Update the skill when the correction should apply every time.</p></section><section><h2>Prompt critique</h2><p>The best request names the source, outcome, verification expectation, and exact refinement without redefining the entire skill.</p></section><aside style=\"border-left:5px solid #810FFB;background:#f7efff;padding:18px 22px;border-radius:12px;margin:24px 0\">\n        <h2>Try it</h2><ol><li>Change the status visualization to a horizontal bar chart.</li><li>Add an Amber-or-Red health KPI and reconcile it.</li><li>Write one permanent correction into the skill rather than the prompt.</li><li>Rank four candidate assembly prompts and explain the winner in two sentences.</li></ol>\n        <p><strong>Completion:</strong> mark the lesson complete to unlock the next lesson, or use Skip lab if you need to return later.</p>\n      </aside>\n      <figure style=\"margin:24px 0\">\n        <div role=\"img\" aria-label=\"Screenshot placeholder 5.3-a: Refinement prompt that changes a chart type\"\n          style=\"min-height:260px;border:2px dashed #810FFB;border-radius:16px;background:linear-gradient(135deg,#f7efff,#fff1fb);display:flex;align-items:center;justify-content:center;padding:32px;text-align:center;color:#6003C3\">\n          <div><strong style=\"font-size:22px\">Screenshot placeholder 5.3-a</strong><br/>Refinement prompt that changes a chart type<br/><span style=\"font-size:13px\">Replace with a 1600×1000+ light-theme capture; blur tenant and user identifiers.</span></div>\n        </div>\n        <figcaption style=\"margin-top:8px;color:#555\">5.3-a — Refinement prompt that changes a chart type</figcaption>\n      </figure>\n      <figure style=\"margin:24px 0\">\n        <div role=\"img\" aria-label=\"Screenshot placeholder 5.3-b: Dashboard before and after refinement\"\n          style=\"min-height:260px;border:2px dashed #810FFB;border-radius:16px;background:linear-gradient(135deg,#f7efff,#fff1fb);display:flex;align-items:center;justify-content:center;padding:32px;text-align:center;color:#6003C3\">\n          <div><strong style=\"font-size:22px\">Screenshot placeholder 5.3-b</strong><br/>Dashboard before and after refinement<br/><span style=\"font-size:13px\">Replace with a 1600×1000+ light-theme capture; blur tenant and user identifiers.</span></div>\n        </div>\n        <figcaption style=\"margin-top:8px;color:#555\">5.3-b — Dashboard before and after refinement</figcaption>\n      </figure>\n      <figure style=\"margin:24px 0\">\n        <div role=\"img\" aria-label=\"Screenshot placeholder 5.3-c: Refinement that adds a KPI tile\"\n          style=\"min-height:260px;border:2px dashed #810FFB;border-radius:16px;background:linear-gradient(135deg,#f7efff,#fff1fb);display:flex;align-items:center;justify-content:center;padding:32px;text-align:center;color:#6003C3\">\n          <div><strong style=\"font-size:22px\">Screenshot placeholder 5.3-c</strong><br/>Refinement that adds a KPI tile<br/><span style=\"font-size:13px\">Replace with a 1600×1000+ light-theme capture; blur tenant and user identifiers.</span></div>\n        </div>\n        <figcaption style=\"margin-top:8px;color:#555\">5.3-c — Refinement that adds a KPI tile</figcaption>\n      </figure>\n    </article>",
+              "submission": {
+                "title": "Prompt critique",
+                "description": "Submit your ranked prompts and a short justification. Your facilitator or peer reviewer can use this saved response during review.",
+                "submitLabel": "Submit prompt critique",
+                "fields": [
+                  {
+                    "id": "ranking",
+                    "label": "Prompt ranking and justification",
+                    "type": "textarea",
+                    "required": true,
+                    "rows": 6,
+                    "placeholder": "1. Best prompt… because…\n2. …"
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "title": "5.4 Making it genuinely live",
+            "type": "rich_text",
+            "order": 3,
+            "estimatedMinutes": 10,
+            "required": true,
+            "content": {
+              "slug": "5-4-making-it-genuinely-live",
+              "activityType": "lab",
+              "screenshotIds": [
+                "5.4-a",
+                "5.4-b",
+                "5.4-c"
+              ],
+              "allowSkip": true,
+              "html": "\n    <article>\n      <p style=\"color:#6003C3;font-weight:700\">Lesson 5.4 · lab</p>\n      <h1>Making it genuinely live</h1>\n      <section><h2>Rerun is the refresh</h2><p>Update the source list, rerun the request, and verify that the new item appears in the artifact.</p></section><section><h2>Share with context</h2><p>Store or embed the generated artifact according to organizational policy and state when it was generated.</p></section><section><h2>Know the escalation path</h2><p>Move to Power BI when scheduled refresh, governed measures, large scale, or advanced security is required.</p></section><aside style=\"border-left:5px solid #810FFB;background:#f7efff;padding:18px 22px;border-radius:12px;margin:24px 0\">\n        <h2>Try it</h2><ol><li>Add one fictional engagement to the practice list.</li><li>Rerun the same assembly prompt and verify the count and detail row.</li><li>Save or embed the artifact using the currently supported SharePoint controls.</li><li>Add a visible data-as-of and rerun note.</li></ol>\n        <p><strong>Completion:</strong> mark the lesson complete to unlock the next lesson, or use Skip lab if you need to return later.</p>\n      </aside>\n      <figure style=\"margin:24px 0\">\n        <div role=\"img\" aria-label=\"Screenshot placeholder 5.4-a: SharePoint list updated with a new row\"\n          style=\"min-height:260px;border:2px dashed #810FFB;border-radius:16px;background:linear-gradient(135deg,#f7efff,#fff1fb);display:flex;align-items:center;justify-content:center;padding:32px;text-align:center;color:#6003C3\">\n          <div><strong style=\"font-size:22px\">Screenshot placeholder 5.4-a</strong><br/>SharePoint list updated with a new row<br/><span style=\"font-size:13px\">Replace with a 1600×1000+ light-theme capture; blur tenant and user identifiers.</span></div>\n        </div>\n        <figcaption style=\"margin-top:8px;color:#555\">5.4-a — SharePoint list updated with a new row</figcaption>\n      </figure>\n      <figure style=\"margin:24px 0\">\n        <div role=\"img\" aria-label=\"Screenshot placeholder 5.4-b: Re-run dashboard reflecting the new row\"\n          style=\"min-height:260px;border:2px dashed #810FFB;border-radius:16px;background:linear-gradient(135deg,#f7efff,#fff1fb);display:flex;align-items:center;justify-content:center;padding:32px;text-align:center;color:#6003C3\">\n          <div><strong style=\"font-size:22px\">Screenshot placeholder 5.4-b</strong><br/>Re-run dashboard reflecting the new row<br/><span style=\"font-size:13px\">Replace with a 1600×1000+ light-theme capture; blur tenant and user identifiers.</span></div>\n        </div>\n        <figcaption style=\"margin-top:8px;color:#555\">5.4-b — Re-run dashboard reflecting the new row</figcaption>\n      </figure>\n      <figure style=\"margin:24px 0\">\n        <div role=\"img\" aria-label=\"Screenshot placeholder 5.4-c: Dashboard artifact embedded on a SharePoint page\"\n          style=\"min-height:260px;border:2px dashed #810FFB;border-radius:16px;background:linear-gradient(135deg,#f7efff,#fff1fb);display:flex;align-items:center;justify-content:center;padding:32px;text-align:center;color:#6003C3\">\n          <div><strong style=\"font-size:22px\">Screenshot placeholder 5.4-c</strong><br/>Dashboard artifact embedded on a SharePoint page<br/><span style=\"font-size:13px\">Replace with a 1600×1000+ light-theme capture; blur tenant and user identifiers.</span></div>\n        </div>\n        <figcaption style=\"margin-top:8px;color:#555\">5.4-c — Dashboard artifact embedded on a SharePoint page</figcaption>\n      </figure>\n    </article>"
+            }
+          },
+          {
+            "title": "5.5 Styling the dashboard on brand",
+            "type": "rich_text",
+            "order": 4,
+            "estimatedMinutes": 10,
+            "required": true,
+            "content": {
+              "slug": "5-5-styling-the-dashboard-on-brand",
+              "activityType": "lab",
+              "screenshotIds": [
+                "5.5-a",
+                "5.5-b",
+                "5.5-c"
+              ],
+              "allowSkip": true,
+              "html": "\n    <article>\n      <p style=\"color:#6003C3;font-weight:700\">Lesson 5.5 · lab</p>\n      <h1>Styling the dashboard on brand</h1>\n      <section><h2>Put tokens in the skill</h2><p>Define colors, type scale, tile geometry, chart palette, and spacing once.</p></section><section><h2>Use the Synozur course palette</h2><p>Primary #810FFB, accent #E60CB3, deep #6003C3, ink #111111, and white surfaces.</p></section><section><h2>Verify accessibility</h2><p>Use explicit labels and test every text/background and chart pairing. Avoid magenta for small body text.</p></section><aside style=\"border-left:5px solid #810FFB;background:#f7efff;padding:18px 22px;border-radius:12px;margin:24px 0\">\n        <h2>Try it</h2><ol><li>Apply the approved tokens in the skill rather than the assembly prompt.</li><li>Rerun the dashboard and check that all components use the same system.</li><li>Test body text, buttons, and chart colors with an approved contrast checker.</li><li>Correct any failing pair and record the final tokens.</li></ol>\n        <p><strong>Completion:</strong> mark the lesson complete to unlock the next lesson, or use Skip lab if you need to return later.</p>\n      </aside>\n      <figure style=\"margin:24px 0\">\n        <div role=\"img\" aria-label=\"Screenshot placeholder 5.5-a: Brand tokens inside the skill file\"\n          style=\"min-height:260px;border:2px dashed #810FFB;border-radius:16px;background:linear-gradient(135deg,#f7efff,#fff1fb);display:flex;align-items:center;justify-content:center;padding:32px;text-align:center;color:#6003C3\">\n          <div><strong style=\"font-size:22px\">Screenshot placeholder 5.5-a</strong><br/>Brand tokens inside the skill file<br/><span style=\"font-size:13px\">Replace with a 1600×1000+ light-theme capture; blur tenant and user identifiers.</span></div>\n        </div>\n        <figcaption style=\"margin-top:8px;color:#555\">5.5-a — Brand tokens inside the skill file</figcaption>\n      </figure>\n      <figure style=\"margin:24px 0\">\n        <div role=\"img\" aria-label=\"Screenshot placeholder 5.5-b: Dashboard rendered with the brand palette\"\n          style=\"min-height:260px;border:2px dashed #810FFB;border-radius:16px;background:linear-gradient(135deg,#f7efff,#fff1fb);display:flex;align-items:center;justify-content:center;padding:32px;text-align:center;color:#6003C3\">\n          <div><strong style=\"font-size:22px\">Screenshot placeholder 5.5-b</strong><br/>Dashboard rendered with the brand palette<br/><span style=\"font-size:13px\">Replace with a 1600×1000+ light-theme capture; blur tenant and user identifiers.</span></div>\n        </div>\n        <figcaption style=\"margin-top:8px;color:#555\">5.5-b — Dashboard rendered with the brand palette</figcaption>\n      </figure>\n      <figure style=\"margin:24px 0\">\n        <div role=\"img\" aria-label=\"Screenshot placeholder 5.5-c: Contrast checker result for the chart palette\"\n          style=\"min-height:260px;border:2px dashed #810FFB;border-radius:16px;background:linear-gradient(135deg,#f7efff,#fff1fb);display:flex;align-items:center;justify-content:center;padding:32px;text-align:center;color:#6003C3\">\n          <div><strong style=\"font-size:22px\">Screenshot placeholder 5.5-c</strong><br/>Contrast checker result for the chart palette<br/><span style=\"font-size:13px\">Replace with a 1600×1000+ light-theme capture; blur tenant and user identifiers.</span></div>\n        </div>\n        <figcaption style=\"margin-top:8px;color:#555\">5.5-c — Contrast checker result for the chart palette</figcaption>\n      </figure>\n    </article>"
+            }
+          }
+        ]
+      },
+      {
+        "title": "Governance, Scale, and Handoff",
+        "description": "Apply permissions, policy, ownership, and a capstone operating model.",
+        "order": 5,
+        "lessons": [
+          {
+            "title": "6.1 Permissions and the trimming question",
+            "type": "rich_text",
+            "order": 0,
+            "estimatedMinutes": 7,
+            "required": true,
+            "content": {
+              "slug": "6-1-permissions-and-the-trimming-question",
+              "activityType": "video",
+              "screenshotIds": [
+                "6.1-a",
+                "D5"
+              ],
+              "allowSkip": false,
+              "html": "\n    <article>\n      <p style=\"color:#6003C3;font-weight:700\">Lesson 6.1 · video</p>\n      <h1>Permissions and the trimming question</h1>\n      <section><h2>The requester defines visibility</h2><p>The generated dashboard reflects the items the requesting user can access.</p></section><section><h2>Aggregates can legitimately differ</h2><p>Two users with different rights may receive different counts and totals from the same list.</p></section><section><h2>Rendered artifacts need their own review</h2><p>Before sharing an output, confirm the recipient is allowed to see every included row and aggregate.</p></section>\n      <figure style=\"margin:24px 0\">\n        <div role=\"img\" aria-label=\"Screenshot placeholder 6.1-a: Two permission levels producing different dashboard results\"\n          style=\"min-height:260px;border:2px dashed #810FFB;border-radius:16px;background:linear-gradient(135deg,#f7efff,#fff1fb);display:flex;align-items:center;justify-content:center;padding:32px;text-align:center;color:#6003C3\">\n          <div><strong style=\"font-size:22px\">Screenshot placeholder 6.1-a</strong><br/>Two permission levels producing different dashboard results<br/><span style=\"font-size:13px\">Replace with a 1600×1000+ light-theme capture; blur tenant and user identifiers.</span></div>\n        </div>\n        <figcaption style=\"margin-top:8px;color:#555\">6.1-a — Two permission levels producing different dashboard results</figcaption>\n      </figure>\n      <figure style=\"margin:24px 0\">\n        <div role=\"img\" aria-label=\"Diagram placeholder D5: Permission trimming and aggregate differences\"\n          style=\"min-height:260px;border:2px dashed #810FFB;border-radius:16px;background:linear-gradient(135deg,#f7efff,#fff1fb);display:flex;align-items:center;justify-content:center;padding:32px;text-align:center;color:#6003C3\">\n          <div><strong style=\"font-size:22px\">Diagram placeholder D5</strong><br/>Permission trimming and aggregate differences<br/><span style=\"font-size:13px\">Replace with a 1600×1000+ light-theme capture; blur tenant and user identifiers.</span></div>\n        </div>\n        <figcaption style=\"margin-top:8px;color:#555\">D5 — Permission trimming and aggregate differences</figcaption>\n      </figure>\n    </article>"
+            }
+          },
+          {
+            "title": "6.2 Sensitivity labels and data-loss guardrails",
+            "type": "rich_text",
+            "order": 1,
+            "estimatedMinutes": 6,
+            "required": true,
+            "content": {
+              "slug": "6-2-sensitivity-labels-and-data-loss-guardrails",
+              "activityType": "video",
+              "screenshotIds": [
+                "6.2-a"
+              ],
+              "allowSkip": false,
+              "html": "\n    <article>\n      <p style=\"color:#6003C3;font-weight:700\">Lesson 6.2 · video</p>\n      <h1>Sensitivity labels and data-loss guardrails</h1>\n      <section><h2>Policy is part of the system</h2><p>Protected columns, labels, and organizational controls may prevent Copilot from reading or returning data.</p></section><section><h2>Do not prompt around controls</h2><p>A blocked response is a governance signal. Follow the approved data handling and exception process.</p></section><section><h2>Design with least privilege</h2><p>Use approved synthetic data for practice and avoid placing restricted details in reusable skill examples.</p></section>\n      <figure style=\"margin:24px 0\">\n        <div role=\"img\" aria-label=\"Screenshot placeholder 6.2-a: Policy-blocked Copilot response\"\n          style=\"min-height:260px;border:2px dashed #810FFB;border-radius:16px;background:linear-gradient(135deg,#f7efff,#fff1fb);display:flex;align-items:center;justify-content:center;padding:32px;text-align:center;color:#6003C3\">\n          <div><strong style=\"font-size:22px\">Screenshot placeholder 6.2-a</strong><br/>Policy-blocked Copilot response<br/><span style=\"font-size:13px\">Replace with a 1600×1000+ light-theme capture; blur tenant and user identifiers.</span></div>\n        </div>\n        <figcaption style=\"margin-top:8px;color:#555\">6.2-a — Policy-blocked Copilot response</figcaption>\n      </figure>\n    </article>"
+            }
+          },
+          {
+            "title": "6.3 Scaling the pattern across a team",
+            "type": "rich_text",
+            "order": 2,
+            "estimatedMinutes": 8,
+            "required": true,
+            "content": {
+              "slug": "6-3-scaling-the-pattern-across-a-team",
+              "activityType": "reading",
+              "screenshotIds": [
+                "6.3-a"
+              ],
+              "allowSkip": false,
+              "html": "\n    <article>\n      <p style=\"color:#6003C3;font-weight:700\">Lesson 6.3 · reading</p>\n      <h1>Scaling the pattern across a team</h1>\n      <section><h2>Parameterize carefully</h2><p>One skill can support several lists only when the data contracts are intentionally compatible.</p></section><section><h2>Name an owner</h2><p>Keep skills in a library with accountable owners, review dates, supported sources, and trigger tests.</p></section><section><h2>Watch for drift</h2><p>Review after schema changes, policy changes, brand updates, and significant Microsoft feature changes.</p></section>\n      <figure style=\"margin:24px 0\">\n        <div role=\"img\" aria-label=\"Screenshot placeholder 6.3-a: Team skill library with named owners\"\n          style=\"min-height:260px;border:2px dashed #810FFB;border-radius:16px;background:linear-gradient(135deg,#f7efff,#fff1fb);display:flex;align-items:center;justify-content:center;padding:32px;text-align:center;color:#6003C3\">\n          <div><strong style=\"font-size:22px\">Screenshot placeholder 6.3-a</strong><br/>Team skill library with named owners<br/><span style=\"font-size:13px\">Replace with a 1600×1000+ light-theme capture; blur tenant and user identifiers.</span></div>\n        </div>\n        <figcaption style=\"margin-top:8px;color:#555\">6.3-a — Team skill library with named owners</figcaption>\n      </figure>\n    </article>"
+            }
+          },
+          {
+            "title": "6.4 Capstone brief",
+            "type": "rich_text",
+            "order": 3,
+            "estimatedMinutes": 20,
+            "required": true,
+            "content": {
+              "slug": "6-4-capstone-brief",
+              "activityType": "assignment",
+              "screenshotIds": [
+                "6.4-a"
+              ],
+              "allowSkip": false,
+              "html": "\n    <article>\n      <p style=\"color:#6003C3;font-weight:700\">Lesson 6.4 · assignment</p>\n      <h1>Capstone brief</h1>\n      <section><h2>Build end to end</h2><p>Bring an approved dataset, import it, document the contract, adapt the skill, render and verify the dashboard, then embed or store it.</p></section><section><h2>Submit evidence</h2><p>Provide the dashboard, SKILL.md, verification screenshots, and a five-line README covering source, contract, permissions, rerun behavior, and owner.</p></section><section><h2>Use the rubric</h2><p>Data contract, skill quality, accuracy, brand/accessibility, and documentation total 100 points.</p></section><aside style=\"border-left:5px solid #810FFB;background:#f7efff;padding:18px 22px;border-radius:12px;margin:24px 0\">\n        <h2>Try it</h2><ol><li>Choose an approved dataset and document its fields, types, values, and owner.</li><li>Import it into SharePoint and verify the internal contract.</li><li>Adapt and trigger-test the skill.</li><li>Generate the dashboard and reconcile every KPI.</li><li>Apply brand and accessibility checks, then submit the artifact, skill, evidence, and README.</li></ol>\n        <p><strong>Completion:</strong> mark the lesson complete to unlock the next lesson, or use Skip lab if you need to return later.</p>\n      </aside>\n      <figure style=\"margin:24px 0\">\n        <div role=\"img\" aria-label=\"Screenshot placeholder 6.4-a: Exemplar capstone submission\"\n          style=\"min-height:260px;border:2px dashed #810FFB;border-radius:16px;background:linear-gradient(135deg,#f7efff,#fff1fb);display:flex;align-items:center;justify-content:center;padding:32px;text-align:center;color:#6003C3\">\n          <div><strong style=\"font-size:22px\">Screenshot placeholder 6.4-a</strong><br/>Exemplar capstone submission<br/><span style=\"font-size:13px\">Replace with a 1600×1000+ light-theme capture; blur tenant and user identifiers.</span></div>\n        </div>\n        <figcaption style=\"margin-top:8px;color:#555\">6.4-a — Exemplar capstone submission</figcaption>\n      </figure>\n    </article>",
+              "submission": {
+                "title": "Capstone submission",
+                "description": "Provide permission-safe links that your reviewer can open, plus the required five-line README. Completion is recorded only after all required evidence is submitted.",
+                "submitLabel": "Submit capstone",
+                "fields": [
+                  {
+                    "id": "dashboardUrl",
+                    "label": "Dashboard or SharePoint page URL",
+                    "type": "url",
+                    "required": true,
+                    "placeholder": "https://…"
+                  },
+                  {
+                    "id": "skillUrl",
+                    "label": "SKILL.md URL",
+                    "type": "url",
+                    "required": true,
+                    "placeholder": "https://…"
+                  },
+                  {
+                    "id": "evidenceUrl",
+                    "label": "Verification evidence URL",
+                    "type": "url",
+                    "required": true,
+                    "placeholder": "https://…",
+                    "helpText": "Link to screenshots or a document that reconciles dashboard figures to the source."
+                  },
+                  {
+                    "id": "readme",
+                    "label": "Five-line README",
+                    "type": "textarea",
+                    "required": true,
+                    "rows": 7,
+                    "placeholder": "Source:\nData contract:\nPermissions:\nRefresh/rerun:\nOwner:"
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "title": "6.5 Where to go next",
+            "type": "rich_text",
+            "order": 4,
+            "estimatedMinutes": 5,
+            "required": true,
+            "content": {
+              "slug": "6-5-where-to-go-next",
+              "activityType": "video",
+              "screenshotIds": [],
+              "allowSkip": false,
+              "html": "\n    <article>\n      <p style=\"color:#6003C3;font-weight:700\">Lesson 6.5 · video</p>\n      <h1>Where to go next</h1>\n      <section><h2>Declarative agents</h2><p>Use a broader agent when the experience needs durable instructions, scoped knowledge, and additional actions.</p></section><section><h2>Power BI handoff</h2><p>Escalate when the scenario needs a semantic model, scheduled refresh, enterprise analytics, or richer governance.</p></section><section><h2>Adjacent patterns</h2><p>Explore list formatting, reusable skill libraries, and Copilot Cowork for cross-source workflows.</p></section><aside style=\"border-left:5px solid #E60CB3;background:#fff1fb;padding:16px 20px;border-radius:12px\"><strong>Practitioner note:</strong> Keep the pattern legible: source contract, presentation contract, assembly request, verification, and governance.</aside>\n    </article>"
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

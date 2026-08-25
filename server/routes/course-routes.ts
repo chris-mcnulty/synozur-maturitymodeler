@@ -108,6 +108,32 @@ function redactGradingKeys<T extends { modules: any[] }>(course: T): T {
   return cloned as T;
 }
 
+function prepareCourseLearnerPayload<T extends { modules: any[] }>(course: T): T & { resources: any[] } {
+  const resources: any[] = [];
+  const seenResourceIds = new Set<string>();
+  const modules = course.modules.map((module: any) => ({
+    ...module,
+    lessons: (module.lessons ?? []).map((lesson: any) => {
+      const content = (lesson.content ?? {}) as Record<string, any>;
+      if (Array.isArray(content.courseResources)) {
+        for (const resource of content.courseResources) {
+          if (resource?.id && !seenResourceIds.has(resource.id)) {
+            seenResourceIds.add(resource.id);
+            resources.push(resource);
+          }
+        }
+      }
+      const { courseResources: _resources, ...lessonContent } = content;
+      return {
+        ...lesson,
+        activityType: content.activityType ?? lesson.type.replace("_", " "),
+        content: lessonContent,
+      };
+    }),
+  }));
+  return { ...course, modules, resources } as T & { resources: any[] };
+}
+
 async function requireManageCourse(req: Request, res: Response, courseId: string): Promise<schema.Course | null> {
   const user = req.user as schema.User | undefined;
   const course = await courseSvc.getCourseById(courseId);
@@ -192,7 +218,7 @@ export function registerCourseRoutes(app: Express) {
         }
       }
       const isManager = courseSvc.userCanManageCourse(user, course);
-      let payload: any = course;
+      let payload: any = prepareCourseLearnerPayload(course);
       if (!isManager) {
         // Redact grading keys from quiz lessons.
         payload = redactGradingKeys(payload);
@@ -377,6 +403,37 @@ export function registerCourseRoutes(app: Express) {
         const allowedStatuses: schema.LessonProgressStatus[] = ["not_started", "in_progress", "completed"];
         if (parsed.status && !allowedStatuses.includes(parsed.status)) {
           return res.status(400).json({ error: `Invalid status for ${lesson.type} lesson` });
+        }
+        const lessonContent = (lesson.content as any) ?? {};
+        const requestedSkip = parsed.data?.skipped === true;
+        const canSkip = lessonContent.allowSkip === true && lessonContent.activityType === "lab";
+        if (requestedSkip && !canSkip) {
+          return res.status(400).json({ error: "This lesson cannot be skipped." });
+        }
+        const submission = lessonContent.submission;
+        if (submission && parsed.status === "completed" && !requestedSkip) {
+          const submittedValues = parsed.data?.submission;
+          if (!submittedValues || typeof submittedValues !== "object" || Array.isArray(submittedValues)) {
+            return res.status(400).json({ error: "This lesson requires a submission before completion." });
+          }
+          for (const field of Array.isArray(submission.fields) ? submission.fields : []) {
+            if (!field?.id || typeof field.id !== "string") continue;
+            const value = submittedValues[field.id];
+            if (field.required && (typeof value !== "string" || !value.trim())) {
+              return res.status(400).json({ error: `${field.label ?? field.id} is required.` });
+            }
+            if (typeof value === "string" && value.length > 10000) {
+              return res.status(400).json({ error: `${field.label ?? field.id} is too long.` });
+            }
+            if (field.type === "url" && typeof value === "string" && value.trim()) {
+              try {
+                const url = new URL(value);
+                if (url.protocol !== "http:" && url.protocol !== "https:") throw new Error();
+              } catch {
+                return res.status(400).json({ error: `${field.label ?? field.id} must be an HTTP or HTTPS URL.` });
+              }
+            }
+          }
         }
         // Don't allow client-supplied scores on non-quiz lessons
         finalPatch = { status: parsed.status, data: parsed.data };
