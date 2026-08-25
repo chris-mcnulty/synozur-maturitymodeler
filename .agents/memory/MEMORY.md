@@ -4,3 +4,4 @@
 - [AI summary markdown rendering](markdown-ai-summary-rendering.md) — never use `text-secondary` (a bg token) for headings; AI roadmap prompt + MarkdownContent.stripPreviewBullets are coupled to avoid duplicate headers in cached output.
 - [geoip-lite ESM interop](geoip-lite-esm-interop.md) — major version bumps of CJS libs can silently break `await import()` named-export access; normalize with `mod.default ?? mod` and verify by hitting the route, not just "no throw".
 - [Course media ACL boundary](course-media-acl-boundary.md) — course heroes are direct/public reads; lesson, slide, and narration media stay private behind the course-aware proxy.
+- [Public assessment tenancy](public-assessment-tenancy.md) — anonymous public assessments intentionally have no tenant association; do not treat tenant-null rows as missing data.
