@@ -10,6 +10,16 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -425,6 +435,7 @@ function PowerPointReviewDialog({
   const { toast } = useToast();
   const [selectedGroupId, setSelectedGroupId] = useState(review.groups[0]?.id ?? "");
   const [selectedSlideId, setSelectedSlideId] = useState<string | null>(null);
+  const [discardPending, setDiscardPending] = useState(false);
   const commitMutation = useMutation({
     mutationFn: async () => apiRequest("/api/courses/pptx/commit", "POST", review),
     onSuccess: (result: any) => {
@@ -435,8 +446,12 @@ function PowerPointReviewDialog({
     },
     onError: (error: Error) => toast({ title: "Could not create course", description: error.message, variant: "destructive" }),
   });
-  const closeReview = () => {
-    if (!commitMutation.isPending) onClose();
+  const requestDiscard = () => {
+    if (!commitMutation.isPending) setDiscardPending(true);
+  };
+  const discardReview = () => {
+    setDiscardPending(false);
+    onClose();
   };
 
   const updateReview = (patch: Partial<PptxReview>) => onChange({ ...review, ...patch });
@@ -497,8 +512,9 @@ function PowerPointReviewDialog({
   };
 
   return (
-    <Dialog open onOpenChange={(open) => { if (!open) closeReview(); }}>
-      <DialogContent className="max-w-6xl p-0 gap-0 overflow-hidden">
+    <>
+    <Dialog open onOpenChange={(open) => { if (!open) requestDiscard(); }}>
+      <DialogContent className="max-w-6xl h-[calc(100dvh-1rem)] sm:h-auto sm:max-h-[90dvh] p-0 gap-0 overflow-hidden grid grid-rows-[auto_minmax(0,1fr)_auto]">
         <DialogHeader className="border-b bg-muted/30 p-5 sm:p-6">
           <div className="flex items-start justify-between gap-4 pr-8">
             <div>
@@ -508,7 +524,7 @@ function PowerPointReviewDialog({
             <Badge variant="secondary" className="shrink-0">{includedCount} of {allSlides.length} slides included</Badge>
           </div>
         </DialogHeader>
-        <div className="max-h-[calc(90vh-8rem)] overflow-y-auto p-4 sm:p-6 space-y-6">
+        <div className="min-h-0 overflow-y-auto p-4 sm:p-6 space-y-6">
           <section aria-labelledby="pptx-metadata-heading" className="space-y-3">
             <div className="flex items-center justify-between"><h3 id="pptx-metadata-heading" className="font-semibold">Course details</h3><span className="text-xs text-muted-foreground">Saved as a private draft</span></div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -548,14 +564,40 @@ function PowerPointReviewDialog({
             </div>
           </section>
         </div>
-        <DialogFooter className="border-t bg-muted/20 p-4 sm:p-6">
-          <Button variant="outline" onClick={closeReview} disabled={commitMutation.isPending} data-testid="button-pptx-review-cancel">Cancel</Button>
-          <Button onClick={() => commitMutation.mutate()} disabled={commitMutation.isPending || !review.title.trim() || !review.slug.trim() || includedCount === 0} data-testid="button-pptx-commit">
-            {commitMutation.isPending ? <Loader2 className="animate-spin" /> : <Check />} Create draft course
-          </Button>
+        <DialogFooter className="border-t bg-background p-4 sm:p-5 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:space-x-0">
+          <p className="text-xs text-muted-foreground text-left">
+            Nothing is saved until you create the draft course.
+          </p>
+          <div className="flex flex-col-reverse gap-2 sm:flex-row">
+            <Button variant="outline" onClick={requestDiscard} disabled={commitMutation.isPending} data-testid="button-pptx-review-cancel">Cancel</Button>
+            <Button onClick={() => commitMutation.mutate()} disabled={commitMutation.isPending || !review.title.trim() || !review.slug.trim() || includedCount === 0} data-testid="button-pptx-commit">
+              {commitMutation.isPending ? <Loader2 className="animate-spin" /> : <Check />} Create and save draft course
+            </Button>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>
+    <AlertDialog open={discardPending} onOpenChange={setDiscardPending}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Discard this PowerPoint review?</AlertDialogTitle>
+          <AlertDialogDescription>
+            The proposed structure is only a preview. Discarding it will delete the temporary review and no course will be created.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Keep editing</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={discardReview}
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            data-testid="button-pptx-confirm-discard"
+          >
+            Discard review
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+    </>
   );
 }
 
