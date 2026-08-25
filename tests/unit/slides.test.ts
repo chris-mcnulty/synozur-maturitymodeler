@@ -6,6 +6,9 @@ import {
   blankSlide,
   extractManagedObjectPaths,
   courseMediaUrl,
+  extractNarrationText,
+  isSupportedSlidesContent,
+  normalizeSlidesContent,
   type SlideBlock,
 } from '../../shared/slides';
 
@@ -37,6 +40,64 @@ describe('slide model: legacy normalization', () => {
     expect(normalizeSlides(undefined)).toEqual([]);
     expect(normalizeSlides({})).toEqual([]);
     expect(normalizeSlides({ slides: [{ title: 'A' }] })).toHaveLength(1);
+  });
+
+  it('normalizes explicitly recognized slide-like aliases', () => {
+    const [slide] = normalizeSlides({
+      deck: {
+        slides: [{
+          heading: 'Overview',
+          body: '<p>Visible body</p>',
+          image: { src: '/objects/slides/overview.png', alt: 'Overview diagram' },
+          videoUrl: '/objects/uploads/demo.mp4',
+          caption: 'Imported caption',
+        }],
+      },
+    });
+    expect(slide.blocks.map((block) => block.type)).toEqual(['heading', 'image', 'video', 'text']);
+    expect(isSupportedSlidesContent({ pages: [{ title: 'Page one' }] })).toBe(true);
+  });
+
+  it('preserves unknown deck and slide fields while normalizing for visual edits', () => {
+    const normalized = normalizeSlidesContent({
+      theme: { accent: '#123456' },
+      slides: [{ title: 'Legacy', html: '<p>Body</p>', vendorMetadata: { transition: 'fade' } }],
+    }) as any;
+    expect(normalized.theme).toEqual({ accent: '#123456' });
+    expect(normalized.slides[0].vendorMetadata).toEqual({ transition: 'fade' });
+    expect(normalized.slides[0].blocks).toHaveLength(2);
+  });
+});
+
+describe('slide model: narration text extraction', () => {
+  it('uses semantic visible content without IDs, URLs, styling metadata, or raw HTML', () => {
+    const text = extractNarrationText({
+      id: 'slide_secret_id',
+      style: { color: 'red' },
+      blocks: [
+        { id: 'heading_id', type: 'heading', level: 2, text: 'Secure collaboration' },
+        {
+          id: 'text_id',
+          type: 'text',
+          html: '<p>Visit <a href="https://example.com/private">the workspace</a>.</p><style>.x{color:red}</style>',
+        },
+        {
+          id: 'image_id',
+          type: 'image',
+          url: 'https://cdn.example.com/diagram.png',
+          alt: 'A process diagram',
+          caption: 'Three review steps',
+        },
+      ],
+    });
+    expect(text).toContain('Secure collaboration');
+    expect(text).toContain('the workspace');
+    expect(text).toContain('A process diagram');
+    expect(text).not.toContain('slide_secret_id');
+    expect(text).not.toContain('heading_id');
+    expect(text).not.toContain('https://');
+    expect(text).not.toContain('<p>');
+    expect(text).not.toContain('color:red');
   });
 });
 

@@ -45,7 +45,15 @@ import {
   isPptxReviewPreviewReference,
 } from "../services/pptx-review-paths";
 import { ObjectNotFoundError, ObjectStorageService } from "../objectStorage";
-import { slidesContentSchema, slideSchema, extractManagedObjectPaths, genId } from "@shared/slides";
+import {
+  slidesContentSchema,
+  slideSchema,
+  extractManagedObjectPaths,
+  genId,
+  getSupportedSlideArray,
+  isSupportedSlidesContent,
+  normalizeSlidesContent,
+} from "@shared/slides";
 
 /**
  * Validate a lesson's content payload against its type. Currently enforces the
@@ -59,8 +67,15 @@ function validateLessonContent(
   allowedReviewPreviewPaths: ReadonlySet<string> = new Set(),
 ): void {
   if (type === "slides") {
-    slidesContentSchema.parse(content);
-    for (const objectPath of extractManagedObjectPaths(content)) {
+    const recognizedSlides = getSupportedSlideArray(content);
+    if (recognizedSlides !== null && !isSupportedSlidesContent(content)) {
+      throw new Error(
+        "Malformed or unsupported slide entries. Fix them in Advanced source view before saving.",
+      );
+    }
+    const checkedContent = recognizedSlides === null ? content : normalizeSlidesContent(content);
+    if (recognizedSlides !== null) slidesContentSchema.parse(checkedContent);
+    for (const objectPath of extractManagedObjectPaths(checkedContent)) {
       if (isPptxReviewPreviewPath(objectPath) && !allowedReviewPreviewPaths.has(objectPath)) {
         throw new Error("PowerPoint review previews can only be attached by their active review session.");
       }
@@ -641,7 +656,10 @@ export function registerCourseRoutes(app: Express) {
       const course = await courseSvc.getCourseForModule(req.params.mid);
       if (!course) return res.status(404).json({ error: "Module not found" });
       if (!courseSvc.userCanManageCourse(user, course)) return res.status(403).json({ error: "Forbidden" });
-      const parsed = schema.insertLessonSchema.parse({ ...req.body, moduleId: req.params.mid });
+      const parsed: any = schema.insertLessonSchema.parse({ ...req.body, moduleId: req.params.mid });
+      if (parsed.type === "slides" && isSupportedSlidesContent(parsed.content)) {
+        parsed.content = normalizeSlidesContent(parsed.content);
+      }
       validateLessonContent(parsed.type ?? "rich_text", parsed.content);
       res.json(await courseSvc.createLesson(parsed));
     } catch (err: any) {
@@ -661,6 +679,12 @@ export function registerCourseRoutes(app: Express) {
           Array.from(extractManagedObjectPaths(ctx.lesson.content))
             .filter(isPptxReviewPreviewPath),
         );
+        if (
+          (patch.type ?? ctx.lesson.type) === "slides" &&
+          isSupportedSlidesContent(patch.content)
+        ) {
+          patch.content = normalizeSlidesContent(patch.content);
+        }
         validateLessonContent(patch.type ?? ctx.lesson.type, patch.content, existingReviewPaths);
       }
       const lesson = await courseSvc.updateLesson(req.params.id, patch);

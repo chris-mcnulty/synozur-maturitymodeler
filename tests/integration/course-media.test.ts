@@ -228,6 +228,18 @@ describe('course media + narration + import routes', () => {
       expect(res.body.audioUrl).toBe('/objects/narration/x.mp3');
       expect(ttsMock.synthesizeNarration).toHaveBeenCalledOnce();
     });
+
+    it('returns an actionable Azure configuration error', async () => {
+      ttsMock.synthesizeNarration.mockRejectedValueOnce(new Error(
+        'Azure Speech is not configured. Add your Azure Speech Key and Region in Admin → AI & Speech settings.',
+      ));
+      const app = await buildApp();
+      const res = await request(app)
+        .post('/api/courses/c1/narration/tts')
+        .send({ text: 'Hello' });
+      expect(res.status).toBe(400);
+      expect(res.body.error).toMatch(/Admin.*AI & Speech settings/i);
+    });
   });
 
   describe('PUT /api/courses/:id/image', () => {
@@ -611,6 +623,39 @@ describe('course media + narration + import routes', () => {
         });
       expect(res.status).toBe(200);
       expect(courseSvcMock.createLesson).toHaveBeenCalledOnce();
+    });
+
+    it('normalizes a legacy slide on save without dropping expert fields', async () => {
+      const app = await buildApp();
+      const res = await request(app)
+        .post('/api/course-modules/m1/lessons')
+        .send({
+          title: 'Legacy',
+          type: 'slides',
+          content: {
+            theme: { accent: '#123456' },
+            slides: [{
+              title: 'Legacy title',
+              html: '<p>Legacy body</p>',
+              vendorMetadata: { transition: 'fade' },
+            }],
+          },
+        });
+      expect(res.status).toBe(200);
+      const saved = courseSvcMock.createLesson.mock.calls[0][0].content;
+      expect(saved.theme).toEqual({ accent: '#123456' });
+      expect(saved.slides[0].vendorMetadata).toEqual({ transition: 'fade' });
+      expect(saved.slides[0].blocks.map((block: any) => block.type)).toEqual(['heading', 'text']);
+    });
+
+    it('keeps an unknown source-only payload available without guessing visual semantics', async () => {
+      const app = await buildApp();
+      const content = { vendorDeck: { nodes: [{ arbitrary: true }] } };
+      const res = await request(app)
+        .post('/api/course-modules/m1/lessons')
+        .send({ title: 'Source only', type: 'slides', content });
+      expect(res.status).toBe(200);
+      expect(courseSvcMock.createLesson.mock.calls[0][0].content).toEqual(content);
     });
   });
 });

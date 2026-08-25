@@ -6,3 +6,4 @@
 - [Course media ACL boundary](course-media-acl-boundary.md) — course heroes are direct/public reads; lesson, slide, and narration media stay private behind the course-aware proxy.
 - [Portable course extensions](portable-course-extensions.md) — resources and assignments ride inside lesson content, but learner APIs must expose safe metadata outside lock redaction and enforce completion server-side.
 - [Public assessment tenancy](public-assessment-tenancy.md) — anonymous public assessments intentionally have no tenant association; do not treat tenant-null rows as missing data.
+- [Narration request identity](narration-request-identity.md) — browser TTS completions must match a live request ID; script/voice equality alone cannot prevent stale audio writes.

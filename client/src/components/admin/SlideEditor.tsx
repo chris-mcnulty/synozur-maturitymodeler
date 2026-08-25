@@ -11,19 +11,21 @@
  * `pages/CourseDetail.tsx`; both consume the shared slide model in
  * `@shared/slides`, so the editor and player stay in lock-step.
  */
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
   Plus, Trash, ChevronUp, ChevronDown, Image as ImageIcon, Video, Type, Heading,
-  Lightbulb, Upload, Mic, Loader2, Sparkles, AlertTriangle,
+  Lightbulb, Upload, Mic, Loader2, Sparkles, AlertTriangle, Eye, CheckCircle2,
 } from "lucide-react";
+import DOMPurify from "dompurify";
 import { ObjectUploader } from "@/components/ObjectUploader";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -31,7 +33,7 @@ import {
   requestTts, TTS_VOICES, DEFAULT_VOICE,
 } from "@/components/admin/editor-fields";
 import {
-  genId, blankSlide, normalizeSlides, courseMediaUrl,
+  genId, blankSlide, normalizeSlides, courseMediaUrl, extractNarrationText,
   type Slide, type SlideBlock, type SlidesContent, type SlideNarrationMode,
 } from "@shared/slides";
 
@@ -115,6 +117,14 @@ function BlockEditor({ block, courseId, onChange }: { block: SlideBlock; courseI
               <SelectItem value="vimeo">Vimeo</SelectItem>
             </SelectContent>
           </Select>
+           <div>
+             <Label className="text-xs">Caption (optional)</Label>
+             <Input
+               value={block.caption || ""}
+               onChange={(e) => onChange({ ...block, caption: e.target.value })}
+               placeholder="Describe the video for learners"
+             />
+           </div>
         </div>
       );
     default:
@@ -135,7 +145,7 @@ function newBlock(type: string): SlideBlock {
     case "heading": return { id: genId(), type: "heading", level: 2, text: "" };
     case "text": return { id: genId(), type: "text", html: "" };
     case "image": return { id: genId(), type: "image", url: "", alt: "" };
-    case "video": return { id: genId(), type: "video", url: "", provider: "mp4" };
+    case "video": return { id: genId(), type: "video", url: "", provider: "mp4", caption: "" };
     case "callout": return { id: genId(), type: "callout", tone: "info", html: "" };
     default: return { id: genId(), type: "text", html: "" };
   }
@@ -149,14 +159,22 @@ function newBlock(type: string): SlideBlock {
  *   - Upload to replace generated or recorded audio
  *   - Same controls for every slide type
  */
-function NarrationPanel({ slide, courseId, onChange }: {
+function NarrationPanel({ slide, courseId, onChange, onGenerationResult, onGeneratingChange }: {
   slide: Slide;
   courseId: string;
   onChange: (n: Slide["narration"]) => void;
+  onGenerationResult: (
+    generationRequestId: string,
+    expectedText: string,
+    expectedVoice: string,
+    patch: Partial<NonNullable<Slide["narration"]>>,
+  ) => boolean;
+  onGeneratingChange: (generating: boolean) => void;
 }) {
   const { toast } = useToast();
   const [generating, setGenerating] = useState(false);
-  const narration = slide.narration ?? { mode: "none" as SlideNarrationMode };
+  const narration: NonNullable<Slide["narration"]> =
+    slide.narration ?? { mode: "none" as SlideNarrationMode };
 
   // Track whether the script changed after audio was last generated.
   // We store the text that was used to generate the current audioUrl in
@@ -173,28 +191,61 @@ function NarrationPanel({ slide, courseId, onChange }: {
       toast({ title: "Add a narration script first", variant: "destructive" });
       return;
     }
+    if (narration.approved !== true) {
+      toast({ title: "Approve the narration script first", variant: "destructive" });
+      return;
+    }
+    const requestVoice = narration.voice || DEFAULT_VOICE;
+    const generationRequestId = genId("tts");
     setGenerating(true);
+    onGeneratingChange(true);
+    const pendingNarration = {
+      ...narration,
+      mode: "tts" as const,
+      voice: requestVoice,
+      status: "pending" as const,
+      generationRequestId,
+    };
+    onChange(pendingNarration);
     try {
-      const data = await requestTts(courseId, scriptText, narration.voice || DEFAULT_VOICE);
-      onChange({
-        ...narration,
+      const data = await requestTts(courseId, scriptText, requestVoice);
+      const applied = onGenerationResult(generationRequestId, scriptText, requestVoice, {
         mode: "tts",
         audioUrl: data.audioUrl,
         voice: data.voice,
         status: "ready",
-        // Record which text was used to generate this audio so we can detect staleness.
         generatedFromText: scriptText,
-      } as any);
+        generationRequestId: undefined,
+      });
+      if (!applied) {
+        toast({
+          title: "Narration changed while audio was generating",
+          description: "The older audio was not attached. Review the current script and generate it again.",
+        });
+        return;
+      }
       toast({ title: "Narration generated" });
     } catch (err: any) {
+      onGenerationResult(generationRequestId, scriptText, requestVoice, {
+        mode: "tts",
+        status: "failed",
+        generationRequestId: undefined,
+      });
       toast({ title: "TTS failed", description: err.message, variant: "destructive" });
     } finally {
       setGenerating(false);
+      onGeneratingChange(false);
     }
   };
 
   const handleScriptChange = (text: string) => {
-    onChange({ ...narration, text } as any);
+    onChange({
+      ...narration,
+      text,
+      approved: false,
+      status: undefined,
+      generationRequestId: undefined,
+    });
   };
 
   const handleUploadComplete = async (r: any) => {
@@ -202,11 +253,13 @@ function NarrationPanel({ slide, courseId, onChange }: {
     if (u) {
       onChange({
         ...narration,
+        mode: "recorded",
         audioUrl: u,
         status: "ready",
+        generationRequestId: undefined,
         // Clear generatedFromText so the stale indicator resets after upload.
         generatedFromText: undefined,
-      } as any);
+      });
     }
   };
 
@@ -219,7 +272,12 @@ function NarrationPanel({ slide, courseId, onChange }: {
 
       <Select
         value={narration.mode}
-        onValueChange={(v) => onChange({ ...narration, mode: v as SlideNarrationMode } as any)}
+        onValueChange={(v) => onChange({
+          ...narration,
+          mode: v as SlideNarrationMode,
+          status: undefined,
+          generationRequestId: undefined,
+        })}
       >
         <SelectTrigger className="w-56"><SelectValue /></SelectTrigger>
         <SelectContent>
@@ -252,6 +310,51 @@ function NarrationPanel({ slide, courseId, onChange }: {
             The script is also shown to learners as the narration transcript.
           </p>
         )}
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="h-7 px-2"
+            onClick={() => {
+              const draft = extractNarrationText(slide);
+              if (!draft) {
+                toast({
+                  title: "No visible text to draft",
+                  description: "Add headings, text, captions, or accessibility text first.",
+                });
+                return;
+              }
+              onChange({
+                ...narration,
+                text: draft,
+                approved: false,
+                status: undefined,
+                generationRequestId: undefined,
+              });
+            }}
+            data-testid="button-draft-narration"
+          >
+            <Sparkles className="h-3.5 w-3.5 mr-1" /> Draft from slide content
+          </Button>
+          {narration.text?.trim() && (
+            <label className="flex items-center gap-2 text-xs cursor-pointer">
+              <Checkbox
+                checked={narration.approved === true}
+                onCheckedChange={(checked) => onChange({
+                  ...narration,
+                  approved: checked === true,
+                  status: undefined,
+                  generationRequestId: undefined,
+                })}
+                data-testid="checkbox-approve-narration"
+              />
+              <span className="flex items-center gap-1">
+                <CheckCircle2 className="h-3.5 w-3.5" /> Script reviewed and approved
+              </span>
+            </label>
+          )}
+        </div>
       </div>
 
       {/* Audio controls — shown when mode is tts or recorded */}
@@ -264,6 +367,15 @@ function NarrationPanel({ slide, courseId, onChange }: {
               Script changed — regenerate to update the audio.
             </div>
           )}
+           {narration.status === "pending" && !generating && (
+             <p className="text-xs text-muted-foreground">Narration is queued for generation.</p>
+           )}
+           {narration.status === "failed" && (
+             <p className="text-xs text-destructive">Narration generation failed. Review the script and try again.</p>
+           )}
+           {narration.mode === "tts" && scriptText && narration.approved !== true && (
+             <p className="text-xs text-muted-foreground">Review and approve the script before generating audio.</p>
+           )}
 
           {/* Audio URL input + upload button (for recorded mode or to replace TTS audio) */}
           {narration.mode === "recorded" && (
@@ -272,7 +384,13 @@ function NarrationPanel({ slide, courseId, onChange }: {
                 <Label className="text-xs">Audio URL</Label>
                 <Input
                   value={narration.audioUrl || ""}
-                  onChange={(e) => onChange({ ...narration, audioUrl: e.target.value, status: "ready" } as any)}
+                  onChange={(e) => onChange({
+                    ...narration,
+                    audioUrl: e.target.value,
+                    status: "ready",
+                    generatedFromText: undefined,
+                    generationRequestId: undefined,
+                  })}
                   placeholder="https://… or upload below"
                 />
               </div>
@@ -285,7 +403,12 @@ function NarrationPanel({ slide, courseId, onChange }: {
               <Label className="text-xs">Voice</Label>
               <Select
                 value={narration.voice || DEFAULT_VOICE}
-                onValueChange={(v) => onChange({ ...narration, voice: v } as any)}
+                onValueChange={(v) => onChange({
+                  ...narration,
+                  voice: v,
+                  status: undefined,
+                  generationRequestId: undefined,
+                })}
               >
                 <SelectTrigger className="w-56" data-testid="select-tts-voice"><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -302,7 +425,7 @@ function NarrationPanel({ slide, courseId, onChange }: {
               variant="outline"
               size="sm"
               onClick={generateTts}
-              disabled={generating || !scriptText}
+              disabled={generating || !scriptText || narration.approved !== true}
               data-testid="button-generate-tts"
             >
               {generating ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
@@ -343,59 +466,167 @@ function NarrationPanel({ slide, courseId, onChange }: {
   );
 }
 
-export function SlideEditor({ value, courseId, onChange, initialActiveIdx }: {
+export function SlideEditor({ value, courseId, onChange, onGenerationStateChange, initialActiveIdx }: {
   value: SlidesContent;
   courseId: string;
   onChange: (v: SlidesContent) => void;
+  onGenerationStateChange?: (generating: boolean) => void;
   /** Jump to this slide index when first rendered (e.g. after a PPTX import). */
   initialActiveIdx?: number;
 }) {
   const { toast } = useToast();
   const slides: Slide[] = normalizeSlides(value);
+  const latestValueRef = useRef(value);
+  latestValueRef.current = value;
   const [activeIdx, setActiveIdx] = useState(initialActiveIdx ?? 0);
   const [bulkVoice, setBulkVoice] = useState(DEFAULT_VOICE);
   const [bulkProgress, setBulkProgress] = useState<{ done: number; total: number } | null>(null);
-  const active = slides[Math.min(activeIdx, Math.max(0, slides.length - 1))];
+  const inFlightGenerationCount = useRef(0);
+  const resolvedActiveIdx = Math.min(activeIdx, Math.max(0, slides.length - 1));
+  const active = slides[resolvedActiveIdx];
 
-  const commit = (next: Slide[]) => onChange({ slides: next });
+  const reportGenerationState = (started: boolean) => {
+    inFlightGenerationCount.current = Math.max(
+      0,
+      inFlightGenerationCount.current + (started ? 1 : -1),
+    );
+    onGenerationStateChange?.(inFlightGenerationCount.current > 0);
+  };
+
+  const currentSlides = () => normalizeSlides(latestValueRef.current);
+  const commit = (next: Slide[]) => {
+    const nextValue = { ...latestValueRef.current, slides: next };
+    latestValueRef.current = nextValue;
+    onChange(nextValue);
+  };
+
+  const updateSlide = (idx: number, patch: Partial<Slide>) => {
+    const current = currentSlides();
+    commit(current.map((slide, i) => (i === idx ? { ...slide, ...patch } : slide)));
+  };
+
+  const updateSlideById = (
+    slideId: string,
+    updater: (slide: Slide) => Slide | null,
+  ): boolean => {
+    const current = currentSlides();
+    const idx = current.findIndex((slide) => slide.id === slideId);
+    if (idx < 0) return false;
+    const updated = updater(current[idx]);
+    if (!updated) return false;
+    const next = [...current];
+    next[idx] = updated;
+    commit(next);
+    return true;
+  };
 
   // Slides that have a narration script but no generated/uploaded audio yet.
   const pendingNarration = slides.filter(
-    (s) => (s.narration?.text || "").trim() && !s.narration?.audioUrl,
+    (s) =>
+      (s.narration?.text || "").trim() &&
+      s.narration?.approved === true &&
+      !s.narration?.audioUrl,
   );
 
   const generateAllNarration = async () => {
     const targets = slides
-      .map((s, i) => ({ s, i }))
-      .filter(({ s }) => (s.narration?.text || "").trim() && !s.narration?.audioUrl);
+      .filter((slide) =>
+        (slide.narration?.text || "").trim() &&
+        slide.narration?.approved === true &&
+        !slide.narration?.audioUrl,
+      )
+      .map((slide) => ({
+        slideId: slide.id,
+        scriptText: (slide.narration?.text || "").trim(),
+        voice: slide.narration?.voice || bulkVoice,
+      }));
     if (targets.length === 0) return;
     setBulkProgress({ done: 0, total: targets.length });
-    const next = [...slides];
+    reportGenerationState(true);
     let failures = 0;
+    let stale = 0;
     let firstFailureMessage = "";
     for (let k = 0; k < targets.length; k++) {
-      const { s, i } = targets[k];
-      const scriptText = (s.narration!.text || "").trim();
-      try {
-        const data = await requestTts(courseId, scriptText, s.narration?.voice || bulkVoice);
-        next[i] = {
-          ...next[i],
+      const { slideId, scriptText, voice } = targets[k];
+      const generationRequestId = genId("tts");
+      const stillCurrent = updateSlideById(slideId, (slide) => {
+        const currentNarration = slide.narration;
+        if (
+          (currentNarration?.text || "").trim() !== scriptText ||
+          currentNarration?.approved !== true ||
+          currentNarration?.audioUrl
+        ) return null;
+        return {
+          ...slide,
           narration: {
-            ...next[i].narration!,
+            ...currentNarration,
             mode: "tts",
-            audioUrl: data.audioUrl,
-            voice: data.voice,
-            status: "ready",
-            generatedFromText: scriptText,
-          } as any,
+            voice,
+            status: "pending",
+            generationRequestId,
+          },
         };
-        commit([...next]);
+      });
+      if (!stillCurrent) {
+        stale++;
+        setBulkProgress({ done: k + 1, total: targets.length });
+        continue;
+      }
+      try {
+        const data = await requestTts(courseId, scriptText, voice);
+        const applied = updateSlideById(slideId, (slide) => {
+          const currentNarration = slide.narration;
+          if (
+            (currentNarration?.text || "").trim() !== scriptText ||
+            currentNarration?.voice !== voice ||
+            currentNarration?.status !== "pending" ||
+            currentNarration?.generationRequestId !== generationRequestId ||
+            currentNarration?.approved !== true
+          ) {
+            return null;
+          }
+          return {
+            ...slide,
+            narration: {
+              ...currentNarration,
+              mode: "tts",
+              audioUrl: data.audioUrl,
+              voice: data.voice,
+              status: "ready",
+              generatedFromText: scriptText,
+              generationRequestId: undefined,
+            },
+          };
+        });
+        if (!applied) stale++;
       } catch (error: any) {
+        updateSlideById(slideId, (slide) => {
+          const currentNarration = slide.narration;
+          if (
+            (currentNarration?.text || "").trim() !== scriptText ||
+            currentNarration?.voice !== voice ||
+            currentNarration?.status !== "pending" ||
+            currentNarration?.generationRequestId !== generationRequestId ||
+            currentNarration?.approved !== true
+          ) {
+            return null;
+          }
+          return {
+            ...slide,
+            narration: {
+              ...currentNarration,
+            mode: "tts",
+              status: "failed",
+              generationRequestId: undefined,
+            },
+          };
+        });
         failures++;
         const message = error?.message || "Azure Speech generation failed.";
         if (!firstFailureMessage) firstFailureMessage = message;
         if (/Azure Speech is not configured/i.test(message)) {
           setBulkProgress(null);
+          reportGenerationState(false);
           toast({
             title: "Azure Speech is not configured",
             description: message,
@@ -407,37 +638,41 @@ export function SlideEditor({ value, courseId, onChange, initialActiveIdx }: {
       setBulkProgress({ done: k + 1, total: targets.length });
     }
     setBulkProgress(null);
+    reportGenerationState(false);
     toast(
       failures
         ? {
-            title: `Generated ${targets.length - failures}/${targets.length}`,
+            title: `Generated ${targets.length - failures - stale}/${targets.length}`,
             description: firstFailureMessage || `${failures} slide(s) failed`,
             variant: "destructive",
           }
-        : { title: `Generated narration for ${targets.length} slide(s)` },
+        : stale
+          ? {
+              title: `Generated ${targets.length - stale}/${targets.length}`,
+              description: `${stale} slide(s) changed during generation and were skipped.`,
+            }
+          : { title: `Generated narration for ${targets.length} slide(s)` },
     );
   };
 
-  const updateSlide = (idx: number, patch: Partial<Slide>) => {
-    commit(slides.map((s, i) => (i === idx ? { ...s, ...patch } : s)));
-  };
   const updateBlock = (slideIdx: number, blockIdx: number, b: SlideBlock) => {
-    const s = slides[slideIdx];
+    const s = currentSlides()[slideIdx];
+    if (!s) return;
     const blocks = s.blocks.map((x, i) => (i === blockIdx ? b : x));
     updateSlide(slideIdx, { blocks });
   };
   const addBlock = (type: string) => {
-    updateSlide(activeIdx, { blocks: [...active.blocks, newBlock(type)] });
+    updateSlide(resolvedActiveIdx, { blocks: [...active.blocks, newBlock(type)] });
   };
   const removeBlock = (blockIdx: number) => {
-    updateSlide(activeIdx, { blocks: active.blocks.filter((_, i) => i !== blockIdx) });
+    updateSlide(resolvedActiveIdx, { blocks: active.blocks.filter((_, i) => i !== blockIdx) });
   };
   const moveBlock = (blockIdx: number, dir: -1 | 1) => {
     const target = blockIdx + dir;
     if (target < 0 || target >= active.blocks.length) return;
     const blocks = [...active.blocks];
     [blocks[blockIdx], blocks[target]] = [blocks[target], blocks[blockIdx]];
-    updateSlide(activeIdx, { blocks });
+    updateSlide(resolvedActiveIdx, { blocks });
   };
   const addSlide = () => {
     const next = [...slides, blankSlide(slides.length)];
@@ -511,7 +746,7 @@ export function SlideEditor({ value, courseId, onChange, initialActiveIdx }: {
                 key={s.id}
                 type="button"
                 onClick={() => setActiveIdx(i)}
-                className={`w-full text-left rounded-md border px-2 py-1.5 text-xs truncate ${i === activeIdx ? "border-primary bg-primary/10" : "hover:bg-muted/50"}`}
+                className={`w-full text-left rounded-md border px-2 py-1.5 text-xs truncate ${i === resolvedActiveIdx ? "border-primary bg-primary/10" : "hover:bg-muted/50"}`}
                 data-testid={`slide-tab-${i}`}
               >
                 <span className="text-muted-foreground mr-1">{i + 1}.</span>{label}
@@ -527,15 +762,15 @@ export function SlideEditor({ value, courseId, onChange, initialActiveIdx }: {
       {/* Active slide */}
       <div className="space-y-3 min-w-0">
         <div className="flex items-center justify-between">
-          <span className="text-sm font-medium">Slide {activeIdx + 1} of {slides.length}</span>
+          <span className="text-sm font-medium">Slide {resolvedActiveIdx + 1} of {slides.length}</span>
           <div className="flex items-center gap-1">
-            <Button type="button" variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => moveSlide(activeIdx, -1)} disabled={activeIdx === 0} title="Move slide up" aria-label="Move slide up">
+            <Button type="button" variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => moveSlide(resolvedActiveIdx, -1)} disabled={resolvedActiveIdx === 0} title="Move slide up" aria-label="Move slide up">
               <ChevronUp className="h-4 w-4" />
             </Button>
-            <Button type="button" variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => moveSlide(activeIdx, 1)} disabled={activeIdx >= slides.length - 1} title="Move slide down" aria-label="Move slide down">
+            <Button type="button" variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => moveSlide(resolvedActiveIdx, 1)} disabled={resolvedActiveIdx >= slides.length - 1} title="Move slide down" aria-label="Move slide down">
               <ChevronDown className="h-4 w-4" />
             </Button>
-            <Button type="button" variant="ghost" size="sm" className="h-7 w-7 p-0 text-destructive" onClick={() => removeSlide(activeIdx)} disabled={slides.length <= 1} title="Delete slide" aria-label="Delete slide">
+            <Button type="button" variant="ghost" size="sm" className="h-7 w-7 p-0 text-destructive" onClick={() => removeSlide(resolvedActiveIdx)} disabled={slides.length <= 1} title="Delete slide" aria-label="Delete slide">
               <Trash className="h-4 w-4" />
             </Button>
           </div>
@@ -564,7 +799,7 @@ export function SlideEditor({ value, courseId, onChange, initialActiveIdx }: {
                     </Button>
                   </div>
                 </div>
-                <BlockEditor block={b} courseId={courseId} onChange={(nb) => updateBlock(activeIdx, bi, nb)} />
+                <BlockEditor block={b} courseId={courseId} onChange={(nb) => updateBlock(resolvedActiveIdx, bi, nb)} />
               </div>
             );
           })}
@@ -589,8 +824,93 @@ export function SlideEditor({ value, courseId, onChange, initialActiveIdx }: {
           </DropdownMenuContent>
         </DropdownMenu>
 
-        <NarrationPanel slide={active} courseId={courseId} onChange={(n) => updateSlide(activeIdx, { narration: n })} />
+        <NarrationPanel
+          key={active.id}
+          slide={active}
+          courseId={courseId}
+          onChange={(n) => updateSlideById(active.id, (slide) => ({ ...slide, narration: n }))}
+          onGenerationResult={(generationRequestId, expectedText, expectedVoice, patch) =>
+            updateSlideById(active.id, (slide) => {
+              const latest = slide.narration;
+              if (
+                (latest?.text || "").trim() !== expectedText ||
+                latest?.voice !== expectedVoice ||
+                latest?.status !== "pending" ||
+                latest?.generationRequestId !== generationRequestId ||
+                latest?.approved !== true
+              ) return null;
+              return { ...slide, narration: { ...latest, ...patch } };
+            })
+          }
+          onGeneratingChange={reportGenerationState}
+        />
+        <SlidePreview slide={active} courseId={courseId} />
       </div>
+      </div>
+    </div>
+  );
+}
+
+function SlidePreview({ slide, courseId }: { slide: Slide; courseId: string }) {
+  return (
+    <div className="rounded-md border bg-muted/20 p-3" data-testid="slide-preview">
+      <div className="flex items-center gap-2 mb-2">
+        <Eye className="h-4 w-4 text-muted-foreground" />
+        <span className="text-sm font-medium">Live preview</span>
+      </div>
+      <div className="rounded-md bg-background border p-4 min-h-[120px]">
+        {slide.blocks.length === 0 ? (
+          <p className="text-sm text-muted-foreground">Add a block to preview this slide.</p>
+        ) : slide.blocks.map((block) => {
+          switch (block.type) {
+            case "heading":
+              return <div key={block.id} className="font-semibold text-lg mb-3">{block.text || "Untitled heading"}</div>;
+            case "text":
+              return (
+                <div
+                  key={block.id}
+                  className="prose prose-sm dark:prose-invert max-w-none mb-3"
+                  dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(block.html || "") }}
+                />
+              );
+            case "callout":
+              return (
+                <div
+                  key={block.id}
+                  className="rounded border-l-4 border-primary bg-primary/10 p-3 mb-3"
+                  dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(block.html || "") }}
+                />
+              );
+            case "image":
+            case "image_slide":
+              return block.url ? (
+                <figure key={block.id} className="mb-3">
+                  <img
+                    src={courseMediaUrl(courseId, block.url)}
+                    alt={block.alt || ""}
+                    className="rounded max-w-full max-h-64 object-contain"
+                  />
+                  {block.type === "image" && block.caption && (
+                    <figcaption className="text-xs text-muted-foreground mt-1">{block.caption}</figcaption>
+                  )}
+                </figure>
+              ) : null;
+            case "video":
+              return block.url ? (
+                <div key={block.id} className="mb-3">
+                  <video
+                    src={courseMediaUrl(courseId, block.url)}
+                    poster={courseMediaUrl(courseId, block.poster)}
+                    controls
+                    className="w-full rounded"
+                  />
+                  {block.caption && <p className="text-xs text-muted-foreground mt-1">{block.caption}</p>}
+                </div>
+              ) : null;
+            default:
+              return null;
+          }
+        })}
       </div>
     </div>
   );

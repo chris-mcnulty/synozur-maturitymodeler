@@ -95,7 +95,7 @@ function SlideBlockView({ block, courseId }: { block: SlideBlock; courseId: stri
       if (!isManaged && !isSafeHttpUrl(block.url)) return null;
       const isEmbed = !isManaged && (block.provider === "youtube" || block.provider === "vimeo" ||
         block.url.includes("youtube.com") || block.url.includes("youtu.be") || block.url.includes("vimeo.com"));
-      return isEmbed ? (
+      const player = isEmbed ? (
         <div className="relative w-full rounded-md overflow-hidden mb-3" style={{ paddingBottom: "56.25%" }}>
           <iframe
             src={block.url}
@@ -108,6 +108,12 @@ function SlideBlockView({ block, courseId }: { block: SlideBlock; courseId: stri
         </div>
       ) : (
         <video src={courseMediaUrl(courseId, block.url)} poster={courseMediaUrl(courseId, block.poster)} controls className="w-full rounded-md mb-3" aria-label="Slide video" />
+      );
+      return (
+        <figure className="mb-3">
+          {player}
+          {block.caption && <figcaption className="text-xs text-muted-foreground mt-1">{block.caption}</figcaption>}
+        </figure>
       );
     }
     default:

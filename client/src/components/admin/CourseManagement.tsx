@@ -20,7 +20,15 @@ import { SlideEditor } from "@/components/admin/SlideEditor";
 import { RichTextField, MediaUrlInput, requestTts, TTS_VOICES, DEFAULT_VOICE } from "@/components/admin/editor-fields";
 import { useAuth } from "@/hooks/use-auth";
 import type { Course, CourseModule, Lesson, CourseTag, LessonType, CourseEnrollment } from "@shared/schema";
-import { genId, normalizeSlides, courseMediaUrl, type Slide, type SlidesContent } from "@shared/slides";
+import {
+  genId,
+  normalizeSlides,
+  normalizeSlidesContent,
+  isSupportedSlidesContent,
+  courseMediaUrl,
+  type Slide,
+  type SlidesContent,
+} from "@shared/slides";
 
 interface TenantShareRow {
   id: string;
@@ -1340,6 +1348,7 @@ function LessonEditorDialog({
   const [pptxImporting, setPptxImporting] = useState(false);
   const [pptxSplitPending, setPptxSplitPending] = useState<Slide[] | null>(null);
   const [slideEditorInitialIdx, setSlideEditorInitialIdx] = useState<number | undefined>(undefined);
+  const [slideGenerationInProgress, setSlideGenerationInProgress] = useState(false);
   const titleInputRef = useRef<HTMLInputElement>(null);
 
   const mergeSlides = (importedSlides: Slide[]) => {
@@ -1353,6 +1362,13 @@ function LessonEditorDialog({
   };
 
   const handleSaveWithTitleCheck = () => {
+    if (slideGenerationInProgress) {
+      toast({
+        title: "Narration is still generating",
+        description: "Wait for Azure Speech to finish before saving or closing this lesson.",
+      });
+      return;
+    }
     if (!title) {
       toast({ title: "Title required", description: "Enter a lesson title before saving.", variant: "destructive" });
       titleInputRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -1461,18 +1477,25 @@ function LessonEditorDialog({
     setContentJson(JSON.stringify(defaultContentFor(t), null, 2));
   };
 
-  // For `slides`, drive a structured editor and keep `contentJson` (the saved
-  // payload) in sync. Falls back to an empty slide set if the JSON is invalid.
-  const slidesValue: SlidesContent = (() => {
-    if (type !== "slides") return { slides: [] };
-    try { return { slides: normalizeSlides(JSON.parse(contentJson)) }; }
-    catch { return { slides: [] }; }
-  })();
-
-  // All other types drive structured editors off the parsed payload, writing
+  // Structured editors drive off the parsed payload, writing
   // back through `contentJson` so save/raw-JSON editing stay in sync.
   const parsedContent: any = (() => {
     try { return JSON.parse(contentJson) ?? {}; } catch { return {}; }
+  })();
+  const slidesSupported = type !== "slides" || isSupportedSlidesContent(parsedContent);
+  // Preserve deck-level expert fields while normalizing supported slide shapes.
+  const slidesValue: SlidesContent = (() => {
+    if (type !== "slides") return { slides: [] };
+    if (!slidesSupported) {
+      return {
+        ...(parsedContent && typeof parsedContent === "object" && !Array.isArray(parsedContent)
+          ? parsedContent
+          : {}),
+        slides: [],
+      };
+    }
+    try { return normalizeSlidesContent(parsedContent); }
+    catch { return { slides: [] }; }
   })();
   const patchContent = (patch: Record<string, any>) => {
     // Functional update: merge into the *latest* payload rather than the
@@ -1500,7 +1523,20 @@ function LessonEditorDialog({
         onCancel={() => setPptxSplitPending(null)}
       />
     )}
-    <Dialog open={!pptxSplitPending} onOpenChange={onClose}>
+    <Dialog
+      open={!pptxSplitPending}
+      onOpenChange={(open) => {
+        if (open) return;
+        if (slideGenerationInProgress) {
+          toast({
+            title: "Narration is still generating",
+            description: "Wait for Azure Speech to finish before closing this lesson.",
+          });
+          return;
+        }
+        onClose();
+      }}
+    >
       <DialogContent className={`${type === "slides" ? "max-w-4xl" : "max-w-2xl"} max-h-[90vh] overflow-y-auto`}>
         <DialogHeader>
           <DialogTitle>{lesson ? "Edit lesson" : "New lesson"}</DialogTitle>
@@ -1515,7 +1551,11 @@ function LessonEditorDialog({
           </div>
           <div>
             <Label htmlFor="ld-type">Type</Label>
-            <Select value={type} onValueChange={v => handleTypeChange(v as LessonType)}>
+            <Select
+              value={type}
+              onValueChange={v => handleTypeChange(v as LessonType)}
+              disabled={slideGenerationInProgress}
+            >
               <SelectTrigger id="ld-type" data-testid="select-lesson-type"><SelectValue /></SelectTrigger>
               <SelectContent>
                 {LESSON_TYPE_OPTIONS.map(o => (
@@ -1564,7 +1604,7 @@ function LessonEditorDialog({
                     type="button"
                     variant="outline"
                     size="sm"
-                    disabled={pptxImporting}
+                    disabled={pptxImporting || slideGenerationInProgress}
                     onClick={() => document.getElementById("pptx-import-input")?.click()}
                     data-testid="button-import-pptx"
                   >
@@ -1585,7 +1625,7 @@ function LessonEditorDialog({
                     type="button"
                     size="sm"
                     onClick={handleSaveWithTitleCheck}
-                    disabled={saveMutation.isPending}
+                    disabled={saveMutation.isPending || slideGenerationInProgress}
                     data-testid="button-save-lesson-slides"
                   >
                     {saveMutation.isPending
@@ -1599,8 +1639,39 @@ function LessonEditorDialog({
                 value={slidesValue}
                 courseId={courseId}
                 onChange={(v) => setContentJson(JSON.stringify(v, null, 2))}
+                onGenerationStateChange={setSlideGenerationInProgress}
                 initialActiveIdx={slideEditorInitialIdx}
               />
+              {slideGenerationInProgress && (
+                <p className="text-xs text-muted-foreground" role="status">
+                  Azure Speech is generating narration. Saving, closing, source editing, and lesson-type changes are paused until it finishes.
+                </p>
+              )}
+              {!slidesSupported && (
+                <div className="rounded-md border border-amber-500/50 bg-amber-500/10 p-3 mt-3 text-sm">
+                  <p className="font-medium">This JSON does not match a supported visual slide shape.</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    It is preserved below without guessed conversions. Edit the source directly, or replace it by adding a visual slide.
+                  </p>
+                </div>
+              )}
+              <details className="mt-3" open={!slidesSupported}>
+                <summary className="text-xs text-muted-foreground cursor-pointer select-none">
+                  Advanced: edit slide source JSON
+                </summary>
+                <Textarea
+                  id="ld-content"
+                  rows={12}
+                  value={contentJson}
+                  onChange={e => setContentJson(e.target.value)}
+                  disabled={slideGenerationInProgress}
+                  className="font-mono text-xs mt-2"
+                  data-testid="textarea-lesson-content"
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Unknown fields are retained when supported slides are edited visually. Unsupported structures remain source-only.
+                </p>
+              </details>
             </div>
           ) : (
             <div className="space-y-3">
@@ -1694,8 +1765,12 @@ function LessonEditorDialog({
           </div>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={onClose}>Cancel</Button>
-          <Button onClick={handleSaveWithTitleCheck} disabled={saveMutation.isPending} data-testid="button-save-lesson">
+          <Button variant="outline" onClick={onClose} disabled={slideGenerationInProgress}>Cancel</Button>
+          <Button
+            onClick={handleSaveWithTitleCheck}
+            disabled={saveMutation.isPending || slideGenerationInProgress}
+            data-testid="button-save-lesson"
+          >
             {saveMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
             Save
           </Button>
