@@ -1,6 +1,9 @@
 import { afterAll, describe, expect, it, vi } from 'vitest';
 import request from 'supertest';
+import { and, eq, inArray, like } from 'drizzle-orm';
+import { db } from '../../server/db';
 import { storage } from '../../server/storage';
+import * as schema from '../../shared/schema';
 import { SeedHarness } from './helpers/seed';
 
 vi.mock('../../server/permissions', () => ({
@@ -8,7 +11,16 @@ vi.mock('../../server/permissions', () => ({
   canManageUsers: () => true,
   canAssignRole: () => true,
   checkIsGlobalAdmin: (u: any) => u?.role === 'global_admin',
-  getAccessibleTenantIds: () => null,
+  getAccessibleTenantIds: (u: any) => {
+    if (u?.role === 'global_admin') return null;
+    if (
+      (u?.role === 'tenant_admin' || u?.role === 'tenant_modeler') &&
+      u.tenantId
+    ) {
+      return [u.tenantId];
+    }
+    return [];
+  },
   hasAdminAccess: () => true,
 }));
 vi.mock('../../server/objectStorage', () => ({
@@ -30,18 +42,27 @@ vi.mock('../../server/utils/password', () => ({
 }));
 
 const harness = new SeedHarness('axt');
+const tenantIds = new Set<string>();
 
 afterAll(async () => {
+  await db
+    .delete(schema.assessmentTags)
+    .where(like(schema.assessmentTags.name, `${harness.prefix}%`));
   await harness.cleanup();
+  if (tenantIds.size > 0) {
+    await db
+      .delete(schema.tenants)
+      .where(inArray(schema.tenants.id, [...tenantIds]));
+  }
 });
 
-async function buildApp(userId: string) {
+async function buildApp(userId: string, role = 'user', tenantId: string | null = null) {
   const { buildTestApp } = await import('./helpers/app');
   const { registerAssessmentRoutes } = await import(
     '../../server/routes/assessment-routes'
   );
   const app = buildTestApp({
-    user: { id: userId, username: 'alice', password: 'x', role: 'user', tenantId: null },
+    user: { id: userId, username: 'alice', password: 'x', role, tenantId },
   });
   registerAssessmentRoutes(app);
   return app;
@@ -238,5 +259,279 @@ describe('Assessment results regeneration and listing (real storage)', () => {
     expect(res.body.length).toBeGreaterThanOrEqual(1);
     const mine = res.body.find((r: any) => r.assessmentId === a.body.id);
     expect(mine?.overallScore).toBe(500);
+  });
+});
+
+describe('Bulk assessment result tagging', () => {
+  it('applies and removes one tag while preserving unrelated assignments', async () => {
+    const user = await harness.createUser('global_admin');
+    const model = await harness.createModel();
+    const firstAssessment = await storage.createAssessment({
+      modelId: model.id,
+      userId: user.id,
+      status: 'completed',
+    });
+    const secondAssessment = await storage.createAssessment({
+      modelId: model.id,
+      userId: user.id,
+      status: 'completed',
+    });
+    const [targetTag, existingTag] = await db
+      .insert(schema.assessmentTags)
+      .values([
+        { name: harness.next(), color: '#2563eb', createdBy: user.id },
+        { name: harness.next(), color: '#16a34a', createdBy: user.id },
+      ])
+      .returning();
+
+    await db.insert(schema.assessmentTagAssignments).values([
+      {
+        assessmentId: firstAssessment.id,
+        tagId: existingTag.id,
+        assignedBy: user.id,
+      },
+      {
+        assessmentId: secondAssessment.id,
+        tagId: targetTag.id,
+        assignedBy: user.id,
+      },
+    ]);
+
+    const app = await buildApp(user.id, 'global_admin');
+    const assessmentIds = [firstAssessment.id, secondAssessment.id];
+    const applyResponse = await request(app)
+      .post('/api/admin/assessments/bulk-tags')
+      .send({ assessmentIds, tagId: targetTag.id, action: 'apply' });
+
+    expect(applyResponse.status).toBe(200);
+    expect(applyResponse.body).toMatchObject({
+      success: true,
+      action: 'apply',
+      assessmentCount: 2,
+    });
+
+    const afterApply = await db
+      .select({
+        assessmentId: schema.assessmentTagAssignments.assessmentId,
+        tagId: schema.assessmentTagAssignments.tagId,
+      })
+      .from(schema.assessmentTagAssignments)
+      .where(inArray(schema.assessmentTagAssignments.assessmentId, assessmentIds));
+    expect(afterApply).toEqual(expect.arrayContaining([
+      { assessmentId: firstAssessment.id, tagId: existingTag.id },
+      { assessmentId: firstAssessment.id, tagId: targetTag.id },
+      { assessmentId: secondAssessment.id, tagId: targetTag.id },
+    ]));
+    expect(afterApply).toHaveLength(3);
+
+    const removeResponse = await request(app)
+      .post('/api/admin/assessments/bulk-tags')
+      .send({ assessmentIds, tagId: targetTag.id, action: 'remove' });
+
+    expect(removeResponse.status).toBe(200);
+    const afterRemove = await db
+      .select({
+        assessmentId: schema.assessmentTagAssignments.assessmentId,
+        tagId: schema.assessmentTagAssignments.tagId,
+      })
+      .from(schema.assessmentTagAssignments)
+      .where(inArray(schema.assessmentTagAssignments.assessmentId, assessmentIds));
+    expect(afterRemove).toEqual([
+      { assessmentId: firstAssessment.id, tagId: existingTag.id },
+    ]);
+  });
+
+  it('rejects empty or invalid selections without partially applying a tag', async () => {
+    const user = await harness.createUser('global_admin');
+    const model = await harness.createModel();
+    const assessment = await storage.createAssessment({
+      modelId: model.id,
+      userId: user.id,
+    });
+    const [tag] = await db
+      .insert(schema.assessmentTags)
+      .values({ name: harness.next(), color: '#9333ea', createdBy: user.id })
+      .returning();
+    const app = await buildApp(user.id, 'global_admin');
+
+    const emptyResponse = await request(app)
+      .post('/api/admin/assessments/bulk-tags')
+      .send({ assessmentIds: [], tagId: tag.id, action: 'apply' });
+    expect(emptyResponse.status).toBe(400);
+
+    const invalidResponse = await request(app)
+      .post('/api/admin/assessments/bulk-tags')
+      .send({
+        assessmentIds: [assessment.id, `${harness.prefix}_missing`],
+        tagId: tag.id,
+        action: 'apply',
+      });
+    expect(invalidResponse.status).toBe(400);
+
+    const assignments = await db
+      .select()
+      .from(schema.assessmentTagAssignments)
+      .where(and(
+        eq(schema.assessmentTagAssignments.assessmentId, assessment.id),
+        eq(schema.assessmentTagAssignments.tagId, tag.id),
+      ));
+    expect(assignments).toHaveLength(0);
+
+    const missingTagResponse = await request(app)
+      .post('/api/admin/assessments/bulk-tags')
+      .send({
+        assessmentIds: [assessment.id],
+        tagId: `${harness.prefix}_missing`,
+        action: 'remove',
+      });
+    expect(missingTagResponse.status).toBe(404);
+  });
+
+  it('uses the existing admin/modeler authorization boundary', async () => {
+    const user = await harness.createUser('user');
+    const app = await buildApp(user.id, 'user');
+
+    const response = await request(app)
+      .post('/api/admin/assessments/bulk-tags')
+      .send({
+        assessmentIds: [`${harness.prefix}_assessment`],
+        tagId: `${harness.prefix}_tag`,
+        action: 'apply',
+      });
+
+    expect(response.status).toBe(401);
+  });
+
+  it('preserves global bulk access for legacy admin and modeler roles', async () => {
+    const legacyAdmin = await harness.createUser('admin');
+    const legacyModeler = await harness.createUser('modeler');
+    const model = await harness.createModel();
+    const assessment = await storage.createAssessment({
+      modelId: model.id,
+      userId: legacyAdmin.id,
+    });
+    const [tag] = await db
+      .insert(schema.assessmentTags)
+      .values({ name: harness.next(), color: '#0891b2', createdBy: legacyAdmin.id })
+      .returning();
+
+    const adminApp = await buildApp(legacyAdmin.id, 'admin');
+    const applyResponse = await request(adminApp)
+      .post('/api/admin/assessments/bulk-tags')
+      .send({
+        assessmentIds: [assessment.id],
+        tagId: tag.id,
+        action: 'apply',
+      });
+    expect(applyResponse.status).toBe(200);
+
+    const modelerApp = await buildApp(legacyModeler.id, 'modeler');
+    const removeResponse = await request(modelerApp)
+      .post('/api/admin/assessments/bulk-tags')
+      .send({
+        assessmentIds: [assessment.id],
+        tagId: tag.id,
+        action: 'remove',
+      });
+    expect(removeResponse.status).toBe(200);
+
+    const assignments = await db
+      .select()
+      .from(schema.assessmentTagAssignments)
+      .where(eq(schema.assessmentTagAssignments.tagId, tag.id));
+    expect(assignments).toHaveLength(0);
+  });
+
+  it('atomically rejects tenant-scoped requests containing an out-of-tenant assessment', async () => {
+    const [firstTenant, secondTenant] = await db
+      .insert(schema.tenants)
+      .values([
+        { name: `Tenant ${harness.next()}` },
+        { name: `Tenant ${harness.next()}` },
+      ])
+      .returning();
+    tenantIds.add(firstTenant.id);
+    tenantIds.add(secondTenant.id);
+
+    const adminUsername = harness.next();
+    const tenantAdmin = await storage.createUser({
+      username: adminUsername,
+      password: 'x',
+      email: `${adminUsername}@example.test`,
+      name: 'Tenant Admin',
+      role: 'tenant_admin',
+      tenantId: firstTenant.id,
+    });
+    harness.trackUser(tenantAdmin.id);
+
+    const modelerUsername = harness.next();
+    const tenantModeler = await storage.createUser({
+      username: modelerUsername,
+      password: 'x',
+      email: `${modelerUsername}@example.test`,
+      name: 'Tenant Modeler',
+      role: 'tenant_modeler',
+      tenantId: firstTenant.id,
+    });
+    harness.trackUser(tenantModeler.id);
+
+    const model = await harness.createModel();
+    const accessibleAssessment = await storage.createAssessment({
+      modelId: model.id,
+      userId: tenantAdmin.id,
+      tenantId: firstTenant.id,
+    });
+    const inaccessibleAssessment = await storage.createAssessment({
+      modelId: model.id,
+      userId: tenantAdmin.id,
+      tenantId: secondTenant.id,
+    });
+    const [tag] = await db
+      .insert(schema.assessmentTags)
+      .values({ name: harness.next(), color: '#dc2626', createdBy: tenantAdmin.id })
+      .returning();
+
+    for (const scopedUser of [
+      { id: tenantAdmin.id, role: 'tenant_admin' },
+      { id: tenantModeler.id, role: 'tenant_modeler' },
+    ]) {
+      const app = await buildApp(scopedUser.id, scopedUser.role, firstTenant.id);
+      const response = await request(app)
+        .post('/api/admin/assessments/bulk-tags')
+        .send({
+          assessmentIds: [accessibleAssessment.id, inaccessibleAssessment.id],
+          tagId: tag.id,
+          action: 'apply',
+        });
+      expect(response.status).toBe(400);
+    }
+
+    const assignmentsAfterRejectedRequests = await db
+      .select()
+      .from(schema.assessmentTagAssignments)
+      .where(eq(schema.assessmentTagAssignments.tagId, tag.id));
+    expect(assignmentsAfterRejectedRequests).toHaveLength(0);
+
+    const modelerApp = await buildApp(
+      tenantModeler.id,
+      'tenant_modeler',
+      firstTenant.id,
+    );
+    const allowedResponse = await request(modelerApp)
+      .post('/api/admin/assessments/bulk-tags')
+      .send({
+        assessmentIds: [accessibleAssessment.id],
+        tagId: tag.id,
+        action: 'apply',
+      });
+    expect(allowedResponse.status).toBe(200);
+
+    const assignmentsAfterAllowedRequest = await db
+      .select()
+      .from(schema.assessmentTagAssignments)
+      .where(eq(schema.assessmentTagAssignments.tagId, tag.id));
+    expect(assignmentsAfterAllowedRequest).toEqual([
+      expect.objectContaining({ assessmentId: accessibleAssessment.id }),
+    ]);
   });
 });

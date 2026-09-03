@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuCheckboxItem } from "@/components/ui/dropdown-menu";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { usePageTitle } from "@/hooks/use-page-title";
@@ -21,7 +22,7 @@ import { USER_ROLES, type UserRole } from "@shared/constants";
 import { useAuth } from "@/hooks/use-auth";
 import { ObjectUploader } from "@/components/ObjectUploader";
 import { ProxyAssessmentDialog } from "@/components/admin/ProxyAssessmentDialog";
-import { AssessmentTagSelector } from "@/components/admin/AssessmentTagSelector";
+import { AssessmentTagSelector, BulkAssessmentTagActions } from "@/components/admin/AssessmentTagSelector";
 import { DataState } from "@/components/DataState";
 const GalaxyIntegration = lazy(() =>
   import("@/components/admin/GalaxyIntegration").then((m) => ({ default: m.GalaxyIntegration })),
@@ -950,6 +951,46 @@ export default function Admin() {
       }));
     },
   });
+
+  const [selectedResultIds, setSelectedResultIds] = useState<Set<string>>(new Set());
+  const resultsSignatureRef = useRef<string | null>(null);
+  const loadedResultsSignature = results.map((result) => result.assessmentId).join("|");
+
+  // Selection is scoped to the currently loaded result set. Clear it when a
+  // filter, refresh, or other query change produces a different set of rows.
+  useEffect(() => {
+    if (
+      resultsSignatureRef.current !== null &&
+      resultsSignatureRef.current !== loadedResultsSignature
+    ) {
+      setSelectedResultIds(new Set());
+    }
+    resultsSignatureRef.current = loadedResultsSignature;
+  }, [loadedResultsSignature]);
+
+  const toggleResultSelection = (assessmentId: string) => {
+    setSelectedResultIds((current) => {
+      const next = new Set(current);
+      if (next.has(assessmentId)) {
+        next.delete(assessmentId);
+      } else {
+        next.add(assessmentId);
+      }
+      return next;
+    });
+  };
+
+  const setAllResultsSelected = (checked: boolean | "indeterminate") => {
+    setSelectedResultIds(
+      checked === true
+        ? new Set(results.map((result) => result.assessmentId))
+        : new Set(),
+    );
+  };
+
+  const selectedResultIdsList = Array.from(selectedResultIds);
+  const allResultsSelected = results.length > 0 && selectedResultIds.size === results.length;
+  const someResultsSelected = selectedResultIds.size > 0 && !allResultsSelected;
 
   // Fetch all users (admin only)
   const { data: users = [], isLoading: usersLoading } = useQuery<Omit<User, 'password'>[]>({
@@ -4217,9 +4258,32 @@ export default function Admin() {
                     </Select>
                   </div>
                 </div>
+
+                {selectedResultIds.size > 0 && (
+                  <BulkAssessmentTagActions
+                    assessmentIds={selectedResultIdsList}
+                    onCompleted={() => setSelectedResultIds(new Set())}
+                  />
+                )}
                 
                 {/* Mobile stacked cards */}
                 <div className="md:hidden space-y-3">
+                  <div className="flex items-center justify-between rounded-md border px-3 py-2">
+                    <div className="flex items-center gap-2 text-sm font-medium">
+                      <Checkbox
+                        id="select-all-results-mobile"
+                        checked={allResultsSelected ? true : someResultsSelected ? "indeterminate" : false}
+                        onCheckedChange={setAllResultsSelected}
+                        disabled={resultsLoading || results.length === 0}
+                        aria-label="Select all loaded results"
+                        data-testid="checkbox-select-all-results-mobile"
+                      />
+                      Select all loaded results
+                    </div>
+                    <span className="text-xs text-muted-foreground">
+                      {selectedResultIds.size} selected
+                    </span>
+                  </div>
                   {resultsLoading ? (
                     Array.from({ length: 3 }).map((_, i) => (
                       <Card key={`mobile-loading-${i}`} className="p-4 space-y-2">
@@ -4234,6 +4298,12 @@ export default function Admin() {
                     results.map((result) => (
                       <Card key={`mobile-${result.assessmentId}`} className="p-4" data-testid={`card-result-${result.assessmentId}`}>
                         <div className="flex items-start justify-between gap-2 mb-2">
+                          <Checkbox
+                            checked={selectedResultIds.has(result.assessmentId)}
+                            onCheckedChange={() => toggleResultSelection(result.assessmentId)}
+                            aria-label={`Select result for ${result.isProxy ? result.proxyName : (result.userName || "Anonymous")}`}
+                            data-testid={`checkbox-result-mobile-${result.assessmentId}`}
+                          />
                           <div className="min-w-0 flex-1">
                             <div className="flex items-center gap-2 flex-wrap">
                               <span className="font-medium truncate">{result.isProxy ? result.proxyName : (result.userName || 'Anonymous')}</span>
@@ -4277,6 +4347,15 @@ export default function Admin() {
                 <Table className="sticky-first-col">
                   <TableHeader>
                     <TableRow>
+                      <TableHead className="w-10">
+                        <Checkbox
+                          checked={allResultsSelected ? true : someResultsSelected ? "indeterminate" : false}
+                          onCheckedChange={setAllResultsSelected}
+                          disabled={resultsLoading || results.length === 0}
+                          aria-label="Select all loaded results"
+                          data-testid="checkbox-select-all-results"
+                        />
+                      </TableHead>
                       <TableHead>Date</TableHead>
                       <TableHead>User</TableHead>
                       <TableHead>Company</TableHead>
@@ -4291,7 +4370,7 @@ export default function Admin() {
                     {resultsLoading ? (
                       Array.from({ length: 3 }).map((_, i) => (
                         <TableRow key={`loading-result-${i}`} data-testid={`loading-result-row-${i}`}>
-                          {Array.from({ length: 8 }).map((__, j) => (
+                          {Array.from({ length: 9 }).map((__, j) => (
                             <TableCell key={j}>
                               <Skeleton className="h-4 w-full" />
                             </TableCell>
@@ -4300,7 +4379,7 @@ export default function Admin() {
                       ))
                     ) : results.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={8} className="text-center">No results found</TableCell>
+                      <TableCell colSpan={9} className="text-center">No results found</TableCell>
                       </TableRow>
                     ) : (
                       (() => {
@@ -4323,7 +4402,7 @@ export default function Admin() {
                           return [
                             // Date header row
                             <TableRow key={`header-${date}`} className="bg-muted/50">
-                              <TableCell colSpan={4} className="font-semibold">
+                              <TableCell colSpan={5} className="font-semibold">
                                 {date} ({dateResults.length} assessment{dateResults.length !== 1 ? 's' : ''})
                               </TableCell>
                               <TableCell className="font-semibold">
@@ -4334,6 +4413,14 @@ export default function Admin() {
                             // Individual results for this date
                             ...dateResults.map((result) => (
                               <TableRow key={result.assessmentId} data-testid={`result-row-${result.assessmentId}`}>
+                                <TableCell>
+                                  <Checkbox
+                                    checked={selectedResultIds.has(result.assessmentId)}
+                                    onCheckedChange={() => toggleResultSelection(result.assessmentId)}
+                                    aria-label={`Select result for ${result.isProxy ? result.proxyName : (result.userName || "Anonymous")}`}
+                                    data-testid={`checkbox-result-${result.assessmentId}`}
+                                  />
+                                </TableCell>
                                 <TableCell className="pl-8">{new Date(result.date || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</TableCell>
                                 <TableCell>
                                   <div className="flex items-center gap-2">

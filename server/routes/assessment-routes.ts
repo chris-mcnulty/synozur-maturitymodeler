@@ -20,7 +20,16 @@ import { getAssessmentReview } from "../services/assessment-review-service";
 import { calculateAssessmentResults, bulkAssignDemographics, exportModelAnalysis } from "../services/assessment-analytics-service";
 import { generateAssessmentRecommendations } from "../services/ai-content-service";
 import { sendServiceError } from "../services/service-error";
-  
+
+function getAssessmentTenantScope(user: schema.User): string[] | null {
+  // Legacy admin/modeler roles predate tenant scoping and retain their
+  // historical global assessment access during the role migration.
+  if (user.role === "admin" || user.role === "modeler") {
+    return null;
+  }
+  return getAccessibleTenantIds(user);
+}
+
 export function registerAssessmentRoutes(app: Express) {
   app.post("/api/assessments", async (req, res) => {
     try {
@@ -264,7 +273,7 @@ export function registerAssessmentRoutes(app: Express) {
 
   // Optimized endpoint for admin results - fetches everything in one query
 
-  app.get("/api/admin/results", ensureAdmin, async (req, res) => {
+  app.get("/api/admin/results", ensureAdminOrModeler, async (req, res) => {
     try {
       const { startDate, endDate, status, modelId, isProxy, tagId } = req.query;
       console.log('Admin results query params:', { startDate, endDate, status, modelId, isProxy, tagId });
@@ -275,6 +284,14 @@ export function registerAssessmentRoutes(app: Express) {
       // Only get completed assessments with results
       conditions.push(eq(schema.assessments.status, 'completed'));
       conditions.push(isNotNull(schema.results.id));
+
+      const accessibleTenantIds = getAssessmentTenantScope(req.user!);
+      if (accessibleTenantIds !== null) {
+        if (accessibleTenantIds.length === 0) {
+          return res.json([]);
+        }
+        conditions.push(inArray(schema.assessments.tenantId, accessibleTenantIds));
+      }
       
       // Apply date range filter using COALESCE(completed_at, started_at) to handle legacy NULLs
       if (startDate) {
@@ -865,6 +882,87 @@ export function registerAssessmentRoutes(app: Express) {
     } catch (error) {
       console.error('Error deleting tag:', error);
       res.status(500).json({ error: "Failed to delete tag" });
+    }
+  });
+
+  // Apply or remove one tag across the currently selected assessments.
+  app.post("/api/admin/assessments/bulk-tags", ensureAdminOrModeler, async (req, res) => {
+    const bulkTagSchema = z.object({
+      assessmentIds: z.array(z.string().trim().min(1)).min(1).max(500),
+      tagId: z.string().trim().min(1),
+      action: z.enum(["apply", "remove"]),
+    }).superRefine((value, ctx) => {
+      if (new Set(value.assessmentIds).size !== value.assessmentIds.length) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["assessmentIds"],
+          message: "assessmentIds must not contain duplicates",
+        });
+      }
+    });
+
+    const parsed = bulkTagSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ error: "assessmentIds, tagId, and a valid action are required" });
+    }
+
+    const { assessmentIds, tagId, action } = parsed.data;
+
+    try {
+      const [tag] = await db
+        .select({ id: schema.assessmentTags.id })
+        .from(schema.assessmentTags)
+        .where(eq(schema.assessmentTags.id, tagId));
+      if (!tag) {
+        return res.status(404).json({ error: "Tag not found" });
+      }
+
+      const accessibleTenantIds = getAssessmentTenantScope(req.user!);
+      if (accessibleTenantIds !== null && accessibleTenantIds.length === 0) {
+        return res.status(403).json({ error: "No tenant access available" });
+      }
+
+      const assessmentConditions = [
+        inArray(schema.assessments.id, assessmentIds),
+      ];
+      if (accessibleTenantIds !== null) {
+        assessmentConditions.push(
+          inArray(schema.assessments.tenantId, accessibleTenantIds),
+        );
+      }
+
+      const existingAssessments = await db
+        .select({ id: schema.assessments.id })
+        .from(schema.assessments)
+        .where(and(...assessmentConditions));
+      if (existingAssessments.length !== assessmentIds.length) {
+        return res.status(400).json({ error: "One or more assessments were not found or are not accessible" });
+      }
+
+      await db.transaction(async (tx) => {
+        if (action === "apply") {
+          await tx
+            .insert(schema.assessmentTagAssignments)
+            .values(assessmentIds.map((assessmentId) => ({
+              assessmentId,
+              tagId,
+              assignedBy: req.user?.id || null,
+            })))
+            .onConflictDoNothing();
+        } else {
+          await tx
+            .delete(schema.assessmentTagAssignments)
+            .where(and(
+              inArray(schema.assessmentTagAssignments.assessmentId, assessmentIds),
+              eq(schema.assessmentTagAssignments.tagId, tagId),
+            ));
+        }
+      });
+
+      res.json({ success: true, action, assessmentCount: assessmentIds.length });
+    } catch (error) {
+      console.error(`Error performing bulk ${action} tag operation:`, error);
+      res.status(500).json({ error: `Failed to ${action} tag for assessments` });
     }
   });
   
