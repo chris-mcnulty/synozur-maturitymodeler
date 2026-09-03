@@ -874,12 +874,12 @@ export const insertTenantSchema = createInsertSchema(tenants).omit({
   updatedAt: true,
 }).extend({
   name: z.string().min(1, "Tenant name is required").max(255),
-  logoUrl: logoOrFaviconSchema,
-  faviconUrl: logoOrFaviconSchema,
-  primaryColor: z.string().regex(hexColorRegex, "Invalid hex color format (e.g., #810FFB)").nullable().or(z.literal('')).transform(val => val === '' ? null : val),
-  secondaryColor: z.string().regex(hexColorRegex, "Invalid hex color format (e.g., #E60CB3)").nullable().or(z.literal('')).transform(val => val === '' ? null : val),
-  accentColor: z.string().regex(hexColorRegex, "Invalid hex color format (e.g., #E60CB3)").nullable().or(z.literal('')).transform(val => val === '' ? null : val),
-  emailFromName: z.string().max(100).nullable().or(z.literal('')).transform(val => val === '' ? null : val),
+  logoUrl: logoOrFaviconSchema.optional(),
+  faviconUrl: logoOrFaviconSchema.optional(),
+  primaryColor: z.string().regex(hexColorRegex, "Invalid hex color format (e.g., #810FFB)").nullable().or(z.literal('')).transform(val => val === '' ? null : val).optional(),
+  secondaryColor: z.string().regex(hexColorRegex, "Invalid hex color format (e.g., #E60CB3)").nullable().or(z.literal('')).transform(val => val === '' ? null : val).optional(),
+  accentColor: z.string().regex(hexColorRegex, "Invalid hex color format (e.g., #E60CB3)").nullable().or(z.literal('')).transform(val => val === '' ? null : val).optional(),
+  emailFromName: z.string().max(100).nullable().or(z.literal('')).transform(val => val === '' ? null : val).optional(),
 });
 
 // Branding-only update schema (subset, used by tenant_admin's branding endpoint)
