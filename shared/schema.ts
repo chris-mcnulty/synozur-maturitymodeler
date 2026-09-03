@@ -275,7 +275,8 @@ export const tenants = pgTable("tenants", {
   defaultCompanySize: text("default_company_size"),
   // Azure AD / Entra ID integration
   ssoTenantId: text("sso_tenant_id"), // Azure AD tenant ID (tid claim) for this organization
-  ssoAdminConsentGranted: boolean("sso_admin_consent_granted").notNull().default(false), // Whether org-wide admin consent has been granted
+  ssoAdminConsentGranted: boolean("sso_admin_consent_granted").notNull().default(false), // Whether basic SSO admin consent has been granted
+  plannerAdminConsentGranted: boolean("planner_admin_consent_granted").notNull().default(false), // Whether Planner application permission consent has been granted
   showChangelogOnLogin: boolean("show_changelog_on_login").notNull().default(true),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),

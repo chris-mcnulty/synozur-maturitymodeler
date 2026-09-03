@@ -106,9 +106,7 @@ This is a one-time action that takes under 2 minutes:
    • Sign in and read user profile (openid, profile)
    • View user email address (email)
    • Read basic user information (User.Read)
-   • Read groups (Group.Read.All)
-   • Read and write Planner tasks (Tasks.ReadWrite.All)
-   The Planner permissions are used only when an Orion tenant administrator enables Planner support-ticket sync.
+    These are the only permissions requested for Microsoft sign-in. Planner permissions are approved separately if support-ticket sync is enabled.
 
 3. Click "Accept" to grant consent for your entire organization
 
@@ -529,6 +527,12 @@ Thank you!`;
                               <Mail className="h-3.5 w-3.5" />
                               Get IT admin setup email
                             </Button>
+                          </div>
+                        )}
+                        {(tenant as any)?.plannerAdminConsentGranted && (
+                          <div className="flex items-center gap-2 text-sm text-blue-600 dark:text-blue-400 mt-2" data-testid="planner-status-active">
+                            <ShieldCheck className="h-4 w-4" />
+                            <span>Planner integration approved</span>
                           </div>
                         )}
                       </div>

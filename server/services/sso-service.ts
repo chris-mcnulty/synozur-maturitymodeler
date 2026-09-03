@@ -48,6 +48,9 @@ const msalConfig: Configuration = {
   },
 };
 
+export const BASIC_SSO_SCOPES = ['openid', 'profile', 'email', 'User.Read'] as const;
+export type AdminConsentType = 'sso' | 'planner';
+
 let msalClient: ConfidentialClientApplication | null = null;
 
 function getMsalClient(): ConfidentialClientApplication {
@@ -90,7 +93,7 @@ export async function getAuthorizationUrl(redirectUri: string, returnUrl?: strin
   });
   
   const authCodeUrlParameters: AuthorizationUrlRequest = {
-    scopes: ['openid', 'profile', 'email', 'User.Read'],
+    scopes: [...BASIC_SSO_SCOPES],
     redirectUri,
     state,
     codeChallenge: challenge,
@@ -146,7 +149,7 @@ export async function handleCallback(code: string, state: string, redirectUri: s
   
   const tokenRequest: AuthorizationCodeRequest = {
     code,
-    scopes: ['openid', 'profile', 'email', 'User.Read'],
+    scopes: [...BASIC_SSO_SCOPES],
     redirectUri,
     codeVerifier: savedState.codeVerifier,
   };
@@ -350,9 +353,16 @@ export interface AdminConsentInfo {
   appName: string;
   requiredPermissions: string[];
   instructions: string;
+  consentType: AdminConsentType;
 }
 
 const ADMIN_CONSENT_STATE_TTL_MS = 30 * 60 * 1000;
+
+interface AdminConsentState {
+  orionTenantId?: string;
+  consentType?: AdminConsentType;
+  expiresAt: number;
+}
 
 function signAdminConsentState(payload: string): string {
   const secret = process.env.SESSION_SECRET;
@@ -362,15 +372,19 @@ function signAdminConsentState(payload: string): string {
   return createHmac('sha256', secret).update(payload).digest('base64url');
 }
 
-function createAdminConsentState(orionTenantId: string): string {
+function createAdminConsentState(
+  orionTenantId: string | undefined,
+  consentType: AdminConsentType,
+): string {
   const payload = Buffer.from(JSON.stringify({
     orionTenantId,
+    consentType,
     expiresAt: Date.now() + ADMIN_CONSENT_STATE_TTL_MS,
   })).toString('base64url');
   return `${payload}.${signAdminConsentState(payload)}`;
 }
 
-export function verifyAdminConsentState(state: string | undefined): string | null {
+export function verifyAdminConsentRequestState(state: string | undefined): AdminConsentState | null {
   if (!state || !state.includes('.')) return null;
   const [payload, suppliedSignature] = state.split('.', 2);
   if (!payload || !suppliedSignature) return null;
@@ -389,23 +403,32 @@ export function verifyAdminConsentState(state: string | undefined): string | nul
   try {
     const parsed = JSON.parse(Buffer.from(payload, 'base64url').toString('utf8'));
     if (
-      typeof parsed.orionTenantId !== 'string'
-      || !parsed.orionTenantId
+      (parsed.orionTenantId !== undefined
+        && (typeof parsed.orionTenantId !== 'string' || !parsed.orionTenantId))
+      || (parsed.consentType !== undefined
+        && parsed.consentType !== 'sso'
+        && parsed.consentType !== 'planner')
       || typeof parsed.expiresAt !== 'number'
       || parsed.expiresAt < Date.now()
     ) {
       return null;
     }
-    return parsed.orionTenantId;
+    return parsed as AdminConsentState;
   } catch {
     return null;
   }
+}
+
+// Kept as a tenant-only helper for existing callers and integrations.
+export function verifyAdminConsentState(state: string | undefined): string | null {
+  return verifyAdminConsentRequestState(state)?.orionTenantId || null;
 }
 
 export function generateAdminConsentUrl(
   azureTenantId?: string,
   baseUrl?: string,
   orionTenantId?: string,
+  consentType: AdminConsentType = 'sso',
 ): AdminConsentInfo {
   if (!process.env.AZURE_CLIENT_ID) {
     throw new Error('Azure SSO is not configured');
@@ -415,23 +438,39 @@ export function generateAdminConsentUrl(
   const tenantIdOrCommon = azureTenantId || 'common';
   
   const redirectUri = baseUrl ? `${baseUrl}/auth/sso/callback` : undefined;
-  const consentUrl = new URL(`https://login.microsoftonline.com/${encodeURIComponent(tenantIdOrCommon)}/adminconsent`);
+  // The authorize endpoint is intentionally used for basic SSO. Unlike the
+  // generic /adminconsent endpoint, it requests only the delegated sign-in
+  // scopes and cannot pull in Planner application permissions.
+  const consentUrl = consentType === 'sso'
+    ? new URL(`https://login.microsoftonline.com/${encodeURIComponent(tenantIdOrCommon)}/oauth2/v2.0/authorize`)
+    : new URL(`https://login.microsoftonline.com/${encodeURIComponent(tenantIdOrCommon)}/adminconsent`);
   consentUrl.searchParams.set('client_id', process.env.AZURE_CLIENT_ID);
   if (redirectUri) consentUrl.searchParams.set('redirect_uri', redirectUri);
-  if (orionTenantId) consentUrl.searchParams.set('state', createAdminConsentState(orionTenantId));
+  consentUrl.searchParams.set('state', createAdminConsentState(orionTenantId, consentType));
+  if (consentType === 'sso') {
+    consentUrl.searchParams.set('response_type', 'code');
+    consentUrl.searchParams.set('response_mode', 'query');
+    consentUrl.searchParams.set('scope', BASIC_SSO_SCOPES.join(' '));
+    consentUrl.searchParams.set('prompt', 'admin_consent');
+  }
   
   return {
     consentUrl: consentUrl.toString(),
     appName: 'Orion Maturity Assessment Platform',
-    requiredPermissions: [
-      'Sign in and read user profile (openid, profile)',
-      'View user email address (email)',
-      'Read basic user information (User.Read)',
-      'Read and write Planner tasks (Tasks.ReadWrite.All) — for support ticket sync',
-      'Read groups (Group.Read.All) — to list available Planner plans',
-    ],
-    instructions: `
-To enable seamless sign-in and support integrations for your organization:
+    consentType,
+    requiredPermissions: consentType === 'sso'
+      ? [
+        'Sign in and read user profile (openid, profile)',
+        'View user email address (email)',
+        'Read basic user information (User.Read)',
+      ]
+      : [
+        'Read and write Planner tasks (Tasks.ReadWrite.All)',
+        'Read groups (Group.Read.All)',
+      ],
+    instructions: consentType === 'sso'
+      ? `
+To enable seamless sign-in for your organization:
 
 1. Open the Admin Consent URL below (requires Microsoft Entra Global Administrator or Privileged Role Administrator role)
 2. Review the permissions requested by Orion
@@ -439,15 +478,36 @@ To enable seamless sign-in and support integrations for your organization:
 
 Once granted:
 - Users in your organization can sign in without seeing individual consent prompts
-- Support ticket sync to Microsoft Planner can be enabled for your tenant
+    `.trim()
+      : `
+To enable Microsoft Planner support-ticket sync for your organization:
 
-Note: User-level permissions (openid, profile, email, User.Read) are delegated and minimal. Planner permissions (Tasks.ReadWrite.All, Group.Read.All) are application-level and only used when a tenant admin explicitly enables Planner integration.
+1. Open the Planner Admin Consent URL below (requires Microsoft Entra Global Administrator or Privileged Role Administrator role)
+2. Review the Planner permissions requested by Orion
+3. Click "Accept" to grant Planner access for all users in your organization
+
+Planner access is optional and is separate from basic Microsoft sign-in consent. It is used only when support-ticket sync is enabled.
     `.trim(),
   };
 }
 
+export async function handleBasicConsentCallback(
+  code: string,
+  redirectUri: string,
+): Promise<{ ssoTenantId?: string }> {
+  const response = await getMsalClient().acquireTokenByCode({
+    code,
+    scopes: [...BASIC_SSO_SCOPES],
+    redirectUri,
+  });
+  const claims = response?.idTokenClaims as TokenClaims | undefined;
+  return { ssoTenantId: claims?.tid };
+}
+
 export async function getConsentStatusForTenant(tenantId: string): Promise<{
   hasAdminConsent: boolean;
+  ssoAdminConsentGranted: boolean;
+  plannerAdminConsentGranted: boolean;
   ssoTenantId: string | null;
 }> {
   const tenant = await storage.getTenant(tenantId);
@@ -457,12 +517,18 @@ export async function getConsentStatusForTenant(tenantId: string): Promise<{
   
   return {
     hasAdminConsent: tenant.ssoAdminConsentGranted,
+    ssoAdminConsentGranted: tenant.ssoAdminConsentGranted,
+    plannerAdminConsentGranted: tenant.plannerAdminConsentGranted,
     ssoTenantId: tenant.ssoTenantId,
   };
 }
 
 export async function markAdminConsentGranted(tenantId: string): Promise<void> {
   await storage.updateTenant(tenantId, { ssoAdminConsentGranted: true });
+}
+
+export async function markPlannerAdminConsentGranted(tenantId: string): Promise<void> {
+  await storage.updateTenant(tenantId, { plannerAdminConsentGranted: true });
 }
 
 // Periodic cleanup of expired SSO auth states (runs every 5 minutes)

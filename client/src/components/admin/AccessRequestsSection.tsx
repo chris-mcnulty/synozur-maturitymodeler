@@ -146,9 +146,7 @@ This is a one-time action that takes less than 2 minutes:
    • Sign in and read user profile (openid, profile)
    • View user email address (email)
    • Read basic user information (User.Read)
-   • Read groups (Group.Read.All)
-   • Read and write Planner tasks (Tasks.ReadWrite.All)
-   The Planner permissions are used only when an Orion tenant administrator enables Planner support-ticket sync.
+   These are the only permissions requested for Microsoft sign-in. Planner permissions are approved separately if support-ticket sync is enabled.
 
 3. Click "Accept" to grant consent for your entire organization
 

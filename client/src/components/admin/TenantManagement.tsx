@@ -34,6 +34,7 @@ interface Tenant {
   defaultCompanySize: string | null;
   ssoTenantId: string | null;
   ssoAdminConsentGranted: boolean;
+  plannerAdminConsentGranted: boolean;
   createdAt: string;
   updatedAt: string;
   domains?: TenantDomain[];
@@ -151,9 +152,7 @@ This is a one-time action that takes under 2 minutes:
    • Sign in and read user profile (openid, profile)
    • View user email address (email)
    • Read basic user information (User.Read)
-   • Read groups (Group.Read.All)
-   • Read and write Planner tasks (Tasks.ReadWrite.All)
-   The Planner permissions are used only when an Orion tenant administrator enables Planner support-ticket sync.
+   These are the only permissions requested for Microsoft sign-in. Planner permissions are approved separately if support-ticket sync is enabled.
 
 3. Click "Accept" to grant consent for your entire organization
 
@@ -455,35 +454,36 @@ Thank you for your help!`;
                   </TableCell>
                   <TableCell>
                     {tenant.ssoTenantId ? (
-                      <div className="flex items-center gap-2">
+                      <div className="flex flex-col gap-1">
                         <div className="flex items-center gap-1">
-                          {tenant.ssoAdminConsentGranted ? (
-                            <span title="Admin consent granted">
-                              <ShieldCheck className="h-4 w-4 text-green-500" />
-                            </span>
-                          ) : (
-                            <span title="Admin consent not yet granted">
-                              <Shield className="h-4 w-4 text-muted-foreground" />
-                            </span>
-                          )}
                           <code className="text-xs bg-muted px-1 py-0.5 rounded max-w-[120px] truncate" title={tenant.ssoTenantId}>
                             {tenant.ssoTenantId.substring(0, 8)}...
                           </code>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6"
+                            onClick={() => {
+                              navigator.clipboard.writeText(tenant.ssoTenantId!);
+                              toast({ title: "Copied to clipboard" });
+                            }}
+                            data-testid={`button-copy-sso-id-${tenant.id}`}
+                            title="Copy full SSO Tenant ID"
+                            aria-label="Copy full SSO Tenant ID"
+                          >
+                            <Copy className="h-3 w-3" />
+                          </Button>
                         </div>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-6 w-6"
-                          onClick={() => {
-                            navigator.clipboard.writeText(tenant.ssoTenantId!);
-                            toast({ title: "Copied to clipboard" });
-                          }}
-                          data-testid={`button-copy-sso-id-${tenant.id}`}
-                          title="Copy full SSO Tenant ID"
-                          aria-label="Copy full SSO Tenant ID"
-                        >
-                          <Copy className="h-3 w-3" />
-                        </Button>
+                        <div className="flex gap-1 flex-wrap">
+                          <Badge variant={tenant.ssoAdminConsentGranted ? "default" : "outline"} className="text-[10px] gap-1">
+                            {tenant.ssoAdminConsentGranted ? <ShieldCheck className="h-3 w-3" /> : <Shield className="h-3 w-3" />}
+                            SSO
+                          </Badge>
+                          <Badge variant={tenant.plannerAdminConsentGranted ? "secondary" : "outline"} className="text-[10px] gap-1">
+                            {tenant.plannerAdminConsentGranted ? <ShieldCheck className="h-3 w-3" /> : <Shield className="h-3 w-3" />}
+                            Planner
+                          </Badge>
+                        </div>
                       </div>
                     ) : (
                       <span className="text-xs text-muted-foreground flex items-center gap-1">
@@ -857,12 +857,20 @@ Thank you for your help!`;
                   The Microsoft Entra tenant ID. This is captured automatically when users sign in via SSO,
                   or you can set it manually to pre-configure SSO for an organization.
                 </p>
-                {editingTenant?.ssoAdminConsentGranted && (
-                  <Badge variant="default" className="gap-1">
-                    <ShieldCheck className="h-3 w-3" />
-                    Admin consent granted
-                  </Badge>
-                )}
+                <div className="flex gap-2 flex-wrap">
+                  {editingTenant?.ssoAdminConsentGranted && (
+                    <Badge variant="default" className="gap-1">
+                      <ShieldCheck className="h-3 w-3" />
+                      SSO consent granted
+                    </Badge>
+                  )}
+                  {editingTenant?.plannerAdminConsentGranted && (
+                    <Badge variant="secondary" className="gap-1">
+                      <ShieldCheck className="h-3 w-3" />
+                      Planner consent granted
+                    </Badge>
+                  )}
+                </div>
               </div>
             </div>
             <DialogFooter>

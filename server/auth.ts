@@ -5,7 +5,7 @@ import session from "express-session";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
 import { storage } from "./storage";
-import { User as SelectUser } from "@shared/schema";
+import { User as SelectUser, InsertTenant } from "@shared/schema";
 
 declare global {
   namespace Express {
@@ -292,6 +292,42 @@ export function setupAuth(app: Express) {
       const { handleCallback, provisionUser, isProfileComplete } = await import('./services/sso-service.js');
       
       const { code, state, error: authError, error_description, admin_consent, tenant } = req.query;
+      const {
+        verifyAdminConsentRequestState,
+        handleBasicConsentCallback,
+      } = await import('./services/sso-service.js');
+      const consentState = verifyAdminConsentRequestState(typeof state === 'string' ? state : undefined);
+
+      // Basic SSO consent uses a scope-specific authorization request. It
+      // returns an authorization code rather than admin_consent=True, so
+      // complete it separately from the normal user sign-in flow.
+      if (consentState?.consentType === 'sso' && code) {
+        if (authError) {
+          return res.redirect(`/auth?error=${encodeURIComponent(error_description as string || 'Microsoft SSO consent was declined')}`);
+        }
+
+        const redirectUri = `${req.protocol}://${req.get('host')}/auth/sso/callback`;
+        const { ssoTenantId } = await handleBasicConsentCallback(code as string, redirectUri);
+        const orionTenant = consentState.orionTenantId
+          ? await storage.getTenant(consentState.orionTenantId)
+          : (ssoTenantId ? await storage.getTenantBySsoTenantId(ssoTenantId) : undefined);
+
+        if (!orionTenant) {
+          console.warn(`[SSO] Basic consent received for unknown Azure tenant ${ssoTenantId || 'unknown'}`);
+          return res.redirect('/auth?error=Microsoft+tenant+could+not+be+matched+to+an+organization');
+        }
+        if (orionTenant.ssoTenantId && ssoTenantId && orionTenant.ssoTenantId !== ssoTenantId) {
+          console.warn(`[SSO] Basic consent tenant mismatch for Orion tenant "${orionTenant.name}"`);
+          return res.redirect('/auth?error=Microsoft+tenant+did+not+match+the+requested+organization');
+        }
+
+        await storage.updateTenant(orionTenant.id, {
+          ssoTenantId: ssoTenantId || orionTenant.ssoTenantId,
+          ssoAdminConsentGranted: true,
+        });
+        console.log(`[SSO] Basic sign-in consent granted for Azure tenant ${ssoTenantId || orionTenant.ssoTenantId} → Orion tenant "${orionTenant.name}"`);
+        return res.redirect('/auth?ssoConsent=granted');
+      }
       
       // Handle admin consent callback — Azure redirects here after IT admin approves org consent
       // Parameters: admin_consent=True&tenant=<azure-tenant-id>  (no code/state)
@@ -299,8 +335,7 @@ export function setupAuth(app: Express) {
         if (String(admin_consent).toLowerCase() === 'true' && tenant) {
           // Auto-mark the matching Orion tenant as having granted admin consent
           try {
-            const { verifyAdminConsentState } = await import('./services/sso-service.js');
-            const stateTenantId = verifyAdminConsentState(typeof state === 'string' ? state : undefined);
+            const stateTenantId = consentState?.orionTenantId;
             const orionTenant = stateTenantId
               ? await storage.getTenant(stateTenantId)
               : await storage.getTenantBySsoTenantId(tenant as string);
@@ -309,18 +344,31 @@ export function setupAuth(app: Express) {
                 console.warn(`[SSO] Admin consent tenant mismatch for Orion tenant "${orionTenant.name}"`);
                 return res.redirect('/auth?error=Microsoft+tenant+did+not+match+the+requested+organization');
               }
-              await storage.updateTenant(orionTenant.id, {
+              const updates: Partial<InsertTenant> = {
                 ssoTenantId: tenant as string,
-                ssoAdminConsentGranted: true,
-              });
-              console.log(`[SSO] Admin consent granted for Azure tenant ${tenant} → Orion tenant "${orionTenant.name}"`);
+              };
+              // URLs created before the split requested both permission sets.
+              // Treat those callbacks as granting both so existing tenants are
+              // not disrupted. New callbacks update only their requested area.
+              if (consentState?.consentType === 'planner') {
+                updates.plannerAdminConsentGranted = true;
+              } else if (consentState?.consentType === 'sso') {
+                updates.ssoAdminConsentGranted = true;
+              } else {
+                updates.ssoAdminConsentGranted = true;
+                updates.plannerAdminConsentGranted = true;
+              }
+              await storage.updateTenant(orionTenant.id, updates);
+              console.log(`[SSO] ${consentState?.consentType === 'planner' ? 'Planner' : 'Microsoft'} consent granted for Azure tenant ${tenant} → Orion tenant "${orionTenant.name}"`);
             } else {
               console.warn(`[SSO] Admin consent received for unknown Azure tenant ${tenant}`);
             }
           } catch (err) {
             console.error('[SSO] Failed to auto-mark consent granted:', err);
           }
-          return res.redirect('/auth?ssoConsent=granted');
+          return res.redirect(consentState?.consentType === 'planner'
+            ? '/auth?plannerConsent=granted'
+            : '/auth?ssoConsent=granted');
         } else {
           // Admin declined consent
           return res.redirect('/auth?error=Admin+consent+was+declined');
@@ -407,8 +455,23 @@ export function setupAuth(app: Express) {
       let orionTenantId: string | undefined;
       const requestedOrionTenantId = req.query.orionTenantId as string | undefined;
       const requestedTenantHint = req.query.tenantHint as string | undefined;
+      const consentType = req.query.consentType === 'planner' ? 'planner' : 'sso';
 
-      if (requestedOrionTenantId) {
+      // Planner uses application permissions and is configured centrally for
+      // support-ticket sync. Only a signed-in Orion global admin may initiate
+      // that separate tenant-admin consent flow.
+      if (consentType === 'planner') {
+        if (!req.isAuthenticated() || req.user?.role !== 'global_admin') {
+          return res.status(403).json({ error: 'Global admin access required for Planner consent' });
+        }
+        azureTenantId = process.env.AZURE_TENANT_ID || azureTenantId;
+        if (azureTenantId) {
+          const plannerTenant = await storage.getTenantBySsoTenantId(azureTenantId);
+          if (plannerTenant) orionTenantId = plannerTenant.id;
+        }
+      }
+
+      if (requestedOrionTenantId && consentType === 'sso') {
         if (!req.isAuthenticated() || !req.user) {
           return res.status(401).json({ error: 'Authentication required' });
         }
@@ -434,14 +497,14 @@ export function setupAuth(app: Express) {
       }
       
       // Fall back to authenticated user's own tenant
-      if (!orionTenantId && req.isAuthenticated() && req.user?.tenantId) {
+      if (!orionTenantId && consentType === 'sso' && req.isAuthenticated() && req.user?.tenantId) {
         orionTenantId = req.user.tenantId;
         const tenant = await storage.getTenant(req.user.tenantId);
         if (!azureTenantId) azureTenantId = tenant?.ssoTenantId || undefined;
       }
       
       const baseUrl = `${req.protocol}://${req.get('host')}`;
-      const consentInfo = generateAdminConsentUrl(azureTenantId, baseUrl, orionTenantId);
+      const consentInfo = generateAdminConsentUrl(azureTenantId, baseUrl, orionTenantId, consentType);
       res.json(consentInfo);
     } catch (error: any) {
       res.status(500).json({ error: error.message || 'Failed to generate admin consent URL' });

@@ -89,6 +89,7 @@ export default function Auth() {
   const claimAssessmentId = queryParams.get('claimAssessment');
   const ssoError = queryParams.get('error');
   const ssoConsent = queryParams.get('ssoConsent');
+  const plannerConsent = queryParams.get('plannerConsent');
 
   // Display SSO error if present
   useEffect(() => {
@@ -112,6 +113,16 @@ export default function Auth() {
       window.history.replaceState({}, '', '/auth');
     }
   }, [ssoConsent, toast]);
+
+  useEffect(() => {
+    if (plannerConsent === 'granted') {
+      toast({
+        title: "Microsoft Planner access approved",
+        description: "Planner permissions are now available for support-ticket sync.",
+      });
+      window.history.replaceState({}, '', '/auth');
+    }
+  }, [plannerConsent, toast]);
 
   // Redirect if already logged in
   useEffect(() => {

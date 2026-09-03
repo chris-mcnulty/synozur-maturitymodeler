@@ -34,8 +34,8 @@ export interface PlannerTaskDetails {
 }
 
 class PlannerService {
-  canConnect(ssoTenantId?: string | null): boolean {
-    return isSsoAppConfigured() && !!ssoTenantId;
+  canConnect(ssoTenantId?: string | null, plannerAdminConsentGranted = true): boolean {
+    return isSsoAppConfigured() && !!ssoTenantId && plannerAdminConsentGranted;
   }
 
   private requireTenantId(ssoTenantId?: string | null): string {
@@ -44,8 +44,14 @@ class PlannerService {
     return ssoTenantId;
   }
 
-  async testConnection(ssoTenantId?: string | null): Promise<{ success: boolean; message: string }> {
+  async testConnection(
+    ssoTenantId?: string | null,
+    plannerAdminConsentGranted = true,
+  ): Promise<{ success: boolean; message: string }> {
     try {
+      if (!plannerAdminConsentGranted) {
+        return { success: false, message: 'Planner permissions have not been approved for this organization.' };
+      }
       const tid = this.requireTenantId(ssoTenantId);
       await graphFetch('/groups?$top=1&$select=id', tid);
       return { success: true, message: 'Connection successful' };

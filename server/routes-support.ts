@@ -450,6 +450,7 @@ ${guideContent.substring(0, 15000)}`;
 interface PlannerConfig {
   enabled: boolean;
   ssoTenantId: string | null;
+  plannerAdminConsentGranted: boolean;
   planId: string | null;
   planTitle: string | null;
   planWebUrl: string | null;
@@ -469,9 +470,12 @@ async function getPlannerConfig(): Promise<PlannerConfig> {
     storage.getSetting('plannerBucketName'),
   ]);
   const str = (v: any): string | null => (typeof v === 'string' && v) ? v : null;
+  const ssoTenantId = process.env.AZURE_TENANT_ID || null;
+  const tenant = ssoTenantId ? await storage.getTenantBySsoTenantId(ssoTenantId) : undefined;
   return {
     enabled: enabled?.value === true || enabled?.value === 'true',
-    ssoTenantId: process.env.AZURE_TENANT_ID || null,
+    ssoTenantId,
+    plannerAdminConsentGranted: tenant?.plannerAdminConsentGranted ?? false,
     planId: str(planId?.value),
     planTitle: str(planTitle?.value),
     planWebUrl: str(planWebUrl?.value),
@@ -517,20 +521,33 @@ router.get('/api/planner/status', ensureAuthenticated, ensureGlobalAdmin, async 
         message: 'AZURE_TENANT_ID environment variable is not set.',
       });
     }
-    const canConnect = plannerService.canConnect(config.ssoTenantId);
-    if (!canConnect) {
+    const appConfigured = plannerService.canConnect(config.ssoTenantId, true);
+    if (!appConfigured) {
       return res.json({
         configured: false,
         connected: false,
         message: 'Azure SSO app credentials (AZURE_CLIENT_ID / AZURE_CLIENT_SECRET) are not set.',
       });
     }
-    const result = await plannerService.testConnection(config.ssoTenantId);
+    if (!config.plannerAdminConsentGranted) {
+      return res.json({
+        configured: true,
+        connected: false,
+        plannerAdminConsentGranted: false,
+        ssoTenantId: config.ssoTenantId,
+        message: 'Planner permissions have not been approved for this organization.',
+      });
+    }
+    const result = await plannerService.testConnection(
+      config.ssoTenantId,
+      config.plannerAdminConsentGranted,
+    );
     res.json({
       configured: true,
       connected: result.success,
       message: result.message,
       ssoTenantId: config.ssoTenantId,
+      plannerAdminConsentGranted: config.plannerAdminConsentGranted,
     });
   } catch (error) {
     res.json({ configured: false, connected: false });
@@ -579,6 +596,7 @@ router.get('/api/tenants/:tenantId/support-integrations', ensureAuthenticated, e
       showChangelogOnLogin: tenant.showChangelogOnLogin ?? true,
       ssoTenantId: tenant.ssoTenantId || null,
       ssoAdminConsentGranted: tenant.ssoAdminConsentGranted,
+      plannerAdminConsentGranted: tenant.plannerAdminConsentGranted,
     });
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch integrations' });
@@ -605,6 +623,7 @@ router.patch('/api/tenants/:tenantId/support-integrations', ensureAuthenticated,
       showChangelogOnLogin: updated.showChangelogOnLogin ?? true,
       ssoTenantId: updated.ssoTenantId || null,
       ssoAdminConsentGranted: updated.ssoAdminConsentGranted,
+      plannerAdminConsentGranted: updated.plannerAdminConsentGranted,
     });
   } catch (error) {
     res.status(500).json({ error: 'Failed to update integrations' });
@@ -614,7 +633,7 @@ router.patch('/api/tenants/:tenantId/support-integrations', ensureAuthenticated,
 router.post('/api/planner/sync-existing', ensureAuthenticated, ensureGlobalAdmin, async (_req, res) => {
   try {
     const config = await getPlannerConfig();
-    if (!config.enabled || !config.planId || !config.ssoTenantId) {
+    if (!config.enabled || !config.planId || !config.ssoTenantId || !config.plannerAdminConsentGranted) {
       return res.status(400).json({ error: 'Planner sync is not configured' });
     }
 
@@ -856,7 +875,7 @@ async function syncTicketToPlanner(ticket: schema.SupportTicket, user: schema.Us
 }
 
 async function syncTicketToPlannerInternal(ticket: schema.SupportTicket, user: schema.User | undefined, config: PlannerConfig) {
-  if (!config.enabled || !config.planId || !config.ssoTenantId || !plannerService.canConnect(config.ssoTenantId)) return;
+  if (!config.enabled || !config.planId || !config.ssoTenantId || !config.plannerAdminConsentGranted || !plannerService.canConnect(config.ssoTenantId, config.plannerAdminConsentGranted)) return;
 
   const tid = config.ssoTenantId;
   try {
@@ -912,7 +931,7 @@ async function markPlannerTaskComplete(ticket: schema.SupportTicket) {
   if (!syncRecord || syncRecord.syncStatus !== 'synced' || syncRecord.taskId === 'sync-failed') return;
 
   const config = await getPlannerConfig();
-  if (!config.ssoTenantId) return;
+  if (!config.ssoTenantId || !config.plannerAdminConsentGranted) return;
 
   try {
     const task = await plannerService.getTaskWithDetails(syncRecord.taskId, config.ssoTenantId);

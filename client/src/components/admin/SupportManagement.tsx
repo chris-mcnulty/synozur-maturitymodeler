@@ -27,6 +27,8 @@ interface PlannerStatusResponse {
   configured: boolean;
   connected: boolean;
   message?: string;
+  ssoTenantId?: string | null;
+  plannerAdminConsentGranted?: boolean;
 }
 
 interface PlannerGroup {
@@ -42,6 +44,8 @@ interface PlannerPlan {
 
 interface PlannerConfig {
   enabled: boolean;
+  ssoTenantId: string | null;
+  plannerAdminConsentGranted: boolean;
   planId: string | null;
   planTitle: string | null;
   planWebUrl: string | null;
@@ -54,6 +58,7 @@ interface SupportIntegrations {
   showChangelogOnLogin: boolean;
   ssoTenantId: string | null;
   ssoAdminConsentGranted: boolean;
+  plannerAdminConsentGranted: boolean;
 }
 
 function getStatusColor(status: string) {
@@ -152,6 +157,7 @@ function TenantSupportSettings({ tenantId }: { tenantId: string }) {
 function PlannerSettings() {
   const { toast } = useToast();
   const [selectedGroupId, setSelectedGroupId] = useState<string>("");
+  const [consentLoading, setConsentLoading] = useState(false);
 
   const { data: config, isLoading: configLoading } = useQuery<PlannerConfig>({
     queryKey: ["/api/planner/config"],
@@ -234,6 +240,30 @@ function PlannerSettings() {
     });
   };
 
+  const requestPlannerConsent = async () => {
+    if (!config?.ssoTenantId) return;
+    setConsentLoading(true);
+    try {
+      const qs = new URLSearchParams({
+        consentType: "planner",
+        ssoTenantId: config.ssoTenantId,
+      });
+      const res = await fetch(`/api/auth/sso/admin-consent?${qs.toString()}`, {
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error("Failed to generate Planner consent URL");
+      const data = await res.json();
+      window.location.assign(data.consentUrl);
+    } catch (error: any) {
+      toast({
+        title: "Could not start Planner approval",
+        description: error.message || "Please try again.",
+        variant: "destructive",
+      });
+      setConsentLoading(false);
+    }
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -253,7 +283,7 @@ function PlannerSettings() {
           </div>
         )}
 
-        {plannerStatus?.configured && !plannerStatus?.connected && (
+        {plannerStatus?.configured && !plannerStatus?.connected && plannerStatus?.plannerAdminConsentGranted !== false && (
           <div className="space-y-2">
             <p className="text-sm text-destructive">
               Connection failed: {plannerStatus.message}
@@ -264,7 +294,28 @@ function PlannerSettings() {
           </div>
         )}
 
-        {plannerStatus?.configured && (
+        {plannerStatus?.configured && plannerStatus?.plannerAdminConsentGranted === false && (
+          <div className="rounded-md border border-amber-500/30 bg-amber-500/5 p-3 space-y-3">
+            <div>
+              <p className="text-sm font-medium">Planner approval required</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Microsoft sign-in remains available. A Microsoft Entra administrator must separately approve Group.Read.All and Tasks.ReadWrite.All before support-ticket sync can be enabled.
+              </p>
+            </div>
+            <Button
+              size="sm"
+              onClick={requestPlannerConsent}
+              disabled={consentLoading}
+              className="gap-2"
+              data-testid="button-grant-planner-consent"
+            >
+              <ExternalLink className="h-4 w-4" />
+              {consentLoading ? "Opening Microsoft..." : "Approve Planner permissions"}
+            </Button>
+          </div>
+        )}
+
+        {plannerStatus?.configured && plannerStatus?.plannerAdminConsentGranted !== false && (
           <div className="flex items-center gap-2 flex-wrap">
             <Button
               variant="outline"
