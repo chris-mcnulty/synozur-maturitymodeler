@@ -140,13 +140,15 @@ Our organization — ${req.organizationName} — has been granted access to a pr
 
 This is a one-time action that takes less than 2 minutes:
 
-1. Open the link below in your browser (requires Global Administrator or Application Administrator role in Azure / Entra ID)
+1. Open the link below in your browser (requires Global Administrator or Privileged Role Administrator role in Microsoft Entra ID)
 
-2. Review the permissions — Orion only requests the minimum necessary, read-only permissions:
+2. Review the permissions requested by Orion:
    • Sign in and read user profile (openid, profile)
    • View user email address (email)
    • Read basic user information (User.Read)
-   No sensitive data, write access, mailbox access, or any other permissions are requested.
+   • Read groups (Group.Read.All)
+   • Read and write Planner tasks (Tasks.ReadWrite.All)
+   The Planner permissions are used only when an Orion tenant administrator enables Planner support-ticket sync.
 
 3. Click "Accept" to grant consent for your entire organization
 

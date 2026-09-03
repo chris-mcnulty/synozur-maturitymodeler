@@ -99,10 +99,15 @@ export function TenantManagement() {
   const [emailConsentLoading, setEmailConsentLoading] = useState(false);
   const [emailCopied, setEmailCopied] = useState(false);
 
-  const fetchConsentUrl = async (ssoTenantId: string | null): Promise<string> => {
+  const fetchConsentUrl = async (tenant: Tenant): Promise<string> => {
     try {
-      const qs = ssoTenantId ? `?ssoTenantId=${encodeURIComponent(ssoTenantId)}` : "";
-      const res = await fetch(`/api/auth/sso/admin-consent${qs}`);
+      const qs = new URLSearchParams({ orionTenantId: tenant.id });
+      if (tenant.ssoTenantId) qs.set("ssoTenantId", tenant.ssoTenantId);
+      const verifiedDomain = tenant.domains?.find(domain => domain.verified)?.domain;
+      if (!tenant.ssoTenantId && verifiedDomain) qs.set("tenantHint", verifiedDomain);
+      const res = await fetch(`/api/auth/sso/admin-consent?${qs.toString()}`, {
+        credentials: "include",
+      });
       if (!res.ok) return "[ADMIN CONSENT URL — contact orion@synozur.com]";
       const data = await res.json();
       return data.consentUrl ?? "[ADMIN CONSENT URL — contact orion@synozur.com]";
@@ -116,7 +121,7 @@ export function TenantManagement() {
     setEmailConsentUrl("");
     setEmailConsentLoading(true);
     setEmailDialogTenant(tenant);
-    const url = await fetchConsentUrl(tenant.ssoTenantId);
+    const url = await fetchConsentUrl(tenant);
     setEmailConsentUrl(url);
     setEmailConsentLoading(false);
   };
@@ -140,13 +145,15 @@ Our organization — ${tenant.name} — has been granted access to a private Ori
 This is a one-time action that takes under 2 minutes:
 
 1. Open the link below in your browser
-   (Requires Global Administrator or Application Administrator role in Azure / Entra ID)
+   (Requires Global Administrator or Privileged Role Administrator role in Microsoft Entra ID)
 
-2. Review the permissions — Orion only requests the minimum necessary, read-only permissions:
+2. Review the permissions requested by Orion:
    • Sign in and read user profile (openid, profile)
    • View user email address (email)
    • Read basic user information (User.Read)
-   No sensitive data, write access, mailbox access, or any other permissions are requested.
+   • Read groups (Group.Read.All)
+   • Read and write Planner tasks (Tasks.ReadWrite.All)
+   The Planner permissions are used only when an Orion tenant administrator enables Planner support-ticket sync.
 
 3. Click "Accept" to grant consent for your entire organization
 
@@ -837,7 +844,7 @@ Thank you for your help!`;
               <div className="space-y-2 border-t pt-4 mt-4">
                 <Label htmlFor="ssoTenantId" className="flex items-center gap-2">
                   <Shield className="h-4 w-4" />
-                  Azure AD Tenant ID (SSO)
+                  Microsoft Entra Tenant ID (SSO)
                 </Label>
                 <Input
                   id="ssoTenantId"
@@ -847,7 +854,7 @@ Thank you for your help!`;
                   data-testid="input-sso-tenant-id"
                 />
                 <p className="text-xs text-muted-foreground">
-                  The Microsoft Azure AD tenant ID. This is captured automatically when users sign in via SSO, 
+                  The Microsoft Entra tenant ID. This is captured automatically when users sign in via SSO,
                   or you can set it manually to pre-configure SSO for an organization.
                 </p>
                 {editingTenant?.ssoAdminConsentGranted && (
@@ -1025,7 +1032,7 @@ Thank you for your help!`;
               before sending.
               {!emailDialogTenant?.ssoTenantId && (
                 <span className="block mt-2 text-amber-600 dark:text-amber-400 text-xs">
-                  No Azure AD Tenant ID is set for this tenant yet. The consent URL will be generic — set the SSO Tenant ID first for a more precise link.
+                  No Microsoft Entra Tenant ID is set yet. Microsoft will ask the administrator to choose an account, and Orion will save the approved tenant ID automatically.
                 </span>
               )}
             </DialogDescription>

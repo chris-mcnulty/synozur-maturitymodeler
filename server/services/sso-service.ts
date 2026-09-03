@@ -1,5 +1,5 @@
 import { ConfidentialClientApplication, Configuration, AuthorizationUrlRequest, AuthorizationCodeRequest } from '@azure/msal-node';
-import { randomBytes, createHash, randomUUID } from 'crypto';
+import { randomBytes, createHash, createHmac, randomUUID, timingSafeEqual } from 'crypto';
 import { storage } from '../storage';
 
 function generateCodeVerifier(): string {
@@ -352,7 +352,61 @@ export interface AdminConsentInfo {
   instructions: string;
 }
 
-export function generateAdminConsentUrl(azureTenantId?: string, baseUrl?: string): AdminConsentInfo {
+const ADMIN_CONSENT_STATE_TTL_MS = 30 * 60 * 1000;
+
+function signAdminConsentState(payload: string): string {
+  const secret = process.env.SESSION_SECRET;
+  if (!secret) {
+    throw new Error('SESSION_SECRET is required to generate a tenant-bound admin consent URL');
+  }
+  return createHmac('sha256', secret).update(payload).digest('base64url');
+}
+
+function createAdminConsentState(orionTenantId: string): string {
+  const payload = Buffer.from(JSON.stringify({
+    orionTenantId,
+    expiresAt: Date.now() + ADMIN_CONSENT_STATE_TTL_MS,
+  })).toString('base64url');
+  return `${payload}.${signAdminConsentState(payload)}`;
+}
+
+export function verifyAdminConsentState(state: string | undefined): string | null {
+  if (!state || !state.includes('.')) return null;
+  const [payload, suppliedSignature] = state.split('.', 2);
+  if (!payload || !suppliedSignature) return null;
+
+  let expectedSignature: string;
+  try {
+    expectedSignature = signAdminConsentState(payload);
+  } catch {
+    return null;
+  }
+
+  const supplied = Buffer.from(suppliedSignature);
+  const expected = Buffer.from(expectedSignature);
+  if (supplied.length !== expected.length || !timingSafeEqual(supplied, expected)) return null;
+
+  try {
+    const parsed = JSON.parse(Buffer.from(payload, 'base64url').toString('utf8'));
+    if (
+      typeof parsed.orionTenantId !== 'string'
+      || !parsed.orionTenantId
+      || typeof parsed.expiresAt !== 'number'
+      || parsed.expiresAt < Date.now()
+    ) {
+      return null;
+    }
+    return parsed.orionTenantId;
+  } catch {
+    return null;
+  }
+}
+
+export function generateAdminConsentUrl(
+  azureTenantId?: string,
+  baseUrl?: string,
+  orionTenantId?: string,
+): AdminConsentInfo {
   if (!process.env.AZURE_CLIENT_ID) {
     throw new Error('Azure SSO is not configured');
   }
@@ -361,10 +415,13 @@ export function generateAdminConsentUrl(azureTenantId?: string, baseUrl?: string
   const tenantIdOrCommon = azureTenantId || 'common';
   
   const redirectUri = baseUrl ? `${baseUrl}/auth/sso/callback` : undefined;
-  const consentUrl = `https://login.microsoftonline.com/${tenantIdOrCommon}/adminconsent?client_id=${process.env.AZURE_CLIENT_ID}${redirectUri ? `&redirect_uri=${encodeURIComponent(redirectUri)}` : ''}`;
+  const consentUrl = new URL(`https://login.microsoftonline.com/${encodeURIComponent(tenantIdOrCommon)}/adminconsent`);
+  consentUrl.searchParams.set('client_id', process.env.AZURE_CLIENT_ID);
+  if (redirectUri) consentUrl.searchParams.set('redirect_uri', redirectUri);
+  if (orionTenantId) consentUrl.searchParams.set('state', createAdminConsentState(orionTenantId));
   
   return {
-    consentUrl,
+    consentUrl: consentUrl.toString(),
     appName: 'Orion Maturity Assessment Platform',
     requiredPermissions: [
       'Sign in and read user profile (openid, profile)',
@@ -376,7 +433,7 @@ export function generateAdminConsentUrl(azureTenantId?: string, baseUrl?: string
     instructions: `
 To enable seamless sign-in and support integrations for your organization:
 
-1. Open the Admin Consent URL below (requires Azure AD Global Administrator or Application Administrator role)
+1. Open the Admin Consent URL below (requires Microsoft Entra Global Administrator or Privileged Role Administrator role)
 2. Review the permissions requested by Orion
 3. Click "Accept" to grant consent for all users in your organization
 

@@ -100,13 +100,15 @@ To enable seamless, password-free sign-in for everyone using their existing Micr
 This is a one-time action that takes under 2 minutes:
 
 1. Open the link below in your browser
-   (Requires Global Administrator or Application Administrator role in Azure / Entra ID)
+   (Requires Global Administrator or Privileged Role Administrator role in Microsoft Entra ID)
 
-2. Review the permissions — Orion only requests minimum, read-only permissions:
+2. Review the permissions requested by Orion:
    • Sign in and read user profile (openid, profile)
    • View user email address (email)
    • Read basic user information (User.Read)
-   No sensitive data, write access, mailbox access, or any other permissions are requested.
+   • Read groups (Group.Read.All)
+   • Read and write Planner tasks (Tasks.ReadWrite.All)
+   The Planner permissions are used only when an Orion tenant administrator enables Planner support-ticket sync.
 
 3. Click "Accept" to grant consent for your entire organization
 

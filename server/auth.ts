@@ -299,9 +299,20 @@ export function setupAuth(app: Express) {
         if (String(admin_consent).toLowerCase() === 'true' && tenant) {
           // Auto-mark the matching Orion tenant as having granted admin consent
           try {
-            const orionTenant = await storage.getTenantBySsoTenantId(tenant as string);
+            const { verifyAdminConsentState } = await import('./services/sso-service.js');
+            const stateTenantId = verifyAdminConsentState(typeof state === 'string' ? state : undefined);
+            const orionTenant = stateTenantId
+              ? await storage.getTenant(stateTenantId)
+              : await storage.getTenantBySsoTenantId(tenant as string);
             if (orionTenant) {
-              await storage.updateTenant(orionTenant.id, { ssoAdminConsentGranted: true });
+              if (orionTenant.ssoTenantId && orionTenant.ssoTenantId !== tenant) {
+                console.warn(`[SSO] Admin consent tenant mismatch for Orion tenant "${orionTenant.name}"`);
+                return res.redirect('/auth?error=Microsoft+tenant+did+not+match+the+requested+organization');
+              }
+              await storage.updateTenant(orionTenant.id, {
+                ssoTenantId: tenant as string,
+                ssoAdminConsentGranted: true,
+              });
               console.log(`[SSO] Admin consent granted for Azure tenant ${tenant} → Orion tenant "${orionTenant.name}"`);
             } else {
               console.warn(`[SSO] Admin consent received for unknown Azure tenant ${tenant}`);
@@ -393,15 +404,44 @@ export function setupAuth(app: Express) {
       
       // Query param takes precedence (admin generating for a specific tenant)
       let azureTenantId: string | undefined = req.query.ssoTenantId as string | undefined;
+      let orionTenantId: string | undefined;
+      const requestedOrionTenantId = req.query.orionTenantId as string | undefined;
+      const requestedTenantHint = req.query.tenantHint as string | undefined;
+
+      if (requestedOrionTenantId) {
+        if (!req.isAuthenticated() || !req.user) {
+          return res.status(401).json({ error: 'Authentication required' });
+        }
+        const canGenerateForTenant =
+          req.user.role === 'global_admin'
+          || (req.user.role === 'tenant_admin' && req.user.tenantId === requestedOrionTenantId);
+        if (!canGenerateForTenant) {
+          return res.status(403).json({ error: 'You do not have permission to generate consent for this tenant' });
+        }
+        const requestedTenant = await storage.getTenant(requestedOrionTenantId);
+        if (!requestedTenant) {
+          return res.status(404).json({ error: 'Tenant not found' });
+        }
+        orionTenantId = requestedTenant.id;
+        if (!azureTenantId) azureTenantId = requestedTenant.ssoTenantId || undefined;
+        if (!azureTenantId && requestedTenantHint) {
+          const domain = await storage.getTenantDomainByDomain(requestedTenantHint);
+          if (!domain || domain.tenantId !== requestedTenant.id || !domain.verified) {
+            return res.status(400).json({ error: 'Tenant domain is not verified for this organization' });
+          }
+          azureTenantId = domain.domain;
+        }
+      }
       
       // Fall back to authenticated user's own tenant
-      if (!azureTenantId && req.isAuthenticated() && req.user?.tenantId) {
+      if (!orionTenantId && req.isAuthenticated() && req.user?.tenantId) {
+        orionTenantId = req.user.tenantId;
         const tenant = await storage.getTenant(req.user.tenantId);
-        azureTenantId = tenant?.ssoTenantId || undefined;
+        if (!azureTenantId) azureTenantId = tenant?.ssoTenantId || undefined;
       }
       
       const baseUrl = `${req.protocol}://${req.get('host')}`;
-      const consentInfo = generateAdminConsentUrl(azureTenantId, baseUrl);
+      const consentInfo = generateAdminConsentUrl(azureTenantId, baseUrl, orionTenantId);
       res.json(consentInfo);
     } catch (error: any) {
       res.status(500).json({ error: error.message || 'Failed to generate admin consent URL' });
