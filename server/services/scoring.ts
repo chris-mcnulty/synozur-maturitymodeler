@@ -67,7 +67,7 @@ export interface ScoringOutput {
   maxMaturityScore: number;
 }
 
-const DEFAULT_MATURITY_SCALE: ScoringMaturityLevel[] = [
+export const DEFAULT_MATURITY_SCALE: ScoringMaturityLevel[] = [
   { id: '1', name: 'Nascent', description: 'Beginning AI journey', minScore: 100, maxScore: 199 },
   { id: '2', name: 'Experimental', description: 'Experimenting with AI', minScore: 200, maxScore: 299 },
   { id: '3', name: 'Operational', description: 'Operational AI processes', minScore: 300, maxScore: 399 },
