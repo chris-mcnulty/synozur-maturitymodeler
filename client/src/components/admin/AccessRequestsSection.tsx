@@ -156,6 +156,8 @@ ${consentUrl}
 
 —— AFTER YOU GRANT CONSENT ——
 
+Orion production site: https://orion.synozur.com
+
 Users in our organization can sign in to Orion at the link below by clicking "Sign in with Microsoft":
 ${modelUrl}
 

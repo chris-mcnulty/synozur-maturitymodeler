@@ -118,6 +118,8 @@ ${consentLink}
 
 Once approved, everyone in our organization can sign in to Orion by clicking "Sign in with Microsoft" on the login page.
 
+Orion production site: https://orion.synozur.com
+
 —— QUESTIONS? ——
 
   Email: orion@synozur.com

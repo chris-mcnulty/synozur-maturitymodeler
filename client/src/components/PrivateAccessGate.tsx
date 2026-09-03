@@ -531,6 +531,8 @@ ${consentLink}
 
 Once you've approved, users in our organization can sign in to Orion by clicking "Sign in with Microsoft" on the assessment page. You're welcome to verify it works by trying to sign in yourself.
 
+Orion production site: https://orion.synozur.com
+
 —— QUESTIONS? ——
 
 If you have any questions about Orion, what it's used for, or the permissions being requested, the Orion team is happy to help:
