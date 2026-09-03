@@ -6,6 +6,46 @@ This changelog documents new features, improvements, and fixes in Orion. Updates
 
 ---
 
+## September 2026 — Version 3.2
+
+### September 3, 2026 — Orion 3.2
+
+Version 3.2 consolidates the major platform capabilities delivered since Version 2.1.
+
+**New Features**
+- **Type and propensity assessments:** Models can assign respondents to an archetype or champion type instead of producing a numeric maturity score. Authoring, tie handling, type imagery, results, history, and population insights support this assessment mode.
+- **Cross-model Insights:** Users and tenant administrators can review trends across assessments, compare model performance, and export an Insights PDF.
+- **Advanced course creation:** Course authors can build structured slides, rich-text lessons, quizzes, assignments, resources, attestations, and required learner submissions with server-side completion rules.
+- **PowerPoint course intake:** `.pptx` files can be reviewed, split into lessons, edited before saving, and converted into structured course content without losing the original review state.
+- **Slide narration:** Azure Speech generates per-slide narration with voice selection, bulk generation, transcript support, playback controls, and optional auto-advance.
+- **Course and SCORM portability:** Native course import/export includes lesson resources and learner assignments. SCORM import, playback, and export are available; bundling private slide and narration media for offline external LMS packages remains a follow-up.
+- **Monthly Insights digest:** Administrators can manage tenant participation, users can opt out, duplicate sends are prevented across server instances, and administrators can inspect or reset the current run state.
+- **Bulk result tagging:** Administrators can assign or remove tags across multiple assessment results with tenant-safe enforcement.
+- **Expanded Galaxy API:** Galaxy can access courses, progress, certificates, and attestations in addition to assessments, results, and Insights through the tenant-governed API.
+
+**Improvements**
+- **Azure AI Foundry:** GPT-5.4 in Azure AI Foundry is the active production model for AI summaries, recommendations, and Insights, with provider/model selection available to administrators.
+- **Assessment presentation controls:** Model authors can suppress numeric scores and detailed narratives while preserving maturity-level results and appropriately worded AI summaries.
+- **Microsoft 365 assessment compatibility:** Numeric question handling, scoring, maturity levels, and result presentation were corrected for imported Microsoft 365 models.
+- **Course recommendations:** Assessments can be linked to courses, with recommendations surfaced from completed results and in the course catalog.
+- **Tenant administration:** Branding, verified email-domain mapping, tenant-scoped result access, consent status, and Microsoft SSO onboarding were strengthened.
+- **Microsoft consent separation:** Basic Microsoft sign-in consent is separate from optional Planner integration consent. Consent links are tenant-bound and consent emails identify Orion's production site.
+- **Model portability:** Markdown interview-guide export includes the configured scoring scale, and model imports provide more reliable dimension and question previews.
+- **Accessibility:** A broad Section 508/WCAG 2.1 AA pass improved keyboard navigation, labels, focus behavior, contrast, form semantics, and course-media accessibility.
+
+**Security and Reliability**
+- Hardened tenant isolation across assessment results, administrative operations, courses, and Galaxy APIs.
+- Removed unsafe URL-fetch behavior from PowerPoint intake and tightened uploaded-media validation and access controls.
+- Protected OAuth and Microsoft SSO callbacks against open redirects and tampered tenant state.
+- Added private course-media authorization, safe cleanup of abandoned uploads, and server-side lesson completion validation.
+- Remediated dependency findings and restored clean TypeScript and security checks.
+
+**Known Follow-Ups**
+- Digest run history, monitoring health endpoint, automated CI coverage, and automatic recovery from abandoned digest runs remain planned.
+- Custom tenant domains, full white-labeling, billing, GDPR workflows, reassessment reminders, xAPI, video transcoding, and native/PWA applications remain future work.
+
+---
+
 ## May 2026 — Version 2.1
 
 ### May 15, 2026 — Mobile-Friendly Assessment Navigation
@@ -48,11 +88,11 @@ This changelog documents new features, improvements, and fixes in Orion. Updates
 - **Course authoring**: Admin → Content → Courses provides a builder with overview, structure (modules + lessons), and enrollments tabs; lesson editor offers per-type JSON content templates
 - **Tenant scoping**: Courses can be public or private to an owning tenant; visibility honored in the catalog API
 
-**Deferred (follow-ups)**
-- SCORM 1.2/2004 import (manifest parsing + zip ingest) and export — endpoints stubbed at 501
-- Certificate PDF generation on course completion
-- Attestation reminder/expiration emails
-- Assessment-driven course recommendations surface (data model is in place via `assessment_course_links`)
+**Status by Version 3.2**
+- SCORM 1.2/2004 import, playback, and export are now implemented.
+- Certificate PDF generation on course completion is now implemented.
+- Assessment-driven course recommendations are now implemented.
+- Attestation reminder and expiration emails remain deferred.
 
 ---
 

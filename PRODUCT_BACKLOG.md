@@ -1,6 +1,6 @@
 # Orion Platform Master Backlog
 
-**Last Updated:** February 18, 2026 (Added reassessment reminders backlog item)
+**Last Updated:** September 3, 2026 (Version 3.2 status reconciliation)
 
 > **Note:** This is the single source of truth for all Orion feature proposals, implementation plans, UX enhancements, known issues, and technical decisions. All coding agents should reference this document for backlog-related questions.
 
@@ -15,60 +15,68 @@
 5. [UX Enhancements](#ux-enhancements)
 6. [Known Issues & Bugs](#known-issues--bugs)
 7. [Technical Decisions](#technical-decisions)
-8. [Completed Features](#completed-features)
-9. [Dependencies](#dependencies)
-10. [Metrics for Success](#metrics-for-success)
+8. [Learning Courses Status & Follow-Ups](#learning-courses-module--status--follow-ups)
+9. [Rich Course Slides, Narration & PowerPoint](#rich-course-slides-narration--powerpoint-import-orion-courses-for-clients)
+10. [Completed Features](#completed-features)
+11. [Dependencies](#dependencies)
+12. [Metrics for Success](#metrics-for-success)
+13. [Galaxy API Status & Deferred Work](#galaxy-client-portal-api--status--deferred-work)
+14. [Tech Debt & Deferred Items](#tech-debt--deferred-items)
 
 ---
 
 ## EXECUTIVE SUMMARY & PRIORITY SEQUENCE
 
-### Current Status Assessment (February 14, 2026)
+### Current Status Assessment (Version 3.2 — September 2026)
 
 | Item | Status | Notes |
 |------|--------|-------|
 | **Core Assessment Engine** | Complete | Multi-model, flexible scoring (100/500-point), auto-save, anonymous access |
-| **AI-Powered Insights** | Complete | Claude Sonnet 4.5, 90-day caching, content review workflow |
+| **AI-Powered Insights** | Complete | Azure AI Foundry GPT-5.4, configurable provider/model, caching, content review |
 | **Benchmarking** | Complete | Industry, company size, country, combined segments with min thresholds |
 | **PDF Reports & Email** | Complete | jsPDF generation, SendGrid delivery |
 | **Model Management** | Complete | CSV + .model JSON import/export, ModelBuilder, archiving, duplication |
 | **User Management** | Complete | CRUD, bulk import, roles, email verification, password resets |
 | **RBAC** | Complete | Four-tier: global_admin, tenant_admin, tenant_modeler, user |
 | **Knowledge Base** | Complete | Document upload for AI grounding, model-specific scoping |
-| **Assessment Tagging** | Complete | Custom tags with colors, bulk assignment |
+| **Assessment Tagging** | Complete | Custom tags with colors and tenant-safe bulk assignment/removal |
 | **Social Sharing** | Complete | LinkedIn, Twitter, Facebook, email with OG previews, QR codes |
 | **Proxy Assessments** | Complete | Admin-created assessments for prospects |
 | **OAuth 2.1 Identity Provider** | Complete | OIDC endpoints, PKCE, RS256 JWT, client management |
-| **Microsoft Entra ID SSO** | Complete | PKCE flow, auto-provisioning, tenant mapping, admin consent |
+| **Microsoft Entra ID SSO** | Complete | PKCE, auto-provisioning, tenant-bound consent, separate SSO and Planner approval |
 | **SSO Profile Completion** | Complete | Required profile fields for new SSO users |
-| **Multi-Tenant Architecture** | ~60% | Tenant-private models, OAuth clients, SSO provisioning done. Branding, domain mapping remaining. |
+| **Multi-Tenant Architecture** | ~85% | Isolation, branding, verified-domain mapping, SSO, and tenant administration shipped; custom hostnames and full entitlement gating remain |
 | **Data Import** | Complete | Anonymized assessment data with validation and batch tracking |
 | **Traffic Analytics** | Complete | Visit tracking, engagement metrics, CSV export |
-| **Documentation** | Complete | User Guide v2.0, Admin Guide, Changelog, Backlog |
+| **Cross-Model Insights** | Complete | Personal and tenant trends, comparisons, AI narrative, PDF export |
+| **Type/Propensity Assessments** | Complete | Archetype authoring, scoring, tie handling, results, imagery, population insights |
+| **Learning Courses** | Complete (MVP+) | Catalog, authoring, progress, quizzes, attestations, certificates, recommendations, SCORM |
+| **PowerPoint & Narrated Slides** | Complete | Review-first PPTX intake, structured editing, Azure narration, private media |
+| **Monthly Insights Digest** | Complete (MVP) | Opt-out, tenant controls, duplicate prevention, run status/reset; monitoring follow-ups open |
+| **Galaxy Client Portal API** | Complete (v1) | Tenant policy, assessments, Insights, courses, progress, certificates, attestations |
+| **In-App Help** | Complete | User/admin guides, changelog, What's New, contextual support chat |
+| **Documentation** | Updated for 3.2 | User/admin guides, changelog, and reconciled product backlog |
 
 ### Recommended Priority Sequence
 
 ```
-PHASE 1: Multi-Tenant Completion (Q1 2026)
-├── Tenant-specific branding (logo, colors)
-├── Custom subdomain/domain mapping
-└── Tenant entitlements and feature gating
+NOW: Reliability and operational visibility
+├── Digest run history and health monitoring
+├── Automatic stale-run recovery
+├── CI automation for digest tests
+└── Continue tenant-isolation and accessibility regression checks
 
-PHASE 1.5: In-App Documentation & What's New (Q1 2026)
-├── In-app User Guide / Help pages
-├── What's New modal with AI-generated summaries
-└── Admin Guide integration
-
-PHASE 2: Individual Assessments & Billing (Q2 2026)
-├── Individual/skills-based assessment models
+NEXT: Commercial and enterprise readiness
 ├── Stripe billing and subscriptions
-└── Usage-based feature entitlements
+├── Usage-based tenant entitlements
+├── Custom subdomain/domain mapping
+└── GDPR export, deletion, and retention workflows
 
-PHASE 3: Advanced Analytics & Enterprise (Q2-Q3 2026)
-├── Enhanced reporting dashboards
-├── Cross-model comparison analytics
-├── Trend analysis over time
-└── API rate limiting per tenant
+LATER: Learning and engagement expansion
+├── Reassessment reminders
+├── Attestation reminders and expirations
+├── xAPI and externally portable SCORM media
+└── Video transcoding and native/PWA applications
 ```
 
 ---
@@ -77,9 +85,9 @@ PHASE 3: Advanced Analytics & Enterprise (Q2-Q3 2026)
 
 ### 1. Multi-Tenant Architecture Completion
 
-**Status:** ~60% Complete
+**Status:** ~85% Complete
 **Priority:** High
-**Effort:** 4-6 weeks remaining
+**Effort:** 2-4 weeks remaining
 
 **What's Built:**
 - Tenant-private model visibility with `canAccessModel()` enforcement
@@ -88,67 +96,65 @@ PHASE 3: Advanced Analytics & Enterprise (Q2-Q3 2026)
 - Microsoft Entra ID SSO with auto-provisioning by domain/Azure AD tenant ID
 - Tenant Management UI with Azure AD tenant tracking and consent status
 - Four-tier RBAC with tenant scoping
+- Tenant-specific logos, colors, and branded sign-in presentation
+- Verified email-domain mapping and tenant-aware user provisioning
+- Tenant-scoped course visibility, assessment results, tagging, and Galaxy policy
+- Separate Microsoft sign-in and Planner consent status
 
 **Remaining Work:**
 
 | Feature | Effort | Description |
 |---------|--------|-------------|
-| **Tenant Branding** | 2 weeks | Custom logo, primary/secondary colors, favicon per tenant |
-| **Domain Mapping** | 1 week | Map tenants to allowed email domains for auto-provisioning |
-| **Tenant Entitlements** | 1 week | Feature gating based on subscription tier |
-| **Tenant Data Isolation Audit** | 1 week | Verify all queries are tenant-scoped where appropriate |
+| **Custom Hostnames** | 2-3 weeks | Route and provision tenant-owned domains or subdomains |
+| **Tenant Entitlements** | 1-2 weeks | Complete feature gating based on subscription tier |
+| **Isolation Regression Coverage** | Ongoing | Continue automated checks as new tenant-aware surfaces are added |
+| **Full White Label** | 2-3 weeks | Custom sender identity, domain presentation, and optional Synozur-brand removal |
 
 ---
 
 ### 2. In-App Documentation & What's New
 
-**Status:** Not Started
-**Priority:** High
-**Effort:** 2-3 weeks
+**Status:** Complete
+**Priority:** Maintain
+**Effort:** Ongoing content maintenance
 
 **Overview:**
 Following Vega and Constellation patterns, surface platform documentation directly within the app. Users should be able to access the User Guide, see what's changed, and find help without leaving the application.
 
 | Feature | Description |
 |---------|-------------|
-| **In-App User Guide** | Render USER_GUIDE.md content as browsable help pages accessible from the app header/footer |
-| **In-App Admin Guide** | Render ADMIN_GUIDE.md within the admin console for admin users |
-| **What's New Modal** | Auto-display modal after login showing AI-generated summary of recent CHANGELOG.md updates since last visit |
-| **Dismiss Logic** | "Got it" button saves current version; won't show again until next release |
-| **Help Sidebar/Page** | Dedicated help section with searchable documentation |
-| **Changelog Page** | Browsable changelog showing platform update history |
-| **Footer/Header Links** | Quick access links to documentation from main navigation |
+| **In-App User Guide** | Complete — browsable help content is available in the application |
+| **In-App Admin Guide** | Complete — administrative documentation is role-aware |
+| **What's New Modal** | Complete — release updates display based on changelog version |
+| **Dismiss Logic** | Complete — users do not see the same release repeatedly |
+| **Help Sidebar/Page** | Complete — contextual support and AI-assisted help are available |
+| **Changelog Page** | Complete — the changelog is browsable in-app |
+| **Footer/Header Links** | Complete — documentation is linked from application navigation |
 
-**Implementation Approach:**
-- Serve markdown files via API endpoints, render with a markdown component on the frontend
-- Track user's `lastSeenVersion` to control What's New modal display
-- Admin Guide visible only to admin roles
-- Follow Vega's pattern: clean typography, collapsible sections, search
+**Maintenance Note:** Keep `CHANGELOG.md`, user guidance, and the displayed release version synchronized for every release.
 
 ---
 
-### 3. Individual Assessment Models
+### 3. Type, Propensity & Individual Assessments
 
-**Status:** Not Started
-**Priority:** High
-**Effort:** 3-4 weeks
+**Status:** Type/Propensity Complete; Individual Skills Scope Open
+**Priority:** Medium
+**Effort:** 3-4 weeks for remaining individual-skills scope
 
 **Overview:**
-Support personal/skills-based assessments within organizations, complementing the current organizational maturity models.
+Orion now supports scored maturity assessments and non-numeric type/propensity assessments. A separate HR-oriented individual-skills product remains future work.
 
 | Feature | Description |
 |---------|-------------|
-| **Individual Scoring** | Different scoring system optimized for personal skills |
-| **Individual Questions** | Question types suited to personal assessment (self-evaluation, frequency, proficiency) |
+| **Type/Propensity Mode** | Complete — answer voting maps respondents to archetypes or champion types |
+| **Type Results** | Complete — tie handling, type imagery, result history, and population insights |
+| **Individual Scoring** | Open — scoring optimized for personal skills and proficiency |
+| **Individual Questions** | Open — self-evaluation, frequency, and proficiency question types |
 | **Tenant Reporting** | HR/management dashboards showing team skill distribution |
 | **Skills Progression** | Track individual improvement over repeated assessments |
 | **Privacy Controls** | Individual results visible only to the user and designated managers |
 
-**Implementation Approach:**
-- Add `assessmentType` field to models (`organizational` vs `individual`)
-- Adapt AI prompts for individual context (already partially done)
-- Individual-specific benchmarking (role-based, level-based)
-- Privacy-aware result sharing
+**Remaining Approach:** Scope individual-skills privacy, role-based benchmarks, manager visibility, and progression separately from the shipped type/propensity mode.
 
 ---
 
@@ -186,17 +192,18 @@ Monetization through Stripe at the tenant level.
 
 ### 5. Enhanced Reporting & Analytics
 
-**Status:** Not Started
+**Status:** Partially Complete
 **Priority:** Medium
-**Effort:** 3-4 weeks
+**Effort:** 2-3 weeks for remaining items
 
 | Feature | Description |
 |---------|-------------|
-| **Tenant Dashboards** | Per-tenant analytics with assessment trends |
-| **Cross-Model Comparisons** | Compare maturity across different models |
-| **Trend Analysis** | Track score changes over time for repeat assessments |
-| **Custom Report Builder** | Admin-configurable report templates |
-| **PowerPoint Export** | Presentation-ready slides from assessment data |
+| **Tenant Dashboards** | Complete — tenant-scoped Insights and assessment analytics |
+| **Cross-Model Comparisons** | Complete — compare maturity across different models |
+| **Trend Analysis** | Complete — track score changes across repeat assessments |
+| **Insights PDF** | Complete — export personal and tenant Insights |
+| **Custom Report Builder** | Open — admin-configurable report templates |
+| **Assessment PowerPoint Export** | Open — presentation-ready slides from assessment results |
 
 ---
 
@@ -220,16 +227,17 @@ Advanced UI for managing model-to-tenant assignments, replacing the current mult
 
 ### 7. API Rate Limiting
 
-**Status:** Not Started
+**Status:** Partially Complete
 **Priority:** Medium
-**Effort:** 1-2 weeks
+**Effort:** 1-2 weeks for platform-wide enforcement
 
 | Feature | Description |
 |---------|-------------|
-| **Per-Tenant Quotas** | Request limits based on subscription tier |
-| **Usage Monitoring** | Real-time usage tracking dashboard |
-| **Overage Handling** | Graceful degradation or upgrade prompts |
-| **Rate Limit Headers** | Standard rate limit headers in API responses |
+| **Galaxy Policy Limits** | Complete — tenant administrators can configure Galaxy requests per minute |
+| **Platform-Wide Quotas** | Open — request limits based on subscription tier |
+| **Usage Monitoring** | Open — real-time quota dashboard |
+| **Overage Handling** | Open — graceful degradation or upgrade prompts |
+| **Rate Limit Headers** | Complete for Galaxy; open for other public API surfaces |
 
 ---
 
@@ -321,15 +329,14 @@ Complete branding customization:
 
 ### 13. AI Help Chatbot
 
-**Status:** Not Started
-**Priority:** Low
-**Effort:** 2-3 weeks
+**Status:** Complete
+**Priority:** Maintain
+**Effort:** Ongoing knowledge and quality maintenance
 
-Following Vega's pattern:
-- AI-powered help assistant grounded on User Guide
-- Streaming responses for conversational experience
-- Escalation to support ticket form
-- Accessible from header toolbar
+- AI-powered help assistant grounded in Orion guidance
+- Streaming conversational responses
+- Support escalation and ticket workflow
+- Accessible from the application help experience
 
 ---
 
@@ -339,11 +346,11 @@ Following Vega's pattern:
 
 | Enhancement | Priority | Effort | Description |
 |------------|----------|--------|-------------|
-| Accessibility (WCAG) | Medium | Ongoing | ARIA labels, keyboard navigation, screen reader support |
-| Responsive Design | Medium | 1 week | Mobile-optimized assessment experience |
-| Loading States | Low | 3 days | Skeleton screens for all data-loading components |
-| Error Boundaries | Low | 2 days | Graceful error handling with recovery options |
-| Assessment Progress Bar | Low | 1 day | Visual progress indicator during assessments |
+| Accessibility (WCAG) | Medium | Ongoing | Section 508/WCAG 2.1 AA pass shipped; maintain regression coverage |
+| Responsive Design | Medium | Ongoing | Mobile assessment navigation shipped; continue surface-by-surface polish |
+| Loading States | Low | Ongoing | Shared loading and empty-state patterns are implemented; fill remaining gaps |
+| Error Boundaries | Low | Ongoing | Application-level recovery exists; standardize remaining route/API errors |
+| Assessment Progress Bar | Complete | — | Visual progress and mobile navigation are implemented |
 
 ---
 
@@ -361,7 +368,8 @@ Following Vega's pattern:
 
 | Decision | Rationale | Date |
 |----------|-----------|------|
-| Anthropic Claude over OpenAI | Better reasoning for nuanced maturity analysis, via Replit AI Integrations | Oct 2025 |
+| Azure AI Foundry as primary AI provider | Enterprise-hosted GPT-5.4 is the production default; provider/model remain admin-configurable | Sep 2026 |
+| Anthropic as alternate provider | Claude remains available as an alternate rather than the production default | Sep 2026 |
 | PostgreSQL over NoSQL | Relational data model fits assessment structure; Neon-backed via Replit | Sep 2025 |
 | SendGrid API over SMTP | Reliable transactional email with templates | Oct 2025 |
 | Drizzle ORM over Prisma | Lighter weight, better TypeScript inference, simpler migrations | Sep 2025 |
@@ -369,39 +377,38 @@ Following Vega's pattern:
 | 90-day AI cache | Balances freshness with cost; AI insights don't change frequently | Nov 2025 |
 | Database sessions over in-memory | Production-ready SSO state management | Feb 2026 |
 | PKCE for SSO | Security best practice for public client OAuth flows | Feb 2026 |
+| Structured JSON for native course slides | Supports accessible editing, validation, narration, and portability; raw JSON remains an advanced escape hatch | Aug 2026 |
+| Azure Speech for narration | Keeps course narration on the Microsoft stack and separate from assessment LLM selection | Aug 2026 |
+| Server-side lesson completion rules | Required submissions and skip rules must not rely on browser-only enforcement | Aug 2026 |
 
 ### Technical Debt
 
 | Item | Priority | Notes |
 |------|----------|-------|
 | ExecAI import format | Low | One-off simple format for compatibility. Deprecate once all models migrated. |
-| API versioning | Medium | Implement v1/v2 versioning before public API release |
+| API versioning beyond Galaxy | Medium | Galaxy has a versioned v1 contract; standardize remaining APIs before broader external exposure |
 | Connection pooling | Low | Add when traffic warrants optimization |
 | Comprehensive logging | Medium | Structured logging with request correlation IDs |
 | Error handling consistency | Medium | Standardize error response format across all endpoints |
 
 ---
 
-## LEARNING COURSES MODULE — FOLLOW-UPS
+## LEARNING COURSES MODULE — STATUS & FOLLOW-UPS
 
-The MVP slice (catalog, player, authoring, quizzes, attestations, enrollment tracking) shipped on May 2, 2026. Remaining follow-ups:
+The MVP and subsequent course-authoring expansion are implemented: catalog, player, authoring, quizzes, assignments, resources, attestations, enrollment/progress, certificates, assessment recommendations, SCORM, structured slides, narration, and PowerPoint intake. Remaining follow-ups:
 
-1. **SCORM 1.2 / 2004 import** — accept `.zip` uploads, parse `imsmanifest.xml`, store package in object storage, serve runtime that wires `cmi.*` → `lessonProgress.data`. Endpoints stubbed at `POST /api/scorm/import` (501).
-2. **SCORM export** — generate a SCORM zip from a course's structure. Stub at `GET /api/courses/:id/scorm/export` (501).
-3. ~~**Certificate PDF generation**~~ — **DONE.** `server/services/certificate-pdf.ts` renders a branded PDF via `pdf-lib`; `maybeIssueCertificate` stamps `certificateUrl` on enrollment completion. A `POST /api/courses/:id/certificate` re-issue endpoint exists for backfill.
-4. **Attestation reminders/expirations** — scheduled email job (SendGrid) to nudge or re-collect expired attestations.
-5. ~~**Assessment → course recommendation surface**~~ — **DONE.** Recommended-courses card renders on the Results page (driven by weak dimension scores) and a "Suggested for you" section on `/courses`, backed by `/api/assessments/:id/recommended-courses` and `/api/me/recommended-courses`.
-6. ~~**Catalog filters/search**~~ — **DONE.** `/courses` supports keyword search (title/summary/description), tag chips, duration buckets (under 30 / 30–60 / over 60 min), and per-learner completion status (not started / in progress / completed). "Level" filter omitted — no `level` field exists on the `courses` schema; defer until a level taxonomy is scoped.
-7. **Video transcoding/hosting** — currently stores raw URLs; consider Mux or Cloudflare Stream for adaptive playback.
-8. **xAPI (Tin Can) statements** — emit statements for richer learning analytics.
+1. **SCORM media portability** — package referenced private media inside exported SCORM archives and rewrite URLs for external LMS use.
+2. **Attestation reminders/expirations** — scheduled email job to nudge or re-collect expired attestations.
+3. **Video transcoding/hosting** — consider adaptive streaming for large course video libraries.
+4. **xAPI (Tin Can) statements** — emit statements for richer learning analytics.
+5. **Course level taxonomy** — define a level field before adding a catalog level filter.
 
 ---
 
 ## RICH COURSE SLIDES, NARRATION & POWERPOINT IMPORT (Orion Courses for Clients)
 
-**Status:** Phases 0–4 complete (pending review / deploy-dependency provisioning)
-**Priority:** High
-**Branch:** `claude/orion-course-features-nax6bd`
+**Status:** Implemented in Version 3.2
+**Priority:** Maintain and extend
 
 ### Background
 Client demand to do more with Orion for courses: (1) author visually rich
@@ -445,8 +452,8 @@ domains; (6) optionally close with a quiz to certify involvement.
 - Slide content v2:
   - `slide = { id, blocks: Block[], narration?: { mode, text?, audioUrl?, voice?, status? } }`
   - `Block = heading | text | image | video | callout | image_slide`
-- Media (images, recorded audio, MP4) reuse the existing Uppy + GCS upload path
-  (`/api/objects/upload`, `ObjectUploader`).
+- Media (images, recorded audio, MP4) reuse the managed Replit Object Storage
+  upload path (`/api/objects/upload`, `ObjectUploader`).
 
 ### Phases
 - **Phase 0 — Foundations (DONE):** shared slide v2 model + Zod; block renderer
@@ -531,10 +538,10 @@ domains; (6) optionally close with a quiz to certify involvement.
     URLs are server-relative; now also private). Proper fix: copy referenced
     managed objects into the package and rewrite to relative asset paths.
 
-### Media finalize
-Direct-to-storage Uppy uploads (inline images/video, recorded narration) are
-normalized to stable `/objects/...` paths with a public ACL via
-`POST /api/objects/finalize`, mirroring the course-hero-image flow.
+### Media handling
+Direct-to-storage uploads are normalized to stable managed-object paths. Course
+hero images are public for catalog display; lesson slides, narration, and other
+course media remain private behind course-aware authorization.
 
 ### Files touched (Phases 0–3)
 - NEW `shared/slides.ts`, `client/src/components/admin/SlideEditor.tsx`,
@@ -549,6 +556,30 @@ normalized to stable `/objects/...` paths with a public ACL via
 ---
 
 ## COMPLETED FEATURES
+
+### September 2026 — Version 3.2
+- Type/propensity assessments with archetype authoring, scoring, imagery, and population Insights
+- Cross-model personal and tenant Insights with PDF export
+- Structured course slide editor, assignments, resources, required submissions, and skip enforcement
+- Review-first PowerPoint-to-course intake with editable extracted content
+- Azure Speech narration, voice selection, transcripts, bulk generation, and auto-advance
+- Private course-media authorization, validation, and managed-object cleanup
+- SCORM import, playback, and export
+- Monthly Insights digest with tenant controls, opt-out, concurrency protection, status, and reset
+- Tenant-safe bulk assessment-result tagging
+- Section 508/WCAG 2.1 AA accessibility pass
+- Microsoft SSO and optional Planner consent separation with tenant-bound callback state
+- Azure AI Foundry GPT-5.4 as the active production AI model
+- Expanded Galaxy course, progress, certificate, and attestation APIs
+- Assessment-to-course recommendations and production course package workflows
+
+### May–August 2026
+- Course catalog search, filtering, certificates, and recommendations
+- Mobile-friendly assessment navigation
+- Microsoft 365 maturity scoring and numeric-question compatibility fixes
+- Configurable suppression of numeric scores and detailed narratives
+- Result filtering, model import previews, and admin analytics refinements
+- OAuth/SSO redirect hardening, tenant-isolation fixes, dependency remediation, and security scanning
 
 ### February 2026
 - SSO Profile Completion for new Microsoft users
@@ -611,9 +642,12 @@ normalized to stable `/objects/...` paths with a public ACL via
 | Dependency | Purpose | Status |
 |------------|---------|--------|
 | PostgreSQL (Neon) | Primary database | Active |
-| Google Cloud Storage | Object storage for model images | Active |
+| Replit Object Storage | Private/public managed media and generated files | Active |
 | SendGrid | Email delivery (verification, passwords, reports) | Active |
-| Anthropic Claude Sonnet 4.5 | AI insights via Replit AI Integrations | Active |
+| Azure AI Foundry GPT-5.4 | Production AI summaries, recommendations, and Insights | Active |
+| Anthropic Claude Sonnet 4.5 | Alternate AI provider | Available |
+| Azure Speech | Course slide narration | Active when configured |
+| LibreOffice + Poppler | PowerPoint rendering and slide-image extraction | Active |
 | HubSpot | Website tracking (Account ID: 49076134) | Active |
 | jsPDF | PDF report generation | Active |
 | Uppy | Frontend file uploader | Active |
@@ -632,18 +666,15 @@ normalized to stable `/objects/...` paths with a public ACL via
 
 ---
 
-## Galaxy Client Portal API — Deferred Endpoints
+## Galaxy Client Portal API — Status & Deferred Work
 
-Task #40 shipped the v1 Galaxy contract (OAuth + per-tenant exposure policy + signed webhooks + audit log + admin UI + OpenAPI 3.1) covering everything Orion already has the underlying data model for: `/me`, `/artifacts`, `/assessments`, `/assessments/:id`, `/insights/me`. The endpoints below are intentionally deferred because the underlying entities or workflows do not exist in Orion yet. They are tracked here so they can be picked up without breaking the v1 contract.
+The Galaxy v1 contract includes OAuth, per-tenant exposure policy, signed webhooks, audit logging, admin management, OpenAPI 3.1, assessments, results, Insights, courses, course progress, certificates, and attestations. This supersedes the limited May 2026 contract that exposed empty placeholders for learning entities. Remaining deferred operations require additional cross-product workflow decisions.
 
 | Endpoint | Reason deferred | Unblocked when |
 |----------|-----------------|----------------|
 | `POST /assessments` | Galaxy assessment-creation flow not yet defined; current Orion flow is in-app only. | Cross-product assessment-launch story is approved. |
 | `POST /assessments/:id/responses` | Same as above. | — |
 | `POST /assessments/:id/complete` | Same as above. | — |
-| `GET /courses/:id`, `POST /courses/:id/progress`, `POST /courses/:id/quiz` | No `courses` table or progress tracking in Orion. | Learning module ships in Orion. |
-| `POST /attestations/:id/sign` | No `attestations` table. | Attestation feature ships. |
-| `GET /certificates/:id.pdf` | No certificate generator/storage. | Certificate generation feature ships. |
 | `GET /admin/directory` (client_credentials) | Galaxy admin sync not yet scoped; client_credentials grant flow not exposed for this surface. | Admin directory sync story approved. |
 
 The OpenAPI document at `/api/galaxy/v1/openapi.json` lists these under `x-deferred-endpoints`.
@@ -662,10 +693,9 @@ The OpenAPI document at `/api/galaxy/v1/openapi.json` lists these under `x-defer
 
 | Quarter | Focus |
 |---------|-------|
-| Q1 2026 | Multi-tenant completion, SSO hardening, documentation |
-| Q2 2026 | Individual assessments, Stripe billing, enhanced reporting |
-| Q3 2026 | Advanced analytics, white-label, mobile optimization |
-| Q4 2026 | Enterprise features, API marketplace, compliance |
+| Q3 2026 | Version 3.2 stabilization, digest operations, accessibility and tenant-isolation regression coverage |
+| Q4 2026 | Billing/entitlements, custom domains, compliance workflows, reassessment reminders |
+| 2027 | Learning interoperability, adaptive video, broader enterprise APIs, native/PWA evaluation |
 
 ---
 
