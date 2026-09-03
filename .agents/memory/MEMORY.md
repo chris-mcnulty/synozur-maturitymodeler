@@ -8,3 +8,4 @@
 - [Public assessment tenancy](public-assessment-tenancy.md) — anonymous public assessments intentionally have no tenant association; do not treat tenant-null rows as missing data.
 - [Narration request identity](narration-request-identity.md) — browser TTS completions must match a live request ID; script/voice equality alone cannot prevent stale audio writes.
 - [npm transitive overrides](npm-transitive-overrides.md) — audit output alone can hide stale overridden installs; require a clean npm ls after refreshing the direct parent.
+- [HubSpot CSP dependencies](hubspot-csp-dependencies.md) — HubSpot dynamically loads configured ad pixels; validate CSP in a browser rather than allowlisting only its bootstrap host.
