@@ -994,6 +994,96 @@ export function registerCourseRoutes(app: Express) {
     }
   });
 
+  app.post("/api/courses/:id/narration/regenerate-all", ensureAdminOrModeler, async (req, res) => {
+    try {
+      const course = await requireManageCourse(req, res, req.params.id);
+      if (!course) return;
+      const { voice, preserveSlideVoices = false, mode = "approved" } = req.body ?? {};
+      if (typeof voice !== "string" || !voice.trim()) {
+        return res.status(400).json({ error: "voice is required" });
+      }
+      if (mode !== "approved" && mode !== "existing") {
+        return res.status(400).json({ error: "mode must be approved or existing" });
+      }
+
+      const fullCourse = await courseSvc.getCourseFull(req.params.id);
+      if (!fullCourse) return res.status(404).json({ error: "Course not found" });
+      const user = req.user as schema.User;
+      let eligible = 0;
+      let generated = 0;
+      let failed = 0;
+      let lessonsUpdated = 0;
+      const failures: Array<{ lessonId: string; slideId: string; error: string }> = [];
+
+      for (const module of fullCourse.modules) {
+        for (const lesson of module.lessons) {
+          if (lesson.type !== "slides" || !isSupportedSlidesContent(lesson.content)) continue;
+          const content = normalizeSlidesContent(lesson.content);
+          let lessonChanged = false;
+          const nextSlides = [...content.slides];
+
+          for (let index = 0; index < nextSlides.length; index++) {
+            const slide = nextSlides[index];
+            const narration = slide.narration;
+            const text = (narration?.text || "").trim();
+            const isEligible = mode === "existing"
+              ? Boolean(text && narration?.audioUrl)
+              : Boolean(text && narration?.approved === true);
+            if (!isEligible) continue;
+            eligible++;
+            const selectedVoice = preserveSlideVoices && narration?.voice ? narration.voice : voice.trim();
+            try {
+              const result = await synthesizeNarration({
+                text,
+                voice: selectedVoice,
+                ownerUserId: user.id,
+              });
+              nextSlides[index] = {
+                ...slide,
+                narration: {
+                  ...narration,
+                  mode: "tts",
+                  audioUrl: result.audioUrl,
+                  voice: result.voice,
+                  status: "ready",
+                  generatedFromText: text,
+                  generationRequestId: undefined,
+                },
+              };
+              generated++;
+              lessonChanged = true;
+            } catch (err: any) {
+              failed++;
+              failures.push({
+                lessonId: lesson.id,
+                slideId: slide.id,
+                error: err?.message || "Azure Speech generation failed",
+              });
+            }
+          }
+
+          if (lessonChanged) {
+            await courseSvc.updateLesson(lesson.id, {
+              content: { ...content, slides: nextSlides } as any,
+            });
+            lessonsUpdated++;
+          }
+        }
+      }
+
+      res.json({
+        eligible,
+        generated,
+        failed,
+        lessonsUpdated,
+        failures: failures.slice(0, 20),
+      });
+    } catch (err: any) {
+      console.error("course narration regeneration error", err);
+      res.status(400).json({ error: err.message ?? "Failed to regenerate course narration" });
+    }
+  });
+
   // ----- Course-level PowerPoint intake -----
   // Analyze first and persist nothing except private preview media. The review
   // response includes every source slide so an author can reverse any cleanup

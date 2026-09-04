@@ -64,6 +64,27 @@ interface CourseFull extends Course {
   tags: CourseTag[];
 }
 
+function lessonElementCount(lesson: Lesson): { count: number; label: string } {
+  const content = lesson.content as any;
+  if (lesson.type === "slides") {
+    let count = 0;
+    try { count = normalizeSlides(content).length; } catch { /* unsupported source remains countable as zero */ }
+    return { count, label: count === 1 ? "slide" : "slides" };
+  }
+  if (lesson.type === "quiz") {
+    const count = Array.isArray(content?.questions) ? content.questions.length : 0;
+    return { count, label: count === 1 ? "question" : "questions" };
+  }
+  const count = Array.isArray(content?.blocks)
+    ? content.blocks.length
+    : Array.isArray(content?.elements)
+      ? content.elements.length
+      : content && Object.keys(content).length > 0
+        ? 1
+        : 0;
+  return { count, label: count === 1 ? "element" : "elements" };
+}
+
 interface PptxReviewSlide {
   id: string;
   index: number;
@@ -698,6 +719,9 @@ function CourseBuilder({ courseId, onClose }: { courseId: string; onClose: () =>
   const [editingLesson, setEditingLesson] = useState<Lesson | null>(null);
   const [creatingLessonInModule, setCreatingLessonInModule] = useState<string | null>(null);
   const [tab, setTab] = useState<"overview" | "structure" | "enrollments">("overview");
+  const [courseNarrationVoice, setCourseNarrationVoice] = useState(DEFAULT_VOICE);
+  const [preserveCourseVoices, setPreserveCourseVoices] = useState(false);
+  const [courseNarrationMode, setCourseNarrationMode] = useState<"existing" | "approved">("existing");
 
   const updateCourse = useMutation({
     mutationFn: async (patch: Partial<Course>) => apiRequest(`/api/courses/${courseId}`, "PUT", patch),
@@ -724,6 +748,63 @@ function CourseBuilder({ courseId, onClose }: { courseId: string; onClose: () =>
   const deleteLesson = useMutation({
     mutationFn: async (id: string) => apiRequest(`/api/lessons/${id}`, "DELETE"),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["/api/courses", courseId] }),
+  });
+
+  const narratableCourseSlides = course?.modules.reduce(
+    (total, module) => total + module.lessons.reduce((lessonTotal, lesson) => {
+      if (lesson.type !== "slides") return lessonTotal;
+      try {
+        return lessonTotal + normalizeSlides(lesson.content).filter(
+          slide => (slide.narration?.text || "").trim() && slide.narration?.approved === true,
+        ).length;
+      } catch {
+        return lessonTotal;
+      }
+    }, 0),
+    0,
+  ) ?? 0;
+  const existingCourseNarrations = course?.modules.reduce(
+    (total, module) => total + module.lessons.reduce((lessonTotal, lesson) => {
+      if (lesson.type !== "slides") return lessonTotal;
+      try {
+        return lessonTotal + normalizeSlides(lesson.content).filter(
+          slide => (slide.narration?.text || "").trim() && Boolean(slide.narration?.audioUrl),
+        ).length;
+      } catch {
+        return lessonTotal;
+      }
+    }, 0),
+    0,
+  ) ?? 0;
+  const selectedCourseNarrationCount = courseNarrationMode === "existing"
+    ? existingCourseNarrations
+    : narratableCourseSlides;
+
+  const regenerateCourseNarration = useMutation({
+    mutationFn: async () => apiRequest(
+      `/api/courses/${courseId}/narration/regenerate-all`,
+      "POST",
+      {
+        voice: courseNarrationVoice,
+        preserveSlideVoices: preserveCourseVoices,
+        mode: courseNarrationMode,
+      },
+    ) as Promise<{ eligible: number; generated: number; failed: number; lessonsUpdated: number }>,
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/courses", courseId] });
+      toast({
+        title: result.failed
+          ? `Regenerated ${result.generated} of ${result.eligible} narrations`
+          : `Regenerated all ${result.generated} narrations`,
+        description: `${result.lessonsUpdated} lesson${result.lessonsUpdated === 1 ? "" : "s"} updated${result.failed ? `; ${result.failed} failed and kept their existing audio` : ""}.`,
+        variant: result.failed ? "destructive" : "default",
+      });
+    },
+    onError: (err: Error) => toast({
+      title: "Course narration regeneration failed",
+      description: err.message,
+      variant: "destructive",
+    }),
   });
 
   if (isLoading || !course) {
@@ -769,16 +850,75 @@ function CourseBuilder({ courseId, onClose }: { courseId: string; onClose: () =>
       {tab === "structure" && (
         <div className="space-y-3">
           <Card>
-            <CardContent className="pt-6">
-              <Button
-                onClick={() => {
-                  const t = prompt("Module title:");
-                  if (t) createModule.mutate(t);
-                }}
-                data-testid="button-add-module"
-              >
-                <Plus className="h-4 w-4 mr-1" /> Add module
-              </Button>
+            <CardContent className="pt-6 space-y-4">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <Button
+                  onClick={() => {
+                    const t = prompt("Module title:");
+                    if (t) createModule.mutate(t);
+                  }}
+                  data-testid="button-add-module"
+                >
+                  <Plus className="h-4 w-4 mr-1" /> Add module
+                </Button>
+                <div className="flex flex-wrap items-center gap-2 rounded-md border bg-muted/40 p-2">
+                  <Select
+                    value={courseNarrationMode}
+                    onValueChange={value => setCourseNarrationMode(value as "existing" | "approved")}
+                  >
+                    <SelectTrigger className="h-8 w-52" data-testid="select-course-narration-mode">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="existing">
+                        Replace all existing audio ({existingCourseNarrations})
+                      </SelectItem>
+                      <SelectItem value="approved">
+                        Regenerate all approved scripts ({narratableCourseSlides})
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Select value={courseNarrationVoice} onValueChange={setCourseNarrationVoice}>
+                    <SelectTrigger className="h-8 w-52" data-testid="select-course-narration-voice">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {TTS_VOICES.map(voice => (
+                        <SelectItem key={voice.id} value={voice.id}>{voice.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                    <Checkbox
+                      checked={preserveCourseVoices}
+                      onCheckedChange={checked => setPreserveCourseVoices(checked === true)}
+                      disabled={regenerateCourseNarration.isPending}
+                    />
+                    Preserve slide voices
+                  </label>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={regenerateCourseNarration.isPending || selectedCourseNarrationCount === 0}
+                    onClick={() => {
+                      if (window.confirm(
+                        courseNarrationMode === "existing"
+                          ? `Replace all ${existingCourseNarrations} existing slide narration audio file${existingCourseNarrations === 1 ? "" : "s"} in every lesson using ${preserveCourseVoices ? "each slide's saved voice" : "the selected voice"}? Slides that fail will keep their current audio.`
+                          : `Regenerate all ${narratableCourseSlides} approved slide narration${narratableCourseSlides === 1 ? "" : "s"} in every lesson using ${preserveCourseVoices ? "each slide's saved voice" : "the selected voice"}? Existing audio will be replaced. Slides that fail will keep their current audio.`,
+                      )) {
+                        regenerateCourseNarration.mutate();
+                      }
+                    }}
+                    data-testid="button-regenerate-course-narration"
+                  >
+                    {regenerateCourseNarration.isPending
+                      ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Regenerating course…</>
+                      : <><Sparkles className="h-4 w-4 mr-2" />
+                          {courseNarrationMode === "existing" ? "Replace all existing audio" : "Regenerate all course narration"}
+                        </>}
+                  </Button>
+                </div>
+              </div>
             </CardContent>
           </Card>
           {course.modules.map((mod, mi) => (
@@ -800,13 +940,17 @@ function CourseBuilder({ courseId, onClose }: { courseId: string; onClose: () =>
               </CardHeader>
               <CardContent>
                 <div className="space-y-2">
-                  {mod.lessons.map((l, li) => (
+                  {mod.lessons.map((l, li) => {
+                    const elementCount = lessonElementCount(l);
+                    return (
                     <div key={l.id} className="flex items-center justify-between gap-2 p-2 rounded-md border" data-testid={`row-lesson-${l.id}`}>
                       <div className="flex items-center gap-2 flex-1 min-w-0">
                         <FileText className="h-4 w-4 text-muted-foreground" />
                         <div className="flex-1 min-w-0">
                           <div className="font-medium truncate">{li + 1}. {l.title}</div>
-                          <div className="text-xs text-muted-foreground capitalize">{l.type.replace("_", " ")}</div>
+                          <div className="text-xs text-muted-foreground capitalize">
+                            {l.type.replace("_", " ")} · {elementCount.count} {elementCount.label}
+                          </div>
                         </div>
                       </div>
                       <div className="flex gap-1">
@@ -825,7 +969,8 @@ function CourseBuilder({ courseId, onClose }: { courseId: string; onClose: () =>
                         </Button>
                       </div>
                     </div>
-                  ))}
+                    );
+                  })}
                   <Button
                     size="sm"
                     variant="outline"
