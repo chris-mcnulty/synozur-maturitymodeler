@@ -480,6 +480,8 @@ export function SlideEditor({ value, courseId, onChange, onGenerationStateChange
   latestValueRef.current = value;
   const [activeIdx, setActiveIdx] = useState(initialActiveIdx ?? 0);
   const [bulkVoice, setBulkVoice] = useState(DEFAULT_VOICE);
+  const [bulkMode, setBulkMode] = useState<"missing" | "all">("missing");
+  const [preserveSlideVoices, setPreserveSlideVoices] = useState(false);
   const [bulkProgress, setBulkProgress] = useState<{ done: number; total: number } | null>(null);
   const inFlightGenerationCount = useRef(0);
   const resolvedActiveIdx = Math.min(activeIdx, Math.max(0, slides.length - 1));
@@ -527,34 +529,53 @@ export function SlideEditor({ value, courseId, onChange, onGenerationStateChange
       s.narration?.approved === true &&
       !s.narration?.audioUrl,
   );
+  const narratableSlides = slides.filter(
+    (s) => (s.narration?.text || "").trim() && s.narration?.approved === true,
+  );
 
   const generateAllNarration = async () => {
     const targets = slides
       .filter((slide) =>
         (slide.narration?.text || "").trim() &&
         slide.narration?.approved === true &&
-        !slide.narration?.audioUrl,
+        (bulkMode === "all" || !slide.narration?.audioUrl),
       )
       .map((slide) => ({
         slideId: slide.id,
         scriptText: (slide.narration?.text || "").trim(),
-        voice: slide.narration?.voice || bulkVoice,
+        voice: preserveSlideVoices ? (slide.narration?.voice || bulkVoice) : bulkVoice,
+        expectedAudioUrl: slide.narration?.audioUrl,
+        previousVoice: slide.narration?.voice,
+        previousStatus: slide.narration?.status,
       }));
     if (targets.length === 0) return;
+    const replacementCount = targets.filter((target) => target.expectedAudioUrl).length;
+    if (
+      replacementCount > 0 &&
+      !window.confirm(
+        `Regenerate narration for ${targets.length} slide(s) ` +
+        `${preserveSlideVoices ? "using each slide's saved voice" : "using the selected voice"}? ` +
+        `This will replace existing audio on ${replacementCount} slide(s) after you save the lesson.`,
+      )
+    ) {
+      return;
+    }
     setBulkProgress({ done: 0, total: targets.length });
     reportGenerationState(true);
     let failures = 0;
     let stale = 0;
     let firstFailureMessage = "";
     for (let k = 0; k < targets.length; k++) {
-      const { slideId, scriptText, voice } = targets[k];
+      const {
+        slideId, scriptText, voice, expectedAudioUrl, previousVoice, previousStatus,
+      } = targets[k];
       const generationRequestId = genId("tts");
       const stillCurrent = updateSlideById(slideId, (slide) => {
         const currentNarration = slide.narration;
         if (
           (currentNarration?.text || "").trim() !== scriptText ||
           currentNarration?.approved !== true ||
-          currentNarration?.audioUrl
+          currentNarration?.audioUrl !== expectedAudioUrl
         ) return null;
         return {
           ...slide,
@@ -615,8 +636,9 @@ export function SlideEditor({ value, courseId, onChange, onGenerationStateChange
             ...slide,
             narration: {
               ...currentNarration,
-            mode: "tts",
-              status: "failed",
+              mode: "tts",
+              voice: expectedAudioUrl ? previousVoice : voice,
+              status: expectedAudioUrl ? (previousStatus || "ready") : "failed",
               generationRequestId: undefined,
             },
           };
@@ -708,12 +730,21 @@ export function SlideEditor({ value, courseId, onChange, onGenerationStateChange
   return (
     <div className="space-y-3" data-testid="slide-editor">
       {/* Deck-level narration toolbar */}
-      {pendingNarration.length > 0 && (
+      {narratableSlides.length > 0 && (
         <div className="flex flex-wrap items-center gap-2 rounded-md border bg-muted/40 p-2">
           <Mic className="h-4 w-4 text-muted-foreground" />
           <span className="text-xs text-muted-foreground">
-            {pendingNarration.length} slide(s) have a script but no audio.
+            {narratableSlides.length} approved script(s); {pendingNarration.length} missing audio.
           </span>
+          <Select value={bulkMode} onValueChange={(value) => setBulkMode(value as "missing" | "all")}>
+            <SelectTrigger className="w-44 h-8" data-testid="select-bulk-narration-mode">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="missing">Generate missing only</SelectItem>
+              <SelectItem value="all">Regenerate all audio</SelectItem>
+            </SelectContent>
+          </Select>
           <Select value={bulkVoice} onValueChange={setBulkVoice}>
             <SelectTrigger className="w-52 h-8" data-testid="select-bulk-voice"><SelectValue /></SelectTrigger>
             <SelectContent>
@@ -723,14 +754,24 @@ export function SlideEditor({ value, courseId, onChange, onGenerationStateChange
           <Button
             type="button" variant="outline" size="sm"
             onClick={generateAllNarration}
-            disabled={!!bulkProgress}
+            disabled={!!bulkProgress || (bulkMode === "missing" && pendingNarration.length === 0)}
             data-testid="button-generate-all-narration"
           >
             {bulkProgress
               ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> {bulkProgress.done}/{bulkProgress.total}</>
-              : <><Sparkles className="h-4 w-4 mr-2" /> Generate all narration (Azure TTS)</>}
+              : <><Sparkles className="h-4 w-4 mr-2" />
+                  {bulkMode === "all" ? "Regenerate all narration" : "Generate missing narration"}
+                </>}
           </Button>
-          <span className="text-xs text-muted-foreground">(voice applies to slides without their own)</span>
+          <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <Checkbox
+              checked={preserveSlideVoices}
+              onCheckedChange={(checked) => setPreserveSlideVoices(checked === true)}
+              disabled={!!bulkProgress}
+              data-testid="checkbox-preserve-slide-voices"
+            />
+            Preserve each slide's voice
+          </label>
         </div>
       )}
 
