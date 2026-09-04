@@ -3,6 +3,9 @@
 ## Overview
 Orion is a fullstack JavaScript application providing a multi-model maturity assessment platform. It features dynamic routing for assessments, CSV-based model management, gated PDF result generation, benchmarking, and extensive administrative controls. The platform aims to offer insightful maturity assessments, aligning with Synozur's vision as "the Transformation Company." Orion also functions as a comprehensive OAuth 2.1/OpenID Connect identity provider for the Synozur ecosystem.
 
+### Related Repository
+- **Synozur WebBase:** https://github.com/chris-mcnulty/Synozur-WebBase — reference implementation for the Synozur website, including the Briefing Podcast's Azure Speech and DragonHD voice configuration.
+
 ## User Preferences
 - Uses SendGrid for email delivery (API key method, not Replit connector)
 - Prefers seeing metrics on home pages when data is available
