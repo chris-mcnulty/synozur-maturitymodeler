@@ -1266,4 +1266,26 @@ export function registerAdminRoutes(app: Express) {
       res.status(500).json({ error: err.message ?? "Failed to fetch TTS config" });
     }
   });
+
+  // Synthesizes a short sample in memory. It neither saves settings nor writes
+  // the result to course/object storage.
+  app.post("/api/admin/tts/preview", ensureAdmin, async (req, res) => {
+    try {
+      const voice = typeof req.body?.voice === "string" ? req.body.voice.trim() : "";
+      if (!voice) {
+        return res.status(400).json({ error: "A narration voice is required." });
+      }
+
+      const { synthesizeVoicePreview } = await import("../services/tts-service");
+      const preview = await synthesizeVoicePreview({ voice });
+      res.setHeader("Content-Type", "audio/mpeg");
+      res.setHeader("Cache-Control", "no-store");
+      res.setHeader("X-TTS-Voice", preview.voice);
+      return res.send(preview.audio);
+    } catch (err: any) {
+      const message = err?.message ?? "Failed to preview narration voice";
+      const status = /not configured|required/i.test(message) ? 400 : 502;
+      return res.status(status).json({ error: message });
+    }
+  });
 }

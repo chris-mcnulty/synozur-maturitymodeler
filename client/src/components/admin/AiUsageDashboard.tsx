@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
-import { Brain, DollarSign, Activity, TrendingUp, CheckCircle2, XCircle, Mic } from "lucide-react";
+import { Brain, DollarSign, Activity, TrendingUp, CheckCircle2, XCircle, Mic, Play, Loader2 } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatDistanceToNow } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
@@ -60,6 +60,7 @@ export function AiUsageDashboard() {
   const [speechKey, setSpeechKey] = useState('');
   const [speechRegion, setSpeechRegion] = useState('');
   const [speechVoice, setSpeechVoice] = useState('');
+  const [previewAudioUrl, setPreviewAudioUrl] = useState<string | null>(null);
 
   const { data: stats, isLoading } = useQuery<AiUsageStats>({
     queryKey: ['/api/admin/ai/usage'],
@@ -93,6 +94,12 @@ export function AiUsageDashboard() {
     }
   }, [ttsConfig]);
 
+  useEffect(() => {
+    return () => {
+      if (previewAudioUrl) URL.revokeObjectURL(previewAudioUrl);
+    };
+  }, [previewAudioUrl]);
+
   const saveTtsConfig = useMutation({
     mutationFn: async () => {
       if (speechKey) {
@@ -111,6 +118,34 @@ export function AiUsageDashboard() {
     },
     onError: () => {
       toast({ title: "Error", description: "Failed to save speech settings.", variant: "destructive" });
+    },
+  });
+
+  const previewVoice = useMutation({
+    mutationFn: async () => {
+      const response = await fetch('/api/admin/tts/preview', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ voice: speechVoice || DEFAULT_VOICE }),
+      });
+      if (!response.ok) {
+        const body = await response.json().catch(() => null);
+        throw new Error(body?.error || 'Failed to preview narration voice.');
+      }
+      return URL.createObjectURL(await response.blob());
+    },
+    onSuccess: (url) => {
+      setPreviewAudioUrl((current) => {
+        if (current) URL.revokeObjectURL(current);
+        return url;
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Voice preview unavailable",
+        description: error.message,
+        variant: "destructive",
+      });
     },
   });
 
@@ -266,7 +301,16 @@ export function AiUsageDashboard() {
 
           <div className="space-y-1.5 min-w-[200px]">
             <Label htmlFor="speechVoice" className="text-xs">Default Voice</Label>
-            <Select value={speechVoice || DEFAULT_VOICE} onValueChange={setSpeechVoice}>
+            <Select
+              value={speechVoice || DEFAULT_VOICE}
+              onValueChange={(voice) => {
+                setSpeechVoice(voice);
+                setPreviewAudioUrl((current) => {
+                  if (current) URL.revokeObjectURL(current);
+                  return null;
+                });
+              }}
+            >
               <SelectTrigger id="speechVoice" data-testid="select-speech-voice">
                 <SelectValue placeholder="Select a voice…" />
               </SelectTrigger>
@@ -285,6 +329,19 @@ export function AiUsageDashboard() {
           </div>
 
           <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            onClick={() => previewVoice.mutate()}
+            disabled={previewVoice.isPending || !ttsConfig?.keyConfigured}
+            data-testid="button-preview-tts-voice"
+          >
+            {previewVoice.isPending
+              ? <><Loader2 className="h-4 w-4 mr-1.5 animate-spin" /> Previewing…</>
+              : <><Play className="h-4 w-4 mr-1.5" /> Preview voice</>}
+          </Button>
+
+          <Button
             size="sm"
             onClick={() => saveTtsConfig.mutate()}
             disabled={saveTtsConfig.isPending || (!speechKey && !speechRegion && !speechVoice)}
@@ -293,6 +350,16 @@ export function AiUsageDashboard() {
             {saveTtsConfig.isPending ? 'Saving…' : 'Apply'}
           </Button>
         </div>
+        {previewAudioUrl && (
+          <audio
+            className="mt-4 w-full max-w-md"
+            src={previewAudioUrl}
+            controls
+            autoPlay
+            aria-label="Narration voice preview"
+            data-testid="audio-tts-voice-preview"
+          />
+        )}
       </Card>
 
       {/* Statistics Cards */}

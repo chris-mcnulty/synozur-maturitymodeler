@@ -170,6 +170,8 @@ export function splitTextForTts(text: string, limit: number): string[] {
 // ─── Public API ──────────────────────────────────────────────────────────────
 
 const MAX_TEXT_LENGTH = 50000;
+export const TTS_PREVIEW_TEXT =
+  "Hello! This is a preview of your selected narration voice.";
 
 /**
  * Returns true when Azure TTS is available via env vars.
@@ -187,6 +189,29 @@ export function isTtsConfigured(): boolean {
 export function getTtsProvider(): "azure" | null {
   if (isAzureTtsConfigured()) return "azure";
   return null;
+}
+
+/**
+ * Synthesizes a short, temporary sample without writing it to object storage.
+ * The caller is responsible for returning or discarding the bytes.
+ */
+export async function synthesizeVoicePreview(opts: {
+  voice: string;
+}): Promise<{ audio: Buffer; voice: string; provider: "azure" }> {
+  const azureConfig = await getAzureConfig();
+  const azureAvailable = Boolean(azureConfig.key && azureConfig.endpoint);
+
+  if (!azureAvailable) {
+    throw new Error(
+      "Azure Speech is not configured. Add your Azure Speech Key and Region before previewing a voice.",
+    );
+  }
+
+  const voice = (opts.voice || "").trim();
+  if (!voice) throw new Error("A narration voice is required.");
+
+  const audio = await synthesizeChunkAzure(TTS_PREVIEW_TEXT, voice, azureConfig);
+  return { audio, voice, provider: "azure" };
 }
 
 /**

@@ -7,6 +7,8 @@ import {
   isTtsConfigured,
   splitTextForTts,
   synthesizeChunkAzure,
+  synthesizeVoicePreview,
+  TTS_PREVIEW_TEXT,
 } from '../../server/services/tts-service';
 
 const AZURE_KEYS = ['AZURE_SPEECH_KEY', 'AZURE_SPEECH_REGION', 'AZURE_SPEECH_ENDPOINT'] as const;
@@ -69,6 +71,45 @@ describe('Azure Dragon HD requests', () => {
     await expect(synthesizeChunkAzure('Welcome.', dragonVoice, config)).rejects.toThrow(
       /may not be available.*eastus/i,
     );
+  });
+});
+
+describe('voice previews', () => {
+  it('returns temporary audio for the requested voice', async () => {
+    process.env.AZURE_SPEECH_KEY = 'test-key';
+    process.env.AZURE_SPEECH_REGION = 'eastus';
+    delete process.env.AZURE_SPEECH_ENDPOINT;
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(new Uint8Array([7, 8, 9]), { status: 200 }),
+    );
+    vi.stubGlobal('fetch', fetchMock);
+
+    const voice = 'en-US-Ava:DragonHDLatestNeural';
+    await expect(synthesizeVoicePreview({ voice })).resolves.toEqual({
+      audio: Buffer.from([7, 8, 9]),
+      voice,
+      provider: 'azure',
+    });
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining('eastus.tts.speech.microsoft.com'),
+      expect.objectContaining({
+        body: expect.stringContaining(TTS_PREVIEW_TEXT),
+      }),
+    );
+  });
+
+  it('reports an unavailable-region error without storing audio', async () => {
+    process.env.AZURE_SPEECH_KEY = 'test-key';
+    process.env.AZURE_SPEECH_REGION = 'westus';
+    delete process.env.AZURE_SPEECH_ENDPOINT;
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(new Response('Voice not found', { status: 404 })),
+    );
+
+    await expect(
+      synthesizeVoicePreview({ voice: 'en-US-Andrew:DragonHDLatestNeural' }),
+    ).rejects.toThrow(/may not be available.*westus/i);
   });
 });
 
