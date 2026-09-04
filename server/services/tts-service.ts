@@ -13,7 +13,7 @@
  *   azureSpeechKey      — Azure Speech subscription key
  *   azureSpeechRegion   — region, e.g. "eastus" (auto-builds endpoint if no custom one)
  *   azureSpeechEndpoint — optional full REST endpoint override
- *   azureSpeechVoice    — default voice (e.g. "en-US-JennyNeural")
+ *   azureSpeechVoice    — default voice (e.g. "en-US-Andrew:DragonHDLatestNeural")
  *
  * Env overrides (used if DB setting is absent):
  *   AZURE_SPEECH_KEY / AZURE_SPEECH_REGION / AZURE_SPEECH_ENDPOINT / AZURE_SPEECH_VOICE
@@ -23,6 +23,9 @@ import { ObjectStorageService } from "../objectStorage";
 import { db } from "../db";
 import { eq } from "drizzle-orm";
 import { settings as settingsTable } from "@shared/schema";
+
+export const DEFAULT_AZURE_VOICE = "en-US-Andrew:DragonHDLatestNeural";
+export const AZURE_MP3_OUTPUT_FORMAT = "audio-24khz-96kbitrate-mono-mp3";
 
 // ─── DB-backed config ────────────────────────────────────────────────────────
 
@@ -65,7 +68,7 @@ export async function getAzureConfig(): Promise<AzureTtsConfig> {
   const voice =
     (await getDbSetting("azureSpeechVoice")) ||
     process.env.AZURE_SPEECH_VOICE ||
-    "en-US-JennyNeural";
+    DEFAULT_AZURE_VOICE;
   return { key, region, endpoint, voice };
 }
 
@@ -93,7 +96,7 @@ function ssmlEscape(s: string): string {
     .replace(/'/g, "&apos;");
 }
 
-function buildSsml(text: string, voice: string): string {
+export function buildSsml(text: string, voice: string): string {
   const lang = voice.split("-").slice(0, 2).join("-") || "en-US";
   return (
     `<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xml:lang="${lang}">` +
@@ -101,7 +104,7 @@ function buildSsml(text: string, voice: string): string {
   );
 }
 
-async function synthesizeChunkAzure(
+export async function synthesizeChunkAzure(
   text: string,
   voice: string,
   config: AzureTtsConfig,
@@ -111,7 +114,7 @@ async function synthesizeChunkAzure(
     headers: {
       "Ocp-Apim-Subscription-Key": config.key,
       "Content-Type": "application/ssml+xml",
-      "X-Microsoft-OutputFormat": "audio-24khz-48kbitrate-mono-mp3",
+      "X-Microsoft-OutputFormat": AZURE_MP3_OUTPUT_FORMAT,
       "User-Agent": "orion-courses",
     },
     body: buildSsml(text, voice),
@@ -119,11 +122,19 @@ async function synthesizeChunkAzure(
 
   if (!resp.ok) {
     const detail = await resp.text().catch(() => "");
+    const dragonHint =
+      voice.includes(":DragonHD") && [400, 404].includes(resp.status)
+        ? ` Voice "${voice}" may not be available in Azure Speech region "${config.region || "for this endpoint"}"; choose another region or voice.`
+        : "";
     throw new Error(
-      `Azure TTS request failed (${resp.status}). ${detail.slice(0, 200)}`,
+      `Azure TTS request failed (${resp.status}).${dragonHint}${detail ? ` ${detail.slice(0, 200)}` : ""}`,
     );
   }
-  return Buffer.from(await resp.arrayBuffer());
+  const audio = Buffer.from(await resp.arrayBuffer());
+  if (audio.length === 0) {
+    throw new Error(`Azure TTS returned empty audio for voice "${voice}".`);
+  }
+  return audio;
 }
 
 // ─── Shared chunker ──────────────────────────────────────────────────────────

@@ -12,6 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { formatDistanceToNow } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect } from "react";
+import { DEFAULT_VOICE, TTS_VOICES } from "@/components/admin/editor-fields";
 
 interface AiUsageStats {
   totalRequests: number;
@@ -100,7 +101,7 @@ export function AiUsageDashboard() {
       if (speechRegion) {
         await apiRequest('/api/settings/azureSpeechRegion', 'POST', { value: speechRegion });
       }
-      await apiRequest('/api/settings/azureSpeechVoice', 'POST', { value: speechVoice || 'en-US-JennyNeural' });
+      await apiRequest('/api/settings/azureSpeechVoice', 'POST', { value: speechVoice || DEFAULT_VOICE });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/admin/tts/config'] });
@@ -229,7 +230,7 @@ export function AiUsageDashboard() {
           ) : null}
         </div>
         <p className="text-sm text-muted-foreground mb-4">
-          Azure Cognitive Services Speech is required to generate narration audio for course slides.
+          Azure Cognitive Services Speech is required to generate narration audio for course slides and lessons.
           OpenAI credentials are not used as a narration fallback.
           {ttsConfig?.keyConfigured && !speechKey && (
             <span className="text-green-500 ml-1">A key is already saved — leave the field blank to keep it.</span>
@@ -265,13 +266,22 @@ export function AiUsageDashboard() {
 
           <div className="space-y-1.5 min-w-[200px]">
             <Label htmlFor="speechVoice" className="text-xs">Default Voice</Label>
-            <Input
-              id="speechVoice"
-              placeholder="en-US-JennyNeural"
-              value={speechVoice}
-              onChange={e => setSpeechVoice(e.target.value)}
-              data-testid="input-speech-voice"
-            />
+            <Select value={speechVoice || DEFAULT_VOICE} onValueChange={setSpeechVoice}>
+              <SelectTrigger id="speechVoice" data-testid="select-speech-voice">
+                <SelectValue placeholder="Select a voice…" />
+              </SelectTrigger>
+              <SelectContent>
+                {speechVoice && !TTS_VOICES.some((voice) => voice.id === speechVoice) && (
+                  <SelectItem value={speechVoice}>{speechVoice} (saved custom voice)</SelectItem>
+                )}
+                {TTS_VOICES.map((voice) => (
+                  <SelectItem key={voice.id} value={voice.id}>{voice.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              Dragon HD availability varies by Azure Speech region.
+            </p>
           </div>
 
           <Button

@@ -1,5 +1,13 @@
-import { afterEach, describe, expect, it } from 'vitest';
-import { isTtsConfigured, isAzureTtsConfigured, getTtsProvider, splitTextForTts } from '../../server/services/tts-service';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import {
+  AZURE_MP3_OUTPUT_FORMAT,
+  buildSsml,
+  getTtsProvider,
+  isAzureTtsConfigured,
+  isTtsConfigured,
+  splitTextForTts,
+  synthesizeChunkAzure,
+} from '../../server/services/tts-service';
 
 const AZURE_KEYS = ['AZURE_SPEECH_KEY', 'AZURE_SPEECH_REGION', 'AZURE_SPEECH_ENDPOINT'] as const;
 const OPENAI_KEYS = ['AI_INTEGRATIONS_OPENAI_BASE_URL', 'AI_INTEGRATIONS_OPENAI_API_KEY'] as const;
@@ -9,10 +17,59 @@ const saved: Record<string, string | undefined> = {};
 for (const k of ALL_KEYS) saved[k] = process.env[k];
 
 afterEach(() => {
+  vi.unstubAllGlobals();
   for (const k of ALL_KEYS) {
     if (saved[k] === undefined) delete process.env[k];
     else process.env[k] = saved[k];
   }
+});
+
+describe('Azure Dragon HD requests', () => {
+  const dragonVoice = 'en-US-Andrew:DragonHDLatestNeural';
+  const config = {
+    key: 'test-key',
+    region: 'eastus',
+    endpoint: 'https://eastus.tts.speech.microsoft.com/cognitiveservices/v1',
+    voice: dragonVoice,
+  };
+
+  it('preserves the DragonHD identifier in SSML', () => {
+    expect(buildSsml('Welcome & learn.', dragonVoice)).toContain(
+      `<voice name="${dragonVoice}">Welcome &amp; learn.</voice>`,
+    );
+  });
+
+  it('sends DragonHD narration at the reviewed 96 kbps MP3 quality', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(new Uint8Array([1, 2, 3]), { status: 200 }),
+    );
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(synthesizeChunkAzure('Welcome.', dragonVoice, config)).resolves.toEqual(
+      Buffer.from([1, 2, 3]),
+    );
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      config.endpoint,
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          'X-Microsoft-OutputFormat': AZURE_MP3_OUTPUT_FORMAT,
+        }),
+        body: expect.stringContaining(`name="${dragonVoice}"`),
+      }),
+    );
+  });
+
+  it('explains that a DragonHD voice may be unavailable in the configured region', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(new Response('Voice not found', { status: 400 })),
+    );
+
+    await expect(synthesizeChunkAzure('Welcome.', dragonVoice, config)).rejects.toThrow(
+      /may not be available.*eastus/i,
+    );
+  });
 });
 
 function clearAll() {

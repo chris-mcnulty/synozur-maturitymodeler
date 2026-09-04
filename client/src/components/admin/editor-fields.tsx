@@ -45,8 +45,13 @@ export async function finalizeUploaded(result: any): Promise<string | undefined>
   return raw;
 }
 
-/** Curated Azure neural voices offered in the narration picker. */
+/** Curated Azure voices offered in course narration pickers. */
 export const TTS_VOICES: { id: string; label: string }[] = [
+  { id: "en-US-Andrew:DragonHDLatestNeural", label: "Andrew — Dragon HD (US, male)" },
+  { id: "en-US-Ava:DragonHDLatestNeural", label: "Ava — Dragon HD (US, female)" },
+  { id: "en-US-Emma:DragonHDLatestNeural", label: "Emma — Dragon HD (US, female)" },
+  { id: "en-US-Steffan:DragonHDLatestNeural", label: "Steffan — Dragon HD (US, male)" },
+  { id: "en-US-Aria:DragonHDLatestNeural", label: "Aria — Dragon HD (US, female)" },
   { id: "en-US-JennyNeural", label: "Jenny (US, female)" },
   { id: "en-US-AriaNeural", label: "Aria (US, female)" },
   { id: "en-US-GuyNeural", label: "Guy (US, male)" },
