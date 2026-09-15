@@ -16,6 +16,7 @@ export type ScoringQuestionType =
 export interface ScoringAnswer {
   id: string;
   score: number;
+  isNotApplicable?: boolean;
   // For 'type' assessment-mode models: the model type (archetype) key this
   // answer votes for. Null/undefined for normal scored models.
   typeKey?: string | null;
@@ -28,6 +29,8 @@ export interface ScoringQuestion {
   minValue?: number | null;
   maxValue?: number | null;
   answers: ScoringAnswer[];
+  isScored?: boolean;
+  isOptional?: boolean;
 }
 
 export interface ScoringResponse {
@@ -57,6 +60,8 @@ export interface ScoringInput {
   responses: ScoringResponse[];
   dimensions: ScoringDimension[];
   maturityScale?: ScoringMaturityLevel[] | null;
+  /** Opt-in only; all established models retain normalized legacy scoring. */
+  scoringConfig?: { method?: "mean_answer_values" } | null;
 }
 
 export interface ScoringOutput {
@@ -144,6 +149,7 @@ export function calculateAssessmentScore(input: ScoringInput): ScoringOutput {
 
   const maxMaturityScore = Math.max(...maturityScale.map(level => level.maxScore));
   const use100PointScale = maxMaturityScore <= 100;
+  const usesAnswerValueMean = input.scoringConfig?.method === "mean_answer_values";
 
   let totalScore = 0;
   let totalMaxPossible = 0;
@@ -154,9 +160,12 @@ export function calculateAssessmentScore(input: ScoringInput): ScoringOutput {
   for (const response of responses) {
     const question = questions.find(q => q.id === response.questionId);
     if (!question) continue;
+    if (question.isScored === false) continue;
 
     const scored = scoreResponse(question, response, use100PointScale);
     if (!scored) continue;
+    const selectedAnswer = question.answers.find(answer => answer.id === response.answerId);
+    if (selectedAnswer?.isNotApplicable) continue;
 
     totalScore += scored.score;
     totalMaxPossible += scored.maxPossible;
@@ -187,7 +196,11 @@ export function calculateAssessmentScore(input: ScoringInput): ScoringOutput {
   }
 
   let overallScore: number;
-  if (use100PointScale) {
+  if (usesAnswerValueMean) {
+    // Do not average dimension averages: each answered, scored question has
+    // equal weight, exactly as the AI Fluency guide specifies.
+    overallScore = questionCount > 0 ? Math.round(totalScore / questionCount) : 0;
+  } else if (use100PointScale) {
     overallScore = totalMaxPossible > 0
       ? Math.round((totalScore / totalMaxPossible) * maxMaturityScore)
       : 0;

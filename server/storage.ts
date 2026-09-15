@@ -306,13 +306,16 @@ export class DatabaseStorage implements IStorage {
         m.owner_tenant_id,
         m.model_class,
         m.assessment_mode,
+        m.scoring_config,
+        m.content_translations,
+        m.respondent_content,
         m.created_at,
         m.updated_at,
         COALESCE(COUNT(q.id), 0)::integer as question_count
       FROM models m
       LEFT JOIN questions q ON m.id = q.model_id
       ${whereSql}
-      GROUP BY m.id, m.slug, m.name, m.description, m.version, m.estimated_time, m.status, m.featured, m.allow_anonymous_results, m.hide_score_and_narratives, m.image_url, m.maturity_scale::text, m.general_resources::text, m.visibility, m.owner_tenant_id, m.model_class, m.assessment_mode, m.created_at, m.updated_at
+      GROUP BY m.id, m.slug, m.name, m.description, m.version, m.estimated_time, m.status, m.featured, m.allow_anonymous_results, m.hide_score_and_narratives, m.image_url, m.maturity_scale::text, m.general_resources::text, m.visibility, m.owner_tenant_id, m.model_class, m.assessment_mode, m.scoring_config::text, m.content_translations::text, m.respondent_content::text, m.created_at, m.updated_at
       ORDER BY m.created_at DESC
     `);
 
@@ -334,6 +337,9 @@ export class DatabaseStorage implements IStorage {
       ownerTenantId: row.owner_tenant_id,
       modelClass: row.model_class,
       assessmentMode: row.assessment_mode,
+      scoringConfig: row.scoring_config,
+      contentTranslations: row.content_translations,
+      respondentContent: row.respondent_content,
       createdAt: new Date(row.created_at.replace(' ', 'T') + 'Z'),
       updatedAt: new Date(row.updated_at.replace(' ', 'T') + 'Z'),
       questionCount: row.question_count,

@@ -30,6 +30,35 @@ function getAssessmentTenantScope(user: schema.User): string[] | null {
   return getAccessibleTenantIds(user);
 }
 
+async function canAccessAssessment(req: any, assessment: schema.Assessment): Promise<boolean> {
+  if (req.isAuthenticated?.()) {
+    if (assessment.userId === req.user.id || req.user.role === "global_admin") return true;
+    const tenantIds = getAssessmentTenantScope(req.user);
+    return tenantIds === null || (!!assessment.tenantId && tenantIds.includes(assessment.tenantId));
+  }
+  // Preserve anonymous assessments without making their opaque IDs public.
+  return !!assessment.sessionId && assessment.sessionId === req.sessionID;
+}
+
+async function getAssessmentRemediation(assessment: schema.Assessment) {
+  const model = await storage.getModel(assessment.modelId);
+  const remediation = (model?.scoringConfig as any)?.remediation;
+  if (!remediation) return undefined;
+  const question = (await storage.getQuestionsByModelId(assessment.modelId))
+    .find(q => q.order === remediation.questionOrder);
+  if (!question) return undefined;
+  const response = await storage.getAssessmentResponse(assessment.id, question.id);
+  if (!response?.answerId) return undefined;
+  const [answer] = await db.select().from(schema.answers)
+    .where(eq(schema.answers.id, response.answerId)).limit(1);
+  const needsTraining = Array.isArray(remediation.incorrectAnswerScores)
+    && remediation.incorrectAnswerScores.includes(answer?.score);
+  return {
+    clientInformationApprovedToolsTraining: needsTraining,
+    message: needsTraining ? remediation.message : undefined,
+  };
+}
+
 export function registerAssessmentRoutes(app: Express) {
   app.post("/api/assessments", async (req, res) => {
     try {
@@ -49,6 +78,9 @@ export function registerAssessmentRoutes(app: Express) {
       const assessmentData = {
         ...validatedData,
         userId: req.isAuthenticated() ? req.user!.id : null,
+        // A caller may never choose another tenant by supplying tenantId.
+        tenantId: model.ownerTenantId ?? (req.isAuthenticated() ? req.user!.tenantId : null),
+        sessionId: req.isAuthenticated() ? null : req.sessionID,
       };
       const assessment = await storage.createAssessment(assessmentData);
       res.json(assessment);
@@ -427,6 +459,9 @@ export function registerAssessmentRoutes(app: Express) {
       if (!assessment) {
         return res.status(404).json({ error: "Assessment not found" });
       }
+      if (!(await canAccessAssessment(req, assessment))) {
+        return res.status(404).json({ error: "Assessment not found" });
+      }
       res.json(assessment);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch assessment" });
@@ -435,7 +470,13 @@ export function registerAssessmentRoutes(app: Express) {
 
   app.patch("/api/assessments/:id", async (req, res) => {
     try {
-      const assessment = await storage.updateAssessment(req.params.id, req.body);
+      const existing = await storage.getAssessment(req.params.id);
+      if (!existing || !(await canAccessAssessment(req, existing))) {
+        return res.status(404).json({ error: "Assessment not found" });
+      }
+      // Tenant and owner context are server controlled.
+      const { tenantId, userId, sessionId, ...safeUpdate } = req.body;
+      const assessment = await storage.updateAssessment(req.params.id, safeUpdate);
       if (!assessment) {
         return res.status(404).json({ error: "Assessment not found" });
       }
@@ -452,6 +493,11 @@ export function registerAssessmentRoutes(app: Express) {
       const assessment = await storage.getAssessment(req.params.id);
       
       if (!assessment) {
+        return res.status(404).json({ error: "Assessment not found" });
+      }
+      // An authenticated visitor may claim only the anonymous browser-session
+      // assessment they created, never an ID learned from another user.
+      if (!assessment.userId && assessment.sessionId !== req.sessionID) {
         return res.status(404).json({ error: "Assessment not found" });
       }
       
@@ -483,6 +529,29 @@ export function registerAssessmentRoutes(app: Express) {
   app.post("/api/assessments/:id/responses", async (req, res) => {
     try {
       const { questionId, answerId, answerIds, numericValue, booleanValue, textValue } = req.body;
+      const assessment = await storage.getAssessment(req.params.id);
+      if (!assessment || !(await canAccessAssessment(req, assessment))) {
+        return res.status(404).json({ error: "Assessment not found" });
+      }
+      const question = await storage.getQuestion(questionId);
+      if (!question || question.modelId !== assessment.modelId) {
+        return res.status(400).json({ error: "Question does not belong to this assessment" });
+      }
+      const selectedAnswerIds = [
+        ...(typeof answerId === "string" ? [answerId] : []),
+        ...(Array.isArray(answerIds) ? answerIds : []),
+      ];
+      if (selectedAnswerIds.length > 0) {
+        const selectedAnswers = await db.select({ id: schema.answers.id })
+          .from(schema.answers)
+          .where(and(
+            eq(schema.answers.questionId, question.id),
+            inArray(schema.answers.id, selectedAnswerIds),
+          ));
+        if (selectedAnswers.length !== selectedAnswerIds.length) {
+          return res.status(400).json({ error: "Answer does not belong to this question" });
+        }
+      }
       
       console.log("Saving response:", { 
         assessmentId: req.params.id, 
@@ -556,6 +625,10 @@ export function registerAssessmentRoutes(app: Express) {
 
   app.get("/api/assessments/:id/responses", async (req, res) => {
     try {
+      const assessment = await storage.getAssessment(req.params.id);
+      if (!assessment || !(await canAccessAssessment(req, assessment))) {
+        return res.status(404).json({ error: "Assessment not found" });
+      }
       const responses = await storage.getAssessmentResponses(req.params.id);
       res.json(responses);
     } catch (error) {
@@ -567,6 +640,10 @@ export function registerAssessmentRoutes(app: Express) {
 
   app.post("/api/assessments/:id/calculate", async (req, res) => {
     try {
+      const assessment = await storage.getAssessment(req.params.id);
+      if (!assessment || !(await canAccessAssessment(req, assessment))) {
+        return res.status(404).json({ error: "Assessment not found" });
+      }
       const result = await calculateAssessmentResults(req.params.id);
       res.json(result);
     } catch (error) {
@@ -578,11 +655,15 @@ export function registerAssessmentRoutes(app: Express) {
 
   app.get("/api/results/:assessmentId", async (req, res) => {
     try {
+      const assessment = await storage.getAssessment(req.params.assessmentId);
+      if (!assessment || !(await canAccessAssessment(req, assessment))) {
+        return res.status(404).json({ error: "Result not found" });
+      }
       const result = await storage.getResult(req.params.assessmentId);
       if (!result) {
         return res.status(404).json({ error: "Result not found" });
       }
-      res.json(result);
+      res.json({ ...result, remediation: await getAssessmentRemediation(assessment) });
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch result" });
     }
@@ -591,6 +672,10 @@ export function registerAssessmentRoutes(app: Express) {
   // Generate AI recommendations for completed assessment
   app.post("/api/assessments/:id/recommendations", async (req, res) => {
     try {
+      const assessment = await storage.getAssessment(req.params.id);
+      if (!assessment || !(await canAccessAssessment(req, assessment))) {
+        return res.status(404).json({ error: "Assessment not found" });
+      }
       const recommendations = await generateAssessmentRecommendations(req.params.id);
       res.json(recommendations);
     } catch (error) {
@@ -600,8 +685,14 @@ export function registerAssessmentRoutes(app: Express) {
 
   // User results
 
-  app.get("/api/users/:userId/results", async (req, res) => {
+  app.get("/api/users/:userId/results", ensureAuthenticated, async (req, res) => {
     try {
+      if (req.params.userId !== req.user!.id) {
+        const target = await storage.getUser(req.params.userId);
+        if (!target || !canManageUsers(req.user!, target.tenantId)) {
+          return res.status(403).json({ error: "Not authorized to view these results" });
+        }
+      }
       const results = await storage.getResultsByUserId(req.params.userId);
       res.json(results);
     } catch (error) {
@@ -615,6 +706,9 @@ export function registerAssessmentRoutes(app: Express) {
     try {
       const assessment = await storage.getAssessment(req.params.id);
       if (!assessment) {
+        return res.status(404).json({ error: "Assessment not found" });
+      }
+      if (!(await canAccessAssessment(req, assessment))) {
         return res.status(404).json({ error: "Assessment not found" });
       }
 

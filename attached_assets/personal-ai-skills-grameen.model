@@ -1,0 +1,1915 @@
+{
+  "formatVersion": "1.1",
+  "exportedAt": "2026-09-15T00:56:01.011Z",
+  "model": {
+    "name": "Personal AI Skills - Grameen",
+    "slug": "personal-ai-skills-grameen",
+    "description": "A short survey before AI Fluency Days",
+    "version": "1.0",
+    "estimatedTime": "15 to 20 minutes",
+    "status": "draft",
+    "featured": false,
+    "allowAnonymousResults": false,
+    "hideScoreAndNarratives": false,
+    "assessmentMode": "scored",
+    "scoringConfig": {
+      "method": "mean_answer_values",
+      "remediation": {
+        "questionOrder": 3,
+        "incorrectAnswerScores": [
+          0,
+          25
+        ],
+        "message": "Complete the client-information and approved-tools training."
+      }
+    },
+    "respondentContent": {
+      "introduction": "This is a quick way for us to learn where you are starting from with AI, so we can put you on the right track for AI Fluency Days. It is not a test.\n\nThere are no wrong answers. We are not grading anyone, and we will not share your individual answers with anyone. Please answer the way you actually work today, not the way you think you are supposed to work. If a question does not match your job, choose the option that says so and move on.\n\nMost people finish in 15 to 20 minutes. Take the time you need. This survey is also available in Spanish.",
+      "completionMessage": "That is the end of the survey. Thank you for taking the time.",
+      "sectionInstructions": {
+        "getting-started": "These first questions are about what you have access to. There is no right answer and nothing here counts for or against you."
+      },
+      "optionalSectionInstruction": "This last question is for people who have already gone further with AI. If none of it sounds familiar, you are finished. Thank you."
+    },
+    "imageUrl": null,
+    "maturityScale": [
+      {
+        "id": "foundation",
+        "name": "Foundation",
+        "description": "First hands-on use on a real task from her own week, plus the ground rules on client information",
+        "minScore": 0,
+        "maxScore": 40
+      },
+      {
+        "id": "practitioner",
+        "name": "Practitioner",
+        "description": "Better requests, checking the output, and knowing when not to trust it",
+        "minScore": 41,
+        "maxScore": 70
+      },
+      {
+        "id": "advanced",
+        "name": "Advanced",
+        "description": "Multi-step work, reusable instructions, and helping colleagues in the Foundation track",
+        "minScore": 71,
+        "maxScore": 100
+      }
+    ],
+    "generalResources": null
+  },
+  "types": [],
+  "dimensions": [
+    {
+      "key": "getting-started",
+      "label": "Getting Started",
+      "description": null,
+      "order": 1
+    },
+    {
+      "key": "day-to-day",
+      "label": "How You Work Day to Day",
+      "description": null,
+      "order": 2
+    },
+    {
+      "key": "information-safety",
+      "label": "Keeping Information Safe",
+      "description": null,
+      "order": 3
+    },
+    {
+      "key": "better-results",
+      "label": "Getting Better Results",
+      "description": null,
+      "order": 4
+    }
+  ],
+  "questions": [
+    {
+      "dimensionKey": "getting-started",
+      "text": "Do you have an AI tool that work gave you, such as Microsoft 365 Copilot?",
+      "type": "multiple_choice",
+      "order": 1,
+      "minValue": null,
+      "maxValue": null,
+      "unit": null,
+      "placeholder": null,
+      "improvementStatement": null,
+      "resourceTitle": null,
+      "resourceLink": null,
+      "resourceDescription": null,
+      "translations": {
+        "es": {
+          "text": "¿Tiene usted alguna herramienta de IA que le haya dado el trabajo, como Microsoft 365 Copilot?",
+          "answers": {
+            "1": "Sí, y la uso",
+            "2": "Sí, pero casi no la he usado",
+            "3": "No",
+            "4": "No estoy seguro(a)"
+          }
+        }
+      },
+      "isScored": false,
+      "isOptional": false,
+      "answers": [
+        {
+          "text": "Yes, and I use it",
+          "score": 0,
+          "order": 1,
+          "typeKey": null,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null,
+          "isNotApplicable": false,
+          "translations": {
+            "es": "Sí, y la uso"
+          }
+        },
+        {
+          "text": "Yes, but I have not used it much",
+          "score": 0,
+          "order": 2,
+          "typeKey": null,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null,
+          "isNotApplicable": false,
+          "translations": {
+            "es": "Sí, pero casi no la he usado"
+          }
+        },
+        {
+          "text": "No",
+          "score": 0,
+          "order": 3,
+          "typeKey": null,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null,
+          "isNotApplicable": false,
+          "translations": {
+            "es": "No"
+          }
+        },
+        {
+          "text": "I am not sure",
+          "score": 0,
+          "order": 4,
+          "typeKey": null,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null,
+          "isNotApplicable": false,
+          "translations": {
+            "es": "No estoy seguro(a)"
+          }
+        }
+      ]
+    },
+    {
+      "dimensionKey": "getting-started",
+      "text": "Outside of work, do you use an AI service on your own account, such as ChatGPT, Gemini, or Claude? Free accounts count.",
+      "type": "multiple_choice",
+      "order": 2,
+      "minValue": null,
+      "maxValue": null,
+      "unit": null,
+      "placeholder": null,
+      "improvementStatement": null,
+      "resourceTitle": null,
+      "resourceLink": null,
+      "resourceDescription": null,
+      "translations": {
+        "es": {
+          "text": "Fuera del trabajo, ¿usa usted algún servicio de IA en su propia cuenta, como ChatGPT, Gemini o Claude? Las cuentas gratuitas también cuentan.",
+          "answers": {
+            "1": "Sí, con frecuencia",
+            "2": "Sí, a veces",
+            "3": "No",
+            "4": "No sé qué son estos servicios"
+          }
+        }
+      },
+      "isScored": false,
+      "isOptional": false,
+      "answers": [
+        {
+          "text": "Yes, often",
+          "score": 0,
+          "order": 1,
+          "typeKey": null,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null,
+          "isNotApplicable": false,
+          "translations": {
+            "es": "Sí, con frecuencia"
+          }
+        },
+        {
+          "text": "Yes, sometimes",
+          "score": 0,
+          "order": 2,
+          "typeKey": null,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null,
+          "isNotApplicable": false,
+          "translations": {
+            "es": "Sí, a veces"
+          }
+        },
+        {
+          "text": "No",
+          "score": 0,
+          "order": 3,
+          "typeKey": null,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null,
+          "isNotApplicable": false,
+          "translations": {
+            "es": "No"
+          }
+        },
+        {
+          "text": "I am not sure what these are",
+          "score": 0,
+          "order": 4,
+          "typeKey": null,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null,
+          "isNotApplicable": false,
+          "translations": {
+            "es": "No sé qué son estos servicios"
+          }
+        }
+      ]
+    },
+    {
+      "dimensionKey": "getting-started",
+      "text": "If you use a personal AI account that work did not give you, is it all right to put work information into it, such as a client's name or details?",
+      "type": "multiple_choice",
+      "order": 3,
+      "minValue": null,
+      "maxValue": null,
+      "unit": null,
+      "placeholder": null,
+      "improvementStatement": null,
+      "resourceTitle": null,
+      "resourceLink": null,
+      "resourceDescription": null,
+      "translations": {
+        "es": {
+          "text": "Si usted usa una cuenta personal de IA que no le dio el trabajo, ¿está bien poner en ella información del trabajo, por ejemplo el nombre o los datos de una clienta?",
+          "answers": {
+            "1": "No. La información del trabajo solo debe ir en las herramientas que la organización ha aprobado.",
+            "2": "Sí, siempre y cuando primero le quite el nombre a la clienta.",
+            "3": "Sí, siempre y cuando no guarde la respuesta.",
+            "4": "No estoy seguro(a)."
+          }
+        }
+      },
+      "isScored": true,
+      "isOptional": false,
+      "answers": [
+        {
+          "text": "No. Work information should only go into tools the organization has approved.",
+          "score": 100,
+          "order": 1,
+          "typeKey": null,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null,
+          "isNotApplicable": false,
+          "translations": {
+            "es": "No. La información del trabajo solo debe ir en las herramientas que la organización ha aprobado."
+          }
+        },
+        {
+          "text": "Yes, as long as I take the client's name out first.",
+          "score": 0,
+          "order": 2,
+          "typeKey": null,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null,
+          "isNotApplicable": false,
+          "translations": {
+            "es": "Sí, siempre y cuando primero le quite el nombre a la clienta."
+          }
+        },
+        {
+          "text": "Yes, as long as I do not save the answer.",
+          "score": 0,
+          "order": 3,
+          "typeKey": null,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null,
+          "isNotApplicable": false,
+          "translations": {
+            "es": "Sí, siempre y cuando no guarde la respuesta."
+          }
+        },
+        {
+          "text": "I am not sure.",
+          "score": 25,
+          "order": 4,
+          "typeKey": null,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null,
+          "isNotApplicable": false,
+          "translations": {
+            "es": "No estoy seguro(a)."
+          }
+        }
+      ]
+    },
+    {
+      "dimensionKey": "day-to-day",
+      "text": "On a normal workday, how often do you use an AI assistant to help with your work?",
+      "type": "multiple_choice",
+      "order": 4,
+      "minValue": null,
+      "maxValue": null,
+      "unit": null,
+      "placeholder": null,
+      "improvementStatement": null,
+      "resourceTitle": null,
+      "resourceLink": null,
+      "resourceDescription": null,
+      "translations": {
+        "es": {
+          "text": "En un día normal de trabajo, ¿con qué frecuencia usa un asistente de IA para ayudarle con sus tareas?",
+          "answers": {
+            "1": "Nunca",
+            "2": "Casi nunca",
+            "3": "A veces, una o dos veces por semana",
+            "4": "Con frecuencia, casi todos los días",
+            "5": "Todos los días"
+          }
+        }
+      },
+      "isScored": true,
+      "isOptional": false,
+      "answers": [
+        {
+          "text": "Never",
+          "score": 0,
+          "order": 1,
+          "typeKey": null,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null,
+          "isNotApplicable": false,
+          "translations": {
+            "es": "Nunca"
+          }
+        },
+        {
+          "text": "Rarely",
+          "score": 25,
+          "order": 2,
+          "typeKey": null,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null,
+          "isNotApplicable": false,
+          "translations": {
+            "es": "Casi nunca"
+          }
+        },
+        {
+          "text": "Sometimes, about once or twice a week",
+          "score": 50,
+          "order": 3,
+          "typeKey": null,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null,
+          "isNotApplicable": false,
+          "translations": {
+            "es": "A veces, una o dos veces por semana"
+          }
+        },
+        {
+          "text": "Often, most days",
+          "score": 75,
+          "order": 4,
+          "typeKey": null,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null,
+          "isNotApplicable": false,
+          "translations": {
+            "es": "Con frecuencia, casi todos los días"
+          }
+        },
+        {
+          "text": "Every day",
+          "score": 100,
+          "order": 5,
+          "typeKey": null,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null,
+          "isNotApplicable": false,
+          "translations": {
+            "es": "Todos los días"
+          }
+        }
+      ]
+    },
+    {
+      "dimensionKey": "day-to-day",
+      "text": "When you write an email or a document, which is closest to what you do?",
+      "type": "multiple_choice",
+      "order": 5,
+      "minValue": null,
+      "maxValue": null,
+      "unit": null,
+      "placeholder": null,
+      "improvementStatement": null,
+      "resourceTitle": null,
+      "resourceLink": null,
+      "resourceDescription": null,
+      "translations": {
+        "es": {
+          "text": "Cuando escribe un correo electrónico o un documento, ¿qué se parece más a lo que usted hace?",
+          "answers": {
+            "1": "Escribo todo yo, sin IA.",
+            "2": "Le pido a la IA que lo escriba y lo envío casi sin revisarlo.",
+            "3": "Le pido a la IA que lo escriba y después lo vuelvo a escribir todo yo.",
+            "4": "Empiezo con un ejemplo parecido o con mis propias notas y le pido a la IA que arme una versión nueva.",
+            "5": "Le pido a la IA una primera versión y después la leo con cuidado y la edito."
+          }
+        }
+      },
+      "isScored": true,
+      "isOptional": false,
+      "answers": [
+        {
+          "text": "I write everything myself, without AI.",
+          "score": 0,
+          "order": 1,
+          "typeKey": null,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null,
+          "isNotApplicable": false,
+          "translations": {
+            "es": "Escribo todo yo, sin IA."
+          }
+        },
+        {
+          "text": "I ask AI to write it and I send it with little or no review.",
+          "score": 25,
+          "order": 2,
+          "typeKey": null,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null,
+          "isNotApplicable": false,
+          "translations": {
+            "es": "Le pido a la IA que lo escriba y lo envío casi sin revisarlo."
+          }
+        },
+        {
+          "text": "I ask AI to write it, then I rewrite the whole thing myself.",
+          "score": 50,
+          "order": 3,
+          "typeKey": null,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null,
+          "isNotApplicable": false,
+          "translations": {
+            "es": "Le pido a la IA que lo escriba y después lo vuelvo a escribir todo yo."
+          }
+        },
+        {
+          "text": "I start from a similar example or my own notes and ask AI to build a new version.",
+          "score": 75,
+          "order": 4,
+          "typeKey": null,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null,
+          "isNotApplicable": false,
+          "translations": {
+            "es": "Empiezo con un ejemplo parecido o con mis propias notas y le pido a la IA que arme una versión nueva."
+          }
+        },
+        {
+          "text": "I ask AI to write a first version, then I read it carefully and edit it.",
+          "score": 100,
+          "order": 5,
+          "typeKey": null,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null,
+          "isNotApplicable": false,
+          "translations": {
+            "es": "Le pido a la IA una primera versión y después la leo con cuidado y la edito."
+          }
+        }
+      ]
+    },
+    {
+      "dimensionKey": "day-to-day",
+      "text": "After you meet with a client, how do you write up your notes?",
+      "type": "multiple_choice",
+      "order": 6,
+      "minValue": null,
+      "maxValue": null,
+      "unit": null,
+      "placeholder": null,
+      "improvementStatement": null,
+      "resourceTitle": null,
+      "resourceLink": null,
+      "resourceDescription": null,
+      "translations": {
+        "es": {
+          "text": "Después de reunirse con una clienta, ¿cómo escribe sus notas?",
+          "answers": {
+            "1": "Las escribo todas yo.",
+            "2": "Uso la IA para convertir mis notas en un resumen, y lo reviso antes de guardarlo.",
+            "3": "Uso la IA y guardo lo que me da, sin revisarlo.",
+            "4": "Le pido a un compañero o a una compañera de trabajo que me ayude a escribirlas.",
+            "5": "Esto no es parte de mi trabajo."
+          }
+        }
+      },
+      "isScored": true,
+      "isOptional": false,
+      "answers": [
+        {
+          "text": "I write them all myself.",
+          "score": 0,
+          "order": 1,
+          "typeKey": null,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null,
+          "isNotApplicable": false,
+          "translations": {
+            "es": "Las escribo todas yo."
+          }
+        },
+        {
+          "text": "I use AI to turn my notes into a write-up, then I check it before I save it.",
+          "score": 100,
+          "order": 2,
+          "typeKey": null,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null,
+          "isNotApplicable": false,
+          "translations": {
+            "es": "Uso la IA para convertir mis notas en un resumen, y lo reviso antes de guardarlo."
+          }
+        },
+        {
+          "text": "I use AI and save what it gives me without checking.",
+          "score": 25,
+          "order": 3,
+          "typeKey": null,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null,
+          "isNotApplicable": false,
+          "translations": {
+            "es": "Uso la IA y guardo lo que me da, sin revisarlo."
+          }
+        },
+        {
+          "text": "I ask a coworker to help me write them up.",
+          "score": 50,
+          "order": 4,
+          "typeKey": null,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null,
+          "isNotApplicable": false,
+          "translations": {
+            "es": "Le pido a un compañero o a una compañera de trabajo que me ayude a escribirlas."
+          }
+        },
+        {
+          "text": "This is not part of my job.",
+          "score": 0,
+          "order": 5,
+          "typeKey": null,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null,
+          "isNotApplicable": true,
+          "translations": {
+            "es": "Esto no es parte de mi trabajo."
+          }
+        }
+      ]
+    },
+    {
+      "dimensionKey": "day-to-day",
+      "text": "When you need to explain a product, a form, or a policy to a client in simple language, or move something between English and Spanish, how often does AI help you?",
+      "type": "multiple_choice",
+      "order": 7,
+      "minValue": null,
+      "maxValue": null,
+      "unit": null,
+      "placeholder": null,
+      "improvementStatement": null,
+      "resourceTitle": null,
+      "resourceLink": null,
+      "resourceDescription": null,
+      "translations": {
+        "es": {
+          "text": "Cuando necesita explicarle a una clienta un producto, un formulario o una política en palabras sencillas, o pasar algo del inglés al español o del español al inglés, ¿con qué frecuencia le ayuda la IA?",
+          "answers": {
+            "1": "Nunca",
+            "2": "Casi nunca",
+            "3": "A veces",
+            "4": "Con frecuencia",
+            "5": "Casi siempre",
+            "6": "Esto no es parte de mi trabajo."
+          }
+        }
+      },
+      "isScored": true,
+      "isOptional": false,
+      "answers": [
+        {
+          "text": "Never",
+          "score": 0,
+          "order": 1,
+          "typeKey": null,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null,
+          "isNotApplicable": false,
+          "translations": {
+            "es": "Nunca"
+          }
+        },
+        {
+          "text": "Rarely",
+          "score": 25,
+          "order": 2,
+          "typeKey": null,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null,
+          "isNotApplicable": false,
+          "translations": {
+            "es": "Casi nunca"
+          }
+        },
+        {
+          "text": "Sometimes",
+          "score": 50,
+          "order": 3,
+          "typeKey": null,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null,
+          "isNotApplicable": false,
+          "translations": {
+            "es": "A veces"
+          }
+        },
+        {
+          "text": "Often",
+          "score": 75,
+          "order": 4,
+          "typeKey": null,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null,
+          "isNotApplicable": false,
+          "translations": {
+            "es": "Con frecuencia"
+          }
+        },
+        {
+          "text": "Almost every time",
+          "score": 100,
+          "order": 5,
+          "typeKey": null,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null,
+          "isNotApplicable": false,
+          "translations": {
+            "es": "Casi siempre"
+          }
+        },
+        {
+          "text": "This is not part of my job.",
+          "score": 0,
+          "order": 6,
+          "typeKey": null,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null,
+          "isNotApplicable": true,
+          "translations": {
+            "es": "Esto no es parte de mi trabajo."
+          }
+        }
+      ]
+    },
+    {
+      "dimensionKey": "day-to-day",
+      "text": "You have a large spreadsheet and you need to look for patterns or trends in it. What do you do?",
+      "type": "multiple_choice",
+      "order": 8,
+      "minValue": null,
+      "maxValue": null,
+      "unit": null,
+      "placeholder": null,
+      "improvementStatement": null,
+      "resourceTitle": null,
+      "resourceLink": null,
+      "resourceDescription": null,
+      "translations": {
+        "es": {
+          "text": "Tiene una hoja de cálculo grande y necesita buscar patrones o tendencias en ella. ¿Qué hace?",
+          "answers": {
+            "1": "Lo hago a mano en Excel, sin IA.",
+            "2": "Le pido a la IA un resumen o una gráfica, y después reviso los números yo.",
+            "3": "Le pido a la IA y uso su respuesta sin revisarla.",
+            "4": "Le pido a un compañero o a una compañera de trabajo que lo haga.",
+            "5": "Esto no es parte de mi trabajo."
+          }
+        }
+      },
+      "isScored": true,
+      "isOptional": false,
+      "answers": [
+        {
+          "text": "I do it by hand in Excel, without AI.",
+          "score": 25,
+          "order": 1,
+          "typeKey": null,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null,
+          "isNotApplicable": false,
+          "translations": {
+            "es": "Lo hago a mano en Excel, sin IA."
+          }
+        },
+        {
+          "text": "I ask AI for a summary or a chart, then I check the numbers myself.",
+          "score": 100,
+          "order": 2,
+          "typeKey": null,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null,
+          "isNotApplicable": false,
+          "translations": {
+            "es": "Le pido a la IA un resumen o una gráfica, y después reviso los números yo."
+          }
+        },
+        {
+          "text": "I ask AI and use its answer without checking it.",
+          "score": 25,
+          "order": 3,
+          "typeKey": null,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null,
+          "isNotApplicable": false,
+          "translations": {
+            "es": "Le pido a la IA y uso su respuesta sin revisarla."
+          }
+        },
+        {
+          "text": "I ask a coworker to do it.",
+          "score": 50,
+          "order": 4,
+          "typeKey": null,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null,
+          "isNotApplicable": false,
+          "translations": {
+            "es": "Le pido a un compañero o a una compañera de trabajo que lo haga."
+          }
+        },
+        {
+          "text": "This is not part of my job.",
+          "score": 0,
+          "order": 5,
+          "typeKey": null,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null,
+          "isNotApplicable": true,
+          "translations": {
+            "es": "Esto no es parte de mi trabajo."
+          }
+        }
+      ]
+    },
+    {
+      "dimensionKey": "day-to-day",
+      "text": "After a long meeting, how do you find out the main points and what you need to do next?",
+      "type": "multiple_choice",
+      "order": 9,
+      "minValue": null,
+      "maxValue": null,
+      "unit": null,
+      "placeholder": null,
+      "improvementStatement": null,
+      "resourceTitle": null,
+      "resourceLink": null,
+      "resourceDescription": null,
+      "translations": {
+        "es": {
+          "text": "Después de una reunión larga, ¿cómo se entera de los puntos principales y de lo que le toca hacer?",
+          "answers": {
+            "1": "Uso mis propias notas, o vuelvo a ver la grabación.",
+            "2": "Uso la IA para hacer un resumen y una lista de tareas, y después los reviso.",
+            "3": "Uso la IA para hacer un resumen y lo comparto de inmediato, sin revisarlo.",
+            "4": "Le pido a un compañero o a una compañera de trabajo que escriba las notas.",
+            "5": "Esto no es parte de mi trabajo."
+          }
+        }
+      },
+      "isScored": true,
+      "isOptional": false,
+      "answers": [
+        {
+          "text": "I use my own notes, or I watch the recording again.",
+          "score": 0,
+          "order": 1,
+          "typeKey": null,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null,
+          "isNotApplicable": false,
+          "translations": {
+            "es": "Uso mis propias notas, o vuelvo a ver la grabación."
+          }
+        },
+        {
+          "text": "I use AI to make a summary and a list of tasks, then I check it.",
+          "score": 100,
+          "order": 2,
+          "typeKey": null,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null,
+          "isNotApplicable": false,
+          "translations": {
+            "es": "Uso la IA para hacer un resumen y una lista de tareas, y después los reviso."
+          }
+        },
+        {
+          "text": "I use AI to make a summary and I share it right away without checking.",
+          "score": 25,
+          "order": 3,
+          "typeKey": null,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null,
+          "isNotApplicable": false,
+          "translations": {
+            "es": "Uso la IA para hacer un resumen y lo comparto de inmediato, sin revisarlo."
+          }
+        },
+        {
+          "text": "I ask a coworker to write up the notes.",
+          "score": 50,
+          "order": 4,
+          "typeKey": null,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null,
+          "isNotApplicable": false,
+          "translations": {
+            "es": "Le pido a un compañero o a una compañera de trabajo que escriba las notas."
+          }
+        },
+        {
+          "text": "This is not part of my job.",
+          "score": 0,
+          "order": 5,
+          "typeKey": null,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null,
+          "isNotApplicable": true,
+          "translations": {
+            "es": "Esto no es parte de mi trabajo."
+          }
+        }
+      ]
+    },
+    {
+      "dimensionKey": "day-to-day",
+      "text": "How often do you use AI to help you come up with ideas?",
+      "type": "multiple_choice",
+      "order": 10,
+      "minValue": null,
+      "maxValue": null,
+      "unit": null,
+      "placeholder": null,
+      "improvementStatement": null,
+      "resourceTitle": null,
+      "resourceLink": null,
+      "resourceDescription": null,
+      "translations": {
+        "es": {
+          "text": "¿Con qué frecuencia usa la IA para que le ayude a pensar en ideas nuevas?",
+          "answers": {
+            "1": "Nunca",
+            "2": "Casi nunca",
+            "3": "A veces, una o dos veces por semana",
+            "4": "Con frecuencia, casi todos los días",
+            "5": "Todos los días"
+          }
+        }
+      },
+      "isScored": true,
+      "isOptional": false,
+      "answers": [
+        {
+          "text": "Never",
+          "score": 0,
+          "order": 1,
+          "typeKey": null,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null,
+          "isNotApplicable": false,
+          "translations": {
+            "es": "Nunca"
+          }
+        },
+        {
+          "text": "Rarely",
+          "score": 25,
+          "order": 2,
+          "typeKey": null,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null,
+          "isNotApplicable": false,
+          "translations": {
+            "es": "Casi nunca"
+          }
+        },
+        {
+          "text": "Sometimes, about once or twice a week",
+          "score": 50,
+          "order": 3,
+          "typeKey": null,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null,
+          "isNotApplicable": false,
+          "translations": {
+            "es": "A veces, una o dos veces por semana"
+          }
+        },
+        {
+          "text": "Often, most days",
+          "score": 75,
+          "order": 4,
+          "typeKey": null,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null,
+          "isNotApplicable": false,
+          "translations": {
+            "es": "Con frecuencia, casi todos los días"
+          }
+        },
+        {
+          "text": "Every day",
+          "score": 100,
+          "order": 5,
+          "typeKey": null,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null,
+          "isNotApplicable": false,
+          "translations": {
+            "es": "Todos los días"
+          }
+        }
+      ]
+    },
+    {
+      "dimensionKey": "information-safety",
+      "text": "A client shares her financial situation and her immigration status with you on an intake form. You want help writing up her case. Which of these is all right to do?",
+      "type": "multiple_choice",
+      "order": 11,
+      "minValue": null,
+      "maxValue": null,
+      "unit": null,
+      "placeholder": null,
+      "improvementStatement": null,
+      "resourceTitle": null,
+      "resourceLink": null,
+      "resourceDescription": null,
+      "translations": {
+        "es": {
+          "text": "Una clienta le comparte su situación económica y su estatus migratorio en un formulario de admisión. Usted quiere ayuda para redactar su caso. ¿Cuál de estas opciones está bien?",
+          "answers": {
+            "1": "Usar una herramienta de IA aprobada por la organización y seguir nuestras reglas sobre qué se puede escribir en ella.",
+            "2": "Copiar su información en cualquier chat de IA, porque las empresas grandes protegen los datos.",
+            "3": "Quitarle el nombre y copiar el resto en cualquier herramienta de IA gratuita.",
+            "4": "Usar cualquier herramienta de IA del internet; todas son seguras para esto."
+          }
+        }
+      },
+      "isScored": true,
+      "isOptional": false,
+      "answers": [
+        {
+          "text": "Use an AI tool the organization has approved, and follow our rules about what may be entered.",
+          "score": 100,
+          "order": 1,
+          "typeKey": null,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null,
+          "isNotApplicable": false,
+          "translations": {
+            "es": "Usar una herramienta de IA aprobada por la organización y seguir nuestras reglas sobre qué se puede escribir en ella."
+          }
+        },
+        {
+          "text": "Paste her information into any AI chat, because large companies keep data safe.",
+          "score": 0,
+          "order": 2,
+          "typeKey": null,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null,
+          "isNotApplicable": false,
+          "translations": {
+            "es": "Copiar su información en cualquier chat de IA, porque las empresas grandes protegen los datos."
+          }
+        },
+        {
+          "text": "Take out her name, then paste the rest into any free AI tool.",
+          "score": 0,
+          "order": 3,
+          "typeKey": null,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null,
+          "isNotApplicable": false,
+          "translations": {
+            "es": "Quitarle el nombre y copiar el resto en cualquier herramienta de IA gratuita."
+          }
+        },
+        {
+          "text": "Use any AI tool on the internet; they are all safe for this.",
+          "score": 0,
+          "order": 4,
+          "typeKey": null,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null,
+          "isNotApplicable": false,
+          "translations": {
+            "es": "Usar cualquier herramienta de IA del internet; todas son seguras para esto."
+          }
+        }
+      ]
+    },
+    {
+      "dimensionKey": "information-safety",
+      "text": "In an AI tool that the organization has set up for work, what information does it use to answer your questions?",
+      "type": "multiple_choice",
+      "order": 12,
+      "minValue": null,
+      "maxValue": null,
+      "unit": null,
+      "placeholder": null,
+      "improvementStatement": null,
+      "resourceTitle": null,
+      "resourceLink": null,
+      "resourceDescription": null,
+      "translations": {
+        "es": {
+          "text": "En una herramienta de IA que la organización preparó para el trabajo, ¿qué información usa para contestar sus preguntas?",
+          "answers": {
+            "1": "Información de nuestra organización que usted ya tiene permiso de ver, más conocimiento general de su entrenamiento.",
+            "2": "Solo conocimiento general de su entrenamiento. No puede ver nada de nuestra organización.",
+            "3": "Toda la información de la organización, incluso archivos que usted no tiene permiso de abrir.",
+            "4": "Solo páginas públicas del internet.",
+            "5": "No estoy seguro(a)."
+          }
+        }
+      },
+      "isScored": true,
+      "isOptional": false,
+      "answers": [
+        {
+          "text": "Information from our organization that you already have permission to see, plus general knowledge from its training.",
+          "score": 100,
+          "order": 1,
+          "typeKey": null,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null,
+          "isNotApplicable": false,
+          "translations": {
+            "es": "Información de nuestra organización que usted ya tiene permiso de ver, más conocimiento general de su entrenamiento."
+          }
+        },
+        {
+          "text": "Only general knowledge from its training. It cannot see anything from our organization.",
+          "score": 0,
+          "order": 2,
+          "typeKey": null,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null,
+          "isNotApplicable": false,
+          "translations": {
+            "es": "Solo conocimiento general de su entrenamiento. No puede ver nada de nuestra organización."
+          }
+        },
+        {
+          "text": "All company information, including files you are not allowed to open.",
+          "score": 0,
+          "order": 3,
+          "typeKey": null,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null,
+          "isNotApplicable": false,
+          "translations": {
+            "es": "Toda la información de la organización, incluso archivos que usted no tiene permiso de abrir."
+          }
+        },
+        {
+          "text": "Only public websites.",
+          "score": 0,
+          "order": 4,
+          "typeKey": null,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null,
+          "isNotApplicable": false,
+          "translations": {
+            "es": "Solo páginas públicas del internet."
+          }
+        },
+        {
+          "text": "I am not sure.",
+          "score": 25,
+          "order": 5,
+          "typeKey": null,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null,
+          "isNotApplicable": false,
+          "translations": {
+            "es": "No estoy seguro(a)."
+          }
+        }
+      ]
+    },
+    {
+      "dimensionKey": "information-safety",
+      "text": "What happens to what you type into an AI tool that the organization has set up for work?",
+      "type": "multiple_choice",
+      "order": 13,
+      "minValue": null,
+      "maxValue": null,
+      "unit": null,
+      "placeholder": null,
+      "improvementStatement": null,
+      "resourceTitle": null,
+      "resourceLink": null,
+      "resourceDescription": null,
+      "translations": {
+        "es": {
+          "text": "¿Qué pasa con lo que usted escribe en una herramienta de IA que la organización preparó para el trabajo?",
+          "answers": {
+            "1": "Se queda dentro del entorno protegido de la organización y no se usa para entrenar la IA pública.",
+            "2": "Todo lo que escribe se publica para que cualquiera lo vea.",
+            "3": "Se borra de inmediato.",
+            "4": "Se usa para mejorar la IA de todo el mundo.",
+            "5": "No estoy seguro(a)."
+          }
+        }
+      },
+      "isScored": true,
+      "isOptional": false,
+      "answers": [
+        {
+          "text": "It stays inside the organization's protected environment and is not used to train the public AI.",
+          "score": 100,
+          "order": 1,
+          "typeKey": null,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null,
+          "isNotApplicable": false,
+          "translations": {
+            "es": "Se queda dentro del entorno protegido de la organización y no se usa para entrenar la IA pública."
+          }
+        },
+        {
+          "text": "Everything you type is published for anyone to see.",
+          "score": 0,
+          "order": 2,
+          "typeKey": null,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null,
+          "isNotApplicable": false,
+          "translations": {
+            "es": "Todo lo que escribe se publica para que cualquiera lo vea."
+          }
+        },
+        {
+          "text": "It is deleted right away.",
+          "score": 25,
+          "order": 3,
+          "typeKey": null,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null,
+          "isNotApplicable": false,
+          "translations": {
+            "es": "Se borra de inmediato."
+          }
+        },
+        {
+          "text": "It is used to improve the AI for everyone in the world.",
+          "score": 0,
+          "order": 4,
+          "typeKey": null,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null,
+          "isNotApplicable": false,
+          "translations": {
+            "es": "Se usa para mejorar la IA de todo el mundo."
+          }
+        },
+        {
+          "text": "I am not sure.",
+          "score": 25,
+          "order": 5,
+          "typeKey": null,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null,
+          "isNotApplicable": false,
+          "translations": {
+            "es": "No estoy seguro(a)."
+          }
+        }
+      ]
+    },
+    {
+      "dimensionKey": "information-safety",
+      "text": "When an AI answer shows links or sources, how often do you open them and check them?",
+      "type": "multiple_choice",
+      "order": 14,
+      "minValue": null,
+      "maxValue": null,
+      "unit": null,
+      "placeholder": null,
+      "improvementStatement": null,
+      "resourceTitle": null,
+      "resourceLink": null,
+      "resourceDescription": null,
+      "translations": {
+        "es": {
+          "text": "Cuando una respuesta de la IA muestra enlaces o fuentes, ¿con qué frecuencia los abre y los revisa?",
+          "answers": {
+            "1": "Nunca",
+            "2": "Casi nunca",
+            "3": "A veces",
+            "4": "Con frecuencia",
+            "5": "Siempre"
+          }
+        }
+      },
+      "isScored": true,
+      "isOptional": false,
+      "answers": [
+        {
+          "text": "Never",
+          "score": 0,
+          "order": 1,
+          "typeKey": null,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null,
+          "isNotApplicable": false,
+          "translations": {
+            "es": "Nunca"
+          }
+        },
+        {
+          "text": "Rarely",
+          "score": 25,
+          "order": 2,
+          "typeKey": null,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null,
+          "isNotApplicable": false,
+          "translations": {
+            "es": "Casi nunca"
+          }
+        },
+        {
+          "text": "Sometimes",
+          "score": 50,
+          "order": 3,
+          "typeKey": null,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null,
+          "isNotApplicable": false,
+          "translations": {
+            "es": "A veces"
+          }
+        },
+        {
+          "text": "Often",
+          "score": 75,
+          "order": 4,
+          "typeKey": null,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null,
+          "isNotApplicable": false,
+          "translations": {
+            "es": "Con frecuencia"
+          }
+        },
+        {
+          "text": "Always",
+          "score": 100,
+          "order": 5,
+          "typeKey": null,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null,
+          "isNotApplicable": false,
+          "translations": {
+            "es": "Siempre"
+          }
+        }
+      ]
+    },
+    {
+      "dimensionKey": "better-results",
+      "text": "If the first answer AI gives you is not what you need, what do you do next?",
+      "type": "multiple_choice",
+      "order": 15,
+      "minValue": null,
+      "maxValue": null,
+      "unit": null,
+      "placeholder": null,
+      "improvementStatement": null,
+      "resourceTitle": null,
+      "resourceLink": null,
+      "resourceDescription": null,
+      "translations": {
+        "es": {
+          "text": "Si la primera respuesta que le da la IA no es la que usted necesita, ¿qué hace después?",
+          "answers": {
+            "1": "Dejo de usar la IA y hago la tarea yo.",
+            "2": "Me quedo con la primera respuesta y no trato de mejorarla.",
+            "3": "Le pido a un compañero o a una compañera de trabajo que lo intente por mí.",
+            "4": "Cambio mi petición, doy más detalles y lo intento otra vez."
+          }
+        }
+      },
+      "isScored": true,
+      "isOptional": false,
+      "answers": [
+        {
+          "text": "I stop using AI and do the task myself.",
+          "score": 0,
+          "order": 1,
+          "typeKey": null,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null,
+          "isNotApplicable": false,
+          "translations": {
+            "es": "Dejo de usar la IA y hago la tarea yo."
+          }
+        },
+        {
+          "text": "I take the first answer and do not try to improve it.",
+          "score": 0,
+          "order": 2,
+          "typeKey": null,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null,
+          "isNotApplicable": false,
+          "translations": {
+            "es": "Me quedo con la primera respuesta y no trato de mejorarla."
+          }
+        },
+        {
+          "text": "I ask a coworker to try asking for me.",
+          "score": 25,
+          "order": 3,
+          "typeKey": null,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null,
+          "isNotApplicable": false,
+          "translations": {
+            "es": "Le pido a un compañero o a una compañera de trabajo que lo intente por mí."
+          }
+        },
+        {
+          "text": "I change my request, add more detail, and try again.",
+          "score": 100,
+          "order": 4,
+          "typeKey": null,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null,
+          "isNotApplicable": false,
+          "translations": {
+            "es": "Cambio mi petición, doy más detalles y lo intento otra vez."
+          }
+        }
+      ]
+    },
+    {
+      "dimensionKey": "better-results",
+      "text": "What gets you the best results when the task is big or complicated?",
+      "type": "multiple_choice",
+      "order": 16,
+      "minValue": null,
+      "maxValue": null,
+      "unit": null,
+      "placeholder": null,
+      "improvementStatement": null,
+      "resourceTitle": null,
+      "resourceLink": null,
+      "resourceDescription": null,
+      "translations": {
+        "es": {
+          "text": "¿Qué le da los mejores resultados cuando la tarea es grande o complicada?",
+          "answers": {
+            "1": "Dar una petición clara y detallada, y dividir el trabajo en pasos más pequeños.",
+            "2": "Poner todo en una sola petición larga y ver qué pasa.",
+            "3": "Hacer la petición muy corta para darle más libertad a la IA.",
+            "4": "Volver a mandar la misma petición sin cambiarle nada."
+          }
+        }
+      },
+      "isScored": true,
+      "isOptional": false,
+      "answers": [
+        {
+          "text": "Give a clear, detailed request and break the work into smaller steps.",
+          "score": 100,
+          "order": 1,
+          "typeKey": null,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null,
+          "isNotApplicable": false,
+          "translations": {
+            "es": "Dar una petición clara y detallada, y dividir el trabajo en pasos más pequeños."
+          }
+        },
+        {
+          "text": "Put everything into one long request and see what happens.",
+          "score": 50,
+          "order": 2,
+          "typeKey": null,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null,
+          "isNotApplicable": false,
+          "translations": {
+            "es": "Poner todo en una sola petición larga y ver qué pasa."
+          }
+        },
+        {
+          "text": "Keep the request very short so the AI has more freedom.",
+          "score": 0,
+          "order": 3,
+          "typeKey": null,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null,
+          "isNotApplicable": false,
+          "translations": {
+            "es": "Hacer la petición muy corta para darle más libertad a la IA."
+          }
+        },
+        {
+          "text": "Send the same request again without changing anything.",
+          "score": 0,
+          "order": 4,
+          "typeKey": null,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null,
+          "isNotApplicable": false,
+          "translations": {
+            "es": "Volver a mandar la misma petición sin cambiarle nada."
+          }
+        }
+      ]
+    },
+    {
+      "dimensionKey": "better-results",
+      "text": "When a new AI tool becomes available at work, what do you usually do?",
+      "type": "multiple_choice",
+      "order": 17,
+      "minValue": null,
+      "maxValue": null,
+      "unit": null,
+      "placeholder": null,
+      "improvementStatement": null,
+      "resourceTitle": null,
+      "resourceLink": null,
+      "resourceDescription": null,
+      "translations": {
+        "es": {
+          "text": "Cuando hay una herramienta de IA nueva en el trabajo, ¿qué hace usted normalmente?",
+          "answers": {
+            "1": "Sigo usando las herramientas que ya conozco.",
+            "2": "Espero a ver a otras personas usarla primero.",
+            "3": "Tengo muchas ganas de probarla y empiezo a usarla donde me sirva.",
+            "4": "La pruebo primero en una tarea pequeña para ver si me sirve."
+          }
+        }
+      },
+      "isScored": true,
+      "isOptional": false,
+      "answers": [
+        {
+          "text": "I keep using the tools I already know.",
+          "score": 0,
+          "order": 1,
+          "typeKey": null,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null,
+          "isNotApplicable": false,
+          "translations": {
+            "es": "Sigo usando las herramientas que ya conozco."
+          }
+        },
+        {
+          "text": "I wait to see other people use it first.",
+          "score": 25,
+          "order": 2,
+          "typeKey": null,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null,
+          "isNotApplicable": false,
+          "translations": {
+            "es": "Espero a ver a otras personas usarla primero."
+          }
+        },
+        {
+          "text": "I am eager to try it and start using it wherever it helps.",
+          "score": 75,
+          "order": 3,
+          "typeKey": null,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null,
+          "isNotApplicable": false,
+          "translations": {
+            "es": "Tengo muchas ganas de probarla y empiezo a usarla donde me sirva."
+          }
+        },
+        {
+          "text": "I try it on a small task first to see if it helps.",
+          "score": 100,
+          "order": 4,
+          "typeKey": null,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null,
+          "isNotApplicable": false,
+          "translations": {
+            "es": "La pruebo primero en una tarea pequeña para ver si me sirve."
+          }
+        }
+      ]
+    },
+    {
+      "dimensionKey": "better-results",
+      "text": "How sure do you feel about using AI for a bigger piece of work with several steps, such as a report or a presentation?",
+      "type": "multiple_choice",
+      "order": 18,
+      "minValue": null,
+      "maxValue": null,
+      "unit": null,
+      "placeholder": null,
+      "improvementStatement": null,
+      "resourceTitle": null,
+      "resourceLink": null,
+      "resourceDescription": null,
+      "translations": {
+        "es": {
+          "text": "¿Cuánta confianza tiene usted para usar la IA en un trabajo más grande, de varios pasos, como un informe o una presentación?",
+          "answers": {
+            "1": "Ninguna confianza",
+            "2": "Poca confianza",
+            "3": "Algo de confianza",
+            "4": "Bastante confianza",
+            "5": "Mucha confianza"
+          }
+        }
+      },
+      "isScored": true,
+      "isOptional": false,
+      "answers": [
+        {
+          "text": "Not sure at all",
+          "score": 0,
+          "order": 1,
+          "typeKey": null,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null,
+          "isNotApplicable": false,
+          "translations": {
+            "es": "Ninguna confianza"
+          }
+        },
+        {
+          "text": "A little sure",
+          "score": 25,
+          "order": 2,
+          "typeKey": null,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null,
+          "isNotApplicable": false,
+          "translations": {
+            "es": "Poca confianza"
+          }
+        },
+        {
+          "text": "Somewhat sure",
+          "score": 50,
+          "order": 3,
+          "typeKey": null,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null,
+          "isNotApplicable": false,
+          "translations": {
+            "es": "Algo de confianza"
+          }
+        },
+        {
+          "text": "Sure",
+          "score": 75,
+          "order": 4,
+          "typeKey": null,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null,
+          "isNotApplicable": false,
+          "translations": {
+            "es": "Bastante confianza"
+          }
+        },
+        {
+          "text": "Very sure",
+          "score": 100,
+          "order": 5,
+          "typeKey": null,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null,
+          "isNotApplicable": false,
+          "translations": {
+            "es": "Mucha confianza"
+          }
+        }
+      ]
+    },
+    {
+      "dimensionKey": "better-results",
+      "text": "A reusable skill is a saved set of instructions and tools for a task you do over and over, so you do not have to explain it each time. Copilot instructions, Cowork skills, and Claude skills all work this way. Which is closest to you?",
+      "type": "multiple_choice",
+      "order": 19,
+      "minValue": null,
+      "maxValue": null,
+      "unit": null,
+      "placeholder": null,
+      "improvementStatement": null,
+      "resourceTitle": null,
+      "resourceLink": null,
+      "resourceDescription": null,
+      "translations": {
+        "es": {
+          "text": "Una habilidad reutilizable es un conjunto de instrucciones y herramientas que usted guarda para una tarea que hace una y otra vez, para no tener que explicarla cada vez. Las instrucciones de Copilot, las habilidades de Cowork y las habilidades de Claude funcionan así. ¿Qué se parece más a usted?",
+          "answers": {
+            "1": "No conozco las habilidades reutilizables. Escribo mis instrucciones de nuevo cada vez.",
+            "2": "Uso habilidades que otras personas han publicado, pero no he creado las mías.",
+            "3": "He creado una habilidad propia para una tarea que hago seguido.",
+            "4": "Creo habilidades, las pruebo y las comparto para que mi equipo también las use."
+          }
+        }
+      },
+      "isScored": true,
+      "isOptional": true,
+      "answers": [
+        {
+          "text": "I am not familiar with reusable skills. I type my instructions again each time.",
+          "score": 0,
+          "order": 1,
+          "typeKey": null,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null,
+          "isNotApplicable": false,
+          "translations": {
+            "es": "No conozco las habilidades reutilizables. Escribo mis instrucciones de nuevo cada vez."
+          }
+        },
+        {
+          "text": "I use skills that other people have published, but I have not made my own.",
+          "score": 50,
+          "order": 2,
+          "typeKey": null,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null,
+          "isNotApplicable": false,
+          "translations": {
+            "es": "Uso habilidades que otras personas han publicado, pero no he creado las mías."
+          }
+        },
+        {
+          "text": "I have written a personal skill for a task I do often.",
+          "score": 75,
+          "order": 3,
+          "typeKey": null,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null,
+          "isNotApplicable": false,
+          "translations": {
+            "es": "He creado una habilidad propia para una tarea que hago seguido."
+          }
+        },
+        {
+          "text": "I write skills, test them, and share them so my team can reuse them.",
+          "score": 100,
+          "order": 4,
+          "typeKey": null,
+          "improvementStatement": null,
+          "resourceTitle": null,
+          "resourceLink": null,
+          "resourceDescription": null,
+          "isNotApplicable": false,
+          "translations": {
+            "es": "Creo habilidades, las pruebo y las comparto para que mi equipo también las use."
+          }
+        }
+      ]
+    }
+  ],
+  "translations": {
+    "es": {
+      "name": "Habilidades personales con la IA - Grameen",
+      "description": "Una encuesta breve antes de los Días de Fluidez en IA",
+      "introduction": "Esta es una manera rápida de saber desde dónde parte cada persona con la inteligencia artificial (IA), para poder ubicar a cada quien en el grupo que más le sirva durante los Días de Fluidez en IA. No es un examen.\n\nNo hay respuestas incorrectas. No estamos calificando a nadie y no vamos a compartir sus respuestas individuales con nadie. Por favor conteste según cómo trabaja usted hoy, no según cómo cree que debería trabajar. Si una pregunta no corresponde a su trabajo, marque la opción que lo dice y siga adelante.\n\nLa mayoría de las personas termina en 15 a 20 minutos. Tómese el tiempo que necesite.",
+      "completionMessage": "Aquí termina la encuesta. Gracias por su tiempo.",
+      "resultLabels": {
+        "Foundation": "Fundamentos",
+        "Practitioner": "Profesional",
+        "Advanced": "Avanzado"
+      },
+      "sectionInstructions": {
+        "getting-started": "Estas primeras preguntas son sobre las herramientas a las que usted tiene acceso. No hay respuesta correcta y nada de esto cuenta a su favor ni en su contra."
+      },
+      "optionalSectionInstruction": "Esta última pregunta es para las personas que ya han avanzado más con la IA. Si nada de esto le suena conocido, ya terminó. Muchas gracias.",
+      "dimensions": {
+        "getting-started": {
+          "label": "Para comenzar"
+        },
+        "day-to-day": {
+          "label": "Su trabajo del día a día"
+        },
+        "information-safety": {
+          "label": "Proteger la información"
+        },
+        "better-results": {
+          "label": "Obtener mejores resultados"
+        }
+      }
+    }
+  }
+}

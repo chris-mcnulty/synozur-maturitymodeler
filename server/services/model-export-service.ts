@@ -38,6 +38,9 @@ export async function duplicateModel(sourceId: string) {
     status: 'draft',
     featured: false,
     assessmentMode: sourceModel.assessmentMode,
+    scoringConfig: sourceModel.scoringConfig as any,
+    contentTranslations: sourceModel.contentTranslations as any,
+    respondentContent: sourceModel.respondentContent as any,
     imageUrl: sourceModel.imageUrl,
     maturityScale: sourceModel.maturityScale as any,
     generalResources: sourceModel.generalResources as any,
@@ -77,7 +80,10 @@ export async function duplicateModel(sourceId: string) {
       modelId: newModel.id,
       dimensionId: q.dimensionId ? dimensionIdMap.get(q.dimensionId) || null : null,
       text: q.text,
+      type: q.type,
       order: q.order,
+      isScored: q.isScored,
+      isOptional: q.isOptional,
     });
 
     const answers = await storage.getAnswersByQuestionId(q.id);
@@ -88,6 +94,7 @@ export async function duplicateModel(sourceId: string) {
         score: a.score,
         order: a.order,
         typeKey: a.typeKey,
+        isNotApplicable: a.isNotApplicable,
       });
     }
   }
@@ -111,6 +118,7 @@ export async function exportModelDefinition(modelId: string) {
   const dimensionIdToKey = new Map<string, string>();
   dimensions.forEach(d => dimensionIdToKey.set(d.id, d.key));
 
+  const contentTranslations = (model.contentTranslations ?? {}) as NonNullable<typeof model.contentTranslations>;
   const questionsData = await Promise.all(
     questions.map(async (q) => {
       const answers = await storage.getAnswersByQuestionId(q.id);
@@ -127,6 +135,12 @@ export async function exportModelDefinition(modelId: string) {
         resourceTitle: q.resourceTitle,
         resourceLink: q.resourceLink,
         resourceDescription: q.resourceDescription,
+        translations: Object.fromEntries(Object.entries(contentTranslations).flatMap(([language, translation]) => {
+          const translated = translation.questions?.[String(q.order)];
+          return translated ? [[language, { text: translated.text, answers: translated.answers }]] : [];
+        })),
+        isScored: q.isScored,
+        isOptional: q.isOptional,
         answers: answers.map(a => ({
           text: a.text,
           score: a.score,
@@ -136,6 +150,11 @@ export async function exportModelDefinition(modelId: string) {
           resourceTitle: a.resourceTitle,
           resourceLink: a.resourceLink,
           resourceDescription: a.resourceDescription,
+          isNotApplicable: a.isNotApplicable,
+          translations: Object.fromEntries(Object.entries(contentTranslations).flatMap(([language, translation]) => {
+            const text = translation.questions?.[String(q.order)]?.answers?.[String(a.order)];
+            return text ? [[language, text]] : [];
+          })),
         })),
       };
     })
@@ -144,7 +163,7 @@ export async function exportModelDefinition(modelId: string) {
   const types = await storage.getModelTypesByModelId(model.id);
 
   const exportData: schema.ModelExportFormat = {
-    formatVersion: "1.0",
+    formatVersion: "1.1",
     exportedAt: new Date().toISOString(),
     model: {
       name: model.name,
@@ -157,6 +176,8 @@ export async function exportModelDefinition(modelId: string) {
       allowAnonymousResults: model.allowAnonymousResults,
       hideScoreAndNarratives: model.hideScoreAndNarratives,
       assessmentMode: model.assessmentMode,
+      scoringConfig: model.scoringConfig as any,
+      respondentContent: model.respondentContent as any,
       imageUrl: model.imageUrl,
       maturityScale: model.maturityScale as any,
       generalResources: model.generalResources as any,
@@ -178,6 +199,16 @@ export async function exportModelDefinition(modelId: string) {
       order: d.order,
     })),
     questions: questionsData,
+    translations: Object.fromEntries(Object.entries(contentTranslations).map(([language, translation]) => [language, {
+      name: translation.name,
+      description: translation.description,
+      introduction: translation.introduction,
+      completionMessage: translation.completionMessage,
+      resultLabels: translation.resultLabels,
+      sectionInstructions: translation.sectionInstructions,
+      optionalSectionInstruction: translation.optionalSectionInstruction,
+      dimensions: translation.dimensions,
+    }])),
   };
 
   return { model, exportData };
@@ -187,8 +218,9 @@ export async function importModelDefinition(params: {
   modelData: any;
   newName?: string;
   newSlug?: string;
+  destinationTenantId?: string | null;
 }) {
-  const { modelData, newName, newSlug } = params;
+  const { modelData, newName, newSlug, destinationTenantId } = params;
 
   let transformedData = modelData;
 
@@ -287,6 +319,9 @@ export async function importModelDefinition(params: {
         featured: modelData.model.featured || false,
         allowAnonymousResults: modelData.model.allowAnonymousResults ?? false,
         hideScoreAndNarratives: modelData.model.hideScoreAndNarratives ?? false,
+        assessmentMode: modelData.model.assessmentMode ?? 'scored',
+        scoringConfig: modelData.model.scoringConfig,
+        respondentContent: modelData.model.respondentContent,
         imageUrl: modelData.model.imageUrl,
         maturityScale: modelData.model.maturityScale,
         generalResources: modelData.model.generalResources,
@@ -297,6 +332,7 @@ export async function importModelDefinition(params: {
         description: d.description || '',
         order: d.order,
       })),
+      translations: modelData.translations,
       questions: (modelData.questions || []).map((q: any) => ({
         dimensionKey: q.dimensionId ? dimensionIdToKey.get(q.dimensionId) : (q.dimensionKey || null),
         text: q.text,
@@ -310,6 +346,9 @@ export async function importModelDefinition(params: {
         resourceTitle: q.resourceTitle,
         resourceLink: q.resourceLink,
         resourceDescription: q.resourceDescription,
+        isScored: q.isScored ?? true,
+        isOptional: q.isOptional ?? false,
+        translations: q.translations,
         answers: answersByQuestion.get(q.id) || [],
       })),
     };
@@ -331,6 +370,32 @@ export async function importModelDefinition(params: {
     throw new ServiceError(400, "A model with this slug already exists. Please provide a different slug.");
   }
 
+  // Rebuild the DB-ID-free translation object using the portable order keys.
+  // This makes imports safe even when database IDs change at destination.
+  const importedTranslations: Record<string, any> = {};
+  for (const [language, translation] of Object.entries(data.translations ?? {})) {
+    importedTranslations[language] = { ...translation, questions: {} };
+  }
+  for (const question of data.questions) {
+    for (const [language, translation] of Object.entries(question.translations ?? {})) {
+      importedTranslations[language] ??= { questions: {} };
+      importedTranslations[language].questions ??= {};
+      importedTranslations[language].questions[String(question.order)] = {
+        text: translation.text,
+        answers: {},
+      };
+    }
+    for (const answer of question.answers) {
+      for (const [language, text] of Object.entries(answer.translations ?? {})) {
+        importedTranslations[language] ??= { questions: {} };
+        importedTranslations[language].questions ??= {};
+        importedTranslations[language].questions[String(question.order)] ??= { answers: {} };
+        importedTranslations[language].questions[String(question.order)].answers ??= {};
+        importedTranslations[language].questions[String(question.order)].answers[String(answer.order)] = text;
+      }
+    }
+  }
+
   const createdModel = await storage.createModel({
     name: modelName,
     slug: modelSlug,
@@ -342,10 +407,23 @@ export async function importModelDefinition(params: {
     allowAnonymousResults: data.model.allowAnonymousResults ?? false,
     hideScoreAndNarratives: data.model.hideScoreAndNarratives ?? false,
     assessmentMode: data.model.assessmentMode ?? "scored",
+    scoringConfig: data.model.scoringConfig as any,
+    respondentContent: data.model.respondentContent as any,
+    contentTranslations: Object.keys(importedTranslations).length ? importedTranslations : null,
     imageUrl: data.model.imageUrl,
     maturityScale: data.model.maturityScale as any,
     generalResources: data.model.generalResources as any,
+    // Exports intentionally omit database tenant IDs. A destination import
+    // explicitly assigns its own tenant and preserves restricted visibility.
+    visibility: destinationTenantId ? "private" : "public",
+    ownerTenantId: destinationTenantId ?? null,
   });
+  if (destinationTenantId) {
+    await db.insert(schema.modelTenants).values({
+      modelId: createdModel.id,
+      tenantId: destinationTenantId,
+    });
+  }
 
   // Create archetype types (for 'type' assessment-mode models)
   for (const t of data.types ?? []) {
@@ -392,6 +470,8 @@ export async function importModelDefinition(params: {
       resourceTitle: q.resourceTitle,
       resourceLink: q.resourceLink,
       resourceDescription: q.resourceDescription,
+      isScored: q.isScored,
+      isOptional: q.isOptional,
     });
     questionsCreated++;
 
@@ -406,6 +486,7 @@ export async function importModelDefinition(params: {
         resourceTitle: a.resourceTitle,
         resourceLink: a.resourceLink,
         resourceDescription: a.resourceDescription,
+        isNotApplicable: a.isNotApplicable,
       });
       answersCreated++;
     }

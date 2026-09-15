@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { usePageTitle } from "@/hooks/use-page-title";
 import { useRoute, useLocation } from "wouter";
 import { Helmet } from "react-helmet-async";
@@ -15,11 +16,14 @@ import { DataState } from "@/components/DataState";
 import type { Model, Dimension, Assessment, User } from "@shared/schema";
 import openingGraphic from '@assets/generated_images/Opening_graphic_AI_transformation_bf033f89.png';
 import { PrivateAccessGate } from "@/components/PrivateAccessGate";
+import { getAuthoredTranslation, localizeDimension } from "@shared/model-localization";
+import { useLocalizedModelContent } from "@/hooks/use-localized-model-content";
 
 export default function ModelHome() {
   const [, params] = useRoute("/:modelSlug");
   const [, setLocation] = useLocation();
   const modelSlug = params?.modelSlug || "";
+  const { i18n } = useTranslation();
   const [isArchived, setIsArchived] = useState(false);
   const [isPrivateGated, setIsPrivateGated] = useState(false);
   const [privateModelInfo, setPrivateModelInfo] = useState<{ name?: string; description?: string } | null>(null);
@@ -35,7 +39,6 @@ export default function ModelHome() {
     },
   });
 
-  usePageTitle(model?.name ?? "Model Overview");
 
   // Check error type from response
   useEffect(() => {
@@ -66,6 +69,16 @@ export default function ModelHome() {
   const { data: user } = useQuery<User>({
     queryKey: ['/api/user'],
   });
+  const { contentTranslations, isTranslating, translationError } = useLocalizedModelContent(model, i18n.language);
+  const authoredTranslation = getAuthoredTranslation(contentTranslations, i18n.language);
+  const displayName = authoredTranslation?.name ?? model?.name ?? "";
+  const displayDescription = authoredTranslation?.description ?? model?.description ?? "";
+  const respondentIntro = authoredTranslation?.introduction ?? model?.respondentContent?.introduction;
+  const localizedDimensions = useMemo(
+    () => model?.dimensions.map(dimension => localizeDimension(dimension, contentTranslations, i18n.language)) ?? [],
+    [model, contentTranslations, i18n.language],
+  );
+  usePageTitle(displayName || "Model Overview");
 
   // Scroll to top when component mounts or model changes
   useEffect(() => {
@@ -75,9 +88,9 @@ export default function ModelHome() {
   // Update page title when model loads
   useEffect(() => {
     if (model) {
-      document.title = `${model.name} | Orion - The Synozur Alliance`;
+      document.title = `${displayName} | Orion - The Synozur Alliance`;
     }
-  }, [model]);
+  }, [model, displayName]);
 
   // Create assessment mutation
   const createAssessment = useMutation({
@@ -230,17 +243,37 @@ export default function ModelHome() {
     );
   }
 
+  if (isTranslating || translationError) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <main className="flex-1 flex items-center justify-center p-4">
+          <Card className="max-w-lg p-8 text-center space-y-4">
+            <h1 className="text-2xl font-bold">{isTranslating ? "Preparing your translated assessment" : "Translation unavailable"}</h1>
+            <p className="text-muted-foreground">
+              {isTranslating
+                ? "We are preparing this assessment in your selected language."
+                : "This assessment could not be translated in the selected language. English has not been substituted."}
+            </p>
+            {translationError && <p className="text-sm text-destructive">{translationError.message}</p>}
+            <Button onClick={() => i18n.changeLanguage("en")}>Use English</Button>
+          </Card>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen flex flex-col">
       <Helmet>
-        <title>{model.name} | Orion - The Synozur Alliance</title>
-        <meta name="description" content={model.description} />
+        <title>{displayName} | Orion - The Synozur Alliance</title>
+        <meta name="description" content={displayDescription} />
         
         {/* Open Graph / Facebook */}
         <meta property="og:type" content="website" />
         <meta property="og:url" content={`https://models.synozur.com/${model.slug}`} />
-        <meta property="og:title" content={`${model.name} | Orion - The Synozur Alliance`} />
-        <meta property="og:description" content={model.description} />
+        <meta property="og:title" content={`${displayName} | Orion - The Synozur Alliance`} />
+        <meta property="og:description" content={displayDescription} />
         <meta property="og:image" content="https://models.synozur.com/og-image.jpg" />
         <meta property="og:image:width" content="1024" />
         <meta property="og:image:height" content="1024" />
@@ -248,8 +281,8 @@ export default function ModelHome() {
         {/* Twitter */}
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:url" content={`https://models.synozur.com/${model.slug}`} />
-        <meta name="twitter:title" content={`${model.name} | Orion - The Synozur Alliance`} />
-        <meta name="twitter:description" content={model.description} />
+        <meta name="twitter:title" content={`${displayName} | Orion - The Synozur Alliance`} />
+        <meta name="twitter:description" content={displayDescription} />
         <meta name="twitter:image" content="https://models.synozur.com/og-image.jpg" />
       </Helmet>
       
@@ -258,7 +291,7 @@ export default function ModelHome() {
           <div className="absolute inset-0 z-0">
             <img 
               src={model.imageUrl || openingGraphic}
-              alt={model.name}
+              alt={displayName}
               className="w-full h-full object-cover opacity-20"
             />
           </div>
@@ -279,10 +312,10 @@ export default function ModelHome() {
                 )}
               </div>
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-4" data-testid="text-model-title">
-                {model.name}
+                {displayName}
               </h1>
               <p className="text-lg md:text-xl text-white/90 mb-8 max-w-2xl" data-testid="text-model-description">
-                {model.description}
+                {displayDescription}
               </p>
               <div className="flex flex-wrap gap-4">
                 <Button 
@@ -339,10 +372,15 @@ export default function ModelHome() {
                   </AlertDescription>
                 </Alert>
               )}
+              {respondentIntro && (
+                <Card className="mb-8 p-6 whitespace-pre-line text-muted-foreground" data-testid="model-respondent-introduction">
+                  {respondentIntro}
+                </Card>
+              )}
               
               <h2 className="text-3xl font-bold mb-8 text-center">Assessment Dimensions</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {model.dimensions.map((dimension, index) => (
+                {localizedDimensions.map((dimension, index) => (
                   <Card key={dimension.id} className="p-6 hover-elevate transition-all" data-testid={`dimension-card-${index}`}>
                     <h3 className="text-xl font-bold mb-2 flex items-center gap-2">
                       <CheckCircle2 className="h-5 w-5 text-primary" />

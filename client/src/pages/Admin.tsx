@@ -625,6 +625,7 @@ export default function Admin() {
   const [pendingModelFile, setPendingModelFile] = useState<{file: File; modelData: any} | null>(null);
   const [modelImportName, setModelImportName] = useState('');
   const [modelImportSlug, setModelImportSlug] = useState('');
+  const [modelImportDestinationTenantId, setModelImportDestinationTenantId] = useState('');
   
   // Maturity scale and general resources state
   const [isMaturityScaleDialogOpen, setIsMaturityScaleDialogOpen] = useState(false);
@@ -2337,6 +2338,18 @@ export default function Admin() {
 
   const handleConfirmModelImport = async () => {
     if (!pendingModelFile) return;
+    const isGlobal = currentUser && normalizeRole(currentUser.role) === USER_ROLES.GLOBAL_ADMIN;
+    const destinationTenantId = isGlobal ? modelImportDestinationTenantId : currentUser?.tenantId;
+    if (!destinationTenantId) {
+      toast({
+        title: "Destination tenant required",
+        description: isGlobal
+          ? "Select a destination tenant. Model imports are never made public by fallback."
+          : "Your account has no tenant assignment, so this model cannot be imported.",
+        variant: "destructive",
+      });
+      return;
+    }
     
     try {
       const response = await fetch('/api/models/import-model', {
@@ -2348,6 +2361,7 @@ export default function Admin() {
           modelData: pendingModelFile.modelData,
           newName: modelImportName || undefined,
           newSlug: modelImportSlug || undefined,
+          destinationTenantId,
         }),
       });
       
@@ -2368,6 +2382,7 @@ export default function Admin() {
       setPendingModelFile(null);
       setModelImportName('');
       setModelImportSlug('');
+      setModelImportDestinationTenantId('');
     } catch (error) {
       toast({
         title: "Import failed",
@@ -5871,6 +5886,31 @@ ${insightsData.recommendations.map((r, i) => `${i + 1}. ${r}`).join('\n')}
                 Leave empty to use the original slug. Slug must be unique.
               </p>
             </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="model-import-destination-tenant">Destination tenant</Label>
+              {currentUser && normalizeRole(currentUser.role) === USER_ROLES.GLOBAL_ADMIN ? (
+                <>
+                  <Select value={modelImportDestinationTenantId} onValueChange={setModelImportDestinationTenantId}>
+                    <SelectTrigger id="model-import-destination-tenant" data-testid="select-model-import-destination-tenant">
+                      <SelectValue placeholder="Select destination tenant" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {tenants.map((tenant: any) => (
+                        <SelectItem key={tenant.id} value={tenant.id}>{tenant.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-sm text-muted-foreground">The import will be private and assigned only to the selected tenant.</p>
+                </>
+              ) : currentUser?.tenantId ? (
+                <p className="text-sm text-muted-foreground">
+                  The import will be private and assigned to {tenants.find((tenant: any) => tenant.id === currentUser.tenantId)?.name || "your tenant"}.
+                </p>
+              ) : (
+                <p className="text-sm text-destructive">A tenant assignment is required. No public import fallback is available.</p>
+              )}
+            </div>
           </div>
 
           <DialogFooter>
@@ -5879,6 +5919,7 @@ ${insightsData.recommendations.map((r, i) => `${i + 1}. ${r}`).join('\n')}
               setPendingModelFile(null);
               setModelImportName('');
               setModelImportSlug('');
+              setModelImportDestinationTenantId('');
             }}>
               Cancel
             </Button>

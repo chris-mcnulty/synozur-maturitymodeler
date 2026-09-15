@@ -80,6 +80,34 @@ export const models = pgTable("models", {
   // 'type' = archetype/propensity quiz that categorizes the respondent into one
   // of several model types (each answer votes for a type) rather than a score.
   assessmentMode: text("assessment_mode").notNull().default("scored"), // 'scored', 'type'
+  // Model-specific scoring semantics. Kept optional so existing models retain
+  // their historical calculation behavior.
+  scoringConfig: json("scoring_config").$type<{
+    method?: "mean_answer_values";
+    remediation?: { questionOrder: number; incorrectAnswerScores: number[]; message: string };
+  }>(),
+  // Authored content translations are keyed by language, then stable content
+  // keys (dimension key and question/answer order).  They deliberately contain
+  // no database IDs so an exported model is portable between tenants.
+  contentTranslations: json("content_translations").$type<Record<string, {
+    name?: string;
+    description?: string;
+    introduction?: string;
+    completionMessage?: string;
+    resultLabels?: Record<string, string>;
+    sectionInstructions?: Record<string, string>;
+    optionalSectionInstruction?: string;
+    dimensions?: Record<string, { label?: string; description?: string }>;
+    questions?: Record<string, { text?: string; answers?: Record<string, string> }>;
+  }>>(),
+  // Respondent-facing prose that is not a question (intro, section guidance,
+  // and completion). Kept separate from authoring notes/scoring keys.
+  respondentContent: json("respondent_content").$type<{
+    introduction?: string;
+    completionMessage?: string;
+    sectionInstructions?: Record<string, string>;
+    optionalSectionInstruction?: string;
+  }>(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 }, (table) => ({
@@ -118,6 +146,9 @@ export const questions = pgTable("questions", {
   resourceTitle: text("resource_title"),
   resourceLink: text("resource_link"),
   resourceDescription: text("resource_description"),
+  // Opt-in flags only; the defaults preserve all existing assessment behavior.
+  isScored: boolean("is_scored").notNull().default(true),
+  isOptional: boolean("is_optional").notNull().default(false),
 });
 
 // Answers table
@@ -135,6 +166,9 @@ export const answers = pgTable("answers", {
   resourceTitle: text("resource_title"),
   resourceLink: text("resource_link"),
   resourceDescription: text("resource_description"),
+  // Selecting this answer records the respondent's answer but excludes the
+  // question from a mean-based score (for "not part of my job" choices).
+  isNotApplicable: boolean("is_not_applicable").notNull().default(false),
 }, (table) => ({
   questionIdIdx: index("idx_answers_question_id").on(table.questionId),
 }));
@@ -764,6 +798,20 @@ export const modelExportFormatSchema = z.object({
     allowAnonymousResults: z.boolean().optional().default(false),
     hideScoreAndNarratives: z.boolean().optional().default(false),
     assessmentMode: z.string().optional().default("scored"),
+    scoringConfig: z.object({
+      method: z.literal("mean_answer_values").optional(),
+      remediation: z.object({
+        questionOrder: z.number(),
+        incorrectAnswerScores: z.array(z.number()),
+        message: z.string(),
+      }).optional(),
+    }).nullable().optional(),
+    respondentContent: z.object({
+      introduction: z.string().optional(),
+      completionMessage: z.string().optional(),
+      sectionInstructions: z.record(z.string(), z.string()).optional(),
+      optionalSectionInstruction: z.string().optional(),
+    }).nullable().optional(),
     imageUrl: z.string().nullable().optional(),
     maturityScale: z.array(z.object({
       id: z.union([z.string(), z.number()]).transform(v => String(v)),
@@ -809,6 +857,12 @@ export const modelExportFormatSchema = z.object({
     resourceTitle: z.string().nullable().optional(),
     resourceLink: z.string().nullable().optional(),
     resourceDescription: z.string().nullable().optional(),
+    isScored: z.boolean().optional().default(true),
+    isOptional: z.boolean().optional().default(false),
+    translations: z.record(z.string(), z.object({
+      text: z.string().optional(),
+      answers: z.record(z.string(), z.string()).optional(),
+    })).optional(),
     answers: z.array(z.object({
       text: z.string(),
       score: z.number(),
@@ -818,8 +872,25 @@ export const modelExportFormatSchema = z.object({
       resourceTitle: z.string().nullable().optional(),
       resourceLink: z.string().nullable().optional(),
       resourceDescription: z.string().nullable().optional(),
+      isNotApplicable: z.boolean().optional().default(false),
+      translations: z.record(z.string(), z.string()).optional(),
     })),
   })),
+  // Newer exports use per-content translations, allowing stable remapping on
+  // import. Legacy exports simply omit this property.
+  translations: z.record(z.string(), z.object({
+    name: z.string().optional(),
+    description: z.string().optional(),
+    introduction: z.string().optional(),
+    completionMessage: z.string().optional(),
+    sectionInstructions: z.record(z.string(), z.string()).optional(),
+    optionalSectionInstruction: z.string().optional(),
+    resultLabels: z.record(z.string(), z.string()).optional(),
+    dimensions: z.record(z.string(), z.object({
+      label: z.string().optional(),
+      description: z.string().optional(),
+    })).optional(),
+  })).optional(),
 });
 
 export type ModelExportFormat = z.infer<typeof modelExportFormatSchema>;

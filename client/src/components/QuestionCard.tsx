@@ -24,6 +24,7 @@ interface QuestionCardProps {
   placeholder?: string;
   onAnswer: (value: string | string[]) => void;
   selectedAnswer?: string | string[];
+  optional?: boolean;
 }
 
 export function QuestionCard({ 
@@ -35,7 +36,8 @@ export function QuestionCard({
   unit,
   placeholder,
   onAnswer, 
-  selectedAnswer 
+  selectedAnswer,
+  optional = false,
 }: QuestionCardProps) {
   const { t } = useTranslation();
   const [selected, setSelected] = useState<string>(typeof selectedAnswer === 'string' ? selectedAnswer : "");
@@ -95,9 +97,16 @@ export function QuestionCard({
 
   return (
     <Card className="p-5 sm:p-6 md:p-8 max-w-3xl mx-auto" data-testid="card-question">
-      <h2 className="text-lg sm:text-xl md:text-2xl font-bold mb-4 sm:mb-6 leading-snug" data-testid="text-question">
-        {question}
-      </h2>
+      <div className="mb-4 sm:mb-6">
+        {optional && (
+          <span className="mb-2 inline-block text-xs font-medium text-muted-foreground">
+            {t("assessment.optional", { defaultValue: "Optional" })}
+          </span>
+        )}
+        <h2 className="text-lg sm:text-xl md:text-2xl font-bold leading-snug" data-testid="text-question">
+          {question}
+        </h2>
+      </div>
       
       {questionType === 'multiple_choice' ? (
         <RadioGroup value={selected} onValueChange={handleSelect} aria-label={question}>

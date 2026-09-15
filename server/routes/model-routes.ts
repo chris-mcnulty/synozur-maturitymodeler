@@ -5,13 +5,14 @@ import type { Express } from "express";
   import * as schema from "@shared/schema";
   import { insertAssessmentSchema, insertAssessmentResponseSchema, insertResultSchema, insertModelSchema, insertDimensionSchema, insertQuestionSchema, insertAnswerSchema, type Answer } from "@shared/schema";
   import { ensureAuthenticated, ensureAdmin, ensureAdminOrModeler, ensureAnyAdmin, ensureGlobalAdmin } from "../auth";
-  import { canManageUsers, canAssignRole, checkIsGlobalAdmin, getAccessibleTenantIds, canAccessModel, hasAdminAccess } from "../permissions";
+  import { canManageUsers, canAssignRole, checkIsGlobalAdmin, getAccessibleTenantIds, canAccessModel, canManageModels, hasAdminAccess } from "../permissions";
   import { ObjectStorageService, ObjectNotFoundError } from "../objectStorage";
   import { aiService } from "../services/ai-service";
   import { providerRegistry } from "../services/ai-providers/registry";
   import { validateImportData, executeImport, type ImportExportData } from "../services/import-service";
   import { duplicateModel, exportModelDefinition, importModelDefinition, exportInterviewGuide } from "../services/model-export-service";
   import { sendServiceError } from "../services/service-error";
+import { hasCompleteMachineTranslation, translateModelContentWithFoundry } from "../services/model-translation-service";
   import { z } from "zod";
   import { randomBytes, createHash } from "crypto";
   import bcrypt from "bcryptjs";
@@ -23,13 +24,47 @@ import type { Express } from "express";
 
   const __filename = fileURLToPath(import.meta.url);
   const __dirname = dirname(__filename);
+// Learner-requested translations are intentionally ephemeral. They do not
+// overwrite authored translations or change a model's canonical content.
+const learnerTranslationCache = new Map<string, { translation: any; modelUpdatedAt: string }>();
   
 export function registerModelRoutes(app: Express) {
+  const canManageModel = (user: schema.User | undefined, model: schema.Model) => {
+    if (!user) return false;
+    // Legacy roles retain their historical global model-authoring access.
+    if (user.role === "global_admin" || user.role === "admin" || user.role === "modeler") return true;
+    return canManageModels(user, model.ownerTenantId);
+  };
+  const canSeeDraftModel = (req: any) => req.isAuthenticated() && (
+    req.user?.role === "global_admin" ||
+    req.user?.role === "tenant_admin" ||
+    req.user?.role === "tenant_modeler" ||
+    req.user?.role === "admin" ||
+    req.user?.role === "modeler"
+  );
+  const safeAnswer = (answer: schema.Answer, internal: boolean) => ({
+    ...(internal
+      ? answer
+      : {
+          id: answer.id,
+          questionId: answer.questionId,
+          text: answer.text,
+          order: answer.order,
+        }),
+  });
+
   app.get('/api/answers/:questionId', async (req, res) => {
     try {
-      const { questionId } = req.params;
-      const answers = await storage.getAnswersByQuestionId(questionId);
-      res.json(answers);
+      const question = await storage.getQuestion(req.params.questionId);
+      const model = question ? await storage.getModel(question.modelId) : undefined;
+      if (!question || !model || !(await canAccessModel(req.user, model))) {
+        return res.status(404).json({ error: "Question not found" });
+      }
+      if (!canSeeDraftModel(req) && model.status !== "published") {
+        return res.status(404).json({ error: "Question not found" });
+      }
+      const answers = await storage.getAnswersByQuestionId(question.id);
+      res.json(answers.map(answer => safeAnswer(answer, canManageModel(req.user, model))));
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch answers" });
     }
@@ -40,6 +75,13 @@ export function registerModelRoutes(app: Express) {
   app.get('/api/models/:id/answers', async (req, res) => {
     try {
       const modelId = req.params.id;
+      const model = await storage.getModel(modelId);
+      if (!model || !(await canAccessModel(req.user, model))) {
+        return res.status(404).json({ error: "Model not found" });
+      }
+      if (!canSeeDraftModel(req) && model.status !== "published") {
+        return res.status(404).json({ error: "Model not found" });
+      }
       
       // Get all questions for this model
       const questions = await storage.getQuestionsByModelId(modelId);
@@ -55,7 +97,7 @@ export function registerModelRoutes(app: Express) {
         .where(inArray(schema.answers.questionId, questionIds))
         .orderBy(schema.answers.order);
       
-      res.json(answers);
+      res.json(answers.map(answer => safeAnswer(answer, canManageModel(req.user, model))));
     } catch (error) {
       console.error('Failed to fetch answers for model:', error);
       res.status(500).json({ error: "Failed to fetch answers" });
@@ -646,7 +688,10 @@ export function registerModelRoutes(app: Express) {
       const types = model.assessmentMode === 'type'
         ? await storage.getModelTypesByModelId(model.id)
         : [];
-      res.json({ ...model, dimensions, types });
+      // Respondents need authored translations, but never the scoring key.
+      const safeModel: any = { ...model, dimensions, types };
+      if (!canSeeDrafts) delete safeModel.scoringConfig;
+      res.json(safeModel);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch model" });
     }
@@ -698,7 +743,9 @@ export function registerModelRoutes(app: Express) {
       const types = model.assessmentMode === 'type'
         ? await storage.getModelTypesByModelId(model.id)
         : [];
-      res.json({ ...model, dimensions, types });
+      const safeModel: any = { ...model, dimensions, types };
+      if (!canSeeDrafts) delete safeModel.scoringConfig;
+      res.json(safeModel);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch model" });
     }
@@ -1060,9 +1107,11 @@ export function registerModelRoutes(app: Express) {
         }
         answersByQuestionId.get(a.questionId)!.push(a);
       }
+      const exposeInternalScoring = canSeeDrafts;
       const questionsWithAnswers = questions.map((question) => ({
         ...question,
-        answers: answersByQuestionId.get(question.id) ?? [],
+        // Scores and type votes are authoring data, not respondent data.
+        answers: (answersByQuestionId.get(question.id) ?? []).map(answer => safeAnswer(answer, exposeInternalScoring)),
       }));
 
       res.json(questionsWithAnswers);
@@ -1406,6 +1455,10 @@ export function registerModelRoutes(app: Express) {
 
   app.get("/api/models/:id/export-model", ensureAdminOrModeler, async (req, res) => {
     try {
+      const source = await storage.getModel(req.params.id);
+      if (!source || !(await canAccessModel(req.user, source))) {
+        return res.status(404).json({ error: "Model not found" });
+      }
       const { model, exportData } = await exportModelDefinition(req.params.id);
       res.setHeader('Content-Type', 'application/json');
       res.setHeader('Content-Disposition', `attachment; filename="${model.slug}.model"`);
@@ -1419,11 +1472,144 @@ export function registerModelRoutes(app: Express) {
 
   app.post("/api/models/import-model", ensureAdminOrModeler, async (req, res) => {
     try {
-      const { modelData, newName, newSlug } = req.body;
-      const result = await importModelDefinition({ modelData, newName, newSlug });
+      const { modelData, newName, newSlug, destinationTenantId } = req.body;
+      const requestedTenantId = typeof destinationTenantId === "string" ? destinationTenantId : null;
+      // Tenant modelers can import only into their own tenant; global admins
+      // may explicitly choose a verified destination tenant.
+      const effectiveTenantId = req.user!.role === "global_admin"
+        ? requestedTenantId
+        : (req.user!.tenantId ?? null);
+      if (!effectiveTenantId) {
+        return res.status(400).json({ error: "A destination tenant is required. Imports are never created as a public fallback." });
+      }
+      if (requestedTenantId && req.user!.role !== "global_admin" && requestedTenantId !== effectiveTenantId) {
+        return res.status(403).json({ error: "You can import only into your own tenant" });
+      }
+      if (effectiveTenantId && !(await storage.getTenant(effectiveTenantId))) {
+        return res.status(400).json({ error: "Destination tenant not found" });
+      }
+      const result = await importModelDefinition({
+        modelData,
+        newName,
+        newSlug,
+        destinationTenantId: effectiveTenantId,
+      });
       res.json(result);
     } catch (error) {
       sendServiceError(res, error, "Failed to import model");
+    }
+  });
+
+  // Generate an optional machine translation. Existing authored translations
+  // are never overwritten; custom content always takes precedence at runtime.
+  app.post("/api/models/:id/translations/:language/machine", ensureAdminOrModeler, async (req, res) => {
+    try {
+      const model = await storage.getModel(req.params.id);
+      if (!model || !canManageModel(req.user, model)) {
+        return res.status(404).json({ error: "Model not found" });
+      }
+      const language = req.params.language.toLowerCase().split("-")[0];
+      if ((model.contentTranslations as any)?.[language]) {
+        return res.status(409).json({ error: "An authored translation already exists and will not be replaced" });
+      }
+      const dimensions = await storage.getDimensionsByModelId(model.id);
+      const questions = await storage.getQuestionsByModelId(model.id);
+      const source = {
+        name: model.name,
+        description: model.description,
+        dimensions: dimensions.map(d => ({ key: d.key, label: d.label, description: d.description })),
+        questions: await Promise.all(questions.map(async q => ({
+          order: q.order,
+          text: q.text,
+          answers: (await storage.getAnswersByQuestionId(q.id)).map(a => ({ order: a.order, text: a.text })),
+        }))),
+      };
+      const translated = await translateModelContentWithFoundry(source, language);
+      if (!hasCompleteMachineTranslation(source, translated)) {
+        return res.status(502).json({ error: "Azure AI Foundry returned an incomplete or reordered translation; nothing was saved" });
+      }
+      const next = { ...((model.contentTranslations as any) ?? {}), [language]: {
+        name: translated.name,
+        description: translated.description,
+        dimensions: Object.fromEntries((translated.dimensions ?? []).map((d: any) => [d.key, { label: d.label, description: d.description }])),
+        questions: Object.fromEntries((translated.questions ?? []).map((q: any) => [String(q.order), {
+          text: q.text,
+          answers: Object.fromEntries((q.answers ?? []).map((a: any) => [String(a.order), a.text])),
+        }])),
+      }};
+      await storage.updateModel(model.id, { contentTranslations: next });
+      res.json({ language, provider: "azure-foundry", translation: next[language] });
+    } catch (error) {
+      sendServiceError(res, error, "Failed to generate machine translation");
+    }
+  });
+
+  // Return a language overlay for a learner. Custom translations always win;
+  // otherwise Foundry is called and the validated result is held in process
+  // memory. This endpoint never persists a machine translation.
+  app.post("/api/models/:id/localized-content/:language", async (req, res) => {
+    try {
+      const model = await storage.getModel(req.params.id);
+      if (!model || !(await canAccessModel(req.user, model))) {
+        return res.status(404).json({ error: "Model not found" });
+      }
+      if (!canSeeDraftModel(req) && model.status !== "published") {
+        return res.status(404).json({ error: "Model not found" });
+      }
+      const language = req.params.language.toLowerCase().split("-")[0];
+      if (!/^[a-z]{2,3}$/.test(language)) {
+        return res.status(400).json({ error: "Choose an ISO language code" });
+      }
+      if (language === "en") return res.json({ source: "canonical", translation: null });
+      const authored = (model.contentTranslations as any)?.[language];
+      if (authored) return res.json({ source: "authored", translation: authored });
+
+      const cacheKey = `${model.id}:${language}`;
+      const cached = learnerTranslationCache.get(cacheKey);
+      if (cached?.modelUpdatedAt === model.updatedAt.toISOString()) {
+        return res.json({ source: "machine", translation: cached.translation });
+      }
+      const dimensions = await storage.getDimensionsByModelId(model.id);
+      const questions = await storage.getQuestionsByModelId(model.id);
+      const source = {
+        name: model.name,
+        description: model.description,
+        respondentContent: model.respondentContent as any,
+        dimensions: dimensions.map(dimension => ({
+          key: dimension.key, label: dimension.label, description: dimension.description,
+        })),
+        questions: await Promise.all(questions.map(async question => ({
+          order: question.order,
+          text: question.text,
+          answers: (await storage.getAnswersByQuestionId(question.id))
+            .map(answer => ({ order: answer.order, text: answer.text })),
+        }))),
+      };
+      const translated = await translateModelContentWithFoundry(source, language);
+      if (!hasCompleteMachineTranslation(source, translated)) {
+        return res.status(502).json({ error: "Azure AI Foundry returned an incomplete or reordered translation" });
+      }
+      const translation = {
+        name: translated.name,
+        description: translated.description,
+        introduction: translated.respondentContent?.introduction,
+        completionMessage: translated.respondentContent?.completionMessage,
+        sectionInstructions: translated.respondentContent?.sectionInstructions,
+        optionalSectionInstruction: translated.respondentContent?.optionalSectionInstruction,
+        dimensions: Object.fromEntries(translated.dimensions.map((dimension: any) => [
+          dimension.key, { label: dimension.label, description: dimension.description },
+        ])),
+        questions: Object.fromEntries(translated.questions.map((question: any) => [
+          String(question.order), {
+            text: question.text,
+            answers: Object.fromEntries(question.answers.map((answer: any) => [String(answer.order), answer.text])),
+          },
+        ])),
+      };
+      learnerTranslationCache.set(cacheKey, { translation, modelUpdatedAt: model.updatedAt.toISOString() });
+      res.json({ source: "machine", translation });
+    } catch (error) {
+      sendServiceError(res, error, "Failed to prepare translated assessment content");
     }
   });
 

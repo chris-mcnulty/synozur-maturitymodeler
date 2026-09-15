@@ -6,6 +6,7 @@ id = "UrA04J8daL7V_Llgqml4A"
 uri = "file://champion-type-quiz-corrected.model.json"
 type = "unspecified"
 title = "Champion Type Quiz — corrected export (type mode + 5 archetypes + answer mappings)"
+logical_id = "54fa15a6-66f3-49cd-8740-3f4fb81ca0fa"
 
 [[outputs]]
 id = "rg8CrLG244sTckQ9ZXwlH"
@@ -13,3 +14,32 @@ uri = "file://handoff/from-list-to-live-dashboard-copilot-sharepoint.orion-cours
 type = "unspecified"
 title = "From List to Live Dashboard — Orion course package"
 description = "Validated v2 Orion import package: 6 modules, 29 lessons, 8 embedded downloads, labeled screenshot/diagram placeholders, assessments, and required capstone evidence submission. Imports as draft/private."
+logical_id = "cbc6c311-931a-4e48-9694-315f2e1fd889"
+
+[[outputs]]
+id = "MIbXHTNNtwIqllhnSjvIr"
+uri = "file://attached_assets/grameen-personal-ai-skills.model"
+type = "unspecified"
+title = "Personal AI Skills — bilingual assessment transfer file"
+description = "English assessment with custom Spanish, scoring rules, and private draft settings. Import with the updated application and select the Grameen America destination tenant."
+logical_id = "3d03ed0f-9953-4697-9764-b2759cc938f4"
+content_hash = "sha256:e86bb0725ec8137b311b59b6c45bd3568aa015905c669d4c9662859556ed2dcb"
+size = 57288
+mtime_ms = 1789433474020
+storage_uri = "gcs://replit-rams-assets-janeway/rams/assets/repl:de9b7c40-dcaa-46b2-b0c0-d28fd76a0dab/3d03ed0f-9953-4697-9764-b2759cc938f4/10c566b5-c84f-4663-aa04-498cf78a316a"
+storage_version_token = "1789433663825351"
+content_type = "application/octet-stream"
+
+[[outputs]]
+id = "YM8coXqpva_kdWDM65b1i"
+uri = "file://attached_assets/personal-ai-skills-grameen.model"
+type = "unspecified"
+title = "Personal AI Skills - Grameen"
+description = "Updated production transfer file: distinctive name, English and custom Spanish, shared scoring rules, and private draft settings. Select the existing Grameen America tenant when importing."
+logical_id = "fa7051b1-9527-4c13-a5a9-c4d89109f302"
+content_hash = "sha256:7faa35449487d9fa321862f56d579236667ad9933595be2a30136937cd64f9f5"
+size = 63730
+mtime_ms = 1789433761008
+storage_uri = "gcs://replit-rams-assets-janeway/rams/assets/repl:de9b7c40-dcaa-46b2-b0c0-d28fd76a0dab/fa7051b1-9527-4c13-a5a9-c4d89109f302/e03099ae-3488-4bf3-bc1b-f21f5637e239"
+storage_version_token = "1789434089381935"
+content_type = "application/octet-stream"

@@ -14,12 +14,14 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { usePageTitle } from "@/hooks/use-page-title";
 import { useTranslation } from "react-i18next";
-import type { Assessment as AssessmentType, Question, Answer, Dimension } from "@shared/schema";
+import type { Assessment as AssessmentType, Question, Answer, Dimension, Model } from "@shared/schema";
 import {
   getAssessmentQuestionType,
   getNumericQuestionBounds,
   isLegacyM365AdoptionScoreQuestion,
 } from "@shared/assessment-question-utils";
+import { getAuthoredTranslation, localizeDimension, localizeQuestion } from "@shared/model-localization";
+import { useLocalizedModelContent } from "@/hooks/use-localized-model-content";
 
 interface QuestionWithAnswers extends Question {
   answers: Answer[];
@@ -69,7 +71,7 @@ export default function Assessment() {
   const [, params] = useRoute("/assessment/:assessmentId");
   const [, setLocation] = useLocation();
   const { toast } = useToast();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const assessmentId = params?.assessmentId;
 
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -88,6 +90,16 @@ export default function Assessment() {
     queryKey: ['/api/assessments', assessmentId],
     enabled: !!assessmentId,
   });
+  const { data: assessmentModel } = useQuery<Model & { dimensions: Dimension[] }>({
+    queryKey: ['/api/models', 'by-id', assessment?.modelId],
+    enabled: !!assessment?.modelId,
+    queryFn: async () => {
+      const response = await fetch(`/api/models/by-id/${assessment?.modelId}`);
+      if (!response.ok) throw new Error("Failed to fetch assessment model");
+      return response.json();
+    },
+  });
+  const { contentTranslations, isTranslating, translationError } = useLocalizedModelContent(assessmentModel, i18n.language);
 
   // Fetch model with questions
   const { data: questions = [], isLoading, isError: questionsIsError, error: questionsError, refetch: refetchQuestions } = useQuery<QuestionWithAnswers[]>({
@@ -109,6 +121,14 @@ export default function Assessment() {
       return response.json();
     },
   });
+  const localizedQuestions = useMemo(
+    () => questions.map(question => localizeQuestion(question, contentTranslations, i18n.language)),
+    [questions, contentTranslations, i18n.language],
+  );
+  const localizedDimensions = useMemo(
+    () => dimensions.map(dimension => localizeDimension(dimension, contentTranslations, i18n.language)),
+    [dimensions, contentTranslations, i18n.language],
+  );
 
   // Fetch existing responses
   const { data: existingResponses = [], isFetched: responsesFetched } = useQuery<{
@@ -149,7 +169,7 @@ export default function Assessment() {
   // point are preserved because the effect runs only once.
   useEffect(() => {
     if (didResumeRef.current) return;
-    if (!questions.length) return;
+    if (!localizedQuestions.length) return;
     // Wait for the responses query to actually finish before deciding.
     if (!responsesFetched) return;
 
@@ -170,15 +190,15 @@ export default function Assessment() {
       }
     }
 
-    const firstUnanswered = questions.findIndex(
+    const firstUnanswered = localizedQuestions.findIndex(
       q => !isAnswerComplete(q, initialValues[q.id])
     );
-    const targetIndex = firstUnanswered === -1 ? questions.length - 1 : firstUnanswered;
+    const targetIndex = firstUnanswered === -1 ? localizedQuestions.length - 1 : firstUnanswered;
     if (targetIndex > 0) {
       setCurrentQuestionIndex(targetIndex);
     }
     didResumeRef.current = true;
-  }, [questions, existingResponses, responsesFetched]);
+  }, [localizedQuestions, existingResponses, responsesFetched]);
 
   // Reset resume guard if the assessment id changes (in case the component
   // is reused for a different assessment without unmounting).
@@ -312,17 +332,17 @@ export default function Assessment() {
   // Indices that count as answered (for navigator + incomplete panel)
   const answeredIndices = useMemo(() => {
     const set = new Set<number>();
-    questions.forEach((q, i) => {
-      if (isAnswerComplete(q, selectedAnswers[q.id])) set.add(i);
+    localizedQuestions.forEach((q, i) => {
+      if (q.isOptional || isAnswerComplete(q, selectedAnswers[q.id])) set.add(i);
     });
     return set;
-  }, [questions, selectedAnswers]);
+  }, [localizedQuestions, selectedAnswers]);
 
   const unansweredQuestions = useMemo(() => {
-    return questions
+    return localizedQuestions
       .map((q, index) => ({ q, index }))
-      .filter(({ q }) => !isAnswerComplete(q, selectedAnswers[q.id]));
-  }, [questions, selectedAnswers]);
+      .filter(({ q }) => !q.isOptional && !isAnswerComplete(q, selectedAnswers[q.id]));
+  }, [localizedQuestions, selectedAnswers]);
 
   // Wait until all in-flight saves have settled
   const waitForPendingSaves = useCallback(async () => {
@@ -334,7 +354,7 @@ export default function Assessment() {
   }, []);
 
   const handleNext = async () => {
-    if (currentQuestionIndex === questions.length - 1) {
+    if (currentQuestionIndex === localizedQuestions.length - 1) {
       // Final question — validate completeness before submitting
       if (unansweredQuestions.length > 0) {
         setShowIncomplete(true);
@@ -361,7 +381,7 @@ export default function Assessment() {
   };
 
   const handleJump = (index: number) => {
-    if (index >= 0 && index < questions.length) {
+    if (index >= 0 && index < localizedQuestions.length) {
       setCurrentQuestionIndex(index);
     }
   };
@@ -375,7 +395,7 @@ export default function Assessment() {
   // is on interactive controls (buttons, links, etc.) so they activate
   // themselves.
   useEffect(() => {
-    if (!questions.length) return;
+    if (!localizedQuestions.length) return;
 
     const TYPING_TAGS = new Set(["INPUT", "TEXTAREA", "SELECT"]);
     const TYPING_ROLES = new Set(["textbox", "searchbox", "spinbutton", "combobox"]);
@@ -482,7 +502,7 @@ export default function Assessment() {
   }, [currentQuestionIndex, questions, selectedAnswers, calculateResults.isPending]);
 
   const initialError = assessmentIsError || questionsIsError;
-  const initialLoading = !initialError && (assessmentLoading || (!!assessment && isLoading) || (!assessment && !!assessmentId));
+  const initialLoading = !initialError && (assessmentLoading || (!!assessment && isLoading) || (!assessment && !!assessmentId) || isTranslating);
   if (initialLoading || initialError || !questions.length) {
     return (
       <div className="min-h-screen flex flex-col">
@@ -532,17 +552,45 @@ export default function Assessment() {
       </div>
     );
   }
+  if (translationError) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <main className="flex-1 flex items-center justify-center p-4">
+          <Card className="max-w-lg p-8 text-center space-y-4" data-testid="translation-unavailable">
+            <h1 className="text-2xl font-bold">Translation unavailable</h1>
+            <p className="text-muted-foreground">Your selected language could not be prepared. English has not been substituted.</p>
+            <p className="text-sm text-destructive">{translationError.message}</p>
+            <Button onClick={() => i18n.changeLanguage("en")}>Use English</Button>
+          </Card>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
 
-  const currentQuestion = questions[currentQuestionIndex];
+  const currentQuestion = localizedQuestions[currentQuestionIndex];
   const currentAnswer = selectedAnswers[currentQuestion.id];
-  const currentDimension = dimensions.find(d => d.id === currentQuestion.dimensionId);
+  const currentDimension = localizedDimensions.find(d => d.id === currentQuestion.dimensionId);
   const currentQuestionType = getAssessmentQuestionType(currentQuestion);
   const numericBounds = getNumericQuestionBounds(currentQuestion);
   const isLegacyM365Score = isLegacyM365AdoptionScoreQuestion(currentQuestion);
 
   const isCurrentAnswered = isAnswerComplete(currentQuestion, currentAnswer);
   const canGoPrev = currentQuestionIndex > 0;
-  const isLast = currentQuestionIndex === questions.length - 1;
+  const isLast = currentQuestionIndex === localizedQuestions.length - 1;
+  const authoredTranslation = getAuthoredTranslation(contentTranslations, i18n.language);
+  const respondentContent = assessmentModel?.respondentContent;
+  const introText = authoredTranslation?.introduction ?? respondentContent?.introduction;
+  const sectionInstruction = currentQuestionIndex === 0
+    ? authoredTranslation?.sectionInstructions?.[currentDimension?.key ?? ""]
+      ?? respondentContent?.sectionInstructions?.[currentDimension?.key ?? ""]
+    : undefined;
+  const optionalInstruction = currentQuestion.isOptional
+    ? authoredTranslation?.optionalSectionInstruction ?? respondentContent?.optionalSectionInstruction
+    : undefined;
+  const completionMessage = isLast
+    ? authoredTranslation?.completionMessage ?? respondentContent?.completionMessage
+    : undefined;
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -551,20 +599,35 @@ export default function Assessment() {
           <div className="mb-6 sm:mb-8">
             <ProgressBar
               current={currentQuestionIndex + 1}
-              total={questions.length}
+              total={localizedQuestions.length}
               dimensionLabel={currentDimension?.label}
             />
           </div>
 
           <div className="mb-6">
             <QuestionNavigator
-              total={questions.length}
+              total={localizedQuestions.length}
               currentIndex={currentQuestionIndex}
               answeredIndices={answeredIndices}
               onJump={handleJump}
               saveStatus={saveStatus}
             />
           </div>
+          {currentQuestionIndex === 0 && introText && (
+            <Card className="mb-6 p-5 whitespace-pre-line text-muted-foreground" data-testid="assessment-introduction">
+              {introText}
+            </Card>
+          )}
+          {sectionInstruction && (
+            <Card className="mb-6 p-4 text-sm text-muted-foreground" data-testid="assessment-section-instruction">
+              {sectionInstruction}
+            </Card>
+          )}
+          {optionalInstruction && (
+            <Card className="mb-6 p-4 text-sm text-muted-foreground" data-testid="assessment-optional-instruction">
+              {optionalInstruction}
+            </Card>
+          )}
 
           <QuestionCard
             question={currentQuestion.text}
@@ -580,7 +643,13 @@ export default function Assessment() {
             placeholder={currentQuestion.placeholder ?? undefined}
             onAnswer={handleAnswer}
             selectedAnswer={currentAnswer}
+              optional={currentQuestion.isOptional}
           />
+            {completionMessage && (
+              <p className="mt-5 text-center text-sm text-muted-foreground" data-testid="assessment-completion-message">
+                {completionMessage}
+              </p>
+            )}
 
           {showIncomplete && unansweredQuestions.length > 0 && (
             <Card

@@ -9,6 +9,28 @@ import {
 import { calculateAssessmentScore, calculateTypeResult, type ScoringQuestion } from "./scoring";
 import { ServiceError } from "./service-error";
 
+export function getMissingRequiredQuestionOrders(
+  questions: Array<ScoringQuestion & { order: number }>,
+  responses: Array<{
+    questionId: string; answerId?: string | null; answerIds?: string[] | null;
+    numericValue?: number | null; booleanValue?: boolean | null; textValue?: string | null;
+  }>,
+) {
+  const responseByQuestion = new Map(responses.map(response => [response.questionId, response]));
+  return questions
+    .filter(question => !question.isOptional)
+    .filter(question => {
+      const response = responseByQuestion.get(question.id);
+      if (!response) return true;
+      if (question.type === "numeric") return response.numericValue === null || response.numericValue === undefined;
+      if (question.type === "multi_select") return !response.answerIds?.length;
+      if (question.type === "true_false") return response.booleanValue === null || response.booleanValue === undefined;
+      if (question.type === "text") return !response.textValue?.trim();
+      return !response.answerId;
+    })
+    .map(question => question.order);
+}
+
 export async function calculateAssessmentResults(assessmentId: string) {
   const assessment = await storage.getAssessment(assessmentId);
   if (!assessment) {
@@ -33,15 +55,20 @@ export async function calculateAssessmentResults(assessmentId: string) {
     ? await db.select().from(schema.answers)
         .where(inArray(schema.answers.questionId, allQuestionIds))
     : [];
-  const answersByQuestionId = new Map<string, Array<{ id: string; score: number; typeKey?: string | null }>>();
+  const answersByQuestionId = new Map<string, Array<{ id: string; score: number; typeKey?: string | null; isNotApplicable?: boolean }>>();
   for (const a of allAnswersForModel) {
     if (!answersByQuestionId.has(a.questionId)) {
       answersByQuestionId.set(a.questionId, []);
     }
-    answersByQuestionId.get(a.questionId)!.push({ id: a.id, score: a.score, typeKey: a.typeKey ?? null });
+    answersByQuestionId.get(a.questionId)!.push({
+      id: a.id,
+      score: a.score,
+      typeKey: a.typeKey ?? null,
+      isNotApplicable: a.isNotApplicable,
+    });
   }
 
-  const scoringQuestions: ScoringQuestion[] = questions.map(q => {
+  const scoringQuestions: Array<ScoringQuestion & { order: number }> = questions.map(q => {
     const answers = answersByQuestionId.get(q.id) ?? [];
     const effectiveQuestion = { ...q, answers };
     const numericBounds = getNumericQuestionBounds(effectiveQuestion);
@@ -53,8 +80,21 @@ export async function calculateAssessmentResults(assessmentId: string) {
       minValue: numericBounds.minValue ?? null,
       maxValue: numericBounds.maxValue ?? null,
       answers,
+      isScored: q.isScored,
+      isOptional: q.isOptional,
+      order: q.order,
     };
   });
+  // Opt-in strict completion only for models that explicitly use the new
+  // guide semantics. Historical assessments remain calculable as before.
+  if ((model.scoringConfig as any)?.method === "mean_answer_values") {
+    const missingQuestionOrders = getMissingRequiredQuestionOrders(scoringQuestions, responses);
+    if (missingQuestionOrders.length > 0) {
+      throw new ServiceError(400, "Please answer all required questions before completing this assessment", {
+        questionOrders: missingQuestionOrders,
+      });
+    }
+  }
 
   // ----- Type / propensity (archetype) models: tally votes instead of scoring -----
   if (model.assessmentMode === 'type') {
@@ -120,6 +160,7 @@ export async function calculateAssessmentResults(assessmentId: string) {
     })),
     dimensions: dimensions.map(d => ({ id: d.id, key: d.key })),
     maturityScale: model.maturityScale ?? null,
+    scoringConfig: model.scoringConfig ?? null,
   });
 
   // Upsert: regenerating an already-scored assessment must update the

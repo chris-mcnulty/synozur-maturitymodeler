@@ -38,6 +38,8 @@ import { ProfileGate } from "@/components/ProfileGate";
 import { useToast } from "@/hooks/use-toast";
 import { usePageTitle } from "@/hooks/use-page-title";
 import { MarkdownContent } from "@/components/MarkdownContent";
+import { getAuthoredTranslation, localizeDimension } from "@shared/model-localization";
+import { useLocalizedModelContent } from "@/hooks/use-localized-model-content";
 
 // Color palette for maturity levels (no emojis per design guidelines)
 const levelColors = [
@@ -79,7 +81,7 @@ function getMaturityLevel(score: number, maturityScale?: Array<{
 
 export default function Results() {
   usePageTitle("Assessment Results");
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [, params] = useRoute("/results/:assessmentId");
   const [, setLocation] = useLocation();
   const assessmentId = params?.assessmentId;
@@ -97,7 +99,9 @@ export default function Results() {
   });
 
   // Fetch result
-  const { data: result, isLoading: resultLoading, error: resultError, refetch: refetchResult } = useQuery<Result>({
+  const { data: result, isLoading: resultLoading, error: resultError, refetch: refetchResult } = useQuery<Result & {
+    remediation?: { clientInformationApprovedToolsTraining?: boolean; message?: string };
+  }>({
     queryKey: ['/api/results', assessmentId],
     enabled: !!assessmentId,
     retry: false,
@@ -138,6 +142,14 @@ export default function Results() {
     },
     enabled: !!assessment?.modelId,
   });
+  const { contentTranslations, isTranslating, translationError } = useLocalizedModelContent(model, i18n.language);
+  const localizedModelName = model
+    ? getAuthoredTranslation(contentTranslations, i18n.language)?.name ?? model.name
+    : "";
+  const localizedDimensions = useMemo(
+    () => model?.dimensions.map(dimension => localizeDimension(dimension, contentTranslations, i18n.language)) ?? [],
+    [model, contentTranslations, i18n.language],
+  );
 
   // Fetch benchmark data
   const { data: benchmarkData } = useQuery<{
@@ -189,10 +201,16 @@ export default function Results() {
 
   // Define all hooks before any conditional returns to ensure consistent hook order
   const overallScore = result?.overallScore || 0;
+  // Personal AI Skills uses an explicit 0–100 respondent track, not the
+  // application's legacy 500-point maturity/roadmap semantics.
+  const isMeanAnswerTrackModel = (model?.scoringConfig as any)?.method === "mean_answer_values";
   
   // Memoize recommendations to ensure consistent hook order
   const recommendations = useMemo(() => {
     if (!result || !model) return [];
+    if ((model.scoringConfig as any)?.method === "mean_answer_values") {
+      return [];
+    }
     const recs = [];
     
     // Overall score-based recommendations
@@ -245,7 +263,10 @@ export default function Results() {
       if (!result || !model) return;
       // Type/propensity models have no numeric maturity narrative or benchmarking —
       // skip all AI summary generation for them.
-      if (model.assessmentMode === 'type') {
+      if (model.assessmentMode === 'type' || (model.scoringConfig as any)?.method === "mean_answer_values") {
+        setMaturitySummary("");
+        setRecommendationsSummary("");
+        setAiContentLoading(false);
         setAiContentReady(true);
         return;
       }
@@ -750,6 +771,24 @@ export default function Results() {
     );
   }
 
+  if (isTranslating || translationError) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <main className="flex-1 flex items-center justify-center p-4">
+          <Card className="max-w-lg p-8 text-center space-y-4" data-testid="results-translation-status">
+            <h1 className="text-2xl font-bold">{isTranslating ? "Preparing your translated results" : "Translation unavailable"}</h1>
+            <p className="text-muted-foreground">
+              {isTranslating ? "We are preparing your results in the selected language." : "English has not been substituted for the selected language."}
+            </p>
+            {translationError && <p className="text-sm text-destructive">{translationError.message}</p>}
+            <Button onClick={() => i18n.changeLanguage("en")}>Use English</Button>
+          </Card>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
   // ---- Type / Propensity (archetype) result rendering ----
   if (model.assessmentMode === 'type') {
     const types = (model.types ?? []).slice().sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
@@ -901,7 +940,13 @@ export default function Results() {
         : model.maturityScale)
     : undefined;
   
-  const maturityLevel = getMaturityLevel(result.overallScore, parsedMaturityScale);
+   const scoreDerivedMaturityLevel = getMaturityLevel(result.overallScore, parsedMaturityScale);
+   const resultLabelIndex = parsedMaturityScale?.findIndex((level: any) => level.name === result.label) ?? -1;
+   const maturityLevel = resultLabelIndex >= 0
+     ? { ...parsedMaturityScale![resultLabelIndex], ...levelColors[resultLabelIndex % levelColors.length] }
+     : scoreDerivedMaturityLevel;
+   const localizedMaturityLevel = getAuthoredTranslation(contentTranslations, i18n.language)
+    ?.resultLabels?.[maturityLevel.name] ?? maturityLevel.name;
   const hideScoreAndNarratives = !!(model as any).hideScoreAndNarratives;
   
   // Calculate max score from model's maturity scale (or default to 500 for legacy models)
@@ -913,11 +958,12 @@ export default function Results() {
   // For legacy 500-point models, dimension scores also use the same max as overall
   const dimensionMaxScore = maturityMaxScore <= 100 ? 100 : maturityMaxScore;
   
-  const dimensionScores = model.dimensions.map(dim => ({
+  const dimensionScores = localizedDimensions.map(dim => ({
     key: dim.key,
     label: dim.label,
     score: (result.dimensionScores as Record<string, number>)[dim.key] || 0,
   }));
+  const needsClientInformationTraining = !!result.remediation?.clientInformationApprovedToolsTraining;
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -927,7 +973,7 @@ export default function Results() {
           <div className="absolute inset-0 z-0">
             <img 
               src={model.imageUrl}
-              alt={model.name}
+              alt={localizedModelName}
               className="w-full h-full object-cover opacity-10"
             />
           </div>
@@ -946,7 +992,7 @@ export default function Results() {
 
           <div className="text-center mb-8 sm:mb-12">
             <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-3 sm:mb-4 leading-tight" data-testid="text-title">
-              {assessment?.isProxy ? t('results.proxyResults', { name: model.name }) : t('results.yourResults', { name: model.name })}
+              {assessment?.isProxy ? t('results.proxyResults', { name: localizedModelName }) : t('results.yourResults', { name: localizedModelName })}
             </h1>
             <p className="text-base sm:text-xl text-muted-foreground">
               {t('results.completedOn', { date: new Date().toLocaleDateString() })}
@@ -977,6 +1023,17 @@ export default function Results() {
             )}
           </div>
 
+          {needsClientInformationTraining && (
+            <Card className="mb-6 border-amber-300 bg-amber-50 p-5 sm:p-6" data-testid="card-client-information-training">
+              <h2 className="font-semibold text-amber-950">{i18n.language.startsWith("es") ? "Información de clientas y herramientas aprobadas" : "Client information and approved tools"}</h2>
+              <p className="mt-1 text-sm text-amber-900">
+                {i18n.language.startsWith("es")
+                  ? "Complete la capacitación sobre información de clientas y herramientas aprobadas antes de usar cuentas personales de IA para información del trabajo."
+                  : result.remediation?.message ?? "Complete the client-information and approved-tools training before using personal AI accounts for work information."}
+              </p>
+            </Card>
+          )}
+
           {/* Overall Score Card */}
           <Card className="p-5 sm:p-6 md:p-8 mb-6 sm:mb-8">
             <div className="grid md:grid-cols-2 gap-6 sm:gap-8 items-center">
@@ -992,7 +1049,7 @@ export default function Results() {
                 
                 <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full ${maturityLevel.bgColor} ${maturityLevel.borderColor} border`}>
                   <span className={`text-lg sm:text-xl font-bold ${maturityLevel.color}`}>
-                    {maturityLevel.name}
+                    {localizedMaturityLevel}
                   </span>
                 </div>
                 
@@ -1197,8 +1254,8 @@ export default function Results() {
         </section>
       )}
 
-      {/* Personalized Recommendations */}
-      <section className="py-8 sm:py-12 bg-muted/30">
+      {/* The individual track deliberately has no generic AI roadmap. */}
+      {!isMeanAnswerTrackModel && <section className="py-8 sm:py-12 bg-muted/30">
         <div className="container mx-auto px-4 max-w-6xl">
           <h2 className="text-2xl sm:text-3xl font-bold mb-6 sm:mb-8 text-center text-foreground">{t('results.strategicRecommendations')}</h2>
           
@@ -1273,7 +1330,7 @@ export default function Results() {
             ))}
           </div>
         </div>
-      </section>
+      </section>}
 
       {/* Improvement Resources */}
       {improvementResources.length > 0 && (

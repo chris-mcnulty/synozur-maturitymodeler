@@ -7,10 +7,11 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Progress } from "@/components/ui/progress";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { modelToCSV, type ScoringLevel } from "@/utils/csvConverter";
 import { questionsToSimpleCSV } from "@/utils/csvConverterSimple";
-import type { Model, Dimension, Question, Answer, ModelType } from "@shared/schema";
+import type { Model, Dimension, Question, Answer, ModelType, User } from "@shared/schema";
 
 type ExportFormat = "model" | "csv-full" | "csv-simple";
 type ImportFormat = "auto" | "model" | "csv-full" | "csv-simple";
@@ -306,6 +307,14 @@ export function ImportExportPanel({
     type: "success" | "error" | null;
     message: string;
   }>({ type: null, message: "" });
+  const [destinationTenantId, setDestinationTenantId] = useState("");
+  const { data: currentUser } = useQuery<User>({ queryKey: ["/api/user"] });
+  const isGlobalAdmin = currentUser?.role === "global_admin";
+  const { data: tenants = [], isLoading: tenantsLoading } = useQuery<Array<{ id: string; name: string }>>({
+    queryKey: ["/api/tenants"],
+    enabled: isGlobalAdmin,
+  });
+  const effectiveDestinationTenantId = isGlobalAdmin ? destinationTenantId : currentUser?.tenantId ?? "";
 
   const handleExport = useCallback(async () => {
     if (!selectedModel) {
@@ -417,6 +426,14 @@ export function ImportExportPanel({
       setImportProgress(60);
 
       if (detectedFormat === "model") {
+        if (!effectiveDestinationTenantId) {
+          const message = isGlobalAdmin
+            ? "Select a destination tenant before importing this model. Imports are never created as public fallbacks."
+            : "Your account has no tenant assignment, so this private model cannot be imported.";
+          setImportStatus({ type: "error", message });
+          toast({ variant: "destructive", title: "Destination tenant required", description: message });
+          return;
+        }
         const rawData = JSON.parse(text);
         
         // Transform the data to the expected format
@@ -450,7 +467,8 @@ export function ImportExportPanel({
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ modelData }),
+          credentials: 'include',
+          body: JSON.stringify({ modelData, destinationTenantId: effectiveDestinationTenantId }),
         });
         
         if (!response.ok) {
@@ -544,7 +562,7 @@ export function ImportExportPanel({
     } finally {
       setImporting(false);
     }
-  }, [selectedModel, importFormat, toast, onImportComplete]);
+  }, [selectedModel, importFormat, toast, onImportComplete, effectiveDestinationTenantId, isGlobalAdmin]);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -720,6 +738,32 @@ export function ImportExportPanel({
               </div>
 
               <ModelFormatReference />
+               
+               <div className="space-y-2 rounded-lg border p-4" data-testid="import-destination-tenant">
+                 <Label htmlFor="destination-tenant" className="font-medium">Destination tenant</Label>
+                 {isGlobalAdmin ? (
+                   <>
+                     <Select value={destinationTenantId} onValueChange={setDestinationTenantId}>
+                       <SelectTrigger id="destination-tenant" data-testid="select-import-destination-tenant">
+                         <SelectValue placeholder={tenantsLoading ? "Loading tenants…" : "Select tenant"} />
+                       </SelectTrigger>
+                       <SelectContent>
+                         {tenants.map(tenant => (
+                           <SelectItem key={tenant.id} value={tenant.id}>{tenant.name}</SelectItem>
+                         ))}
+                       </SelectContent>
+                     </Select>
+                     <p className="text-xs text-muted-foreground">The imported model will be private and assigned only to this tenant.</p>
+                   </>
+                 ) : currentUser?.tenantId ? (
+                   <p className="text-sm text-muted-foreground">This import will be private and assigned to your tenant.</p>
+                 ) : (
+                   <Alert variant="destructive">
+                     <AlertCircle className="h-4 w-4" />
+                     <AlertDescription>Your account has no tenant assignment. A destination tenant is required; no public fallback will be used.</AlertDescription>
+                   </Alert>
+                 )}
+               </div>
 
               {/* Drag and Drop Zone */}
               <div
