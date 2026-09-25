@@ -367,6 +367,32 @@ export function registerModelRoutes(app: Express) {
 
   // Model routes
 
+  // Published private assessments assigned to the signed-in user's own organization.
+  // Keep the same access check as the assessment detail route so the cards are usable.
+  app.get("/api/models/for-my-organization", ensureAuthenticated, async (req, res) => {
+    try {
+      const user = req.user!;
+      if (!user.tenantId) return res.json([]);
+
+      const assignments = await db.select({ modelId: schema.modelTenants.modelId })
+        .from(schema.modelTenants)
+        .where(eq(schema.modelTenants.tenantId, user.tenantId));
+      if (assignments.length === 0) return res.json([]);
+
+      const assignedIds = new Set(assignments.map(assignment => assignment.modelId));
+      const publishedModels = await storage.getAllModels("published");
+      const accessible = [];
+      for (const model of publishedModels) {
+        if (model.visibility !== "private" || !assignedIds.has(model.id)) continue;
+        if (await canAccessModel(user, model)) accessible.push(model);
+      }
+      res.json(accessible);
+    } catch (error) {
+      console.error("Error fetching organization assessments:", error);
+      res.status(500).json({ error: "Failed to fetch organization assessments" });
+    }
+  });
+
   app.get("/api/models", async (req, res) => {
     try {
       const user = req.user;

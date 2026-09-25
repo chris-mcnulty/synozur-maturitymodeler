@@ -119,27 +119,46 @@ export default function Landing() {
 
   const [, setLocation] = useLocation();
 
-  const { data: models = [], isLoading, isError, error, refetch } = useQuery<ModelWithQuestionCount[]>({
-    queryKey: ['/api/models'],
-  });
-
-  const { data: currentUser } = useQuery<{ id: string; tenantId?: string | null } | null>({
+  const { data: currentUser, isLoading: isUserLoading } = useQuery<{ id: string; tenantId?: string | null } | null>({
     queryKey: ['/api/user'],
     retry: false,
   });
 
+  // The model list is access-dependent: don't cache an anonymous list across sign-in.
+  const { data: models = [], isLoading, isError, error, refetch } = useQuery<ModelWithQuestionCount[]>({
+    queryKey: ['/api/models', 'landing', currentUser?.id ?? 'guest', currentUser?.tenantId ?? 'none'],
+    queryFn: async () => {
+      const response = await fetch('/api/models', { credentials: 'include' });
+      if (!response.ok) throw new Error('Failed to fetch assessments');
+      return response.json();
+    },
+    enabled: !isUserLoading,
+  });
+
   const { data: userTenant } = useQuery<{ id: string; name: string } | null>({
-    queryKey: ['/api/user/tenant'],
+    queryKey: ['/api/user/tenant', currentUser?.tenantId],
+    queryFn: async () => {
+      const response = await fetch('/api/user/tenant', { credentials: 'include' });
+      if (!response.ok) throw new Error('Failed to fetch organization');
+      return response.json();
+    },
     enabled: !!currentUser?.tenantId,
     retry: false,
   });
 
-  // Separate models into three groups
-  const featuredModels = models.filter(m => m.featured);
-  const featuredModel = featuredModels[0];
+  const { data: tenantPrivateModels = [] } = useQuery<ModelWithQuestionCount[]>({
+    queryKey: ['/api/models/for-my-organization', currentUser?.tenantId],
+    queryFn: async () => {
+      const response = await fetch('/api/models/for-my-organization', { credentials: 'include' });
+      if (!response.ok) throw new Error('Failed to fetch organization assessments');
+      return response.json();
+    },
+    enabled: !!currentUser?.tenantId,
+  });
 
-  // Private models visible to this user — shown in their own org section
-  const tenantPrivateModels = models.filter(m => m.visibility === 'private');
+  // Separate models into three groups
+  const featuredModels = models.filter(m => m.featured && m.visibility !== 'private');
+  const featuredModel = featuredModels[0];
 
   // Regular public/individual models (non-featured, non-private)
   const regularModels = models.filter(m => !m.featured && m.visibility !== 'private');

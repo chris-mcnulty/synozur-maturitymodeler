@@ -5549,9 +5549,9 @@ ${insightsData.recommendations.map((r, i) => `${i + 1}. ${r}`).join('\n')}
                 </SelectContent>
               </Select>
               <p className="text-xs text-muted-foreground mt-1">
-                {modelForm.modelClass === 'organizational' 
-                  ? 'Standard organizational maturity assessment' 
-                  : 'Personal/skills assessment - displays "Individual" badge on model cards and launch page'}
+                {modelForm.modelClass === 'organizational'
+                  ? 'Organizational assessments can only be opened by tenant admins or modelers when private.'
+                  : 'Personal/skills assessments can be opened by any member of an assigned organization when private.'}
               </p>
             </div>
           </div>
