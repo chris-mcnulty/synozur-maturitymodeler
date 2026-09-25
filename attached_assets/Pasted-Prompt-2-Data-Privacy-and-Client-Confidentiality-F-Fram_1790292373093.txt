@@ -1,0 +1,92 @@
+Prompt 2: Data Privacy and Client Confidentiality
+F — Framing
+
+Apply the shared instructions to:
+
+
+Synozur Data Privacy and Clien…AFT.pptx
+
+Create “Synozur Data Privacy and Client Confidentiality: Annual Training” as a draft, tenant-private Orion course.
+
+Teach staff to use information for an authorized purpose, limit disclosure, and handle requests and mistakes appropriately.
+
+R — Role
+
+Act as a privacy and client-confidentiality instructional designer. Explain legal and contractual uncertainty accurately without turning the course into legal advice.
+
+A — Audience
+
+Synozur staff handling client documents, workshop notes, recordings, personal information, proposals, and AI-assisted deliverables.
+
+M — Method
+
+Course sequence
+Welcome and the distinction
+
+Introductory video placeholder and transcript.
+Privacy protects people; confidentiality also covers nonpublic business information.
+Show how a secure system can still support an inappropriate use of data.
+Purpose, classification, and minimum necessary data
+
+Identify the task and authorized purpose.
+Collect only necessary fields.
+Respect classifications, client instructions, and workspace boundaries.
+Explain why removing names does not guarantee anonymity.
+Sharing, meetings, AI, and vendors
+
+Verify recipients and permissions.
+Review recordings, screen sharing, comments, notes, and hidden document content.
+Check client restrictions before using AI or new services.
+Explain that an NDA or approved tool does not authorize every disclosure.
+Retention, requests, and incidents
+
+Follow the approved retention schedule and legal holds.
+Route access, correction, and deletion requests.
+Report misdirected files and unintended uploads even after attempted recall.
+Include a learner “Before you share” reference.
+Knowledge check and attestation
+
+Native quiz and separate typed-name acknowledgement.
+Practice situations
+Expand the source scenario about putting a client transcript into a new AI tool after removing names. Keep the unique project and pricing details that make it unsafe.
+
+Add:
+
+A restricted link is sent to the wrong external recipient.
+A person requests deletion while relevant records are subject to a legal hold.
+Explain who should assess the situation. Do not invent notification deadlines, retention periods, consent rules, or legal applicability.
+
+Visual direction
+Use approved photographs showing document review and a workshop environment without readable confidential materials.
+
+Create:
+
+A privacy/confidentiality overlap diagram.
+A data lifecycle graphic from collection through approved disposal.
+A synthetic before-and-after example showing unnecessary fields removed while explaining residual identification risk.
+Use clearly fictional data. Do not use actual employee or customer records, even as blurred backgrounds.
+
+Assessment additions
+Retain the five source questions. Add questions about:
+
+Reusing a client screenshot in marketing.
+Recording a workshop and controlling subsequent access.
+Introducing a new vendor or purpose for an existing dataset.
+Use plausible choices and explain why the tempting shortcut is unsafe.
+
+Introduction video
+Use this script for Chris’s recording:
+
+Hi, I’m Chris McNulty. Our clients share information with us so we can help them do their work. We need to respect the purpose and limits of that access.
+
+Sometimes the information is personal, like a name or an employee record. Sometimes it’s a business plan, pricing, or a workshop discussion. Both deserve care.
+
+This course will help you decide what information you need, where it belongs, and who should receive it. We’ll also look at AI tools, recordings, and the common assumption that removing names makes a document safe to reuse.
+
+If information goes to the wrong place, report it promptly, even if you think you’ve corrected the mistake.
+
+Take the time to work through the examples. Before signing the attestation, make sure you understand the requirements and know where to ask for help.
+
+E — Execution
+
+Build the course under the shared acceptance criteria. Flag the privacy reporting contact, approved retention schedule, legal-hold process, and client-specific requirements for confirmation before publication.

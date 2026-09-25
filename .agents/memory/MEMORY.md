@@ -11,3 +11,6 @@
 - [HubSpot CSP dependencies](hubspot-csp-dependencies.md) — HubSpot dynamically loads configured ad pixels; validate CSP in a browser rather than allowlisting only its bootstrap host.
 - [Course-wide narration persistence](course-wide-narration-persistence.md) — course-level narration actions must persist every affected lesson server-side, not depend on opening and saving lessons.
 - [Assessment language identity](assessment-language-identity.md) — custom translations share canonical scoring/cohort identity; never create separate language models.
+- [Avenir font files misnamed](avenir-font-files-misnamed.md) — embedded faces don't match filenames; map fonts by embedded name, and the app's @font-face renders some weights wrong.
+- [Learner-testing a draft course](draft-course-learner-testing.md) — test on a throwaway published copy in an isolated QA tenant; never publish/enroll the real draft; teardown by recorded IDs only.
+- [Annual-training authoring rules](annual-training-authoring.md) — practice must not mirror final questions; distinct photos per course; alt text after photo choice; round-trip needs asset-path normalization.

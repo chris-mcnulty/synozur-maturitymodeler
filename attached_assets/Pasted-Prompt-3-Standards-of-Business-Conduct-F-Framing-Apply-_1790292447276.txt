@@ -1,0 +1,93 @@
+Prompt 3: Standards of Business Conduct
+F — Framing
+
+Apply the shared instructions to:
+
+
+Synozur Standards of Business …AFT.pptx
+
+Create “Synozur Standards of Business Conduct: Annual Training” as a draft, tenant-private Orion course.
+
+The source includes proposed conduct standards beyond the retrieved IT policies. Preserve that distinction. Do not present unapproved guidance as an adopted company code.
+
+R — Role
+
+Act as a business-conduct instructional designer. Teach sound judgment through credible workplace situations, with respectful language and clear actions.
+
+A — Audience
+
+All Synozur staff, including people involved in delivery, purchasing, sales, hiring, partnerships, and company representation.
+
+M — Method
+
+Course sequence
+Welcome and everyday judgment
+
+Introductory video placeholder and transcript.
+A decision test covering permission, honesty, fairness, authority, and explainability.
+Conflicts and improper influence
+
+Personal relationships, outside interests, gifts, hospitality, and procurement.
+Disclosure and recusal.
+No invented monetary gift threshold.
+Accurate work and responsible representation
+
+Time, expenses, approvals, records, and correction trails.
+Signing authority and supportable client claims.
+Human accountability for AI-assisted content.
+Why training completion does not authorize a “NIST-certified” claim.
+Respect, client trust, and speaking up
+
+Respectful conduct, intellectual property, confidentiality, and fair competition.
+Good-faith reporting, alternate reporting routes, and non-retaliation.
+Preserve lawful external reporting rights.
+A concise decision-and-reporting reference.
+Knowledge check and attestation
+
+Native quiz and separate typed-name acknowledgement.
+Keep all proposed conduct wording subject to policy-owner and HR/legal approval.
+Practice situations
+Expand the source’s supplier-selection scenario: a friend at a bidder offers a weekend trip and requests secrecy.
+
+Add:
+
+A manager asks for an approval to be backdated before an audit.
+An AI-written proposal includes an unsupported certification claim.
+Use clear decision points and consequences without inventing actual disciplinary cases or company incidents.
+
+Visual direction
+Use approved photographs of normal professional collaboration and a discussion setting. Avoid staged accusations, humiliation, or imagery suggesting particular identities are associated with misconduct.
+
+Create:
+
+A disclose-and-recuse decision diagram.
+A synthetic record-correction example that preserves the audit trail.
+A reporting-route diagram with a clearly marked alternate route.
+Keep unverified contacts as administrator placeholders and publication blockers.
+
+Assessment additions
+Retain the five source questions. Add questions about:
+
+Permission and licensing before reusing client work.
+Responding appropriately after a colleague raises a concern.
+Receiving confidential competitor information.
+Keep answers tied to taught content. Do not promise absolute anonymity or imply that employees must investigate before reporting.
+
+Introduction video
+Use this script for Chris’s recording:
+
+Hi, I’m Chris McNulty. The way we do our work matters to our clients and to each other.
+
+Most conduct decisions happen in ordinary situations. Someone offers a gift. A personal relationship overlaps with a business decision. A record needs correcting. A deadline makes a shortcut look attractive.
+
+This course gives you a practical way to handle those moments. Check your authority, be accurate about what happened, disclose conflicts early, and ask for guidance when something doesn’t feel right.
+
+You should be able to raise a concern in good faith without retaliation. The course explains the approved reporting routes, including where to go if the usual contact is involved.
+
+Please work through the scenarios and read the standards before signing the attestation. Raise any questions first. We want the acknowledgement to reflect understanding.
+
+E — Execution
+
+Build the course under the shared acceptance criteria. Mark the video script’s reporting and non-retaliation statements for confirmation against the approved code before recording or launch.
+
+Provide a specific approval list covering conduct standards, reporting contacts, alternate routes, gift rules, investigation language, and attestation wording. Explain that the NIST mapping concerns security-related governance; it does not cover the entire business-conduct curriculum.

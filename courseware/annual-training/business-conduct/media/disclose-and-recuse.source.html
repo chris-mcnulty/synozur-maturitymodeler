@@ -1,0 +1,41 @@
+<!doctype html><html><head><meta charset="utf-8"><style>@font-face{font-family:"Avenir Next LT Pro";font-weight:300;font-style:normal;src:url("file:///home/runner/workspace/client/src/assets/fonts/AvenirNextLTPro-UltraLight.ttf") format("truetype");}
+@font-face{font-family:"Avenir Next LT Pro";font-weight:400;font-style:normal;src:url("file:///home/runner/workspace/client/src/assets/fonts/AvenirNextLTPro-Regular.ttf") format("truetype");}
+@font-face{font-family:"Avenir Next LT Pro";font-weight:400;font-style:italic;src:url("file:///home/runner/workspace/client/src/assets/fonts/AvenirNextLTPro-Medium.ttf") format("truetype");}
+@font-face{font-family:"Avenir Next LT Pro";font-weight:600;font-style:normal;src:url("file:///home/runner/workspace/client/src/assets/fonts/AvenirNextLTPro-Heavy.ttf") format("truetype");}
+@font-face{font-family:"Avenir Next LT Pro";font-weight:700;font-style:normal;src:url("file:///home/runner/workspace/client/src/assets/fonts/AvenirNextLTPro-Bold.ttf") format("truetype");}
+@font-face{font-family:"Avenir Next LT Pro";font-weight:700;font-style:italic;src:url("file:///home/runner/workspace/client/src/assets/fonts/AvenirNextLTPro-Thin.ttf") format("truetype");}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{font-family:"Avenir Next LT Pro",Inter,Arial,sans-serif;color:#1C1530;-webkit-font-smoothing:antialiased}
+
+html,body{width:1600px;height:900px;overflow:hidden}
+
+    body{background:#FCFAFF;position:relative;padding:35px 62px}
+    .eyebrow{font-size:23px;font-weight:700;letter-spacing:3px;color:#810FFB}
+    .status{position:absolute;right:62px;top:31px;padding:10px 17px;border-radius:9px;background:#FDEBF7;border:2px solid #E60CB3;color:#941274;font-size:18px;font-weight:700;letter-spacing:1px}
+    h1{font-size:57px;margin:5px 0 16px}
+    .question{border-radius:20px;background:#1C1530;color:#fff;padding:25px 34px;font-size:33px;line-height:1.22;font-weight:600}
+    .fork{height:52px;position:relative;margin:0 240px}
+    .fork:before{content:"";position:absolute;left:18%;right:18%;top:23px;border-top:4px solid #810FFB}
+    .fork:after{content:"";position:absolute;left:50%;top:0;height:24px;border-left:4px solid #810FFB}
+    .fork span{position:absolute;top:22px;height:30px;border-left:4px solid #810FFB}
+    .fork span:first-child{left:18%}.fork span:last-child{right:18%}
+    .fork span:after{content:"";position:absolute;bottom:-1px;left:-10px;border-left:8px solid transparent;border-right:8px solid transparent;border-top:11px solid #810FFB}
+    .branches{display:grid;grid-template-columns:1fr 1fr;gap:26px}
+    .branch{border-radius:17px;background:#fff;border:2px solid #E4DAF5;padding:16px 27px;min-height:122px}
+    .branch.yes{border-color:#810FFB;background:#F9F4FF}
+    .branch h2{font-size:32px;color:#810FFB;line-height:1.1;margin-bottom:7px}
+    .branch p{font-size:30px;font-weight:600;line-height:1.22}
+    .to-steps{height:51px;position:relative;margin-left:75%;width:4px;background:#810FFB}
+    .to-steps:after{content:"";position:absolute;bottom:0;left:-8px;border-left:10px solid transparent;border-right:10px solid transparent;border-top:13px solid #810FFB}
+    .steps{display:grid;grid-template-columns:1.3fr 1fr 1fr 1fr;gap:30px}
+    .step{position:relative;background:#fff;border-radius:15px;border:2px solid #E4DAF5;padding:17px 18px;height:260px;font-size:30px;font-weight:600;line-height:1.17}
+    .step:not(:last-child):after{content:"➜";position:absolute;right:-31px;top:104px;width:29px;text-align:center;color:#810FFB;font-size:28px;font-weight:700}
+    .num{display:grid;place-items:center;width:40px;height:40px;border-radius:50%;background:#810FFB;color:#fff;font-size:20px;font-weight:700;margin-bottom:9px}
+    .note{margin-top:17px;background:#FDEBF7;border-left:7px solid #E60CB3;border-radius:12px;padding:16px 23px;font-size:25px;line-height:1.25;font-weight:600}
+  </style></head><body><div class="eyebrow">WHEN AN INTEREST MAY CROSS A DECISION</div><div class="status">PROPOSED — PENDING APPROVAL</div><h1>Disclose and recuse</h1>
+    <div class="question">Could a relationship, outside interest, gift, or hospitality affect a decision you're part of, or look as if it does?</div>
+    <div class="fork"><span></span><span></span></div>
+    <div class="branches"><div class="branch no"><h2>No</h2><p>Proceed. Check again if anything changes.</p></div>
+    <div class="branch yes"><h2>Yes or unsure</h2></div></div>
+    <div class="to-steps"></div><div class="steps"><div class="step"><span class="num">01</span><span>Disclose early, in writing, to your manager or the designated conduct contact</span></div><div class="step"><span class="num">02</span><span>Step back from the decision while it's reviewed</span></div><div class="step"><span class="num">03</span><span>The approver decides and records any safeguards</span></div><div class="step"><span class="num">04</span><span>Continue only as directed</span></div></div>
+    <div class="note">No gift is too small to disclose if someone asks you to keep it secret. Gift and hospitality limits are pending policy approval.</div></body></html>

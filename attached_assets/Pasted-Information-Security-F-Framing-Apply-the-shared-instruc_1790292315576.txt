@@ -1,0 +1,88 @@
+Information Security
+F — Framing
+
+Apply the shared instructions to:
+
+
+Synozur Information Security - …AFT.pptx
+
+Create “Synozur Information Security: Annual Training” as a draft, tenant-private Orion course.
+
+The learner should leave knowing how to recognize suspicious requests, protect accounts and information, and report problems promptly.
+
+R — Role
+
+Act as a security-awareness instructional designer. Teach practical decisions without fear-based language or unnecessary technical detail.
+
+A — Audience
+
+All Synozur staff, including nontechnical employees. Distinguish general awareness from additional training required for administrators, developers, and incident responders.
+
+M — Method
+
+Course sequence
+Welcome and responsibilities
+
+Introductory video placeholder and transcript.
+Objectives and a short explanation of confidentiality, integrity, and availability.
+Explain that course completion supports readiness but does not certify the organization.
+Accounts and suspicious requests
+
+Password managers, individual identities, MFA, and least privilege.
+Phishing by email, chat, QR code, phone, or impersonated video.
+Independent verification using a known contact channel.
+Safe tools, devices, and sharing
+
+Approved devices, updates, remote work, physical security, and lost equipment.
+Approved AI tools and account contexts.
+Client sharing restrictions and why personal storage is not a workaround.
+Additional handling review for suspected CUI.
+Reporting and practice
+
+What to report, what facts to preserve, and what not to investigate.
+Observable insider-risk behaviors without accusations or profiling.
+A concise downloadable “What to do first” reference with verified reporting details.
+Knowledge check and attestation
+
+Native quiz, feedback, and separate typed-name acknowledgement.
+Practice situations
+Develop the source’s urgent IT-support call into a decision exercise. The caller knows the project name, requests an MFA approval, and asks for remote-access software installation.
+
+Add two fictional situations:
+
+A delivery deadline tempts someone to bypass a blocked client-sharing route.
+A staff member enters credentials on a suspicious page and must decide what to do next.
+Use native questions and feedback. Do not build a new branching engine.
+
+Visual direction
+Use an approved photograph of a normal remote-work setting and a relevant collaboration/device image. No visible real client screens.
+
+Create:
+
+An annotated fictional suspicious message.
+A “pause, verify independently, report” decision diagram.
+An incident-response boundary graphic showing employee actions versus responder actions.
+Assessment additions
+Retain the five source questions and their intended answers. Add questions about:
+
+A lost managed device.
+An unapproved AI upload.
+The difference between general awareness and role-specific training.
+Give each answer choice useful feedback. Identify the lesson to revisit after an incorrect response.
+
+Introduction video
+Use this script for Chris’s recording:
+
+Hi, I’m Chris McNulty, CTO at Synozur. Every one of us handles information that clients and colleagues depend on us to protect.
+
+This course covers the decisions we make during an ordinary workday: approving a sign-in, opening a message, sharing a file, or trying a new AI tool.
+
+Some attacks look convincing. A caller may know your name and your project. A message may arrive at exactly the moment you’re expecting a document. Take the time to verify a request through a channel you trust.
+
+If you make a mistake or notice something unusual, report it promptly. You don’t need to prove an incident happened before asking for help.
+
+Work through the examples, complete the review questions, and read the attestation before signing. If anything is unclear, raise it before you acknowledge.
+
+E — Execution
+
+Build the course under the shared acceptance criteria. Keep urgent and after-hours reporting details as release blockers until verified. Preserve the distinction between the published IT support address and a confirmed incident-response channel.

@@ -1,0 +1,118 @@
+Shared instructions for all three courses
+F — Framing
+
+You are working in Orion, Synozur’s assessment and early training platform. Read the attached 
+
+PLATFORM_OVERVIEW.md
+ and inspect the existing implementation before making changes.
+
+Create three enriched, Orion-hosted courses from the supplied PowerPoints. Treat the decks as source material, including their speaker notes, rather than finished lesson designs. Preserve the original files.
+
+This is primarily a course-authoring task using Orion’s existing capabilities. Do not rebuild the LMS or create a parallel content system.
+
+R — Role
+
+Act as an instructional designer, Synozur brand designer, and Orion implementation engineer. Produce working draft courses, not merely recommendations or a development plan.
+
+A — Audience
+
+Synozur staff completing annual training and individual attestations. Assume mixed technical experience. Write plainly and use realistic consulting, remote-work, client-delivery, and AI-use examples.
+
+M — Method
+
+Existing platform and boundaries
+Verify the current course schema, authoring workflow, media handling, permission checks, and completion logic.
+Use native modules, lessons, slide blocks, rich text, video, narration, quizzes, and attestations.
+Preserve server-side quiz scoring and tenant-aware access. Do not put grading keys in learner payloads or public assets.
+Work in development and keep all courses draft and tenant-private. Resolve the Synozur tenant from existing configuration; never guess its identifier.
+Do not publish, enroll staff, send communications, overwrite existing courses, or alter production records.
+Do not add annual renewal scheduling, expiration, or reminder automation. Those capabilities are outside this task.
+If a requested interaction is unsupported, use an existing lesson or quiz pattern and identify the limitation. Propose necessary product changes separately.
+Do not assume assessment translations apply to course lessons.
+Source conversion
+The source decks contain:
+
+Slides 1–2: introduction and objectives.
+Slides 3–10: instructional topics.
+Slide 11: practice scenario.
+Slides 12–16: five review questions.
+Slide 17: proposed attestation.
+Slides 18–20: administrator guidance, framework mapping, and references.
+Confirm that structure against the actual files.
+
+Convert the instructional material into short, ordered lessons. Expand useful speaker-note explanations into learner content and narration. Split crowded slides and replace repetitive bullet layouts with appropriate diagrams, examples, and visual explanations.
+
+Convert the review questions into native quiz questions, and the attestation into a native typed-name attestation lesson. A picture of a question or signature line does not satisfy either requirement.
+
+Keep answer keys and administrative release instructions out of learner lessons. Create a clean learner reference section. Do not expose the original answer-bearing PowerPoint as a learner download.
+
+Replace outdated statements that Orion’s courseware features are unverified with the implemented capabilities described in the overview, subject to checking the current build. Preserve the separate caveats about policy approval and NIST assessment scope.
+
+Synozur branding and media
+Use approved Synozur assets already available in Orion or the supplied materials.
+Primary purple: #810FFB. Accent magenta: #E60CB3.
+Preferred font: Avenir Next LT Pro, using licensed assets if available. Otherwise use the application’s approved accessible fallback and report the substitution.
+Use the official logo without redrawing, distorting, or generating a replacement.
+Keep the three courses visually related, with distinct topic imagery.
+Suggested media treatment [assumed default]: one course hero, two relevant photographs, and three explanatory graphics per course. Add media where it teaches something.
+Prefer approved Synozur photography. Otherwise use appropriately licensed photographs and record their source and rights.
+Generated illustrations must be clearly illustrative. Do not present generated people, offices, or events as actual Synozur staff, clients, or facilities.
+Avoid hooded hackers, decorative padlock overload, fake certification seals, and generic handshake imagery.
+Use synthetic information in mock emails, documents, and screens. Never send confidential source material to an unapproved image service.
+Store assets as managed course media, not fragile external hotlinks. Give meaningful images alt text and diagrams a readable text equivalent.
+Keep explanatory labels as editable text where supported.
+Video and narration
+Each course prompt includes a script for Chris McNulty.
+
+Create an opening video lesson with:
+
+Title: “Welcome from Chris McNulty.”
+An approved branded poster with the visible message “Introduction video coming soon.”
+A clearly identified media placeholder, not a broken player or invented URL.
+The supplied script as draft transcript text and recording guidance.
+Space for the recorded video, corrected captions, and final transcript.
+Do not synthesize Chris’s face or clone his voice. Do not mark the placeholder as watched or completed. Keep video replacement and caption verification on the release checklist. If a transcript-only launch is approved later, configure that explicitly.
+
+Write per-slide narration that adds explanation rather than reading every label aloud. Use approved Azure Speech capabilities and the existing voice configuration where available. Do not replace existing audio without confirmation. Do not narrate answer keys before a learner responds.
+
+Learning and completion
+Suggested defaults [assumed; require owner approval]:
+
+Approximately 15–20 minutes per course.
+Three short practice situations.
+Eight final quiz questions: retain the five source questions and add three application questions.
+All eight correct after feedback and remediation before final acknowledgement.
+Required instructional lessons, passed quiz, and a separate signed attestation.
+Completion certificates disabled until approved. Any eventual certificate must say course completion, not NIST certification.
+Use existing retry and feedback capabilities. If the proposed remediation or ordering cannot be enforced, report that limitation rather than inventing support.
+
+An unsigned attestation remains incomplete. Provide clear instructions for learners who need clarification, using a verified contact or an explicit administrator placeholder. Do not invent an ethics hotline, privacy officer, reporting deadline, or policy.
+
+Preserve the source attestation wording for review. Do not add a declaration that the employee has never made a mistake or experienced an incident.
+
+Compliance and evidence
+These courses support awareness and training evidence. They do not establish organizational certification or complete control implementation.
+
+Preserve distinctions among NIST CSF, the Privacy Framework, and SP 800-171. Confirm the governing revision, contract, and CUI scope before making specific compliance claims. Do not describe every confidential client document as CUI.
+
+Use Orion’s existing attestation record, including statement, signed name, user, tenant, enrollment/lesson, timestamp, IP address, and user agent. Preserve signed records; do not rewrite historical statements when a course changes.
+
+Keep annual course/enrollment cycles and communications operationally managed. Do not imply automatic yearly renewal.
+
+E — Execution
+
+For each course:
+
+Build the complete draft course and managed media.
+Provide its preview link and module/lesson inventory.
+Supply the introductory video placeholder, Chris’s script, narration scripts, and media attribution record.
+Provide an administrator-only source-to-lesson mapping, quiz answer/rationale sheet, and unresolved approval checklist.
+Test lesson rendering, mobile layout, keyboard access, captions/transcripts, progress persistence, failed quiz behavior, unsigned attestations, and tenant isolation using test accounts.
+Verify that learner responses do not expose the complete grading key.
+Export through Orion’s supported 
+
+.orion-course.json
+ mechanism and test a round-trip into a separate draft when safe.
+Do not hand-invent an export schema. Course exports do not carry enrollments, progress, or SCORM binaries. A generic course export is not a SCORM package.
+
+Report separately what was authored, tested, exported, and left pending. Application deployment and authored-content transfer are separate operations. Stop before production publication.
