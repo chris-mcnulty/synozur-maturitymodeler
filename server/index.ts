@@ -5,6 +5,7 @@ import { setupVite, serveStatic, log } from "./vite";
 import { initializeJWTService } from "./services/jwt-signing";
 import { startSsoStateCleanup } from "./services/sso-service";
 import { startMonthlyDigestSchedule } from "./services/digest-service";
+import { startMandatoryTrainingEmailSchedule } from "./services/mandatory-training-email";
 import { startPptxReviewSessionCleanup } from "./services/pptx-review-session-service";
 import { securityHeaders } from "./security-headers";
 
@@ -106,6 +107,9 @@ app.use((req, res, next) => {
 
   // Schedule the monthly Insights digest. Runs once on the 1st of each month.
   startMonthlyDigestSchedule();
+
+  // Send release and due-date reminders for assigned mandatory training.
+  startMandatoryTrainingEmailSchedule();
   
   const server = await registerRoutes(app);
 

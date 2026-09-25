@@ -15,6 +15,7 @@ import { registerGalaxyRoutes, registerGalaxyAdminRoutes, registerGalaxyPortalRo
 import { registerCourseRoutes } from "./routes/course-routes";
 import { registerAcademyRoutes } from "./routes/academy-routes";
 import { registerRemediationRoutes } from "./routes/remediation-routes";
+import { registerMandatoryTrainingRoutes } from "./routes/mandatory-training-routes";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Set up authentication routes (includes session setup)
@@ -44,6 +45,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   registerCourseRoutes(app);
   registerAcademyRoutes(app);
   registerRemediationRoutes(app);
+  registerMandatoryTrainingRoutes(app);
 
   const httpServer = createServer(app);
   return httpServer;

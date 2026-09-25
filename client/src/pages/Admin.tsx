@@ -85,6 +85,9 @@ const CourseManagement = lazy(() =>
 const AcademyManagement = lazy(() =>
   import("@/components/admin/AcademyManagement").then((m) => ({ default: m.AcademyManagement })),
 );
+const MandatoryTraining = lazy(() =>
+  import("@/components/admin/MandatoryTraining").then((m) => ({ default: m.MandatoryTraining })),
+);
 
 function SectionFallback() {
   return (
@@ -2828,6 +2831,17 @@ export default function Admin() {
                   </SidebarMenuItem>
                   <SidebarMenuItem>
                     <SidebarMenuButton
+                      onClick={() => setActiveSection('mandatory-training')}
+                      isActive={activeSection === 'mandatory-training'}
+                      data-testid="tab-mandatory-training"
+                      tooltip="Mandatory Training"
+                    >
+                      <ClipboardList className="h-4 w-4" />
+                      <span className="group-data-[collapsible=icon]:hidden">Mandatory Training</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
                       onClick={() => setActiveSection('academies')}
                       isActive={activeSection === 'academies'}
                       data-testid="tab-academies"
@@ -4560,6 +4574,14 @@ export default function Admin() {
 
               {activeSection === 'courses' && (
                 <CourseManagement />
+              )}
+
+              {activeSection === 'mandatory-training' && (
+                <MandatoryTraining
+                  tenants={tenants}
+                  isGlobalAdmin={isGlobalAdminUser(currentUser)}
+                  defaultTenantId={currentUser?.tenantId}
+                />
               )}
 
               {activeSection === 'academies' && (

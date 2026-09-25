@@ -1758,6 +1758,89 @@ export const insertPptxReviewSessionSchema = createInsertSchema(pptxReviewSessio
   id: true, createdAt: true, updatedAt: true, cleanupCompletedAt: true,
 });
 
+// Mandatory training schedules retain content titles as snapshots so reports
+// remain useful when courses or assessment models are later archived/deleted.
+export const MANDATORY_TRAINING_ITEM_KINDS = ["course", "assessment"] as const;
+export const MANDATORY_TRAINING_STATUSES = ["not_started", "in_progress", "completed", "overdue"] as const;
+export const MANDATORY_TRAINING_MILESTONES = ["release", "7d", "1d", "overdue"] as const;
+export const MANDATORY_TRAINING_EMAIL_STATUSES = ["claimed", "sent", "failed", "skipped"] as const;
+
+export const mandatoryTrainingSchedules = pgTable("mandatory_training_schedules", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id").notNull().references(() => tenants.id, { onDelete: "cascade" }),
+  title: text("title").notNull(),
+  releaseAt: timestamp("release_at").notNull(),
+  dueAt: timestamp("due_at").notNull(),
+  createdBy: varchar("created_by").references(() => users.id, { onDelete: "set null" }),
+  idempotencyKey: text("idempotency_key"),
+  idempotencyHash: text("idempotency_hash"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  tenantIdx: index("idx_mandatory_training_schedules_tenant").on(table.tenantId),
+  tenantIdempotencyUnique: unique().on(table.tenantId, table.idempotencyKey),
+}));
+
+export const mandatoryTrainingItems = pgTable("mandatory_training_items", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  scheduleId: varchar("schedule_id").notNull().references(() => mandatoryTrainingSchedules.id, { onDelete: "cascade" }),
+  order: integer("order").notNull(),
+  kind: text("kind").notNull().$type<typeof MANDATORY_TRAINING_ITEM_KINDS[number]>(),
+  contentId: varchar("content_id"),
+  snapshotTitle: text("snapshot_title").notNull(),
+}, (table) => ({
+  scheduleOrderUnique: unique().on(table.scheduleId, table.order),
+  scheduleIdx: index("idx_mandatory_training_items_schedule").on(table.scheduleId),
+}));
+
+export const mandatoryTrainingRecipients = pgTable("mandatory_training_recipients", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  scheduleId: varchar("schedule_id").notNull().references(() => mandatoryTrainingSchedules.id, { onDelete: "cascade" }),
+  userId: varchar("user_id").references(() => users.id, { onDelete: "set null" }),
+  snapshotName: text("snapshot_name").notNull(),
+  snapshotEmail: text("snapshot_email"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  scheduleUserUnique: unique().on(table.scheduleId, table.userId),
+  scheduleIdx: index("idx_mandatory_training_recipients_schedule").on(table.scheduleId),
+  userIdx: index("idx_mandatory_training_recipients_user").on(table.userId),
+}));
+
+// Send claims are the durable duplicate-prevention ledger used by the
+// mandatory-training email worker.
+export const mandatoryTrainingEmails = pgTable("mandatory_training_emails", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  recipientId: varchar("recipient_id").notNull().references(() => mandatoryTrainingRecipients.id, { onDelete: "cascade" }),
+  milestone: text("milestone").notNull().$type<typeof MANDATORY_TRAINING_MILESTONES[number]>(),
+  status: text("status").notNull().$type<typeof MANDATORY_TRAINING_EMAIL_STATUSES[number]>(),
+  claimedAt: timestamp("claimed_at").notNull().defaultNow(),
+  sentAt: timestamp("sent_at"),
+  error: text("error"),
+}, (table) => ({
+  recipientMilestoneUnique: unique().on(table.recipientId, table.milestone),
+  recipientIdx: index("idx_mandatory_training_emails_recipient").on(table.recipientId),
+  statusIdx: index("idx_mandatory_training_emails_status").on(table.status),
+}));
+
+export const insertMandatoryTrainingScheduleSchema = createInsertSchema(mandatoryTrainingSchedules).omit({
+  id: true, createdAt: true,
+});
+export const insertMandatoryTrainingItemSchema = createInsertSchema(mandatoryTrainingItems).omit({ id: true });
+export const insertMandatoryTrainingRecipientSchema = createInsertSchema(mandatoryTrainingRecipients).omit({
+  id: true, createdAt: true,
+});
+export const insertMandatoryTrainingEmailSchema = createInsertSchema(mandatoryTrainingEmails).omit({
+  id: true, claimedAt: true, sentAt: true, error: true,
+});
+
+export type MandatoryTrainingSchedule = typeof mandatoryTrainingSchedules.$inferSelect;
+export type InsertMandatoryTrainingSchedule = z.infer<typeof insertMandatoryTrainingScheduleSchema>;
+export type MandatoryTrainingItem = typeof mandatoryTrainingItems.$inferSelect;
+export type InsertMandatoryTrainingItem = z.infer<typeof insertMandatoryTrainingItemSchema>;
+export type MandatoryTrainingRecipient = typeof mandatoryTrainingRecipients.$inferSelect;
+export type InsertMandatoryTrainingRecipient = z.infer<typeof insertMandatoryTrainingRecipientSchema>;
+export type MandatoryTrainingEmail = typeof mandatoryTrainingEmails.$inferSelect;
+export type InsertMandatoryTrainingEmail = z.infer<typeof insertMandatoryTrainingEmailSchema>;
+
 export type Course = typeof courses.$inferSelect;
 export type InsertCourse = z.infer<typeof insertCourseSchema>;
 export type CourseModule = typeof courseModules.$inferSelect;
