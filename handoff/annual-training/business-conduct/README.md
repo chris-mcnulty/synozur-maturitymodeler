@@ -9,7 +9,7 @@
 | Status | Draft, tenant-private, development only. Not published; no enrollments or communications. |
 | Tenant | Synozur Test (`546b4ea6-05b4-4704-babf-b510e222644e`), resolved from the synozur.com tenant domain |
 | Intended production tenant | Synozur.com (confirmed by course owner; import only after release approvals, as a new private draft) |
-| Development course ID | `0d06f106-912a-4135-bfd7-1a2ae370d5f5` |
+| Development course ID | not imported in this run |
 | Preview (admin sign-in required) | https://de9b7c40-dcaa-46b2-b0c0-d28fd76a0dab-00-2enzqmoszfuzm.janeway.replit.dev/courses/synozur-standards-of-business-conduct-annual-training |
 | Slug | `synozur-standards-of-business-conduct-annual-training` |
 | Export | `handoff/synozur-standards-of-business-conduct-annual-training.orion-course.json` |

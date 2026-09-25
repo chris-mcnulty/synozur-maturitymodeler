@@ -6,7 +6,7 @@ Nothing here has been approved. The course is a draft and must stay unpublished 
 
 - [ ] **Release blocker:** Confirm the policy owner or designated contact for attestation questions _(where: Lesson 5.2 (Before you sign); owner: Policy owner)_
 - [ ] **Release blocker:** Policy-owner review of all learner content and the attestation wording _(where: Whole course; lesson 5.3; owner: Policy owner)_
-- [ ] **Release blocker:** Confirm the Security Policy’s approval and effective status, and the final links for both policies _(where: Lessons 5.2 and 6.1; owner: Policy owner)_
+- [ ] **Release blocker:** Verify access to the IT Policies page and Active Policy Library, then confirm the current IT revision and Security Policy document, approval, and effective status _(where: Lessons 5.2 and 6.1; owner: Policy owner)_
 - [ ] **Release blocker:** Welcome video: record, upload to the empty video block, remove the poster image block, replace the draft transcript, and verify captions (or approve a transcript-only launch) _(where: Lesson 1.1; owner: Chris McNulty / course author)_
 
 ## Other approvals and decisions

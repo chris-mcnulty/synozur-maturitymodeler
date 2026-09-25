@@ -9,7 +9,7 @@
 | Status | Draft, tenant-private, development only. Not published; no enrollments or communications. |
 | Tenant | Synozur Test (`546b4ea6-05b4-4704-babf-b510e222644e`), resolved from the synozur.com tenant domain |
 | Intended production tenant | Synozur.com (confirmed by course owner; import only after release approvals, as a new private draft) |
-| Development course ID | `3d3255b0-485e-46a8-a1c9-060d83041f5d` |
+| Development course ID | not imported in this run |
 | Preview (admin sign-in required) | https://de9b7c40-dcaa-46b2-b0c0-d28fd76a0dab-00-2enzqmoszfuzm.janeway.replit.dev/courses/synozur-data-privacy-and-client-confidentiality-annual-training |
 | Slug | `synozur-data-privacy-and-client-confidentiality-annual-training` |
 | Export | `handoff/synozur-data-privacy-and-client-confidentiality-annual-training.orion-course.json` |

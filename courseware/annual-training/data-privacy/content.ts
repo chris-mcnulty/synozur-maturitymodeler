@@ -9,8 +9,9 @@ import { PHOTOS } from "./photos";
 export const PENDING = (what: string) => `[TO CONFIRM BEFORE RELEASE: ${what}]`;
 
 export const POLICY_LINKS = {
-  it: "https://synozur.sharepoint.com/sites/SynozurIT/Shared%20Documents/General/IT%20Policy.docx",
-  security: "https://synozur.sharepoint.com/sites/SynozurIT/Shared%20Documents/General/Security%20Policy.docx",
+  it: "https://synozur.sharepoint.com/sites/PoliciesandProcedures/SitePages/IT-Policies.aspx",
+  library: "https://synozur.sharepoint.com/sites/PoliciesandProcedures/Policy%20Library/Forms/Active%20Policies.aspx",
+  site: "https://synozur.sharepoint.com/sites/PoliciesandProcedures",
   privacyFramework: "https://www.nist.gov/privacy-framework/privacy-framework",
   csf: "https://csrc.nist.gov/projects/cybersecurity-framework/filters",
   sp800171: "https://csrc.nist.gov/pubs/sp/800/171/r3/final",
@@ -380,7 +381,7 @@ const modules: ModuleSpec[] = [
       {
         key: "5.2", kind: "rich_text", title: "Before you sign", minutes: 1, required: true,
         source: "Deck slide 17 (attestation notes) and slide 20 (policies)",
-        html: `<h2>Before you sign</h2><p>Everyone is expected to sign this acknowledgement. Next you will type your own full name. Review the applicable <a href="${POLICY_LINKS.it}" target="_blank" rel="noopener noreferrer">IT Policy</a> (Rev. 17 February 2026), <a href="${POLICY_LINKS.security}" target="_blank" rel="noopener noreferrer">Security Policy</a>, and ${PENDING("client-specific requirements and engagement-owner route")}.</p><p>You are acknowledging your responsibilities, not claiming that you have never made a mistake. You can report a concern and still sign. If you need clarification, do not sign yet: the attestation stays incomplete. Ask ${PENDING("contact for attestation clarification questions")}.</p><p>Orion records the exact statement, your typed name and account, date and time, and technical details such as IP address and browser. Do not put sensitive concern details in a training record.</p>`,
+        html: `<h2>Before you sign</h2><p>Everyone is expected to sign this acknowledgement. Next you will type your own full name. Review the applicable <a href="${POLICY_LINKS.it}" target="_blank" rel="noopener noreferrer">IT Policies page</a>, the <a href="${POLICY_LINKS.library}" target="_blank" rel="noopener noreferrer">Active Policy Library</a> for the current Security Policy (document and effective status to confirm), and ${PENDING("client-specific requirements and engagement-owner route")}.</p><p>You are acknowledging your responsibilities, not claiming that you have never made a mistake. You can report a concern and still sign. If you need clarification, do not sign yet: the attestation stays incomplete. Ask ${PENDING("contact for attestation clarification questions")}.</p><p>Orion records the exact statement, your typed name and account, date and time, and technical details such as IP address and browser. Do not put sensitive concern details in a training record.</p>`,
       },
       {
         key: "5.3", kind: "attestation", title: "Annual acknowledgement", minutes: 1, required: true,
@@ -395,7 +396,7 @@ const modules: ModuleSpec[] = [
     lessons: [{
       key: "6.1", kind: "rich_text", title: "Policies and sources", minutes: 1, required: false,
       source: "Deck slide 20 (learner-safe references); slide 19 (framework context)",
-      html: `<h2>Policies and sources</h2><p>Synozur policies and client terms govern your work. These frameworks are educational references, not legal advice, certification, or proof that controls are implemented. If instructions conflict, pause and ask the responsible owner.</p><ul><li><a href="${POLICY_LINKS.it}" target="_blank" rel="noopener noreferrer">IT Policy</a>, Rev. 17 February 2026: approved tools, AI, and support.</li><li><a href="${POLICY_LINKS.security}" target="_blank" rel="noopener noreferrer">Security Policy</a>: access, incidents, retention, and training (approval/effective status to confirm).</li><li><a href="${POLICY_LINKS.privacyFramework}" target="_blank" rel="noopener noreferrer">NIST Privacy Framework 1.0</a>: privacy-risk and data-lifecycle outcomes.</li><li><a href="${POLICY_LINKS.csf}" target="_blank" rel="noopener noreferrer">NIST CSF 2.0</a>: security awareness and governance outcomes.</li><li><a href="${POLICY_LINKS.sp800171}" target="_blank" rel="noopener noreferrer">NIST SP 800-171</a>: CUI protection where a contract brings it into scope; the governing revision must be confirmed.</li></ul>`,
+      html: `<h2>Policies and sources</h2><p>Synozur policies and client terms govern your work. These frameworks are educational references, not legal advice, certification, or proof that controls are implemented. If instructions conflict, pause and ask the responsible owner.</p><ul><li><a href="${POLICY_LINKS.site}" target="_blank" rel="noopener noreferrer">Policies and Procedures site</a>: the main organization policy site.</li><li><a href="${POLICY_LINKS.library}" target="_blank" rel="noopener noreferrer">Active Policy Library</a>: find the current Security Policy and other applicable policies (confirm the document and effective status before release).</li><li><a href="${POLICY_LINKS.it}" target="_blank" rel="noopener noreferrer">IT Policies page</a>: find the current IT requirements, including approved tools, AI, and support (revision to confirm).</li><li><a href="${POLICY_LINKS.privacyFramework}" target="_blank" rel="noopener noreferrer">NIST Privacy Framework 1.0</a>: privacy-risk and data-lifecycle outcomes.</li><li><a href="${POLICY_LINKS.csf}" target="_blank" rel="noopener noreferrer">NIST CSF 2.0</a>: security awareness and governance outcomes.</li><li><a href="${POLICY_LINKS.sp800171}" target="_blank" rel="noopener noreferrer">NIST SP 800-171</a>: CUI protection where a contract brings it into scope; the governing revision must be confirmed.</li></ul>`,
     }],
   },
 ];

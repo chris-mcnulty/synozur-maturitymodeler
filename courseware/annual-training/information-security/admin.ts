@@ -36,7 +36,7 @@ export const admin: AdminSpec = {
   approvals: [
     { item: "Confirm the policy owner or designated contact for attestation questions", where: "Lesson 5.2 (Before you sign)", owner: "Policy owner", blocker: true },
     { item: "Policy-owner review of all learner content and the attestation wording", where: "Whole course; lesson 5.3", owner: "Policy owner", blocker: true },
-    { item: "Confirm the Security Policy’s approval and effective status, and the final links for both policies", where: "Lessons 5.2 and 6.1", owner: "Policy owner", blocker: true },
+    { item: "Verify access to the IT Policies page and Active Policy Library, then confirm the current IT revision and Security Policy document, approval, and effective status", where: "Lessons 5.2 and 6.1", owner: "Policy owner", blocker: true },
     { item: "Welcome video: record, upload to the empty video block, remove the poster image block, replace the draft transcript, and verify captions (or approve a transcript-only launch)", where: "Lesson 1.1", owner: "Chris McNulty / course author", blocker: true },
     { item: "Narration: review each script, mark approved, and generate audio with the approved Azure Speech voice (or approve transcript-only narration)", where: "All slide lessons", owner: "Course author", blocker: false },
     { item: "Confirm NIST scope: governing standard and revision, assessment boundary, and whether any contract brings CUI into scope", where: "Lessons 1.2, 3.3, 6.1; Q5", owner: "Security owner / contracts", blocker: false },

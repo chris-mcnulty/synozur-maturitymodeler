@@ -11,5 +11,8 @@ description: Content decisions for the Synozur annual-training courses that late
 - Graphics that depend on unapproved policy or unverified contacts carry a visible "PROPOSED — PENDING APPROVAL" badge matching the lesson's pending markers, and an approval item to re-render after sign-off.
   **Why:** Review flagged a diagram saying "approved policy" while the gift rules were still a release blocker.
 - A round-trip check must normalize asset references: exports key assets by original object path, and the paths change on import, so compare content with paths replaced by asset-data hashes.
+- A link to the organization's policy site or active library is a navigation aid, not evidence that a specific policy document is approved, effective, or on a particular revision.
+  **Why:** The SharePoint pages require organizational sign-in; the page locations were supplied, but their contents and policy status could not be independently verified.
+  **How to apply:** Keep release checks for policy-owner confirmation of the exact document, revision, effective status, and learner access; do not convert an unverified library landing page into a direct-policy citation.
 
 **How to apply:** When authoring or reviewing the next course in the series, check these before building and QA.
