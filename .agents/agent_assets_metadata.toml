@@ -43,3 +43,31 @@ mtime_ms = 1789433761008
 storage_uri = "gcs://replit-rams-assets-janeway/rams/assets/repl:de9b7c40-dcaa-46b2-b0c0-d28fd76a0dab/fa7051b1-9527-4c13-a5a9-c4d89109f302/e03099ae-3488-4bf3-bc1b-f21f5637e239"
 storage_version_token = "1789434089381935"
 content_type = "application/octet-stream"
+
+[[outputs]]
+id = "3h74fCXzcpicORWs2UxOB"
+uri = "file://handoff/annual-training/business-conduct/standards-of-business-conduct-review-draft.docx"
+type = "word_document"
+title = "Standards of Business Conduct — review draft (editable)"
+description = "Proposed standards, rationale, examples, exact attestation wording, and policy-owner decisions. Not an approved policy."
+logical_id = "f6316100-744b-4f32-bdcc-9e9974b08354"
+content_hash = "sha256:1f49c86992b4a0e81f73704623d3d316e559f3657466ce102bce10a4d3de3f64"
+size = 13535
+mtime_ms = 1790317103898
+storage_uri = "gcs://replit-rams-assets-janeway/rams/assets/repl:de9b7c40-dcaa-46b2-b0c0-d28fd76a0dab/f6316100-744b-4f32-bdcc-9e9974b08354/2440da59-fbc1-4599-85a1-58967dd4c648"
+storage_version_token = "1790317157213986"
+content_type = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+
+[[outputs]]
+id = "dPukFJGZjQ9m3lqhTNoHX"
+uri = "file://handoff/annual-training/business-conduct/standards-of-business-conduct-review-draft.pdf"
+type = "pdf"
+title = "Standards of Business Conduct — review copy (PDF)"
+description = "Six-page reading copy of the editable review draft."
+logical_id = "6e2fd4b1-bec4-4d8f-a115-d22d9e8c2ebe"
+content_hash = "sha256:90121abf078fcb7cfea681d44f451e2c22e19db363d3ecf9b9e1eb2988885fef"
+size = 100932
+mtime_ms = 1790317106410
+storage_uri = "gcs://replit-rams-assets-janeway/rams/assets/repl:de9b7c40-dcaa-46b2-b0c0-d28fd76a0dab/6e2fd4b1-bec4-4d8f-a115-d22d9e8c2ebe/285424aa-9086-4694-a78b-d9e5fca2f116"
+storage_version_token = "1790317157736458"
+content_type = "application/pdf"

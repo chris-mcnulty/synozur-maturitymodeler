@@ -312,7 +312,7 @@ async function quickReferenceHtml(): Promise<string> {
   </style></head><body>
   <div class="wm" aria-hidden="true">DRAFT</div>
   <div class="top"><div class="logo"><img src="${logo}" alt="Synozur Alliance"></div><div class="ttl"><h1>What to do first</h1><p>Information security quick reference</p></div></div>
-  <div class="draft">DRAFT v0.1 · NOT FOR RELEASE · URGENT / AFTER-HOURS REPORTING ROUTE PENDING CONFIRMATION</div>
+  <div class="draft">DRAFT v0.1 · NOT FOR RELEASE</div>
   <main>
     <div class="cols">
       <div class="box"><h2>If something seems suspicious</h2><ol>

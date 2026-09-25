@@ -147,9 +147,9 @@ _61 words, about 24 seconds._
 
 ### Slide 3: How to report
 
-When you report, stick to the facts: what happened, when, and what might be affected. Leave sensitive files out of the first message; responders will ask for what they need. If you think your email or chat account is compromised, use a different verified channel. Report security issues, including suspected incidents, to security@synozur.com. Use ithelp@synozur.com for IT help and general support; urgent and after-hours reporting guidance is still pending confirmation.
+When you report, stick to the facts: what happened, when, and what might be affected. Leave sensitive files out of the first message; responders will ask for what they need. If you think your email or chat account is compromised, use a different verified channel. Report security issues, including suspected incidents, to security@synozur.com. For urgent or after-hours security incidents, use the confirmed 24-hour route ITHelp@synozur.com. Use ithelp@synozur.com for normal IT help and general support questions.
 
-_70 words, about 28 seconds._
+_75 words, about 30 seconds._
 
 ## 4.2 Notice misuse without making assumptions
 

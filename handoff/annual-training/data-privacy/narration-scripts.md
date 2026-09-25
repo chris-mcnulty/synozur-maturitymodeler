@@ -85,6 +85,6 @@ _50 words, about 20 seconds._
 
 ### Slide 2: Treat accidental disclosure as an incident
 
-A successful recall is not proof that the other person never opened the file. Report the facts even if you think you fixed the mistake. Responders can check access logs, preserve evidence, and decide what communication is required. Avoid forwarding the exposed data again while trying to explain what happened.
+A successful recall is not proof that the other person never opened the file. For a privacy concern, report promptly to privacy@synozur.com. For an urgent security incident, contact ITHelp@synozur.com, the 24-hour route; for other security issues, contact security@synozur.com. Report the facts even if you think you fixed the mistake. Responders can check access logs, preserve evidence, and decide what communication is required. Avoid forwarding the exposed data again while trying to explain what happened.
 
-_50 words, about 20 seconds._
+_74 words, about 30 seconds._

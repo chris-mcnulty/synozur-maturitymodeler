@@ -8,14 +8,15 @@
 |---|---|
 | Status | Draft, tenant-private, development only. Not published; no enrollments or communications. |
 | Tenant | Synozur Test (`546b4ea6-05b4-4704-babf-b510e222644e`), resolved from the synozur.com tenant domain |
-| Development course ID | `9b9b4507-4301-438e-ad71-4ffbc258c6bc` |
+| Intended production tenant | Synozur.com (confirmed by course owner; import only after release approvals, as a new private draft) |
+| Development course ID | `3d3255b0-485e-46a8-a1c9-060d83041f5d` |
 | Preview (admin sign-in required) | https://de9b7c40-dcaa-46b2-b0c0-d28fd76a0dab-00-2enzqmoszfuzm.janeway.replit.dev/courses/synozur-data-privacy-and-client-confidentiality-annual-training |
 | Slug | `synozur-data-privacy-and-client-confidentiality-annual-training` |
 | Export | `handoff/synozur-data-privacy-and-client-confidentiality-annual-training.orion-course.json` |
 | Source deck | `attached_assets/Synozur_Data_Privacy_and_Client_Confidentiality_-_Annual_Atte_1790292382346.pptx`. Course ID SYN-PRI-2026; version 0.1 draft, prepared September 23, 2026, for policy-owner review. |
 | Source prompt | `attached_assets/Pasted-Prompt-2-Data-Privacy-and-Client-Confidentiality-F-Fram_1790292373093.txt` |
-| Estimated time | 18 minutes (lesson estimates include about 4 minutes of narration). This is above the 15–20 minute default and needs owner approval. |
-| Completion rule | All required lessons, the final knowledge check at 100%, and the signed attestation. Certificates are disabled. |
+| Estimated time | 18 minutes (lesson estimates include about 4 minutes of narration). |
+| Completion rule | All required lessons, the final knowledge check at 85%, and each learner's own signed attestation. All learners are expected to sign; unsigned attestations remain incomplete. Certificates are disabled. |
 
 ## Module and lesson inventory
 

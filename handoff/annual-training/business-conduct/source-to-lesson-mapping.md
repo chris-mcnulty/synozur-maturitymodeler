@@ -10,17 +10,17 @@ Source: `attached_assets/Synozur_Standards_of_Business_Conduct_-_Annual_Attestat
 | 4 | LEARN 02: Disclose conflicts before acting | 2.1 Disclose conflicts before acting | Disclosure and recusal diagram with complete text equivalent; management safeguards remain proposed. |
 | 5 | LEARN 03: Do not trade favors for business | 2.2 Do not trade favors for business | Offers, timing, transparency, and honest expenses; no unverified threshold. |
 | 6 | LEARN 04: Keep records and claims accurate | 3.1 Keep records and claims accurate; 3.2 Verify commitments and AI-assisted claims | Synthetic correction graphic, signing authority, and verified claims; no certification assertion. |
-| 7 | LEARN 05: Respect people in every setting | 4.1 Respect people in every setting | Respectful-workplace lesson and colleague-response question; pending HR/legal approval. |
+| 7 | LEARN 05: Respect people in every setting | 4.1 Respect people in every setting | Respectful-workplace lesson and colleague-response question; pending policy-owner/legal approval. |
 | 8 | LEARN 06: Protect client trust and intellectual property | 4.2 Protect client trust and compete fairly | Permissions, licensing, confidentiality, and competition guidance. |
 | 9 | LEARN 07: Take responsibility for tools and partners | 3.2 Verify commitments and AI-assisted claims; 4.2 Protect client trust and compete fairly | Human review of AI content, partner approval, and accountable assurance claims. |
-| 10 | LEARN 08: Raise concerns without retaliation | 4.3 Raise concerns without retaliation | Reporting-route diagram and text equivalent include the specified ReportIt@synozur.com code-of-conduct breach route; usual and alternate contacts remain release blockers. |
+| 10 | LEARN 08: Raise concerns without retaliation | 4.3 Raise concerns without retaliation | Reporting-route diagram and text equivalent identify Michelle Caldwell as the primary conduct contact and ReportIt@synozur.com as the out-of-band alternate if the primary contact is involved or uncomfortable to contact; no guarantee of independence or absolute anonymity. |
 | 11 | Practice: a favor during selection | See lesson table below | Expanded fictional ungraded supplier scenario; facilitator guidance informs feedback. |
 | 12 | Review question Q01 | See lesson table below | Final Q1; source stem, choices, order and intended answer A preserved. |
 | 13 | Review question Q02 | See lesson table below | Final Q2; source stem, choices, order and intended answer D preserved. |
 | 14 | Review question Q03 | See lesson table below | Final Q3; source stem, choices, order and intended answer B preserved. |
 | 15 | Review question Q04 | See lesson table below | Final Q4; source stem, choices, order and intended answer C preserved. |
 | 16 | Review question Q05 | See lesson table below | Final Q5; source stem, choices, order and intended answer A preserved. |
-| 17 | Proposed annual acknowledgement | See lesson table below | Verbatim typed-name attestation after separate Before you sign lesson; clarification leaves it unsigned. |
+| 17 | Proposed annual acknowledgement | See lesson table below | Everyone is expected to sign the verbatim typed-name attestation; an unsigned acknowledgement remains incomplete. |
 | 18 | Administrator release guidance | See lesson table below | Administrator only; obsolete claims that Orion import is unverified replaced by build documentation; approval gates below. |
 | 19 | Indicative framework mapping | See lesson table below | Administrator-only qualified security-governance mapping below; no whole-course NIST mapping. |
 | 20 | References and policy precedence | See lesson table below | Learner-safe links in optional Reference module; policy approval and contract scope pending. |

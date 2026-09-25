@@ -41,13 +41,14 @@ export const BEFORE_YOU_SHARE = {
   ],
   routes: [
     { need: "IT help and general support", contact: "ithelp@synozur.com (published IT support address)" },
+    { need: "Urgent security incidents (24-hour route)", contact: "ITHelp@synozur.com" },
+    { need: "Other security issues", contact: "security@synozur.com" },
     { need: "Privacy concerns/questions, including misdirected files, public links, or unintended uploads", contact: "privacy@synozur.com" },
-    { need: "Security issues", contact: "security@synozur.com" },
     { need: "Access, correction, deletion, or restriction requests", contact: PENDING("approved route for access, correction, deletion, and restriction requests") },
     { need: "Legal hold or disposal conflict", contact: PENDING("legal-hold process and contact") },
     { need: "Client-specific handling requirements", contact: PENDING("client-specific requirements and engagement-owner route") },
   ],
-  caveat: "For privacy concerns/questions, including misdirected files and unintended uploads, contact privacy@synozur.com. For security issues, contact security@synozur.com. This does not confirm a distinct urgent security incident-response procedure, if one applies. ithelp@synozur.com is for IT help only, not privacy reporting or an urgent incident hotline. Do not send copies of exposed data in a report unless responders ask.",
+  caveat: "For urgent security incidents, contact ITHelp@synozur.com (24-hour route). For other security issues, contact security@synozur.com. For privacy concerns/questions, including misdirected files and unintended uploads, contact privacy@synozur.com. Do not send copies of exposed data in a report unless responders ask.",
 };
 
 const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -243,9 +244,9 @@ const modules: ModuleSpec[] = [
           {
             id: "pri-incident", source: [10], blocks: [
               { type: "heading", level: 2, text: "Treat accidental disclosure as an incident" },
-              { type: "text", html: `<p>Wrong recipient, public link, lost device, or unintended AI upload? Stop further sharing and report promptly to <strong>privacy@synozur.com</strong> as a privacy concern, even if you recalled the file or removed access. For security issues, contact <strong>security@synozur.com</strong>. Keep the original message and facts: information type, intended and actual audience, timing, current access, and actions taken. Do not attach another copy of the data to the report.</p><p>Responders assess what happened, whether to remove access, and any legal or contractual notices. Do not promise that no exposure occurred or contact affected people without authorization. A distinct urgent security incident-response procedure, if applicable, remains to be confirmed; these email addresses do not establish one. <strong>ithelp@synozur.com</strong> is for IT help only, not privacy reporting or an urgent incident hotline.</p>` },
+              { type: "text", html: `<p>Wrong recipient, public link, lost device, or unintended AI upload? Stop further sharing and report promptly to <strong>privacy@synozur.com</strong> as a privacy concern, even if you recalled the file or removed access. For urgent security incidents, contact <strong>ITHelp@synozur.com</strong> (24-hour route). For other security issues, contact <strong>security@synozur.com</strong>. Keep the original message and facts: information type, intended and actual audience, timing, current access, and actions taken. Do not attach another copy of the data to the report.</p><p>Responders assess what happened, whether to remove access, and any legal or contractual notices. Do not promise that no exposure occurred or contact affected people without authorization.</p>` },
             ],
-            narration: "A successful recall is not proof that the other person never opened the file. Report the facts even if you think you fixed the mistake. Responders can check access logs, preserve evidence, and decide what communication is required. Avoid forwarding the exposed data again while trying to explain what happened.",
+            narration: "A successful recall is not proof that the other person never opened the file. For a privacy concern, report promptly to privacy@synozur.com. For an urgent security incident, contact ITHelp@synozur.com, the 24-hour route; for other security issues, contact security@synozur.com. Report the facts even if you think you fixed the mistake. Responders can check access logs, preserve evidence, and decide what communication is required. Avoid forwarding the exposed data again while trying to explain what happened.",
           },
         ],
       },
@@ -271,7 +272,7 @@ const modules: ModuleSpec[] = [
         html: `<h2>${esc(BEFORE_YOU_SHARE.title)}</h2><p>${esc(BEFORE_YOU_SHARE.intro)}</p><p>A printable PDF is under <strong>Course resources</strong> at the top of the course page.</p><ol>${BEFORE_YOU_SHARE.checklist.map(i => `<li><strong>${esc(i.label)}:</strong> ${esc(i.detail)}</li>`).join("")}</ol><h3>Contacts and routes</h3>${routesHtml()}<p>${esc(BEFORE_YOU_SHARE.caveat)}</p>`,
         resources: [{
           id: "pri-before-you-share", title: "Before you share: data privacy quick reference",
-          description: "One-page draft checklist and contacts; reporting, request, legal-hold, and client routes require approval.",
+          description: "One-page draft checklist and contacts; request, legal-hold, and client routes remain pending verification.",
           filename: "Synozur-Before-you-share-Data-Privacy-DRAFT.pdf", mimeType: "application/pdf", mediaFile: "before-you-share-data-privacy.pdf",
         }],
       },
@@ -282,9 +283,9 @@ const modules: ModuleSpec[] = [
     description: "Complete the eight-question check, review your responsibilities, and sign separately.",
     lessons: [
       {
-        key: "5.1", kind: "quiz", title: "Final knowledge check", minutes: 3, required: true, practice: false, passingScore: 100,
+        key: "5.1", kind: "quiz", title: "Final knowledge check", minutes: 3, required: true, practice: false, passingScore: 85,
         source: "Deck slides 12–16 (Q1–Q5); Prompt 2 (Q6–Q8)",
-        introHtml: "<p>Answer all eight questions. Every answer must be correct to pass. After submitting, read the feedback, revisit any named lessons, then retry as needed. This check is separate from your typed-name attestation.</p>",
+        introHtml: "<p>Answer all eight equally weighted questions. A score of at least 85% is required to pass; 7/8 correct is 87.5% (shown rounded to 88%), so one wrong answer is allowed. After submitting, read the feedback, revisit any named lessons, then retry as needed. This check is separate from your typed-name attestation.</p>",
         questions: [
           {
             id: "q1", source: "Deck slide 12 (SYN-PRI-2026-Q01)", revisit: "Privacy and confidentiality work together",
@@ -379,7 +380,7 @@ const modules: ModuleSpec[] = [
       {
         key: "5.2", kind: "rich_text", title: "Before you sign", minutes: 1, required: true,
         source: "Deck slide 17 (attestation notes) and slide 20 (policies)",
-        html: `<h2>Before you sign</h2><p>Next you will type your own full name to acknowledge the statement. Review the applicable <a href="${POLICY_LINKS.it}" target="_blank" rel="noopener noreferrer">IT Policy</a> (Rev. 17 February 2026), <a href="${POLICY_LINKS.security}" target="_blank" rel="noopener noreferrer">Security Policy</a>, and ${PENDING("client-specific requirements and engagement-owner route")}.</p><p>You are acknowledging your responsibilities, not claiming that you have never made a mistake. You can report a concern and still sign. If you need clarification, do not sign yet: the attestation stays incomplete. Ask ${PENDING("accountable contact for attestation questions")}.</p><p>Orion records the exact statement, your typed name and account, date and time, and technical details such as IP address and browser. Do not put sensitive concern details in a training record.</p>`,
+        html: `<h2>Before you sign</h2><p>Everyone is expected to sign this acknowledgement. Next you will type your own full name. Review the applicable <a href="${POLICY_LINKS.it}" target="_blank" rel="noopener noreferrer">IT Policy</a> (Rev. 17 February 2026), <a href="${POLICY_LINKS.security}" target="_blank" rel="noopener noreferrer">Security Policy</a>, and ${PENDING("client-specific requirements and engagement-owner route")}.</p><p>You are acknowledging your responsibilities, not claiming that you have never made a mistake. You can report a concern and still sign. If you need clarification, do not sign yet: the attestation stays incomplete. Ask ${PENDING("contact for attestation clarification questions")}.</p><p>Orion records the exact statement, your typed name and account, date and time, and technical details such as IP address and browser. Do not put sensitive concern details in a training record.</p>`,
       },
       {
         key: "5.3", kind: "attestation", title: "Annual acknowledgement", minutes: 1, required: true,
@@ -406,7 +407,7 @@ export const course: CourseSpec = {
   description: "Annual privacy and client-confidentiality awareness for Synozur staff. Practice decisions about purpose, minimum necessary data, client instructions, meetings, recordings, AI, vendors, retention, requests, and accidental disclosures.\n\nIncludes three practice situations, an eight-question final check, and a separate typed-name acknowledgement.\n\nPublisher: Synozur. Completion is a training record, not a legal or NIST certification.",
   tags: ["Annual training", "Data privacy", "Client confidentiality", "Attestation"],
   estimatedMinutes: 18,
-  passingScore: 100,
+  passingScore: 85,
   heroMedia: "hero",
   sourceDeck: "attached_assets/Synozur_Data_Privacy_and_Client_Confidentiality_-_Annual_Atte_1790292382346.pptx",
   sourcePrompt: "attached_assets/Pasted-Prompt-2-Data-Privacy-and-Client-Confidentiality-F-Fram_1790292373093.txt",

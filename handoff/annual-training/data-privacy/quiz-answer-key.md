@@ -71,7 +71,7 @@ Practice, not graded (passing score 0).
 
 ## 5.1 Final knowledge check
 
-Graded. Passing score 100%; unlimited retries.
+Graded. Passing score 85%; unlimited retries.
 
 ### 1. Which information may be confidential even when it contains no personal data?
 

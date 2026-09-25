@@ -22,9 +22,9 @@ export const REPORTING = {
   rows: [
     { need: "IT help and general support questions", contact: "ithelp@synozur.com (published IT support address)", pending: false },
     { need: "Security issues, including suspected security incidents", contact: "security@synozur.com", pending: false },
-    { need: "Urgent or after-hours incidents", contact: PENDING("urgent and out-of-hours reporting route"), pending: true },
+    { need: "Urgent or after-hours security incidents (24-hour route)", contact: "ITHelp@synozur.com", pending: false },
   ],
-  caveat: "Use security@synozur.com for security issues. The IT help address is for IT support and general questions, not a confirmed 24-hour incident hotline. An urgent or after-hours reporting route is still pending confirmation.",
+  caveat: "For security issues, including suspected incidents, report to security@synozur.com. For urgent or after-hours security incidents, use the confirmed 24-hour route ITHelp@synozur.com. Use ithelp@synozur.com for normal IT help and general support questions. The urgent route is for security incidents; it is not a route for formal privacy or legal matters.",
 };
 
 const contactTable = () =>
@@ -671,7 +671,7 @@ const modules: ModuleSpec[] = [
               { type: "callout", tone: "info", html: `<p>${REPORTING.caveat}</p>` },
             ],
             narration:
-              "When you report, stick to the facts: what happened, when, and what might be affected. Leave sensitive files out of the first message; responders will ask for what they need. If you think your email or chat account is compromised, use a different verified channel. Report security issues, including suspected incidents, to security@synozur.com. Use ithelp@synozur.com for IT help and general support; urgent and after-hours reporting guidance is still pending confirmation.",
+              "When you report, stick to the facts: what happened, when, and what might be affected. Leave sensitive files out of the first message; responders will ask for what they need. If you think your email or chat account is compromised, use a different verified channel. Report security issues, including suspected incidents, to security@synozur.com. For urgent or after-hours security incidents, use the confirmed 24-hour route ITHelp@synozur.com. Use ithelp@synozur.com for normal IT help and general support questions.",
           },
         ],
       },
@@ -787,7 +787,7 @@ const modules: ModuleSpec[] = [
           {
             id: "sec-what-to-do-first",
             title: "What to do first: information security quick reference",
-            description: "A one-page PDF summary of what to do when something seems suspicious or has already happened, with reporting contacts. The urgent and after-hours reporting route is pending confirmation.",
+            description: "A one-page PDF summary of what to do when something seems suspicious or has already happened, with separate contacts for security reporting, urgent or after-hours security incidents, and normal IT support.",
             filename: "Synozur-What-to-do-first-Information-Security-DRAFT.pdf",
             mediaFile: "what-to-do-first-information-security.pdf",
             mimeType: "application/pdf",
@@ -807,10 +807,10 @@ const modules: ModuleSpec[] = [
         minutes: 4,
         required: true,
         practice: false,
-        passingScore: 100,
+        passingScore: 85,
         source: "Deck slides 12–16 (Q1–Q5); Q6–Q8 added per the course prompt",
         introHtml:
-          "<p>Answer all eight questions. You need every answer correct to complete this check.</p><p>After you submit, you’ll see feedback on each question, including the lesson to revisit if you missed it. Review those lessons, then retry as many times as you need.</p>",
+          "<p>Answer all eight equally weighted questions. You need at least 85% to pass; with eight questions, that means at least 7/8 correct (87.5%, shown as 88%).</p><p>After you submit, you’ll see feedback on each question, including the lesson to revisit if you missed it. Review those lessons, then retry as many times as you need.</p>",
         questions: [
           {
             id: "q1",
@@ -941,7 +941,7 @@ const modules: ModuleSpec[] = [
         minutes: 1,
         required: true,
         source: "Deck slide 17 (notes: clarification, no spotless-history claim) and slide 18 (record contents)",
-        html: `<h2>Before you sign</h2><p>The next lesson asks you to type your full name to acknowledge your responsibilities. Please read this first.</p><h3>What you’re acknowledging</h3><p>You’re confirming that you completed this course, reviewed the applicable information security policies, and understand your responsibilities. You are <strong>not</strong> declaring that you’ve never made a mistake or been involved in an incident. You can report a concern and still sign.</p><h3>Review the policies</h3><ul><li><a href="${POLICY_LINKS.itPolicy}" target="_blank" rel="noopener noreferrer">IT Policy</a> (Rev. 17 February 2026)</li><li><a href="${POLICY_LINKS.securityPolicy}" target="_blank" rel="noopener noreferrer">Security Policy</a> (Synozur Alliance LLC IT governance and security policies)</li></ul><h3>If something is unclear</h3><p>Don’t sign yet. Your acknowledgement stays incomplete until you sign, and you can return at any time. Ask your question first: ${`<strong>${PENDING("accountable owner or contact for attestation questions")}</strong>`}.</p><h3>What is recorded</h3><p>When you sign, Orion records the statement you acknowledged, the name you typed, your account, the date and time, and technical details such as your IP address and browser.</p>`,
+        html: `<h2>Before you sign</h2><p>The next lesson asks you to type your full name to acknowledge your responsibilities. Please read this first.</p><h3>What you’re acknowledging</h3><p>You’re confirming that you completed this course, reviewed the applicable information security policies, and understand your responsibilities. You are <strong>not</strong> declaring that you’ve never made a mistake or been involved in an incident. You can report a concern and still sign.</p><h3>Review the policies</h3><ul><li><a href="${POLICY_LINKS.itPolicy}" target="_blank" rel="noopener noreferrer">IT Policy</a> (Rev. 17 February 2026)</li><li><a href="${POLICY_LINKS.securityPolicy}" target="_blank" rel="noopener noreferrer">Security Policy</a> (Synozur Alliance LLC IT governance and security policies)</li></ul><h3>If something is unclear</h3><p>Don’t sign yet. Your acknowledgement stays incomplete until you sign, and you can return at any time. Ask your question first: ${`<strong>${PENDING("policy owner or designated contact for attestation questions")}</strong>`}.</p><h3>What is recorded</h3><p>When you sign, Orion records the statement you acknowledged, the name you typed, your account, the date and time, and technical details such as your IP address and browser.</p>`,
       },
       {
         key: "5.3",
@@ -979,7 +979,7 @@ export const course: CourseSpec = {
     "Annual information security training for all Synozur staff. Practical, everyday decisions: protecting your sign-in, spotting phishing in any channel, verifying requests independently, using approved devices, tools, and AI, sharing client work through approved routes, and reporting problems early.\n\nIncludes three practice situations, an eight-question knowledge check, and a typed-name annual acknowledgement.\n\nPublisher: Synozur. Course completion is a training record; it does not certify the organization.",
   tags: ["Annual training", "Information security", "Attestation"],
   estimatedMinutes: 25,
-  passingScore: 100,
+  passingScore: 85,
   heroMedia: "hero",
   sourceDeck: "attached_assets/Synozur_Information_Security_-_Annual_Attestation_DRAFT_1790292333253.pptx",
   sourcePrompt: "attached_assets/Pasted-Information-Security-F-Framing-Apply-the-shared-instruc_1790292315576.txt",

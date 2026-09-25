@@ -185,7 +185,7 @@ async function quickReferenceHtml(): Promise<string | null> {
     footer{position:absolute;left:44px;right:44px;bottom:22px;border-top:1px solid ${BRAND.line};padding-top:8px;color:${BRAND.muted};font-size:11px}
   </style></head><body><div class="wm" aria-hidden="true">DRAFT</div>
     <header><div class="logo"><img src="${logo}" alt="Synozur Alliance"></div><div><h1>${escapeHtml(source.title)}</h1><p>Data privacy · annual training reference</p></div></header>
-    <div class="draft">DRAFT · NOT FOR RELEASE · CONTACTS PENDING VERIFICATION</div><main>
+    <div class="draft">DRAFT · NOT FOR RELEASE · SOME ROUTES PENDING VERIFICATION</div><main>
       <p class="intro">${escapeHtml(source.intro)}</p><h2>Before you share: check</h2>
       <ol>${source.checklist.map(x => `<li><b>${escapeHtml(x.label)}:</b> ${escapeHtml(x.detail)}</li>`).join("")}</ol>
       <h2>Contacts and routes</h2>

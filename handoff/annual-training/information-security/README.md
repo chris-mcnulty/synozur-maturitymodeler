@@ -8,14 +8,15 @@
 |---|---|
 | Status | Draft, tenant-private, development only. Not published; no enrollments or communications. |
 | Tenant | Synozur Test (`546b4ea6-05b4-4704-babf-b510e222644e`), resolved from the synozur.com tenant domain |
-| Development course ID | `a7d812da-d646-4952-a3d9-850c01dca0e3` |
+| Intended production tenant | Synozur.com (confirmed by course owner; import only after release approvals, as a new private draft) |
+| Development course ID | `4fa7d345-3471-4e96-a7d7-3acdc23d7170` |
 | Preview (admin sign-in required) | https://de9b7c40-dcaa-46b2-b0c0-d28fd76a0dab-00-2enzqmoszfuzm.janeway.replit.dev/courses/synozur-information-security-annual-training |
 | Slug | `synozur-information-security-annual-training` |
 | Export | `handoff/synozur-information-security-annual-training.orion-course.json` |
 | Source deck | `attached_assets/Synozur_Information_Security_-_Annual_Attestation_DRAFT_1790292333253.pptx`. Course ID SYN-SEC-2026; version 0.1 draft, prepared September 23, 2026, for policy-owner review. |
 | Source prompt | `attached_assets/Pasted-Information-Security-F-Framing-Apply-the-shared-instruc_1790292315576.txt` |
 | Estimated time | 25 minutes (lesson estimates include about 9 minutes of narration). This is above the 15–20 minute default and needs owner approval. |
-| Completion rule | All required lessons, the final knowledge check at 100%, and the signed attestation. Certificates are disabled. |
+| Completion rule | All required lessons, the final knowledge check at 85%, and each learner's own signed attestation. All learners are expected to sign; unsigned attestations remain incomplete. Certificates are disabled. |
 
 ## Module and lesson inventory
 

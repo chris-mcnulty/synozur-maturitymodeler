@@ -81,14 +81,15 @@ function readme(spec: CourseSpec, admin: AdminSpec, info: BuildInfo): string {
 |---|---|
 | Status | Draft, tenant-private, development only. Not published; no enrollments or communications. |
 | Tenant | ${info.tenantName} (\`${info.tenantId}\`), resolved from the synozur.com tenant domain |
+| Intended production tenant | Synozur.com (confirmed by course owner; import only after release approvals, as a new private draft) |
 | Development course ID | ${info.devCourseId ? `\`${info.devCourseId}\`` : "not imported in this run"} |
 | Preview (admin sign-in required) | ${info.previewUrl ?? "not available"} |
 | Slug | \`${spec.slug}\` |
 | Export | ${info.exportPath ? `\`${info.exportPath}\`` : "not exported in this run"} |
 | Source deck | \`${spec.sourceDeck}\`. Course ID ${admin.courseId}; version ${admin.sourceVersion}. |
 | Source prompt | \`${spec.sourcePrompt}\` |
-| Estimated time | ${spec.estimatedMinutes} minutes (lesson estimates include about ${narrationMinutes} minutes of narration). This is above the 15–20 minute default and needs owner approval. |
-| Completion rule | All required lessons, the final knowledge check at ${spec.passingScore}%, and the signed attestation. Certificates are disabled. |
+| Estimated time | ${spec.estimatedMinutes} minutes (lesson estimates include about ${narrationMinutes} minutes of narration).${spec.estimatedMinutes > 20 ? " This is above the 15–20 minute default and needs owner approval." : ""} |
+| Completion rule | All required lessons, the final knowledge check at ${spec.passingScore}%, and each learner's own signed attestation. All learners are expected to sign; unsigned attestations remain incomplete. Certificates are disabled. |
 
 ## Module and lesson inventory
 
@@ -215,7 +216,7 @@ ${info.pendingMarkers.length ? info.pendingMarkers.map(p => `- ${p.lesson}: \`${
 
 ## Before release
 
-- [ ] Re-export after approvals and re-import into the production tenant as a new draft.
+- [ ] Re-export after approvals and import into the Synozur.com production tenant as a new private draft (never overwrite a course).
 - [ ] Publish only after the release blockers above are cleared. Enrollment cycles, reminders, and communications are managed separately; Orion doesn’t renew this course automatically.
 `;
 }
@@ -312,7 +313,7 @@ export const SHARED_LIMITATIONS = [
   {
     request: "Feedback only after a genuine attempt",
     status: "Not supported",
-    workaround: "Answer keys are never sent to learners, but Orion returns every question’s explanation after any submission, including one with unanswered questions. A learner can therefore read all explanations before trying seriously; passing still requires 100%.",
+    workaround: "Answer keys are never sent to learners, but Orion returns every question’s explanation after any submission, including one with unanswered questions. A learner can therefore read all explanations before trying seriously; each course's configured passing threshold still applies.",
     proposal: "Require an answer to every question before grading, and optionally withhold explanations for questions the learner didn’t answer.",
   },
   {

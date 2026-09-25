@@ -69,6 +69,6 @@ _56 words, about 22 seconds._
 
 ### Slide 1: Raise concerns without retaliation
 
-You can report an honest concern even if you later learn you were mistaken. Stick to observations, not guesses. If the normal recipient is involved, there must be another route; those details still need approval before release. You are not expected to prove the case or conduct an investigation. Retaliation is not acceptable, and internal channels do not take away lawful external reporting rights.
+You can report an honest concern even if you later learn you were mistaken. For a business-conduct concern, contact Michelle Caldwell at Michelle.caldwell@synozur.com. If Michelle is involved or you are uncomfortable contacting her, ReportIt@synozur.com is the out-of-band alternate. That does not guarantee independence or absolute anonymity. Stick to observations, not guesses; you are not expected to prove the case or investigate it yourself. The investigation process and non-retaliation protections still require policy-owner and legal review. Internal channels do not take away lawful external reporting rights.
 
-_64 words, about 26 seconds._
+_85 words, about 34 seconds._

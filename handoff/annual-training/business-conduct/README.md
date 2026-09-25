@@ -8,14 +8,15 @@
 |---|---|
 | Status | Draft, tenant-private, development only. Not published; no enrollments or communications. |
 | Tenant | Synozur Test (`546b4ea6-05b4-4704-babf-b510e222644e`), resolved from the synozur.com tenant domain |
-| Development course ID | `c0e603b5-1d99-4859-b517-9f277c470773` |
+| Intended production tenant | Synozur.com (confirmed by course owner; import only after release approvals, as a new private draft) |
+| Development course ID | `0d06f106-912a-4135-bfd7-1a2ae370d5f5` |
 | Preview (admin sign-in required) | https://de9b7c40-dcaa-46b2-b0c0-d28fd76a0dab-00-2enzqmoszfuzm.janeway.replit.dev/courses/synozur-standards-of-business-conduct-annual-training |
 | Slug | `synozur-standards-of-business-conduct-annual-training` |
 | Export | `handoff/synozur-standards-of-business-conduct-annual-training.orion-course.json` |
 | Source deck | `attached_assets/Synozur_Standards_of_Business_Conduct_-_Annual_Attestation_DR_1790292453863.pptx`. Course ID SYN-CON-2026; version 0.1 draft, prepared September 23, 2026, for policy-owner review. |
 | Source prompt | `attached_assets/Pasted-Prompt-3-Standards-of-Business-Conduct-F-Framing-Apply-_1790292447276.txt` |
-| Estimated time | 19 minutes (lesson estimates include about 3 minutes of narration). This is above the 15–20 minute default and needs owner approval. |
-| Completion rule | All required lessons, the final knowledge check at 100%, and the signed attestation. Certificates are disabled. |
+| Estimated time | 19 minutes (lesson estimates include about 3 minutes of narration). |
+| Completion rule | All required lessons, the final knowledge check at 85%, and each learner's own signed attestation. All learners are expected to sign; unsigned attestations remain incomplete. Certificates are disabled. |
 
 ## Module and lesson inventory
 

@@ -149,15 +149,17 @@ function routes(): string {
     .direct{background:#F9F4FF}
     .direct p{font-size:32px}
     .direct small{display:block;margin-top:15px;font-size:19px;line-height:1.2;color:${BRAND.muted}}
+    .direct .email{display:block;margin-top:6px;font-size:17px;white-space:nowrap}
     .alternate{border-color:${BRAND.magenta};background:${BRAND.blush}}
     .alternate h2{color:#A10C82}.alternate p{font-size:26px;line-height:1.23}
+    .alternate small{display:block;margin-top:9px;font-size:17px;line-height:1.2;color:${BRAND.muted}}
     .notes{display:grid;grid-template-columns:1fr 1fr;gap:30px;margin-top:18px}
     .note{background:${BRAND.lilac};border-left:6px solid ${BRAND.purple};border-radius:11px;padding:22px 24px;font-size:26px;font-weight:600;line-height:1.3}
-  `, `<div class="eyebrow">SPEAK UP EARLY</div><div class="status">PROPOSED · OTHER ROUTES PENDING VERIFICATION</div><h1>Raising a concern</h1>
+  `, `<div class="eyebrow">SPEAK UP EARLY</div><div class="status">POLICY APPROVAL STILL REQUIRED</div><h1>Raising a concern</h1>
     <div class="start">You notice something that may break the standards, a policy, or the law</div>
-    <div class="fork"><span></span><span></span><span></span></div><div class="routes"><div class="card"><h2>USUAL ROUTE</h2><p>Your manager<br>or<br>the designated conduct contact</p></div>
-    <div class="card direct"><h2>CODE-OF-CONDUCT BREACH</h2><p>Email<br>ReportIt@synozur.com<small>Not designated as the alternate route</small></p></div>
-    <div class="card alternate"><h2>ALTERNATE ROUTE</h2><p>If the usual contact is involved, or you're not comfortable using it: use the designated alternate contact (not yet verified)</p></div></div>
+    <div class="fork"><span></span><span></span><span></span></div><div class="routes"><div class="card direct"><h2>PRIMARY CONDUCT CONTACT</h2><p>Michelle Caldwell<span class="email">Michelle.caldwell@synozur.com</span></p></div>
+    <div class="card alternate"><h2>OUT-OF-BAND ALTERNATE</h2><p>If Michelle is involved or you are uncomfortable contacting her: ReportIt@synozur.com<small>No guarantee of independence or absolute anonymity</small></p></div>
+    <div class="card"><h2>SECURITY ISSUE</h2><p>Email<br>security@synozur.com</p></div></div>
     <div class="notes"><div class="note">Good faith is enough: you don't need proof, and you don't need to investigate first.</div>
     <div class="note">Nothing here limits lawful reporting to government or regulatory authorities.</div></div>`);
 }
@@ -203,7 +205,7 @@ async function quickReferenceHtml(): Promise<string | null> {
     footer{position:absolute;left:44px;right:44px;bottom:22px;border-top:1px solid ${BRAND.line};padding-top:8px;color:${BRAND.muted};font-size:11px}
   </style></head><body><div class="wm" aria-hidden="true">DRAFT</div>
     <header><div class="logo"><img src="${logo}" alt="Synozur Alliance"></div><div><h1>${escapeHtml(source.title)}</h1><p>Business conduct · annual training reference</p></div></header>
-     <div class="draft">DRAFT · NOT FOR RELEASE · OTHER ROUTES PENDING VERIFICATION</div><main>
+      <div class="draft">DRAFT · POLICY APPROVAL PENDING · ATTESTATION-QUESTION CONTACT UNCONFIRMED</div><main>
       <p class="intro">${escapeHtml(source.intro)}</p><h2>The five-question decision test</h2>
       <ol>${source.checks.map(x => `<li><b>${escapeHtml(x.label)}:</b> ${escapeHtml(x.detail)}</li>`).join("")}</ol>
       <h2>Where to raise a concern or ask</h2>

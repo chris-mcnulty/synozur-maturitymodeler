@@ -58,7 +58,7 @@ Practice, not graded (passing score 0).
 
 ## 5.1 Final knowledge check
 
-Graded. Passing score 100%; unlimited retries.
+Graded. Passing score 85%; unlimited retries.
 
 ### 1. A relative owns a supplier you are evaluating. What should you do?
 
@@ -102,17 +102,17 @@ Graded. Passing score 100%; unlimited retries.
 - **Revisit after an incorrect response:** Keep records and claims accurate
 - **Source:** Deck slide 14 (SYN-CON-2026-Q03); notes: B
 
-### 4. You believe the person who normally receives concerns is involved. What is best?
+### 4. You believe the primary conduct reporting contact may be involved. What is best?
 
 | | Choice | Feedback |
 |---|---|---|
 | A | Stay silent until you have proof. | Good faith does not require proof. |
-| B | Post the allegation publicly. | A public allegation is not a substitute for a verified route; lawful external reporting rights remain. |
-| C ✓ | Use the designated alternate route once verified and describe facts. | A verified alternate route avoids the involved contact. The specified ReportIt email is for code-of-conduct breaches and is not confirmed as this alternate route. |
+| B | Post the allegation publicly. | A public post is not the reporting route; lawful external reporting rights remain. |
+| C ✓ | Use the out-of-band alternate route and describe the facts. | ReportIt@synozur.com is the out-of-band alternate if the primary contact is involved or you are uncomfortable contacting them; this does not guarantee independence or absolute anonymity. |
 | D | Investigate their private accounts yourself. | Private-account access is not an employee investigation task. |
 
 - **Correct:** C
-- **Learner sees after submitting:** Silence until proof and accessing private accounts both place the burden on you; a public post does not replace a verified alternate route. The specified code-of-conduct breach email is not confirmed as that alternate route. Lawful external reporting rights remain. Revisit “Raise concerns without retaliation.”
+- **Learner sees after submitting:** Silence until proof and accessing private accounts both place the burden on you; a public post does not replace the reporting route. Use ReportIt@synozur.com as the out-of-band alternate if the primary contact is involved or you are uncomfortable contacting them. This does not guarantee independence or absolute anonymity. Lawful external reporting rights remain. Revisit “Raise concerns without retaliation.”
 - **Revisit after an incorrect response:** Raise concerns without retaliation
 - **Source:** Deck slide 15 (SYN-CON-2026-Q04); notes: C
 
@@ -148,13 +148,13 @@ Graded. Passing score 100%; unlimited retries.
 
 | | Choice | Feedback |
 |---|---|---|
-| A | Tell them you can guarantee complete anonymity. | No absolute anonymity can be promised. |
+| A | Tell them you can guarantee complete anonymity. | Do not promise absolute anonymity. |
 | B | Ask them to investigate and collect proof before anyone will listen. | They do not need proof or an independent investigation. |
-| C ✓ | Listen without retaliation and point them to the verified reporting or alternate route; preserve relevant facts. | Support a good-faith report without taking over the investigation. |
+| C ✓ | Listen without retaliation and point them to Michelle Caldwell or, if appropriate, the out-of-band alternate; preserve relevant facts. | Support a good-faith report without taking over the investigation; the alternate is not a guarantee of independence or absolute anonymity. |
 | D | Tell the subject immediately so they can resolve it privately. | Confronting the subject may obstruct a fair review. |
 
 - **Correct:** C
-- **Learner sees after submitting:** Promises of anonymity, demanding proof, or confronting someone can undermine safe reporting. Support a good-faith account and use a verified route. Revisit “Raise concerns without retaliation.”
+- **Learner sees after submitting:** Promises of absolute anonymity, demanding proof, or confronting someone can undermine safe reporting. Support a good-faith account and share the primary contact or out-of-band alternate route as appropriate. Revisit “Raise concerns without retaliation.”
 - **Revisit after an incorrect response:** Raise concerns without retaliation
 - **Source:** Prompt 3: responding after a colleague raises a concern
 
