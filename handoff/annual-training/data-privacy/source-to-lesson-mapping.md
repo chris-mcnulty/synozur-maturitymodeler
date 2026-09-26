@@ -20,7 +20,7 @@ Source: `attached_assets/Synozur_Data_Privacy_and_Client_Confidentiality_-_Annua
 | 14 | Review question Q03 | See lesson table below | Final check Q3; source wording and choice order preserved. |
 | 15 | Review question Q04 | See lesson table below | Final check Q4; source wording and choice order preserved. |
 | 16 | Review question Q05 | See lesson table below | Final check Q5; source wording and choice order preserved. |
-| 17 | Proposed annual acknowledgement | See lesson table below | Verbatim native typed-name statement, preceded by a separate Before you sign lesson. Clarification leaves attestation unsigned. |
+| 17 | Proposed annual acknowledgement | See lesson table below | Verbatim native typed-name statement, preceded by a separate Before you sign lesson. No pre-sign discussion is required. |
 | 18 | Administrator release guidance | See lesson table below | Administrator only. Release blockers below; obsolete Orion feature uncertainty superseded by current build capabilities. |
 | 19 | Indicative framework mapping | See lesson table below | Administrator-only educational mapping below, not a certification claim. |
 | 20 | References and policy precedence | See lesson table below | Learner-safe policy/framework links in optional Reference lesson; approval status still pending. |

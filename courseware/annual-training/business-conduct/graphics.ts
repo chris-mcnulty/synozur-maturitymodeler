@@ -205,7 +205,7 @@ async function quickReferenceHtml(): Promise<string | null> {
     footer{position:absolute;left:44px;right:44px;bottom:22px;border-top:1px solid ${BRAND.line};padding-top:8px;color:${BRAND.muted};font-size:11px}
   </style></head><body><div class="wm" aria-hidden="true">DRAFT</div>
     <header><div class="logo"><img src="${logo}" alt="Synozur Alliance"></div><div><h1>${escapeHtml(source.title)}</h1><p>Business conduct · annual training reference</p></div></header>
-      <div class="draft">DRAFT · POLICY APPROVAL PENDING · ATTESTATION-QUESTION CONTACT UNCONFIRMED</div><main>
+      <div class="draft">DRAFT · POLICY APPROVAL PENDING</div><main>
       <p class="intro">${escapeHtml(source.intro)}</p><h2>The five-question decision test</h2>
       <ol>${source.checks.map(x => `<li><b>${escapeHtml(x.label)}:</b> ${escapeHtml(x.detail)}</li>`).join("")}</ol>
       <h2>Where to raise a concern or ask</h2>
@@ -224,14 +224,15 @@ export const GRAPHICS = {
 
 export const QUICK_REFERENCE_FILE = "decision-and-reporting-reference-business-conduct.pdf";
 
+export async function renderQuickReference(): Promise<void> {
+  const html = await quickReferenceHtml();
+  if (html === null) throw new Error("DECISION_REFERENCE is missing from content.ts");
+  await renderPdf({ html, out: path.join(MEDIA_DIR, QUICK_REFERENCE_FILE) });
+}
+
 export async function renderAll(): Promise<void> {
   for (const graphic of Object.values(GRAPHICS)) {
     await renderPng({ html: await graphic.build(), out: path.join(MEDIA_DIR, graphic.file), width: graphic.width, height: graphic.height, scale: 1 });
   }
-  const html = await quickReferenceHtml();
-  if (html === null) {
-    console.log("Skipping decision-and-reporting-reference-business-conduct.pdf: content.ts does not yet export DECISION_REFERENCE.");
-    return;
-  }
-  await renderPdf({ html, out: path.join(MEDIA_DIR, QUICK_REFERENCE_FILE) });
+  await renderQuickReference();
 }

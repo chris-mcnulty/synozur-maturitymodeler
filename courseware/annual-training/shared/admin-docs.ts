@@ -323,12 +323,6 @@ export const SHARED_LIMITATIONS = [
     proposal: "None.",
   },
   {
-    request: "“I need clarification” option on the attestation",
-    status: "Not supported",
-    workaround: "A “Before you sign” lesson tells learners not to sign and whom to ask (placeholder until verified). Unsigned attestations stay incomplete.",
-    proposal: "An attestation “request clarification” response that notifies the owner and records the request.",
-  },
-  {
     request: "Course version captured in the attestation record",
     status: "Not supported",
     workaround: "The signed statement text is stored with each record.",

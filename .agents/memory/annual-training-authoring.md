@@ -14,5 +14,8 @@ description: Content decisions for the Synozur annual-training courses that late
 - A link to the organization's policy site or active library is a navigation aid, not evidence that a specific policy document is approved, effective, or on a particular revision.
   **Why:** The SharePoint pages require organizational sign-in; the page locations were supplied, but their contents and policy status could not be independently verified.
   **How to apply:** Keep release checks for policy-owner confirmation of the exact document, revision, effective status, and learner access; do not convert an unverified library landing page into a direct-policy citation.
+- Do not turn optional clarification language from source notes into a required discussion before signing annual-training attestations.
+  **Why:** The course owner explicitly rejected the added pre-sign discussion requirement; it was inferred rather than requested.
+  **How to apply:** Preserve approved attestation wording and normal question/support routes where relevant, but do not make speaking to someone a prerequisite for signing.
 
 **How to apply:** When authoring or reviewing the next course in the series, check these before building and QA.

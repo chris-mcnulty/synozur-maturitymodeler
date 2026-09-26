@@ -20,7 +20,7 @@ Source: `attached_assets/Synozur_Information_Security_-_Annual_Attestation_DRAFT
 | 14 | Review question Q03 | See lesson table below | Final knowledge check Q3; wording, choice order, and intended answer retained. |
 | 15 | Review question Q04 | See lesson table below | Final knowledge check Q4; wording, choice order, and intended answer retained. |
 | 16 | Review question Q05 | See lesson table below | Final knowledge check Q5; wording, choice order, and intended answer retained. |
-| 17 | Proposed acknowledgement wording | See lesson table below | Native typed-name attestation with the wording preserved verbatim. Clarification guidance moved to the preceding “Before you sign” lesson. |
+| 17 | Proposed acknowledgement wording | See lesson table below | Native typed-name attestation with the wording preserved verbatim. The preceding “Before you sign” lesson explains what is recorded; no pre-sign discussion is required. |
 | 18 | Administrator guidance (appendix) | 1.2 Security in everyday work › What this course covers, and what it doesn’t | Admin only. Release gates are in the approval checklist. The outdated note that Orion import and attestation behavior are unverified is superseded; see “Orion capabilities verified”. |
 | 19 | Framework mapping (appendix) | 1.2 Security in everyday work › What this course covers, and what it doesn’t | Admin only; reproduced in the framework mapping section below. Informs the course-scope slide and Q5/Q8. |
 | 20 | References | See lesson table below | Learner-safe subset in the optional “Policies and sources” lesson. |
