@@ -11,7 +11,8 @@ import { Loader2, User, Building, Briefcase } from "lucide-react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import synozurLogo from "@assets/SynozurLogo_color 1400_1759973943542.png";
-import { JOB_ROLES, INDUSTRIES, COMPANY_SIZES, COUNTRIES } from "@/lib/constants";
+import { INDUSTRIES, COMPANY_SIZES, COUNTRIES, hasSpecificJobTitle } from "@/lib/constants";
+import { JobTitleSelect } from "@/components/JobTitleSelect";
 import { usePageTitle } from "@/hooks/use-page-title";
 
 export default function CompleteProfile() {
@@ -101,10 +102,10 @@ export default function CompleteProfile() {
     e.preventDefault();
     
     if (jobTitleOnly) {
-      if (!profileForm.jobTitle?.trim()) {
+      if (!hasSpecificJobTitle(profileForm.jobTitle)) {
         toast({
           title: "Required field missing",
-          description: "Please select your job title",
+          description: "Please select or enter your job title",
           variant: "destructive",
         });
         return;
@@ -128,6 +129,14 @@ export default function CompleteProfile() {
           return;
         }
       }
+    }
+    if (!hasSpecificJobTitle(profileForm.jobTitle)) {
+      toast({
+        title: "Job title required",
+        description: "Please enter your current job title when selecting Other",
+        variant: "destructive",
+      });
+      return;
     }
     
     updateProfileMutation.mutate(profileForm);
@@ -194,20 +203,10 @@ export default function CompleteProfile() {
                   <Briefcase className="h-4 w-4" />
                   Job Title <span className="text-destructive">*</span>
                 </Label>
-                <Select 
-                  value={profileForm.jobTitle} 
-                  onValueChange={(value) => setProfileForm({ ...profileForm, jobTitle: value })}
-                  required
-                >
-                  <SelectTrigger data-testid="select-job-title">
-                    <SelectValue placeholder="Select job title" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {JOB_ROLES.map((role) => (
-                      <SelectItem key={role} value={role}>{role}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <JobTitleSelect
+                  value={profileForm.jobTitle}
+                  onChange={(jobTitle) => setProfileForm({ ...profileForm, jobTitle })}
+                />
               </div>
               
               {!jobTitleOnly && (

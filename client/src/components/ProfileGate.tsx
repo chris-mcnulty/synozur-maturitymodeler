@@ -7,7 +7,8 @@ import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
-import { JOB_ROLES, INDUSTRIES, COUNTRIES } from "@/lib/constants";
+import { INDUSTRIES, COUNTRIES, hasSpecificJobTitle } from "@/lib/constants";
+import { JobTitleSelect } from "@/components/JobTitleSelect";
 
 interface ProfileGateProps {
   onComplete: (profile: any) => void;
@@ -133,6 +134,11 @@ export function ProfileGate({ onComplete }: ProfileGateProps) {
       }
     }
     
+    if (!hasSpecificJobTitle(formData.jobTitle)) {
+      toast({ title: "Job title required", description: "Please enter your current job title when selecting Other", variant: "destructive" });
+      return;
+    }
+
     registerMutation.mutate(formData);
   };
 
@@ -283,16 +289,10 @@ export function ProfileGate({ onComplete }: ProfileGateProps) {
 
             <div>
               <Label htmlFor="jobTitle">Job Title *</Label>
-              <Select value={formData.jobTitle} onValueChange={(value) => setFormData({ ...formData, jobTitle: value })}>
-                <SelectTrigger id="jobTitle" data-testid="select-job-title">
-                  <SelectValue placeholder="Select job title" />
-                </SelectTrigger>
-                <SelectContent>
-                  {JOB_ROLES.map((role) => (
-                    <SelectItem key={role} value={role}>{role}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <JobTitleSelect
+                value={formData.jobTitle}
+                onChange={(jobTitle) => setFormData({ ...formData, jobTitle })}
+              />
             </div>
 
             <div>

@@ -18,7 +18,8 @@ import { CheckCircle2, AlertCircle, Mail, Lock, Trash2, TrendingUp, TrendingDown
 import { Switch } from "@/components/ui/switch";
 import type { User } from "@shared/schema";
 import { DataState } from "@/components/DataState";
-import { JOB_ROLES, INDUSTRIES, COUNTRIES } from "@/lib/constants";
+import { INDUSTRIES, COUNTRIES, hasSpecificJobTitle } from "@/lib/constants";
+import { JobTitleSelect } from "@/components/JobTitleSelect";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import {
@@ -260,6 +261,10 @@ Thank you!`;
         });
         return false;
       }
+    }
+    if (!hasSpecificJobTitle(profileForm.jobTitle)) {
+      toast({ title: "Job title required", description: "Please enter your current job title when selecting Other", variant: "destructive" });
+      return false;
     }
     return true;
   };
@@ -596,20 +601,11 @@ Thank you!`;
                   </div>
                   <div>
                     <Label>Job Title <span className="text-destructive">*</span></Label>
-                    <Select 
-                      value={isEditing ? profileForm.jobTitle : user.jobTitle || undefined} 
-                      onValueChange={(value) => setProfileForm({ ...profileForm, jobTitle: value })}
+                    <JobTitleSelect
+                      value={isEditing ? profileForm.jobTitle : user.jobTitle || ''}
+                      onChange={(jobTitle) => setProfileForm({ ...profileForm, jobTitle })}
                       disabled={!isEditing}
-                    >
-                      <SelectTrigger data-testid="select-job-title">
-                        <SelectValue placeholder="Select job title" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {JOB_ROLES.map((role) => (
-                          <SelectItem key={role} value={role}>{role}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    />
                   </div>
                   <div>
                     <Label>Industry / Sector <span className="text-destructive">*</span></Label>

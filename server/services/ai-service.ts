@@ -10,6 +10,18 @@ import { aggregateTypeInsights } from './scoring';
 import { providerRegistry } from './ai-providers/registry';
 import type { AICallOptions } from './ai-providers/types';
 
+// Both the API and service caches must change when summary instructions change.
+export const SUMMARY_PROMPT_VERSION = 'role-accuracy-v2';
+
+function profileContext(userContext?: { jobTitle?: string; industry?: string; companySize?: string }): string {
+  if (!userContext) return 'No personal profile supplied.';
+  const title = userContext.jobTitle && userContext.jobTitle.trim().toLowerCase() !== 'other'
+    ? userContext.jobTitle.trim()
+    : 'Not specified';
+  return `Verified profile facts: Job title: "${title}". Organization industry/sector: "${userContext.industry || 'Not specified'}". Company size: "${userContext.companySize || 'Not specified'}".
+PERSONALIZATION ACCURACY: The job title is the only evidence of this person's role. The industry is the organization's sector, NOT the person's department or specialization. Never invent, expand, substitute, or combine a job title with an industry to form a new role. If the title is broad or not specified, address the reader as "you" instead of guessing their responsibilities or naming a more specific role. Only mention an industry when relevant, and keep it separate from the job title. Assessment results do not establish a profession.`;
+}
+
 // AI Playbook grounding for AI Maturity Assessment model
 // REMOVED: Baked-in grounding content - now using only user-uploaded knowledge base documents
 const AI_PLAYBOOK_GROUNDING = ``; // Empty - knowledge base documents only
@@ -395,6 +407,7 @@ class AIService {
 
     // Create cache context including knowledge version
     const cacheContext = {
+      promptVersion: SUMMARY_PROMPT_VERSION,
       overallScore,
       dimensionScores,
       modelName,
@@ -451,7 +464,7 @@ Your assessment shows areas of strength and opportunities for growth. The Synozu
 
         const typePrompt = `You are a transformation expert from The Synozur Alliance LLC. Write a personalized reflection for someone who has just completed the ${modelName}.
 ${knowledgeContext ? `\n${knowledgeContext}\n` : ''}
-${userContext ? `Respondent: ${userContext.jobTitle || 'Professional'}${userContext.industry ? ` in ${userContext.industry}` : ''}${userContext.companySize ? `, ${userContext.companySize}` : ''}` : ''}
+${profileContext(userContext)}
 
 Their dominant archetype is: ${archetype}
 
@@ -500,12 +513,12 @@ ${knowledgeContext}
 Assessment: ${modelName}
 Overall Score: ${overallScore} out of ${maxScore}
 Score Interpretation: ${scoreInterpretation}
-${userContext ? `Context: ${userContext.jobTitle || 'Leader'} in ${userContext.industry || 'Industry'}, ${userContext.companySize || 'Company'}` : ''}
+${profileContext(userContext)}
 
 STRUCTURE (DO NOT include these labels in your output - they are instructions only):
 
 First paragraph (3-4 sentences):
-Acknowledge their current position with empathy and understanding. Reference the overall score and what it means for their journey. Recognize the unique challenges and opportunities in their context. Use insights from the knowledge base above to provide context and perspective.
+Acknowledge their assessment progress with empathy and understanding. Reference the overall score and what it means for their journey. Use only verified profile facts when discussing context; do not assume responsibilities from an industry or a broad title. Use insights from the knowledge base above to provide context and perspective.
 
 Second section (with bullet points):
 Describe their key strengths:
@@ -522,7 +535,7 @@ Provide strategic insights about what these strengths and opportunities mean for
 Final paragraph (2-3 sentences):
 Inspiring close about finding their North Star and how Synozur's expertise can help make the desirable achievable. Emphasize partnership and transformation potential.
 
-CRITICAL: Write smooth, flowing paragraphs. Do NOT include labels like "Paragraph 1", "Paragraph 2", etc. in your output. Use section headings only where natural (e.g., "Your key strengths:", "Priority growth areas:"). ${userContext ? `Personalize deeply for ${userContext.jobTitle} perspective in ${userContext.industry}.` : 'Maintain strategic focus.'} Draw insights from the knowledge base to provide specific, actionable guidance.`;
+CRITICAL: Write smooth, flowing paragraphs. Do NOT include labels like "Paragraph 1", "Paragraph 2", etc. in your output. Use section headings only where natural (e.g., "Your key strengths:", "Priority growth areas:"). Personalize using verified facts only; when the role is vague, do not infer a more specific one. Draw insights from the knowledge base to provide specific, actionable guidance.`;
 
       const completion = await this.callProvider(prompt, false); // Bypass word limit for comprehensive summary
       
@@ -590,6 +603,7 @@ The Synozur Alliance LLC is here to help you find your North Star and make the d
     }) : 'no-context';
     
     const cacheContext = {
+      promptVersion: SUMMARY_PROMPT_VERSION,
       recommendations: recommendations.slice(0, 3).map(r => ({ title: r.title, desc: r.description.substring(0, 100) })),
       modelName,
       userContextKey, // Use stable string instead of object
@@ -640,10 +654,10 @@ ${knowledgeContext}
 
 CRITICAL CONTEXT - YOU MUST USE THIS EXACT INFORMATION:
 Model: ${modelName}${modelSlug ? ` (${modelSlug})` : ''}
-${userContext ? `User Profile: ${userContext.jobTitle || 'Leader'} role in ${userContext.industry || 'their industry'} sector${userContext.companySize ? `, ${userContext.companySize} company` : ''}` : 'General professional context'}
+${profileContext(userContext)}
 
 ABSOLUTELY CRITICAL PERSONALIZATION RULES - VIOLATION WILL RESULT IN REJECTION:
-1. You MUST write for a ${userContext?.jobTitle || 'Leader'} in ${userContext?.industry || 'the industry'} - DO NOT use any other role or industry
+1. Address the reader directly. Use their job title only as supplied above; NEVER invent another role or treat the organization's industry as their department.
 2. Only use knowledge base content that is directly relevant to "${modelName}" - IGNORE all other content
 3. STRICTLY FORBIDDEN unless model name contains "GTM" or "Go-to-Market":
    - GTM (go-to-market) terminology
@@ -652,7 +666,7 @@ ABSOLUTELY CRITICAL PERSONALIZATION RULES - VIOLATION WILL RESULT IN REJECTION:
    - Partner development, partner ecosystems, or partner enablement
    - Technical implementation details like "Power Platform", "Power Automate", "connectors", or "APIs"
    - Solution provider or reseller guidance
-4. Focus EXCLUSIVELY on strategic transformation guidance for ${userContext?.jobTitle || 'Leader'} in ${userContext?.industry || 'the industry'}
+4. Focus EXCLUSIVELY on strategic transformation guidance supported by the assessment and verified profile facts.
 5. Keep language business-focused and role-appropriate, NOT technical or implementation-focused
 6. If knowledge base contains GTM/partner/technical content, COMPLETELY IGNORE IT - use only strategic guidance
 
@@ -687,7 +701,7 @@ ABSOLUTELY CRITICAL FORMATTING RULES - FAILURE TO FOLLOW WILL RESULT IN REJECTIO
 6. Do NOT include a bulleted preview list of the action titles — each title must appear only once, as its "## " section heading
 7. Write in a smooth, flowing narrative style
 8. End with the EXACT phrase: "Let's find your North Star together."
-${userContext ? `9. Personalize for ${userContext.jobTitle} in ${userContext.industry}` : '9. Keep strategic and professional'}
+9. Do not make role-specific claims unsupported by the verified job title; use "you" when the title is broad.
 10. Draw specific insights from the knowledge base to provide actionable guidance
 11. ONLY generate sections for the ${topRecs.length} priority actions provided - DO NOT invent additional actions
 12. REMINDER: Use "## [Exact Title]" format for each section heading - this is MANDATORY

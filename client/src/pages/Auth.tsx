@@ -19,7 +19,8 @@ function MicrosoftIcon({ className }: { className?: string }) {
     </svg>
   );
 }
-import { JOB_ROLES, INDUSTRIES, COMPANY_SIZES, COUNTRIES } from "@/lib/constants";
+import { INDUSTRIES, COMPANY_SIZES, COUNTRIES, hasSpecificJobTitle } from "@/lib/constants";
+import { JobTitleSelect } from "@/components/JobTitleSelect";
 import { useQuery } from "@tanstack/react-query";
 import { useDomainBranding, useTenantBranding, useBrandingPreview } from "@/hooks/use-tenant-branding";
 import { usePageTitle } from "@/hooks/use-page-title";
@@ -184,6 +185,11 @@ export default function Auth() {
       }
     }
     
+    if (!hasSpecificJobTitle(registerForm.jobTitle)) {
+      toast({ title: "Job title required", description: "Please enter your current job title when selecting Other", variant: "destructive" });
+      return;
+    }
+
     registerMutation.mutate(registerForm, {
       onSuccess: () => {
         // The useEffect will handle redirect and claim after user state updates
@@ -421,20 +427,10 @@ export default function Auth() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="jobTitle">Job Title <span className="text-destructive">*</span></Label>
-                  <Select 
-                    value={registerForm.jobTitle} 
-                    onValueChange={(value) => setRegisterForm({ ...registerForm, jobTitle: value })}
-                    required
-                  >
-                    <SelectTrigger data-testid="select-job-title">
-                      <SelectValue placeholder="Select job title" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {JOB_ROLES.map((role) => (
-                        <SelectItem key={role} value={role}>{role}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <JobTitleSelect
+                    value={registerForm.jobTitle}
+                    onChange={(jobTitle) => setRegisterForm({ ...registerForm, jobTitle })}
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="industry">Industry <span className="text-destructive">*</span></Label>

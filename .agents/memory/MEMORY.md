@@ -2,6 +2,7 @@
 - [Admin model update payload](admin-model-update-payload.md) — model edits send a full allow-list payload, not a partial patch; a new models column must be added to both Admin.tsx mutate sites or it silently reverts.
 - [Dev vs prod data sync](dev-prod-data-sync.md) — publishing syncs DB *schema* only, never *data*; model/archetype config done in dev must be re-created in prod (via admin UI or .model import).
 - [AI summary markdown rendering](markdown-ai-summary-rendering.md) — never use `text-secondary` (a bg token) for headings; AI roadmap prompt + MarkdownContent.stripPreviewBullets are coupled to avoid duplicate headers in cached output.
+- [AI summary role accuracy](ai-summary-role-accuracy.md) — job titles and tenant industries are distinct facts; prompt changes must invalidate both summary cache layers.
 - [geoip-lite ESM interop](geoip-lite-esm-interop.md) — major version bumps of CJS libs can silently break `await import()` named-export access; normalize with `mod.default ?? mod` and verify by hitting the route, not just "no throw".
 - [Course media ACL boundary](course-media-acl-boundary.md) — course heroes are direct/public reads; lesson, slide, and narration media stay private behind the course-aware proxy.
 - [Portable course extensions](portable-course-extensions.md) — resources and assignments ride inside lesson content, but learner APIs must expose safe metadata outside lock redaction and enforce completion server-side.

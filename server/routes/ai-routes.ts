@@ -7,7 +7,7 @@ import type { Express } from "express";
   import { ensureAuthenticated, ensureAdmin, ensureAdminOrModeler, ensureAnyAdmin, ensureGlobalAdmin } from "../auth";
   import { canManageUsers, canAssignRole, checkIsGlobalAdmin, getAccessibleTenantIds, canAccessModel, hasAdminAccess } from "../permissions";
   import { ObjectStorageService, ObjectNotFoundError } from "../objectStorage";
-  import { aiService } from "../services/ai-service";
+  import { aiService, SUMMARY_PROMPT_VERSION } from "../services/ai-service";
   import { providerRegistry } from "../services/ai-providers/registry";
   import { validateImportData, executeImport, type ImportExportData } from "../services/import-service";
   import { z } from "zod";
@@ -460,7 +460,7 @@ Respond in JSON format:
 
       // Generate cache key (include assessmentMode and archetypeLabel so type results are cached separately)
       const contextHash = createHash('md5')
-        .update(JSON.stringify({ overallScore, dimensionScores, modelName, userContext, maxScore, hideScoreAndNarratives: !!hideScoreAndNarratives, assessmentMode, archetypeLabel }))
+        .update(JSON.stringify({ promptVersion: SUMMARY_PROMPT_VERSION, overallScore, dimensionScores, modelName, userContext, maxScore, hideScoreAndNarratives: !!hideScoreAndNarratives, assessmentMode, archetypeLabel }))
         .digest('hex');
 
       // Check cache first
@@ -534,7 +534,7 @@ Respond in JSON format:
 
       // Generate cache key
       const contextHash = createHash('md5')
-        .update(JSON.stringify({ recommendations, modelName, userContext }))
+        .update(JSON.stringify({ promptVersion: SUMMARY_PROMPT_VERSION, recommendations, modelName, userContext }))
         .digest('hex');
 
       // Check cache first

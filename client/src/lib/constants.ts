@@ -26,6 +26,9 @@ export const JOB_ROLES = [
   "Other",
 ];
 
+export const hasSpecificJobTitle = (title: string) =>
+  !!title?.trim() && title.trim().toLowerCase() !== "other";
+
 export const INDUSTRIES = [
   "Agriculture",
   "Automotive",
