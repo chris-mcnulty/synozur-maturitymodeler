@@ -19,6 +19,7 @@ export function summaryCacheKey(type: string, context: Record<string, any>): str
   // recursively instead so a changed job title cannot hit another user's cache.
   const canonicalize = (value: any): any =>
     Array.isArray(value) ? value.map(canonicalize)
+      : value instanceof Date ? value.toISOString()
       : value && typeof value === 'object'
         ? Object.fromEntries(Object.keys(value).sort().map(key => [key, canonicalize(value[key])]))
         : value;
@@ -430,7 +431,11 @@ class AIService {
       dimensionScores,
       modelName,
       userContext: userContext || {},
-      knowledgeVersion
+      knowledgeVersion,
+      maxScore,
+      hideScoreAndNarratives,
+      assessmentMode,
+      archetypeLabel,
     };
     
     // Check cache first
@@ -470,6 +475,25 @@ Your assessment shows areas of strength and opportunities for growth. The Synozu
 
       // Fetch knowledge context from uploaded documents (modelId already retrieved above)
       const knowledgeContext = await this.getKnowledgeContext(modelId);
+
+      // Personal-skills models are 0–100 individual assessments, not the
+      // organization's 500-point transformation maturity framework.
+      if (assessmentMode === 'mean_answer_values') {
+        const prompt = `You are writing a short, supportive personal-skills assessment summary for ${modelName}.
+${knowledgeContext ? `Relevant model knowledge:\n${knowledgeContext}\n` : ''}
+${profileContext(userContext)}
+
+The respondent's result is "${archetypeLabel || 'Not specified'}" with an overall score of ${overallScore} out of ${maxScore}.
+Dimension scores (each out of ${dimensionMax}):
+${validDimensions.map(([, dim]) => `- ${dim.label}: ${dim.score}`).join('\n')}
+
+Write 2–3 concise paragraphs addressed directly to "you". Explain what the named result and scores suggest, identify a genuine strength and one practical area to develop using the dimension labels, and suggest a small next step. Use the current job title only if supplied, exactly as a verified title; do not infer duties from it or from the organization's industry. Do not invent training completion, permissions, tools, or specific work responsibilities. Do not call this a 500-point organizational maturity assessment, and do not use business transformation or generic executive-roadmap language. Do not overstate what self-reported answers can prove.`;
+        const completion = await this.callProvider(prompt, false);
+        if (!completion) throw new Error('Failed to generate personal-skills summary');
+        const summary = completion.trim();
+        await this.saveToCache('maturity_summary', cacheContext, summary, refresh);
+        return summary;
+      }
 
       // ── Type / propensity assessments ──────────────────────────────────────
       // These use a voting mechanic (no numeric score). Build an archetype-

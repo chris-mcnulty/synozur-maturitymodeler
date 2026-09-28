@@ -266,9 +266,10 @@ export default function Results() {
     let cancelled = false;
     const fetchAISummaries = async () => {
       if (!result || !model) return;
-      // Type/propensity models have no numeric maturity narrative or benchmarking —
-      // skip all AI summary generation for them.
-      if (model.assessmentMode === 'type' || (model.scoringConfig as any)?.method === "mean_answer_values") {
+      // Type/propensity models have no numeric maturity narrative.
+      // The personal-skills track receives its own 0–100 summary, not a
+      // generic organizational maturity roadmap.
+      if (model.assessmentMode === 'type') {
         setMaturitySummary("");
         setRecommendationsSummary("");
         setAiContentLoading(false);
@@ -357,7 +358,7 @@ export default function Results() {
             userContext,
             maxScore,
             hideScoreAndNarratives: !!(model as any).hideScoreAndNarratives,
-            assessmentMode: (model as any).assessmentMode,
+            assessmentMode: isMeanAnswerTrackModel ? 'mean_answer_values' : model.assessmentMode,
             archetypeLabel: result.label,
             assessmentId,
             refresh,
@@ -394,7 +395,9 @@ export default function Results() {
         // Mark AI content as ready
         if (!cancelled) {
           setAiContentReady(true);
-          if (refresh) toast({ title: "Report refreshed", description: "Your summary and recommendations now use your saved profile." });
+          if (refresh) toast({ title: "Report refreshed", description: isMeanAnswerTrackModel
+            ? "Your new summary uses your saved profile."
+            : "Your summary and recommendations now use your saved profile." });
         }
       } catch (error) {
         console.error('Error fetching AI summaries:', error);
@@ -499,7 +502,7 @@ export default function Results() {
       const pdf = await generateAssessmentPDF({
         result,
         model,
-        benchmark: benchmark || undefined,
+        benchmark: isMeanAnswerTrackModel ? undefined : benchmark || undefined,
         recommendations: recommendations.map(r => ({
           title: r.title,
           description: r.description
@@ -529,7 +532,7 @@ export default function Results() {
         variant: "destructive"
       });
     }
-  }, [model, result, benchmark, recommendations, improvementResources, maturitySummary, recommendationsSummary, user, assessment, toast]);
+  }, [model, result, benchmark, recommendations, improvementResources, maturitySummary, recommendationsSummary, user, assessment, toast, isMeanAnswerTrackModel]);
 
   // Send PDF via email
   const sendPdfEmail = useCallback(async (recipientEmail: string, recipientName?: string) => {
@@ -578,7 +581,7 @@ export default function Results() {
       const pdf = await generateAssessmentPDF({
         result,
         model,
-        benchmark: benchmark || undefined,
+        benchmark: isMeanAnswerTrackModel ? undefined : benchmark || undefined,
         recommendations: recommendations.map(r => ({
           title: r.title,
           description: r.description
@@ -639,7 +642,7 @@ export default function Results() {
         variant: "destructive"
       });
     }
-  }, [model, result, benchmark, recommendations, improvementResources, maturitySummary, recommendationsSummary, user, assessment, toast]);
+  }, [model, result, benchmark, recommendations, improvementResources, maturitySummary, recommendationsSummary, user, assessment, toast, isMeanAnswerTrackModel]);
 
   // Handle PDF/Email actions
   const handlePdfAction = useCallback((action: 'download' | 'email') => {
@@ -1161,7 +1164,9 @@ export default function Results() {
             </Card>
           ) : (aiContentLoading || maturitySummary) && (
             <Card className="p-5 sm:p-6 md:p-8 mb-6 sm:mb-8">
-              <h3 className="text-xl sm:text-2xl font-bold mb-4 text-primary">{t('results.executiveSummary')}</h3>
+              <h3 className="text-xl sm:text-2xl font-bold mb-4 text-primary">
+                {isMeanAnswerTrackModel ? "Your Personal AI Skills Summary" : t('results.executiveSummary')}
+              </h3>
               <div aria-live="polite" aria-atomic="false">
               {aiContentLoading && !maturitySummary ? (
                 <div className="space-y-3">
@@ -1409,7 +1414,7 @@ export default function Results() {
         <div className="container mx-auto px-4 max-w-6xl">
           <Card className="p-5 sm:p-6 md:p-8 bg-primary/5">
             {user && assessment?.userId === user.id && !assessment.isProxy &&
-              model?.assessmentMode !== 'type' && (model?.scoringConfig as any)?.method !== 'mean_answer_values' && (
+              model?.assessmentMode !== 'type' && (
               <div className="text-center mb-6">
                 <Button
                   variant="outline"
@@ -1423,7 +1428,8 @@ export default function Results() {
                   data-testid="button-refresh-report"
                 >
                   <RefreshCw className="mr-2 h-4 w-4" />
-                  {aiContentLoading ? "Refreshing report..." : "Regenerate summary and recommendations"}
+                  {aiContentLoading ? "Refreshing report..." : isMeanAnswerTrackModel
+                    ? "Regenerate summary" : "Regenerate summary and recommendations"}
                 </Button>
                 <p className="mt-2 text-sm text-muted-foreground">
                   Uses your current saved profile. Wait for the new summary before downloading or emailing a PDF.

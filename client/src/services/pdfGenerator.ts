@@ -60,6 +60,8 @@ export async function generateAssessmentPDF(
     recommendationsSummary,
     userContext,
   } = data;
+  const isPersonalSkills = (model.scoringConfig as any)?.method === "mean_answer_values";
+  const maxScore = isPersonalSkills ? 100 : 500;
 
   const fonts = await avenirFontsPromise.catch(() => null);
 
@@ -166,7 +168,7 @@ export async function generateAssessmentPDF(
 
   yPosition += 15;
 
-  // === Overall maturity score section ===
+  // === Overall score section ===
   tagger.artifact(() => {
     doc.setDrawColor(primaryColor.r, primaryColor.g, primaryColor.b);
     doc.setLineWidth(0.5);
@@ -179,7 +181,7 @@ export async function generateAssessmentPDF(
     doc.setFont("Avenir", "bold");
     doc.setFontSize(18);
     doc.setTextColor(textColor.r, textColor.g, textColor.b);
-    doc.text("Overall Maturity Score", 25, yPosition);
+    doc.text(isPersonalSkills ? "Personal AI Skills Score" : "Overall Maturity Score", 25, yPosition);
     doc.setFont("Avenir", "normal");
   });
 
@@ -194,10 +196,10 @@ export async function generateAssessmentPDF(
       doc.text(scoreText, 25, yPosition);
       doc.setFontSize(14);
       doc.setTextColor(grayColor.r, grayColor.g, grayColor.b);
-      doc.text("out of 500", 25 + scoreWidth + 3, yPosition);
+      doc.text(`out of ${maxScore}`, 25 + scoreWidth + 3, yPosition);
     },
     {
-      actualText: `Overall maturity score: ${result.overallScore} out of 500.`,
+      actualText: `Overall ${isPersonalSkills ? 'personal AI skills' : 'maturity'} score: ${result.overallScore} out of ${maxScore}.`,
     },
   );
 
@@ -205,7 +207,7 @@ export async function generateAssessmentPDF(
   tagger.mark("H3", () => {
     doc.setFontSize(16);
     doc.setTextColor(primaryColor.r, primaryColor.g, primaryColor.b);
-    doc.text(`Maturity Level: ${result.label}`, 25, yPosition);
+    doc.text(`${isPersonalSkills ? 'Result' : 'Maturity Level'}: ${result.label}`, 25, yPosition);
   });
   yPosition += 10;
 
@@ -215,7 +217,7 @@ export async function generateAssessmentPDF(
       doc.setFont("Avenir", "bold");
       doc.setFontSize(12);
       doc.setTextColor(textColor.r, textColor.g, textColor.b);
-      doc.text("Executive Summary", 25, yPosition);
+      doc.text(isPersonalSkills ? "Your Personal AI Skills Summary" : "Executive Summary", 25, yPosition);
       doc.setFont("Avenir", "normal");
     });
     yPosition += 8;
@@ -325,7 +327,7 @@ export async function generateAssessmentPDF(
 
   // Real PDF table semantics: Table > TR(header) > TH x N, then Table > TR > TD x N
   tagger.beginGroup("Table", {
-    alt: "Dimension scores out of 500.",
+    alt: `Dimension scores out of ${maxScore}.`,
   });
   tagger.beginGroup("TR");
   doc.setFontSize(10);
@@ -360,9 +362,9 @@ export async function generateAssessmentPDF(
       doc.text(dim.label, 30, yPosition);
     });
     tagger.mark("TD", () => {
-      if (dim.score >= 400) {
+      if (dim.score >= maxScore * 0.8) {
         doc.setTextColor(34, 197, 94);
-      } else if (dim.score >= 300) {
+      } else if (dim.score >= maxScore * 0.6) {
         doc.setTextColor(251, 146, 60);
       } else {
         doc.setTextColor(239, 68, 68);
