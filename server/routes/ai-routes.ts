@@ -437,10 +437,26 @@ Respond in JSON format:
   });
 
   // Generate maturity summary using AI
+  // A refresh is deliberately limited to the assessment owner. Do not trust a
+  // client-supplied title when replacing a cached, personalized report.
+  const refreshProfileForAssessment = async (userId: string | undefined, assessmentId: unknown, modelId: unknown) => {
+    if (!userId || typeof assessmentId !== 'string' || typeof modelId !== 'string') return null;
+    const assessment = await storage.getAssessment(assessmentId);
+    if (!assessment || assessment.userId !== userId || assessment.modelId !== modelId || assessment.isProxy) return null;
+    const owner = await storage.getUser(userId);
+    if (!owner) return null;
+    return {
+      jobTitle: owner.jobTitle || undefined,
+      industry: owner.industry || undefined,
+      companySize: owner.companySize || undefined,
+    };
+  };
 
   app.post("/api/ai/generate-maturity-summary", async (req, res) => {
     try {
-      const { overallScore, dimensionScores, modelName, userContext, maxScore, modelId, hideScoreAndNarratives, assessmentMode, archetypeLabel } = req.body;
+      const { overallScore, dimensionScores, modelName, maxScore, modelId, hideScoreAndNarratives, assessmentMode, archetypeLabel } = req.body;
+      const refresh = req.body.refresh === true;
+      let userContext = req.body.userContext;
       
       // Validate input — overallScore of 0 is valid for type/propensity assessments
       if (overallScore === undefined || overallScore === null || !dimensionScores || !modelName) {
@@ -457,6 +473,11 @@ Respond in JSON format:
       if (!allowAnonymous && !req.isAuthenticated()) {
         return res.status(401).json({ error: "Authentication required" });
       }
+      if (refresh) {
+        const ownerProfile = await refreshProfileForAssessment(req.user?.id, req.body.assessmentId, modelId);
+        if (!ownerProfile) return res.status(403).json({ error: "Only the assessment owner can refresh this report" });
+        userContext = ownerProfile;
+      }
 
       // Generate cache key (include assessmentMode and archetypeLabel so type results are cached separately)
       const contextHash = createHash('md5')
@@ -465,7 +486,7 @@ Respond in JSON format:
 
       // Check cache first
       const cached = await storage.getAiGeneratedContent('maturity-summary', contextHash);
-      if (cached && cached.expiresAt && cached.expiresAt > new Date()) {
+      if (!refresh && cached && cached.expiresAt && cached.expiresAt > new Date()) {
         return res.json({ summary: cached.content });
       }
 
@@ -478,12 +499,19 @@ Respond in JSON format:
         maxScore || 500,
         !!hideScoreAndNarratives,
         assessmentMode,
-        archetypeLabel
+        archetypeLabel,
+        refresh
       );
 
       // Cache the result for 30 days
       const expiresAt = new Date();
       expiresAt.setDate(expiresAt.getDate() + 30);
+      if (refresh) {
+        await db.delete(schema.aiGeneratedContent).where(and(
+          eq(schema.aiGeneratedContent.type, 'maturity-summary'),
+          eq(schema.aiGeneratedContent.contextHash, contextHash)
+        ));
+      }
       
       await storage.createAiGeneratedContent({
         type: 'maturity-summary',
@@ -514,7 +542,9 @@ Respond in JSON format:
 
   app.post("/api/ai/generate-recommendations-summary", async (req, res) => {
     try {
-      const { recommendations, modelName, userContext, modelId } = req.body;
+      const { recommendations, modelName, modelId } = req.body;
+      const refresh = req.body.refresh === true;
+      let userContext = req.body.userContext;
       
       // Validate input
       if (!recommendations || !modelName) {
@@ -531,6 +561,11 @@ Respond in JSON format:
       if (!allowAnonymous && !req.isAuthenticated()) {
         return res.status(401).json({ error: "Authentication required" });
       }
+      if (refresh) {
+        const ownerProfile = await refreshProfileForAssessment(req.user?.id, req.body.assessmentId, modelId);
+        if (!ownerProfile) return res.status(403).json({ error: "Only the assessment owner can refresh this report" });
+        userContext = ownerProfile;
+      }
 
       // Generate cache key
       const contextHash = createHash('md5')
@@ -539,7 +574,7 @@ Respond in JSON format:
 
       // Check cache first
       const cached = await storage.getAiGeneratedContent('recommendations-summary', contextHash);
-      if (cached && cached.expiresAt && cached.expiresAt > new Date()) {
+      if (!refresh && cached && cached.expiresAt && cached.expiresAt > new Date()) {
         return res.json({ summary: cached.content });
       }
 
@@ -547,12 +582,19 @@ Respond in JSON format:
       const summary = await aiService.generateRecommendationsSummary(
         recommendations,
         modelName,
-        userContext
+        userContext,
+        refresh
       );
 
       // Cache the result for 30 days
       const expiresAt = new Date();
       expiresAt.setDate(expiresAt.getDate() + 30);
+      if (refresh) {
+        await db.delete(schema.aiGeneratedContent).where(and(
+          eq(schema.aiGeneratedContent.type, 'recommendations-summary'),
+          eq(schema.aiGeneratedContent.contextHash, contextHash)
+        ));
+      }
       
       await storage.createAiGeneratedContent({
         type: 'recommendations-summary',

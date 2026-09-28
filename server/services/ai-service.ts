@@ -10,8 +10,22 @@ import { aggregateTypeInsights } from './scoring';
 import { providerRegistry } from './ai-providers/registry';
 import type { AICallOptions } from './ai-providers/types';
 
-// Both the API and service caches must change when summary instructions change.
-export const SUMMARY_PROMPT_VERSION = 'role-accuracy-v2';
+// Both the API and service caches must change when summary instructions or
+// personalization cache semantics change.
+export const SUMMARY_PROMPT_VERSION = 'role-accuracy-v3';
+
+export function summaryCacheKey(type: string, context: Record<string, any>): string {
+  // JSON.stringify's array replacer filters nested object keys too. Sort
+  // recursively instead so a changed job title cannot hit another user's cache.
+  const canonicalize = (value: any): any =>
+    Array.isArray(value) ? value.map(canonicalize)
+      : value && typeof value === 'object'
+        ? Object.fromEntries(Object.keys(value).sort().map(key => [key, canonicalize(value[key])]))
+        : value;
+  return crypto.createHash('sha256')
+    .update(`${type}:${JSON.stringify(canonicalize(context))}`)
+    .digest('hex');
+}
 
 function profileContext(userContext?: { jobTitle?: string; industry?: string; companySize?: string }): string {
   if (!userContext) return 'No personal profile supplied.';
@@ -215,10 +229,7 @@ class AIService {
 
   // Generate cache key from context
   private generateCacheKey(type: string, context: Record<string, any>): string {
-    const contextString = JSON.stringify(context, Object.keys(context).sort());
-    return crypto.createHash('sha256')
-      .update(`${type}:${contextString}`)
-      .digest('hex');
+    return summaryCacheKey(type, context);
   }
 
   // Check if cached content exists and is valid
@@ -253,11 +264,17 @@ class AIService {
   }
 
   // Save content to cache
-  private async saveToCache(type: string, context: Record<string, any>, content: string): Promise<void> {
+  private async saveToCache(type: string, context: Record<string, any>, content: string, replace = false): Promise<void> {
     try {
       const cacheKey = this.generateCacheKey(type, context);
       const expiresAt = new Date();
       expiresAt.setDate(expiresAt.getDate() + this.cacheExpirationDays);
+      if (replace) {
+        await db.delete(aiGeneratedContent).where(and(
+          eq(aiGeneratedContent.contextHash, cacheKey),
+          eq(aiGeneratedContent.type, type)
+        ));
+      }
       
       await db.insert(aiGeneratedContent).values({
         type,
@@ -383,7 +400,8 @@ class AIService {
     maxScore: number = 500,
     hideScoreAndNarratives: boolean = false,
     assessmentMode?: string,
-    archetypeLabel?: string
+    archetypeLabel?: string,
+    refresh = false
   ): Promise<string> {
     // Get model ID and class to fetch knowledge version and determine audience type
     let modelId: string | undefined;
@@ -416,7 +434,7 @@ class AIService {
     };
     
     // Check cache first
-    const cached = await this.getCachedContent('maturity_summary', cacheContext);
+    const cached = refresh ? null : await this.getCachedContent('maturity_summary', cacheContext);
     if (cached) {
       return cached;
     }
@@ -485,7 +503,7 @@ CRITICAL RULES:
 
         const completion = await this.callProvider(typePrompt, false);
         if (!completion) throw new Error('Failed to generate archetype summary');
-        await this.saveToCache('maturity_summary', cacheContext, completion);
+        await this.saveToCache('maturity_summary', cacheContext, completion, refresh);
         return completion;
       }
       // ───────────────────────────────────────────────────────────────────────
@@ -546,11 +564,12 @@ CRITICAL: Write smooth, flowing paragraphs. Do NOT include labels like "Paragrap
       const summary = completion.trim();
       
       // Save to cache
-      await this.saveToCache('maturity_summary', cacheContext, summary);
+      await this.saveToCache('maturity_summary', cacheContext, summary, refresh);
       
       return summary;
     } catch (error) {
       console.error('Error generating maturity summary:', error);
+      if (refresh) throw error;
       // Return a fallback summary using percentage-based performance level
       const fallbackScorePercent = (overallScore / maxScore) * 100;
       const fallbackLevel = fallbackScorePercent >= 80 ? 'advanced' : fallbackScorePercent >= 60 ? 'developing' : 'emerging';
@@ -566,7 +585,8 @@ The Synozur Alliance LLC is here to help you find your North Star and make the d
   async generateRecommendationsSummary(
     recommendations: Array<{ title: string; description: string; priority?: string }>,
     modelName: string,
-    userContext?: { industry?: string; companySize?: string; jobTitle?: string }
+    userContext?: { industry?: string; companySize?: string; jobTitle?: string },
+    refresh = false
   ): Promise<string> {
     // Log the user context for debugging
     console.log('[AI Service] Generating roadmap for:', {
@@ -611,7 +631,7 @@ The Synozur Alliance LLC is here to help you find your North Star and make the d
     };
     
     // Check cache first
-    const cached = await this.getCachedContent('recommendations_summary', cacheContext);
+    const cached = refresh ? null : await this.getCachedContent('recommendations_summary', cacheContext);
     if (cached) {
       console.log('[AI Service] Using cached roadmap content');
       return cached;
@@ -726,11 +746,12 @@ FINAL REMINDER: Each section heading MUST start with "## " followed by the EXACT
       const summary = completion.trim();
       
       // Save to cache
-      await this.saveToCache('recommendations_summary', cacheContext, summary);
+      await this.saveToCache('recommendations_summary', cacheContext, summary, refresh);
       
       return summary;
     } catch (error) {
       console.error('Error generating recommendations summary:', error);
+      if (refresh) throw error;
       // Return a fallback summary
       return `Your transformation roadmap focuses on:
 • Strengthening foundational capabilities

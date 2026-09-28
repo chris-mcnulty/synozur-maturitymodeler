@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo, useEffect } from "react";
+import { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import { useRoute, useLocation, Link } from "wouter";
 import { useTranslation } from "react-i18next";
 import { Footer } from "@/components/Footer";
@@ -7,7 +7,7 @@ import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
-import { Download, Mail, ArrowLeft, ChevronRight, Users, Target, TrendingUp, Award, BookOpen, Calendar, Phone, ExternalLink, Lightbulb, Share2, Sparkles, Lock, CheckCircle2 } from "lucide-react";
+import { Download, Mail, ArrowLeft, ChevronRight, Users, Target, TrendingUp, Award, BookOpen, Calendar, Phone, ExternalLink, Lightbulb, Share2, Sparkles, Lock, CheckCircle2, RefreshCw } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { DataState } from "@/components/DataState";
 import type { Result, Assessment, Model, Dimension, User, Question, Answer, Course, CourseTag, ModelType } from "@shared/schema";
@@ -91,6 +91,8 @@ export default function Results() {
   const [recommendationsSummary, setRecommendationsSummary] = useState<string>('');
   const [aiContentLoading, setAiContentLoading] = useState(false);
   const [aiContentReady, setAiContentReady] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
+  const refreshNextSummary = useRef(false);
   const { toast } = useToast();
 
   // Fetch user data
@@ -259,6 +261,9 @@ export default function Results() {
 
   // Fetch AI-generated summaries when result and model are loaded
   useEffect(() => {
+    const refresh = refreshNextSummary.current;
+    refreshNextSummary.current = false;
+    let cancelled = false;
     const fetchAISummaries = async () => {
       if (!result || !model) return;
       // Type/propensity models have no numeric maturity narrative or benchmarking —
@@ -273,6 +278,10 @@ export default function Results() {
 
       setAiContentLoading(true);
       setAiContentReady(false);
+      if (refresh) {
+        setMaturitySummary("");
+        setRecommendationsSummary("");
+      }
 
       try {
         // Prepare dimension scores for AI
@@ -350,13 +359,14 @@ export default function Results() {
             hideScoreAndNarratives: !!(model as any).hideScoreAndNarratives,
             assessmentMode: (model as any).assessmentMode,
             archetypeLabel: result.label,
+            assessmentId,
+            refresh,
           })
         });
 
-        if (maturityResponse.ok) {
-          const { summary } = await maturityResponse.json();
-          setMaturitySummary(summary);
-        }
+        if (!maturityResponse.ok) throw new Error("Could not refresh the assessment summary");
+        const { summary: maturityText } = await maturityResponse.json();
+        if (!cancelled) setMaturitySummary(maturityText);
 
         // Fetch recommendations summary if recommendations exist
         if (recommendations.length > 0) {
@@ -370,29 +380,35 @@ export default function Results() {
               })),
               modelName: model.name,
               modelId: model.id,
-              userContext // Use the same context determined above (proxy or real user)
+              userContext, // Use the same context determined above (proxy or real user)
+              assessmentId,
+              refresh,
             })
           });
 
-          if (recsResponse.ok) {
-            const { summary } = await recsResponse.json();
-            setRecommendationsSummary(summary);
-          }
+          if (!recsResponse.ok) throw new Error("Could not refresh the recommendations");
+          const { summary: recommendationsText } = await recsResponse.json();
+          if (!cancelled) setRecommendationsSummary(recommendationsText);
         }
         
         // Mark AI content as ready
-        setAiContentReady(true);
+        if (!cancelled) {
+          setAiContentReady(true);
+          if (refresh) toast({ title: "Report refreshed", description: "Your summary and recommendations now use your saved profile." });
+        }
       } catch (error) {
         console.error('Error fetching AI summaries:', error);
-        // Still mark as ready even on error
-        setAiContentReady(true);
+        if (!cancelled && refresh) {
+          toast({ title: "Refresh failed", description: "Please try again before downloading a new report.", variant: "destructive" });
+        }
       } finally {
-        setAiContentLoading(false);
+        if (!cancelled) setAiContentLoading(false);
       }
     };
 
     fetchAISummaries();
-  }, [result, model, user, assessmentOwner, recommendations]);
+    return () => { cancelled = true; };
+  }, [result, model, user, assessmentOwner, recommendations, refreshKey, assessmentId, toast]);
 
   // Memoize improvement resources to ensure consistent hook order
   const improvementResources = useMemo(() => {
@@ -1392,6 +1408,28 @@ export default function Results() {
       <section className="py-8 sm:py-12">
         <div className="container mx-auto px-4 max-w-6xl">
           <Card className="p-5 sm:p-6 md:p-8 bg-primary/5">
+            {user && assessment?.userId === user.id && !assessment.isProxy &&
+              model?.assessmentMode !== 'type' && (model?.scoringConfig as any)?.method !== 'mean_answer_values' && (
+              <div className="text-center mb-6">
+                <Button
+                  variant="outline"
+                  disabled={aiContentLoading}
+                  onClick={() => {
+                    refreshNextSummary.current = true;
+                    setAiContentLoading(true);
+                    setAiContentReady(false);
+                    setRefreshKey(key => key + 1);
+                  }}
+                  data-testid="button-refresh-report"
+                >
+                  <RefreshCw className="mr-2 h-4 w-4" />
+                  {aiContentLoading ? "Refreshing report..." : "Regenerate summary and recommendations"}
+                </Button>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Uses your current saved profile. Wait for the new summary before downloading or emailing a PDF.
+                </p>
+              </div>
+            )}
             <div className="text-center mb-6">
               <h2 className="text-xl sm:text-2xl font-bold mb-2 text-foreground">{t('results.getFullReport')}</h2>
               <p className="text-sm sm:text-base text-muted-foreground">
