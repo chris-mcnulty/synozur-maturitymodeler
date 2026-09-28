@@ -316,7 +316,10 @@ export default function Results() {
           };
         } else {
           // Use real user profile
-          const profileForAI = assessmentOwner || user;
+          // For your own assessment, the current user profile is the freshest
+          // source after editing your title. Use the owner lookup for reports
+          // viewed by an authorized person other than the assessment owner.
+          const profileForAI = assessment?.userId === user?.id ? user : assessmentOwner;
           userContext = profileForAI ? {
             industry: profileForAI.industry || undefined,
             companySize: profileForAI.companySize || undefined,
