@@ -29,7 +29,7 @@
 
 | # | Lesson | Type | Required | Minutes |
 |---|---|---|---|---|
-| 1.1 | Welcome from Chris McNulty | Slides (video placeholder) | No | 1 |
+| 1.1 | Welcome from Chris McNulty | Slides (recorded video) | No | 1 |
 | 1.2 | Privacy and confidentiality work together | Slides | Yes | 1 |
 | 2.1 | Collect for a clear purpose | Slides | Yes | 1 |
 | 2.2 | Respect the data classification | Slides | Yes | 1 |
@@ -51,7 +51,7 @@
 - `source-to-lesson-mapping.md`: where every deck slide went and how it changed.
 - `quiz-answer-key.md`: answers, per-choice feedback, rationale, and remediation for all quizzes.
 - `approval-checklist.md`: release blockers and approvals still needed.
-- `welcome-video.md`: the video placeholder, Chris’s script, and recording guidance.
+- `welcome-video.md`: recorded welcome details; `welcome-video.mp4` and `welcome-video-poster.jpg` are included in the updated import package.
 - `narration-scripts.md`: per-slide narration for review and later audio generation.
 - `media-attribution.md`: sources, rights, alt text, and text equivalents for every image and file.
 - `limitations-and-product-changes.md`: unsupported requests, workarounds, and proposed Orion changes.

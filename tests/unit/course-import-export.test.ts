@@ -18,6 +18,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { readFileSync } from "node:fs";
 
 // ─── Hoisted mocks ────────────────────────────────────────────────────────────
 
@@ -161,6 +162,50 @@ function validAsset(path: string, ct = "image/png"): import("../../server/servic
 }
 
 // ─── validateCourseExportDoc ──────────────────────────────────────────────────
+
+describe("recorded annual-training welcome packages", () => {
+  for (const slug of [
+    "synozur-data-privacy-and-client-confidentiality-annual-training",
+    "synozur-information-security-annual-training",
+    "synozur-standards-of-business-conduct-annual-training",
+  ]) {
+    it(`restores the welcome video and poster privately for ${slug}`, async () => {
+      vi.clearAllMocks();
+      dbMock.select.mockImplementation(() => makeSelect([]));
+      const inserted: Array<{ table: any; values: any }> = [];
+      dbMock.insert.mockImplementation((table: any) => ({
+        values: (values: any) => {
+          inserted.push({ table, values });
+          return { returning: async () => [{ id: `import-${inserted.length}`, ...values }] };
+        },
+      }));
+      storeObjectBytesMock.mockImplementation(async ({ entityId }: any) => `/objects/${entityId}`);
+      const json = readFileSync(`handoff/${slug}.orion-course.json`, "utf8");
+      expect(Buffer.byteLength(json)).toBeLessThan(10 * 1024 * 1024);
+      const doc = JSON.parse(json) as CourseExportDocV2;
+      validateCourseExportDoc(doc);
+      const welcome = doc.course.modules[0].lessons[0];
+      const oldVideo = (welcome.content as any).slides[0].blocks.find((b: any) => b.type === "video");
+      expect(oldVideo.url).toMatch(/\.mp4$/);
+      expect(doc.assets[oldVideo.url].contentType).toBe("video/mp4");
+      expect(doc.assets[oldVideo.poster].contentType).toBe("image/jpeg");
+      expect(JSON.stringify(welcome.content)).not.toMatch(/coming soon|Draft transcript|Video placeholder/i);
+      const result = await importCourse(doc, { ownerTenantId: "test-tenant", createdBy: "test-owner" });
+      expect(result.course.status).toBe("draft");
+      expect(result.lessonCount).toBe(doc.course.modules.reduce((n, m) => n + m.lessons.length, 0));
+      const restoredWelcome = inserted.find(row => row.table === "lessons" && row.values.title === welcome.title)!.values;
+      expect(restoredWelcome.required).toBe(welcome.required);
+      const video = restoredWelcome.content.slides[0].blocks.find((b: any) => b.type === "video");
+      expect(video.url).not.toBe(oldVideo.url);
+      expect(video.poster).not.toBe(oldVideo.poster);
+      for (const originalPath of [oldVideo.url, oldVideo.poster]) {
+        const originalBytes = Buffer.from(doc.assets[originalPath].data, "base64");
+        const restored = storeObjectBytesMock.mock.calls.find(([opts]) => opts.data.equals(originalBytes))![0];
+        expect(restored.acl).toEqual({ owner: "test-tenant", visibility: "private" });
+      }
+    });
+  }
+});
 
 describe("validateCourseExportDoc", () => {
 

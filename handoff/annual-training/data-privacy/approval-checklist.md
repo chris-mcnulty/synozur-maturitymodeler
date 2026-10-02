@@ -11,7 +11,8 @@ Nothing here has been approved. The course is a draft and must stay unpublished 
 - [ ] **Release blocker:** Resolve placeholders, remove DRAFT marking, and re-render and upload PDF after contact and route verification _(where: Before you share course resource; owner: Course author / privacy owner)_
 - [ ] **Release blocker:** Policy-owner and legal review of proposed retention, request, incident, and legal-hold guidance and exact source attestation wording _(where: Whole course; lesson 5.3; owner: Policy owner / legal)_
 - [ ] **Release blocker:** Verify access to the IT Policies page and Active Policy Library, identify the IT Policy in effect since February 17, 2026, and confirm the Security Policy document, approval, and effective status _(where: Lessons 5.2 and 6.1; owner: Policy owner)_
-- [ ] **Release blocker:** Record Chris’s welcome, upload it into the empty video block, remove the separate poster image, verify corrected captions and final transcript, or explicitly approve transcript-only launch _(where: Lesson 1.1; owner: Chris McNulty / course author)_
+- [x] Recorded welcome attached to the development draft and embedded in the updated import package; coming-soon blocks and draft transcript removed.
+- [ ] **Release blocker:** Review the recorded welcome's burned-in captions and provide a verified final text transcript if required for release _(where: Lesson 1.1; owner: Chris McNulty / course author)_
 
 ## Other approvals and decisions
 

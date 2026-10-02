@@ -71,3 +71,45 @@ mtime_ms = 1790317106410
 storage_uri = "gcs://replit-rams-assets-janeway/rams/assets/repl:de9b7c40-dcaa-46b2-b0c0-d28fd76a0dab/6e2fd4b1-bec4-4d8f-a115-d22d9e8c2ebe/285424aa-9086-4694-a78b-d9e5fca2f116"
 storage_version_token = "1790317157736458"
 content_type = "application/pdf"
+
+[[outputs]]
+id = "wfBl2kvAFreTWNxj8BpwC"
+uri = "file://handoff/synozur-data-privacy-and-client-confidentiality-annual-training.orion-course.json"
+type = "unspecified"
+title = "Privacy course — video included"
+description = "Updated self-contained course import file, including the recorded welcome, captions burned into the video, and all existing lessons. Import through Admin → Courses → Import."
+logical_id = "9fe8e4de-8832-458f-8062-9c9b4217dfc0"
+content_hash = "sha256:e858b732b776ac245fda5409176d16d8566ae2dbcd20699e65957dfe3b2531e7"
+size = 7686284
+mtime_ms = 1790971542701
+storage_uri = "gcs://replit-rams-assets-janeway/rams/assets/repl:de9b7c40-dcaa-46b2-b0c0-d28fd76a0dab/9fe8e4de-8832-458f-8062-9c9b4217dfc0/1763cc60-0701-42ee-9c92-3ba40ebd7b78"
+storage_version_token = "1790971713829963"
+content_type = "application/octet-stream"
+
+[[outputs]]
+id = "yX2xIeCD45dtaOY4enszG"
+uri = "file://handoff/synozur-information-security-annual-training.orion-course.json"
+type = "unspecified"
+title = "Information Security course — video included"
+description = "Updated self-contained course import file, including the recorded welcome, captions burned into the video, and all existing lessons. Import through Admin → Courses → Import."
+logical_id = "761e08e1-834e-44ac-98f7-87fede9b8eaa"
+content_hash = "sha256:0763710910843b1ba4712f7917dc579aefd1aeb42f6fe1826879d3aeedc82ff5"
+size = 8881062
+mtime_ms = 1790971546605
+storage_uri = "gcs://replit-rams-assets-janeway/rams/assets/repl:de9b7c40-dcaa-46b2-b0c0-d28fd76a0dab/761e08e1-834e-44ac-98f7-87fede9b8eaa/7632474c-d769-4830-a6f3-ec0ca92c1ccf"
+storage_version_token = "1790971714634386"
+content_type = "application/octet-stream"
+
+[[outputs]]
+id = "j_XHP2luFTSzwiw2tNZEQ"
+uri = "file://handoff/synozur-standards-of-business-conduct-annual-training.orion-course.json"
+type = "unspecified"
+title = "Business Conduct course — video included"
+description = "Updated self-contained course import file, including the recorded welcome, captions burned into the video, and all existing lessons. Import through Admin → Courses → Import."
+logical_id = "9853d91b-b3d1-408e-a8c9-0c28828d23dd"
+content_hash = "sha256:dfb5c0ee47c9d6e11915e6b50dcc7d4fb74834231a83bdc8190544988a74ec10"
+size = 7185239
+mtime_ms = 1790971549769
+storage_uri = "gcs://replit-rams-assets-janeway/rams/assets/repl:de9b7c40-dcaa-46b2-b0c0-d28fd76a0dab/9853d91b-b3d1-408e-a8c9-0c28828d23dd/bc7673bb-a24a-41df-80d7-dde3df58d305"
+storage_version_token = "1790971715271696"
+content_type = "application/octet-stream"
