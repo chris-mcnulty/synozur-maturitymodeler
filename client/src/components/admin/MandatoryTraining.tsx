@@ -11,6 +11,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Download, Loader2, RefreshCw, Users } from "lucide-react";
 import { AddRequiredCourses } from "./AddRequiredCourses";
+import { AddRequiredLearners } from "./AddRequiredLearners";
 
 type Option = { id: string; name?: string; title?: string; email?: string; [key: string]: any };
 type TrainingItem = {
@@ -354,6 +355,13 @@ export function MandatoryTraining({ tenants = [], isGlobalAdmin, defaultTenantId
                     tenantId={detailQuery.data.schedule.tenantId}
                     dueAt={detailQuery.data.schedule.dueAt}
                     existingCourseIds={detailQuery.data.items.filter(item => item.kind === "course").map(item => item.contentId)}
+                  />
+                  <AddRequiredLearners
+                    key={`learners-${detailQuery.data.schedule.id}`}
+                    scheduleId={detailQuery.data.schedule.id}
+                    tenantId={detailQuery.data.schedule.tenantId}
+                    dueAt={detailQuery.data.schedule.dueAt}
+                    assignedUserIds={detailQuery.data.recipients.map(recipient => recipient.userId)}
                   />
                   <div className="overflow-x-auto rounded-md border">
                     <table className="w-full text-sm">

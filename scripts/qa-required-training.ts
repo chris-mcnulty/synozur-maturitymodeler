@@ -4,7 +4,7 @@
  */
 import fs from "node:fs/promises";
 import { randomUUID, randomBytes } from "node:crypto";
-import { eq, inArray } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { db, pool } from "../server/db";
 import * as s from "../shared/schema";
 import { hashPassword } from "../server/utils/password";
@@ -17,22 +17,25 @@ async function setup() {
   const suffix = randomUUID().slice(0, 8);
   const password = randomBytes(18).toString("hex");
   const tenantId = randomUUID(), emptyTenantId = randomUUID(), scheduleId = randomUUID();
+  const entraOrganizationId = randomUUID();
+  const pendingEmail = `required-pending-${suffix}@qa.invalid`;
   const originalCourseId = randomUUID(), newCourseId = randomUUID();
   const users = [
     { id: randomUUID(), username: `required-admin-${suffix}@qa.invalid`, role: "tenant_admin", tenantId },
     { id: randomUUID(), username: `required-learner-${suffix}@qa.invalid`, role: "user", tenantId },
     { id: randomUUID(), username: `required-empty-${suffix}@qa.invalid`, role: "tenant_admin", tenantId: emptyTenantId },
+    { id: randomUUID(), username: `required-additional-${suffix}@qa.invalid`, role: "user", tenantId },
   ];
-  const state = { tenantId, emptyTenantId, scheduleId, originalCourseId, newCourseId, password, users, suffix };
+  const state = { tenantId, emptyTenantId, scheduleId, originalCourseId, newCourseId, password, users, suffix, pendingEmail, entraOrganizationId };
   await fs.writeFile(file, JSON.stringify(state), { mode: 0o600, flag: "wx" });
   const hashed = await hashPassword(password);
   await db.transaction(async tx => {
     await tx.insert(s.tenants).values([
-      { id: tenantId, name: `Required training QA ${suffix}`, slug: `required-qa-${suffix}` },
+      { id: tenantId, name: `Required training QA ${suffix}`, slug: `required-qa-${suffix}`, ssoTenantId: entraOrganizationId },
       { id: emptyTenantId, name: `No training QA ${suffix}`, slug: `required-empty-${suffix}` },
     ]);
     await tx.insert(s.users).values(users.map(user => ({
-      ...user, email: null, name: user.role === "user" ? "QA Required Learner" : "QA Training Admin",
+      ...user, email: null, name: user.id === users[3].id ? "QA Additional Learner" : user.role === "user" ? "QA Required Learner" : "QA Training Admin",
       password: hashed, emailVerified: true,
     })));
     await tx.insert(s.courses).values([
@@ -66,6 +69,7 @@ async function teardown() {
   const state = JSON.parse(await fs.readFile(file, "utf8"));
   await db.transaction(async tx => {
     await tx.delete(s.mandatoryTrainingSchedules).where(eq(s.mandatoryTrainingSchedules.id, state.scheduleId));
+    await tx.delete(s.users).where(and(eq(s.users.tenantId, state.tenantId), eq(s.users.email, state.pendingEmail)));
     await tx.delete(s.courses).where(inArray(s.courses.id, [state.originalCourseId, state.newCourseId]));
     await tx.delete(s.users).where(inArray(s.users.id, state.users.map((user: any) => user.id)));
     await tx.delete(s.tenants).where(inArray(s.tenants.id, [state.tenantId, state.emptyTenantId]));

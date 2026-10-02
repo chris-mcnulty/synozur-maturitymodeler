@@ -3,6 +3,7 @@ import { ensureAuthenticated } from "../auth";
 import type { User } from "@shared/schema";
 import * as mandatoryTraining from "../services/mandatory-training-service";
 import { checkIsGlobalAdmin } from "../permissions";
+import { addRequiredLearners } from "../services/required-training-learners";
 
 function adminTenant(user: User, requestedTenantId?: string): { allowed: boolean; tenantId: string | null } {
   if (checkIsGlobalAdmin(user)) return { allowed: true, tenantId: requestedTenantId || null };
@@ -12,6 +13,17 @@ function adminTenant(user: User, requestedTenantId?: string): { allowed: boolean
 }
 
 export function registerMandatoryTrainingRoutes(app: Express) {
+  app.post("/api/admin/mandatory-training/:id/learners", ensureAuthenticated, async (req, res) => {
+    const access = adminTenant(req.user as User);
+    if (!access.allowed) return res.status(403).json({ error: "Forbidden" });
+    try {
+      return res.json(await addRequiredLearners(req.params.id, req.body, access.tenantId));
+    } catch (error: any) {
+      return res.status(error.statusCode || (error.name === "ZodError" ? 400 : 500))
+        .json({ error: error.message || "Could not add learners" });
+    }
+  });
+
   app.get("/api/me/required-training-availability", ensureAuthenticated, async (req, res) => {
     try {
       // Never accept a tenant from the client for learner navigation.

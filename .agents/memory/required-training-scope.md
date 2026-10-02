@@ -12,3 +12,9 @@ Only show the menu item when the signed-in user's tenant has required training c
 **Why:** The user asked for tenant-specific visibility rather than exposing required training to all clients.
 
 **How to apply:** Keep visibility tied to the authenticated tenant, including when the signed-in user is a global admin. Existing backend identifiers may retain their legacy names for compatibility.
+
+Required training must support assigning Synozur's Entra users before their first connection to Orion; do not require every intended learner to have signed in already.
+
+**Why:** The user asked how to add Entra users who have not yet connected to Orion while requesting additional learners on an existing set.
+
+**How to apply:** Preserve the pre-first-sign-in assignment workflow when changing user onboarding or training assignment. Microsoft identity should claim the existing assigned account, not create a replacement that loses its training.

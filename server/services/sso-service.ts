@@ -1,6 +1,7 @@
 import { ConfidentialClientApplication, Configuration, AuthorizationUrlRequest, AuthorizationCodeRequest } from '@azure/msal-node';
 import { randomBytes, createHash, createHmac, randomUUID, timingSafeEqual } from 'crypto';
 import { storage } from '../storage';
+import { canClaimPreprovisionedMicrosoftAccount } from "./preprovisioned-microsoft";
 
 function generateCodeVerifier(): string {
   return randomBytes(32).toString('base64url');
@@ -198,15 +199,22 @@ export async function provisionUser(ssoUserInfo: SsoUserInfo): Promise<Provision
   let existingUser = await storage.getUserBySsoProvider('microsoft', ssoUserInfo.id);
   
   if (!existingUser) {
-    existingUser = await storage.getUserByEmail(ssoUserInfo.email);
+    existingUser = await storage.getUserByEmail(ssoUserInfo.email.trim().toLowerCase())
+      ?? await storage.getUserByEmail(ssoUserInfo.email);
     if (existingUser) {
-      await storage.updateUser(existingUser.id, {
+      if (existingUser.ssoProvider === "microsoft" && !existingUser.ssoProviderId) {
+        const tenant = existingUser.tenantId ? await storage.getTenant(existingUser.tenantId) : undefined;
+        if (!canClaimPreprovisionedMicrosoftAccount(existingUser, tenant?.ssoTenantId, ssoUserInfo)) {
+          return { user: null, isNewUser: false, isNewTenant: false, error: "Sign in with the Microsoft account from your assigned organization's Entra tenant." };
+        }
+      }
+      const linkedUser = await storage.updateUser(existingUser.id, {
         ssoProvider: 'microsoft',
         ssoProviderId: ssoUserInfo.id,
         emailVerified: true,
         name: existingUser.name || ssoUserInfo.name,
       });
-      return { user: existingUser, isNewUser: false, isNewTenant: false };
+      return { user: linkedUser, isNewUser: false, isNewTenant: false };
     }
   } else {
     return { user: existingUser, isNewUser: false, isNewTenant: false };
