@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { usePageTitle } from "@/hooks/use-page-title";
+import { useRequiredTraining } from "@/hooks/use-required-training";
 import { Link } from "wouter";
 import { Helmet } from "react-helmet-async";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -54,11 +55,13 @@ function formatTrainingDate(value?: string | null) {
 
 export default function MyCourses() {
   usePageTitle("My Courses");
+  const { hasRequiredTraining } = useRequiredTraining();
   const { data: enrollments, isLoading } = useQuery<EnrollmentWithCourse[]>({
     queryKey: ["/api/me/courses"],
   });
   const { data: mandatoryTraining, isLoading: mandatoryLoading, isError: mandatoryError } = useQuery<MandatoryTrainingAssignment[]>({
     queryKey: ["/api/me/mandatory-training"],
+    enabled: hasRequiredTraining,
     staleTime: 0,
     refetchOnMount: "always",
     refetchOnWindowFocus: true,
@@ -84,7 +87,7 @@ export default function MyCourses() {
         </Link>
       </div>
 
-      <section className="mb-8 space-y-3" aria-labelledby="mandatory-training-heading" data-testid="section-mandatory-training">
+      {hasRequiredTraining && <section className="mb-8 space-y-3" aria-labelledby="mandatory-training-heading" data-testid="section-mandatory-training">
         <div>
           <h2 id="mandatory-training-heading" className="text-xl font-semibold flex items-center gap-2">
             <ClipboardCheck className="h-5 w-5" /> Required training
@@ -149,7 +152,7 @@ export default function MyCourses() {
             </Card>
           );
         })}
-      </section>
+      </section>}
 
       {isLoading && (
         <div className="space-y-4">

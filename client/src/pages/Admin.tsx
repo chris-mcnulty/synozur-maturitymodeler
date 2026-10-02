@@ -20,6 +20,7 @@ import { Download, Plus, Edit, Trash, FileSpreadsheet, Eye, EyeOff, BarChart3, S
 import type { Model, Result, Assessment, Dimension, Question, Answer, User, AssessmentTag } from "@shared/schema";
 import { USER_ROLES, type UserRole } from "@shared/constants";
 import { useAuth } from "@/hooks/use-auth";
+import { useRequiredTraining } from "@/hooks/use-required-training";
 import { ObjectUploader } from "@/components/ObjectUploader";
 import { ProxyAssessmentDialog } from "@/components/admin/ProxyAssessmentDialog";
 import { AssessmentTagSelector, BulkAssessmentTagActions } from "@/components/admin/AssessmentTagSelector";
@@ -519,6 +520,7 @@ export default function Admin() {
   usePageTitle("Administration");
   const { toast } = useToast();
   const { user: currentUser } = useAuth();
+  const { hasRequiredTraining } = useRequiredTraining();
   const [activeSection, setActiveSection] = useState<string>(() => {
     if (typeof window !== 'undefined' && window.location.hash) {
       const hash = window.location.hash.slice(1);
@@ -2829,17 +2831,17 @@ export default function Admin() {
                       <span className="group-data-[collapsible=icon]:hidden">Courses</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
-                  <SidebarMenuItem>
+                  {hasRequiredTraining && <SidebarMenuItem>
                     <SidebarMenuButton
                       onClick={() => setActiveSection('mandatory-training')}
                       isActive={activeSection === 'mandatory-training'}
                       data-testid="tab-mandatory-training"
-                      tooltip="Mandatory Training"
+                      tooltip="Required Training"
                     >
                       <ClipboardList className="h-4 w-4" />
-                      <span className="group-data-[collapsible=icon]:hidden">Mandatory Training</span>
+                      <span className="group-data-[collapsible=icon]:hidden">Required Training</span>
                     </SidebarMenuButton>
-                  </SidebarMenuItem>
+                  </SidebarMenuItem>}
                   <SidebarMenuItem>
                     <SidebarMenuButton
                       onClick={() => setActiveSection('academies')}

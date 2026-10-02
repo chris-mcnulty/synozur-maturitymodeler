@@ -12,6 +12,26 @@ function adminTenant(user: User, requestedTenantId?: string): { allowed: boolean
 }
 
 export function registerMandatoryTrainingRoutes(app: Express) {
+  app.get("/api/me/required-training-availability", ensureAuthenticated, async (req, res) => {
+    try {
+      // Never accept a tenant from the client for learner navigation.
+      return res.json({ hasRequiredTraining: await mandatoryTraining.hasRequiredTraining((req.user as User).tenantId) });
+    } catch {
+      return res.status(500).json({ error: "Could not check required training availability" });
+    }
+  });
+
+  app.post("/api/admin/mandatory-training/:id/courses", ensureAuthenticated, async (req, res) => {
+    const access = adminTenant(req.user as User);
+    if (!access.allowed) return res.status(403).json({ error: "Forbidden" });
+    try {
+      return res.json(await mandatoryTraining.addRequiredCourses(req.params.id, req.body, access.tenantId));
+    } catch (error: any) {
+      return res.status(error.statusCode || (error.name === "ZodError" ? 400 : 500))
+        .json({ error: error.message || "Could not add required courses" });
+    }
+  });
+
   app.get("/api/admin/mandatory-training/options", ensureAuthenticated, async (req, res) => {
     const user = req.user as User;
     const tenantId = typeof req.query.tenantId === "string" ? req.query.tenantId : undefined;
@@ -73,7 +93,7 @@ export function registerMandatoryTrainingRoutes(app: Express) {
       );
       if (csv === null) return res.status(404).json({ error: "Schedule not found" });
       res.type("text/csv; charset=utf-8");
-      res.setHeader("Content-Disposition", `attachment; filename="mandatory-training-${req.params.id}.csv"`);
+      res.setHeader("Content-Disposition", `attachment; filename="required-training-${req.params.id}.csv"`);
       return res.send(csv);
     } catch (error: any) {
       return res.status(500).json({ error: error.message || "Failed to export mandatory training report" });

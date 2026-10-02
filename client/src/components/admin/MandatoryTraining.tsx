@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Download, Loader2, RefreshCw, Users } from "lucide-react";
+import { AddRequiredCourses } from "./AddRequiredCourses";
 
 type Option = { id: string; name?: string; title?: string; email?: string; [key: string]: any };
 type TrainingItem = {
@@ -126,13 +127,14 @@ export function MandatoryTraining({ tenants = [], isGlobalAdmin, defaultTenantId
       idempotencyKey,
     }),
     onSuccess: async (created: any) => {
-      toast({ title: "Mandatory training scheduled", description: "Recipients will see this assignment when it is released." });
+      toast({ title: "Required training scheduled", description: "Recipients will see this assignment when it is released." });
       setIdempotencyKey(newIdempotencyKey());
       setTitle("");
       setCourseIds([]);
       setModelId("");
       setUserIds([]);
       await queryClient.invalidateQueries({ queryKey: ["/api/admin/mandatory-training"] });
+      await queryClient.invalidateQueries({ queryKey: ["/api/me/required-training-availability"] });
       const id = created?.schedule?.id || created?.id;
       if (id) setSelectedScheduleId(id);
     },
@@ -154,7 +156,7 @@ export function MandatoryTraining({ tenants = [], isGlobalAdmin, defaultTenantId
       const url = URL.createObjectURL(blob);
       const anchor = document.createElement("a");
       anchor.href = url;
-      anchor.download = `mandatory-training-${selectedScheduleId}.csv`;
+      anchor.download = `required-training-${selectedScheduleId}.csv`;
       document.body.appendChild(anchor);
       anchor.click();
       anchor.remove();
@@ -173,7 +175,7 @@ export function MandatoryTraining({ tenants = [], isGlobalAdmin, defaultTenantId
   return (
     <div className="space-y-6" data-testid="mandatory-training-admin">
       <div>
-        <h2 className="text-2xl font-bold">Mandatory training</h2>
+        <h2 className="text-2xl font-bold">Required Training</h2>
         <p className="text-muted-foreground mt-1">Schedule required courses and assessments, then monitor completion.</p>
       </div>
 
@@ -291,7 +293,7 @@ export function MandatoryTraining({ tenants = [], isGlobalAdmin, defaultTenantId
         <CardContent className="space-y-5">
           {schedulesQuery.isLoading ? <p className="text-sm text-muted-foreground">Loading assignments…</p> : null}
           {schedulesQuery.isError ? <p role="alert" className="text-sm text-destructive">Could not load assignments: {(schedulesQuery.error as Error).message}</p> : null}
-          {!schedulesQuery.isLoading && !scheduleList.length && <p className="text-sm text-muted-foreground">No mandatory training assignments yet.</p>}
+          {!schedulesQuery.isLoading && !scheduleList.length && <p className="text-sm text-muted-foreground">No required training assignments yet.</p>}
           {scheduleList.length > 0 && (
             <div className="space-y-2">
               {scheduleList.map(schedule => (
@@ -346,6 +348,13 @@ export function MandatoryTraining({ tenants = [], isGlobalAdmin, defaultTenantId
                       <Button variant="outline" size="sm" onClick={downloadReport}><Download className="h-4 w-4 mr-2" /> CSV</Button>
                     </div>
                   </div>
+                  <AddRequiredCourses
+                    key={detailQuery.data.schedule.id}
+                    scheduleId={detailQuery.data.schedule.id}
+                    tenantId={detailQuery.data.schedule.tenantId}
+                    dueAt={detailQuery.data.schedule.dueAt}
+                    existingCourseIds={detailQuery.data.items.filter(item => item.kind === "course").map(item => item.contentId)}
+                  />
                   <div className="overflow-x-auto rounded-md border">
                     <table className="w-full text-sm">
                       <thead><tr className="border-b bg-muted/40 text-left">

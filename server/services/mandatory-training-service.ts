@@ -274,6 +274,57 @@ export async function getMandatoryTrainingOptions(tenantId: string) {
   return { users, courses, models };
 }
 
+export async function hasRequiredTraining(tenantId: string | null | undefined): Promise<boolean> {
+  if (!tenantId) return false;
+  const [schedule] = await db.select({ id: schema.mandatoryTrainingSchedules.id })
+    .from(schema.mandatoryTrainingSchedules)
+    .where(eq(schema.mandatoryTrainingSchedules.tenantId, tenantId)).limit(1);
+  return !!schedule;
+}
+
+export const addRequiredCoursesSchema = z.object({
+  courseIds: z.array(z.string().min(1)).min(1).max(50),
+}).strict().refine(input => new Set(input.courseIds).size === input.courseIds.length, {
+  message: "Course IDs must be unique",
+});
+
+export async function addRequiredCourses(scheduleId: string, raw: unknown, authorizedTenantId: string | null) {
+  const { courseIds } = addRequiredCoursesSchema.parse(raw);
+  return db.transaction(async tx => {
+    // Serialize additions to the same set: retries must not duplicate courses
+    // or race on the unique (schedule, order) constraint.
+    const [schedule] = await tx.select().from(schema.mandatoryTrainingSchedules)
+      .where(eq(schema.mandatoryTrainingSchedules.id, scheduleId)).limit(1).for("update");
+    if (!schedule) throw Object.assign(new Error("Training set not found"), { statusCode: 404 });
+    if (authorizedTenantId && schedule.tenantId !== authorizedTenantId) {
+      throw Object.assign(new Error("Forbidden"), { statusCode: 403 });
+    }
+    const existing = await tx.select().from(schema.mandatoryTrainingItems)
+      .where(eq(schema.mandatoryTrainingItems.scheduleId, scheduleId));
+    const existingCourses = new Set(existing.filter(item => item.kind === "course").map(item => item.contentId));
+    const newIds = courseIds.filter(id => !existingCourses.has(id));
+    if (!newIds.length) return { schedule, addedCount: 0 };
+    const courses = await tx.select().from(schema.courses).where(inArray(schema.courses.id, newIds));
+    if (courses.length !== newIds.length) {
+      throw Object.assign(new Error("One or more courses were not found"), { statusCode: 404 });
+    }
+    const byId = new Map(courses.map(course => [course.id, course]));
+    for (const course of courses) {
+      if (course.status !== "published" || !await courseAccessForTenant(course, schedule.tenantId)) {
+        throw Object.assign(new Error(`Course is unpublished or unavailable to this tenant: ${course.title}`), { statusCode: 400 });
+      }
+    }
+    const nextOrder = existing.reduce((max, item) => Math.max(max, item.order), -1) + 1;
+    await tx.insert(schema.mandatoryTrainingItems).values(newIds.map((id, index) => ({
+      scheduleId, order: nextOrder + index, kind: "course" as const,
+      contentId: id, snapshotTitle: byId.get(id)!.title,
+    })));
+    // Do not change recipients, enrollments, completion records, dates, or
+    // sent-email milestones. Reports calculate set completion from its items.
+    return { schedule, addedCount: newIds.length };
+  });
+}
+
 async function getOneRecipientReport(
   schedule: schema.MandatoryTrainingSchedule,
   items: schema.MandatoryTrainingItem[],
