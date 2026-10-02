@@ -12,7 +12,7 @@ import type { AICallOptions } from './ai-providers/types';
 
 // Both the API and service caches must change when summary instructions or
 // personalization cache semantics change.
-export const SUMMARY_PROMPT_VERSION = 'role-accuracy-v3';
+export const SUMMARY_PROMPT_VERSION = 'role-accuracy-v4';
 
 export function summaryCacheKey(type: string, context: Record<string, any>): string {
   // JSON.stringify's array replacer filters nested object keys too. Sort
@@ -479,6 +479,10 @@ Your assessment shows areas of strength and opportunities for growth. The Synozu
       // Personal-skills models are 0–100 individual assessments, not the
       // organization's 500-point transformation maturity framework.
       if (assessmentMode === 'mean_answer_values') {
+        const verifiedTitle = userContext?.jobTitle?.trim();
+        const titleInstruction = verifiedTitle && verifiedTitle.toLowerCase() !== 'other'
+          ? `In the opening paragraph, explicitly include the exact current job title ${JSON.stringify(verifiedTitle)} once. Do not substitute a different title or infer responsibilities from it.`
+          : 'No verified job title was supplied. Do not invent or mention a job title.';
         const prompt = `You are writing a short, supportive personal-skills assessment summary for ${modelName}.
 ${knowledgeContext ? `Relevant model knowledge:\n${knowledgeContext}\n` : ''}
 ${profileContext(userContext)}
@@ -486,6 +490,9 @@ ${profileContext(userContext)}
 The respondent's result is "${archetypeLabel || 'Not specified'}" with an overall score of ${overallScore} out of ${maxScore}.
 Dimension scores (each out of ${dimensionMax}):
 ${validDimensions.map(([, dim]) => `- ${dim.label}: ${dim.score}`).join('\n')}
+
+${titleInstruction}
+Explicitly state the overall personal-skills score as "${overallScore} out of ${maxScore}" in the opening paragraph.
 
 Write 2–3 concise paragraphs addressed directly to "you". Explain what the named result and scores suggest, identify a genuine strength and one practical area to develop using the dimension labels, and suggest a small next step. Use the current job title only if supplied, exactly as a verified title; do not infer duties from it or from the organization's industry. Do not invent training completion, permissions, tools, or specific work responsibilities. Do not call this a 500-point organizational maturity assessment, and do not use business transformation or generic executive-roadmap language. Do not overstate what self-reported answers can prove.`;
         const completion = await this.callProvider(prompt, false);

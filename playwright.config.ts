@@ -15,9 +15,14 @@ export default defineConfig({
   expect: { timeout: 10_000 },
   use: {
     baseURL: BASE_URL,
+    launchOptions: process.env.E2E_CHROMIUM_EXECUTABLE_PATH
+      ? { executablePath: process.env.E2E_CHROMIUM_EXECUTABLE_PATH }
+      : undefined,
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
-    video: 'retain-on-failure',
+    // Workspace Chromium does not ship Playwright's separate video encoder.
+    // This development-only check keeps traces and explicit screenshots instead.
+    video: process.env.GRAMEEN_REPORT_E2E === '1' ? 'off' : 'retain-on-failure',
     actionTimeout: 15_000,
     navigationTimeout: 30_000,
   },

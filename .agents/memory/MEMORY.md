@@ -17,3 +17,4 @@
 - [Annual-training authoring rules](annual-training-authoring.md) — practice must not mirror final questions; distinct photos per course; alt text after photo choice; round-trip needs asset-path normalization.
 - [Neon Drizzle array binding](neon-drizzle-array-binding.md) — raw-SQL JavaScript arrays may bind as strings, not PostgreSQL arrays; use query-builder inArray or individually bound IN values.
 - [LibreOffice HTML to Word conversion](libreoffice-html-word.md) — force the Writer HTML import filter for DOCX export; border styling on container elements can expand every paragraph.
+- [Report regression QA](report-regression-qa.md) — use regular-owner permissions and stale caches; distinguish browser/video prerequisites and synthetic PDF page markers.

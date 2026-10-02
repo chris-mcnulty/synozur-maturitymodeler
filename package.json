@@ -13,7 +13,9 @@
     "test:unit": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
-    "test:mobile-layouts": "playwright test mobile-layouts"
+    "test:mobile-layouts": "playwright test mobile-layouts",
+    "test:grameen-report": "NODE_ENV=development GRAMEEN_REPORT_E2E=1 E2E_NO_SERVER=1 E2E_BASE_URL=https://$REPLIT_DEV_DOMAIN E2E_CHROMIUM_EXECUTABLE_PATH=${E2E_CHROMIUM_EXECUTABLE_PATH:-/repl/tools/bin/chromium} playwright test grameen-report-refresh --retries=0",
+    "test:grameen-report:cleanup": "NODE_ENV=development GRAMEEN_REPORT_E2E=1 tsx scripts/cleanup-grameen-report-qa.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.69.0",

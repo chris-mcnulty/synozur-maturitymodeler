@@ -71,6 +71,41 @@ job still runs the public signup → assessment → results journey.
 
 ## Running tests
 
+### Development-only Grameen report refresh
+
+Start the existing development app, then run `npm run test:grameen-report`.
+It uses the workspace Chromium at `/repl/tools/bin/chromium`; override
+`E2E_CHROMIUM_EXECUTABLE_PATH` if your workspace uses a different browser path.
+This opt-in Playwright check uses live Microsoft Foundry generation (not mocked
+summary responses). It logs in as a disposable regular owner, saves a custom job
+title in Profile, reloads to confirm persistence, opens a completed result from
+Profile history, poisons only the copied model's two summary caches with stale
+title/500-point text, regenerates its summary, and extracts the downloaded PDF to
+verify the refreshed text and 75/100 personal-skills score.
+
+It requires the development **Personal AI Skills - Grameen** model with its
+100-point mean-answer configuration, at least two dimensions, and the configured
+Foundry provider. Missing prerequisites fail rather than passing with a skip.
+The ordinary E2E suite skips this live, development-only check.
+
+The harness accepts only this workspace's HTTPS development URL and refuses
+production/deployment environments before connecting to the database. It reads
+the source model but never changes it, and creates a private copy in an isolated
+QA tenant with a verified `.invalid` owner (no registration/email). Model-specific
+knowledge rows are copied for read-only grounding; source files are never
+uploaded, changed, or deleted. Cleanup removes the copy, assessment/result,
+temporary account/tenant, session, AI usage, and both summary-cache layers.
+
+The ID-only journal `/tmp/orion-grameen-report-qa.json` is written before setup;
+cleanup runs after success or failure. If the process is interrupted, run
+`npm run test:grameen-report:cleanup` before trying again. Cleanup targets only
+recorded IDs and the unique copied-model cache metadata, never name patterns.
+Downloads, extracted PDF text, and screenshot evidence are in Playwright's
+`test-results/` directory. Live wording failures intentionally fail the check;
+inspect the report rather than weakening assertions or substituting mock text.
+PDF assertions join the extractor's page text, excluding its synthetic page
+markers, so they also verify summaries that continue onto a second page.
+
 The canonical entry point is `npm test`. The following scripts are wired up in
 `package.json`:
 

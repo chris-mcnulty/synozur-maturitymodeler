@@ -13,6 +13,7 @@ import type { Express } from "express";
   import { duplicateModel, exportModelDefinition, importModelDefinition, exportInterviewGuide } from "../services/model-export-service";
   import { sendServiceError } from "../services/service-error";
 import { hasCompleteMachineTranslation, translateModelContentWithFoundry } from "../services/model-translation-service";
+import { respondentScoringConfig } from "../services/respondent-scoring-config";
   import { z } from "zod";
   import { randomBytes, createHash } from "crypto";
   import bcrypt from "bcryptjs";
@@ -716,7 +717,7 @@ export function registerModelRoutes(app: Express) {
         : [];
       // Respondents need authored translations, but never the scoring key.
       const safeModel: any = { ...model, dimensions, types };
-      if (!canSeeDrafts) delete safeModel.scoringConfig;
+      if (!canSeeDrafts) safeModel.scoringConfig = respondentScoringConfig(model.scoringConfig);
       res.json(safeModel);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch model" });
@@ -770,7 +771,7 @@ export function registerModelRoutes(app: Express) {
         ? await storage.getModelTypesByModelId(model.id)
         : [];
       const safeModel: any = { ...model, dimensions, types };
-      if (!canSeeDrafts) delete safeModel.scoringConfig;
+      if (!canSeeDrafts) safeModel.scoringConfig = respondentScoringConfig(model.scoringConfig);
       res.json(safeModel);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch model" });
