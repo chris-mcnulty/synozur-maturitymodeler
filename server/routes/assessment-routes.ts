@@ -74,6 +74,21 @@ export function registerAssessmentRoutes(app: Express) {
         return res.status(404).json({ error: "Model not found" }); // 404 to hide existence
       }
 
+      if (!req.isAuthenticated()) {
+        // Merely reading sessionID does not initialize express-session when
+        // saveUninitialized is false. Persist it before creating the assessment
+        // so the response issues a cookie and subsequent requests keep ownership.
+        Object.assign(req.session, { anonymousAssessmentSession: true });
+        try {
+          await new Promise<void>((resolve, reject) => {
+            req.session.save(error => error ? reject(error) : resolve());
+          });
+        } catch (error) {
+          console.error("Failed to initialize anonymous assessment session:", error);
+          return res.status(503).json({ error: "Unable to start assessment. Please try again." });
+        }
+      }
+
       // Add userId from authenticated user if available
       const assessmentData = {
         ...validatedData,

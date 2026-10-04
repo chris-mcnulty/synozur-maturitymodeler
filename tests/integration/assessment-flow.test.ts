@@ -1,5 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import request from 'supertest';
+import express from 'express';
+import session from 'express-session';
+import { PgDialect } from 'drizzle-orm/pg-core';
 
 // In-memory state shared between the storage and db mocks.
 const state = {
@@ -23,6 +26,9 @@ const storageMock = {
   },
   async getQuestionsByModelId(modelId: string) {
     return state.questions.filter(q => q.modelId === modelId);
+  },
+  async getQuestion(id: string) {
+    return state.questions.find(q => q.id === id);
   },
   async getAnswersByQuestionId(qid: string) {
     return state.answers.filter(a => a.questionId === qid);
@@ -73,19 +79,18 @@ const storageMock = {
   },
 };
 
-// Build a minimal drizzle-like chainable shim that supports the specific
-// queries the assessment route's calculate handler runs (fetching answers
-// for a list of questionIds via inArray()).
+// Support answer ownership validation and the scoring service's answer lookup.
 const dbMock = {
-  select: () => ({
+  select: (projection?: any) => ({
     from: () => ({
-      where: (_cond: any) => {
-        // The route only uses db.select().from(answers).where(inArray(...))
-        // and immediately awaits the chain. We hand back all answers — the
-        // scoring service in turn only references answers by id.
-        const result: any = state.answers.slice();
-        result.then = (resolve: any) => Promise.resolve(state.answers.slice()).then(resolve);
-        return result;
+      where: (cond: any) => {
+        if (projection) {
+          const [questionId, ...answerIds] = new PgDialect().sqlToQuery(cond).params;
+          return Promise.resolve(state.answers.filter(a =>
+            a.questionId === questionId && answerIds.includes(a.id)
+          ).map(a => ({ id: a.id })));
+        }
+        return Promise.resolve(state.answers.slice());
       },
     }),
   }),
@@ -189,6 +194,74 @@ describe('Assessment end-to-end flow', () => {
       modelId: 'nope',
     });
     expect(res.status).toBe(404);
+  });
+
+  async function buildAnonymousApp(secure = false, store?: session.Store) {
+    const { registerAssessmentRoutes } = await import('../../server/routes/assessment-routes');
+    const app = express();
+    app.set('trust proxy', 1);
+    app.use(express.json());
+    app.use(session({
+      secret: 'anonymous-assessment-test',
+      resave: false,
+      saveUninitialized: false,
+      store,
+      cookie: { secure, httpOnly: true, sameSite: 'lax' },
+    }));
+    app.use((req, _res, next) => {
+      req.isAuthenticated = (() => false) as typeof req.isAuthenticated;
+      next();
+    });
+    registerAssessmentRoutes(app);
+    return app;
+  }
+
+  it('persists a fresh anonymous session through launch, responses and results', async () => {
+    const app = await buildAnonymousApp();
+    const browser = request.agent(app);
+    const start = await browser.post('/api/assessments').send({ modelId: 'model-1' });
+    expect(start.status).toBe(200);
+    expect(start.headers['set-cookie']).toBeDefined();
+    expect(start.body.userId).toBeNull();
+    const id = start.body.id;
+    expect((await browser.get(`/api/assessments/${id}`)).status).toBe(200);
+    expect((await browser.get(`/api/assessments/${id}/responses`)).status).toBe(200);
+    for (const questionId of ['q1', 'q2']) {
+      expect((await browser.post(`/api/assessments/${id}/responses`)
+        .send({ questionId, answerId: `${questionId}-a4` })).status).toBe(200);
+    }
+    expect((await browser.post(`/api/assessments/${id}/calculate`)).status).toBe(200);
+    expect((await browser.get(`/api/results/${id}`)).status).toBe(200);
+
+    // Knowing an assessment ID never grants another browser access.
+    expect((await request(app).get(`/api/assessments/${id}`)).status).toBe(404);
+    expect((await request(app).post(`/api/assessments/${id}/responses`)
+      .send({ questionId: 'q1', answerId: 'q1-a0' })).status).toBe(404);
+  });
+
+  it('issues a secure session cookie on anonymous launch behind the production HTTPS proxy', async () => {
+    const app = await buildAnonymousApp(true);
+    const start = await request(app).post('/api/assessments')
+      .set('X-Forwarded-Proto', 'https').send({ modelId: 'model-1' });
+    expect(start.status).toBe(200);
+    const cookie = start.headers['set-cookie']?.[0];
+    expect(cookie).toMatch(/;\s*Secure/i);
+    expect(cookie).toMatch(/;\s*HttpOnly/i);
+    expect(cookie).toMatch(/;\s*SameSite=Lax/i);
+    const read = await request(app).get(`/api/assessments/${start.body.id}`)
+      .set('X-Forwarded-Proto', 'https').set('Cookie', cookie.split(';')[0]);
+    expect(read.status).toBe(200);
+  });
+
+  it('does not create an inaccessible assessment when session persistence fails', async () => {
+    const store = new session.MemoryStore();
+    vi.spyOn(store, 'set').mockImplementation((_id, _data, callback) => {
+      callback?.(new Error('session store unavailable'));
+    });
+    const app = await buildAnonymousApp(false, store);
+    const start = await request(app).post('/api/assessments').send({ modelId: 'model-1' });
+    expect(start.status).toBe(503);
+    expect(state.assessments).toHaveLength(0);
   });
 
   it('creates an assessment, saves responses, calculates results, and exposes them via /api/results', async () => {
