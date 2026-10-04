@@ -14,8 +14,9 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { usePageTitle } from "@/hooks/use-page-title";
-import { useQuery, useMutation, keepPreviousData } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { adminResultsQueryOptions } from "@/lib/admin-results-query";
 import { Download, Plus, Edit, Trash, FileSpreadsheet, Eye, EyeOff, BarChart3, Settings, FileDown, FileUp, ListOrdered, Users, Star, Upload, X, Sparkles, CheckCircle2, XCircle, Database, FileText, Brain, BookOpen, ClipboardList, Home, Building2, ChevronDown, Shield, Tag, Activity, Copy, Archive, ArchiveRestore, KeyRound, Clock, ExternalLink, Building, Ticket, Palette, GraduationCap, Bell, BellOff, Mail, RefreshCw } from "lucide-react";
 import type { Model, Result, Assessment, Dimension, Question, Answer, User, AssessmentTag } from "@shared/schema";
 import { USER_ROLES, type UserRole } from "@shared/constants";
@@ -923,24 +924,19 @@ export default function Admin() {
   }, [resultsEndDateInput]);
 
   // Fetch all results with optimized single-query endpoint
+  const resultsQueryOptions = adminResultsQueryOptions({
+    startDate: resultsStartDate,
+    endDate: resultsEndDate,
+    status: resultsStatus,
+    modelId: resultsModelFilter,
+    isProxy: resultsProxyFilter,
+    tagId: resultsTagFilter,
+  });
   const { data: results = [], isLoading: resultsLoading, isFetching: resultsFetching, refetch: refetchResults } = useQuery<AdminResult[]>({
-    queryKey: ['/api/admin/results', resultsStartDate, resultsEndDate, resultsStatus, resultsModelFilter, resultsProxyFilter, resultsTagFilter],
-    placeholderData: keepPreviousData,
+    ...resultsQueryOptions,
     refetchInterval: resultsAutoRefresh ? 10000 : false,
     queryFn: async () => {
-      // Build query params
-      const params = new URLSearchParams();
-      if (resultsStartDate) params.append('startDate', resultsStartDate);
-      if (resultsEndDate) params.append('endDate', resultsEndDate);
-      if (resultsStatus) params.append('status', resultsStatus);
-      if (resultsModelFilter && resultsModelFilter !== 'all') params.append('modelId', resultsModelFilter);
-      if (resultsProxyFilter && resultsProxyFilter !== 'all') params.append('isProxy', resultsProxyFilter);
-      if (resultsTagFilter && resultsTagFilter !== 'all') params.append('tagId', resultsTagFilter);
-      
-      // Use optimized endpoint that returns all data in one query
-      const response = await fetch(`/api/admin/results?${params.toString()}`, { credentials: 'include' });
-      if (!response.ok) throw new Error('Failed to fetch results');
-      const resultsData = await response.json();
+      const resultsData = await resultsQueryOptions.queryFn();
       
       // Transform to expected AdminResult format
       return resultsData.map((r: any) => ({

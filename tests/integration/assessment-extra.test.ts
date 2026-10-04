@@ -262,6 +262,37 @@ describe('Assessment results regeneration and listing (real storage)', () => {
   });
 });
 
+describe('Admin results model and date filtering', () => {
+  it('combines the model and date filters without returning another model or older results', async () => {
+    const user = await harness.createUser('global_admin');
+    const firstModel = await harness.createModel();
+    const secondModel = await harness.createModel();
+    const createResult = async (modelId: string, completedAt: string) => {
+      const assessment = await storage.createAssessment({
+        modelId, userId: user.id, status: 'completed', completedAt: new Date(completedAt),
+      });
+      await storage.createResult({
+        assessmentId: assessment.id, overallScore: 300, label: 'Operational', dimensionScores: {},
+      });
+      return assessment.id;
+    };
+    const recentFirst = await createResult(firstModel.id, '2026-10-04T12:00:00Z');
+    const olderFirst = await createResult(firstModel.id, '2026-09-01T12:00:00Z');
+    const recentSecond = await createResult(secondModel.id, '2026-10-04T12:00:00Z');
+    const app = await buildApp(user.id, 'global_admin');
+    const modelOnly = await request(app).get('/api/admin/results').query({ modelId: firstModel.id });
+    expect(modelOnly.status).toBe(200);
+    expect(modelOnly.body.map((r: any) => r.assessmentId).sort()).toEqual([recentFirst, olderFirst].sort());
+    const combined = await request(app).get('/api/admin/results')
+      .query({ modelId: firstModel.id, startDate: '2026-10-01', endDate: '2026-10-04' });
+    expect(combined.status).toBe(200);
+    expect(combined.body.map((r: any) => r.assessmentId)).toEqual([recentFirst]);
+    const otherModel = await request(app).get('/api/admin/results')
+      .query({ modelId: secondModel.id, startDate: '2026-10-01' });
+    expect(otherModel.body.map((r: any) => r.assessmentId)).toEqual([recentSecond]);
+  });
+});
+
 describe('Bulk assessment result tagging', () => {
   it('applies and removes one tag while preserving unrelated assignments', async () => {
     const user = await harness.createUser('global_admin');
