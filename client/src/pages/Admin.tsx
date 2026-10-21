@@ -4153,9 +4153,19 @@ export default function Admin() {
               </div>
 
               <Card className="p-6">
-                <div className="flex justify-between items-center mb-6">
+                <div className="flex flex-col gap-4 mb-6">
                   <h2 className="text-xl font-bold">Assessment Results</h2>
-                  <div className="flex gap-2 flex-wrap items-center">
+                  <div className="flex gap-2 flex-wrap items-center min-w-0">
+                    <Button
+                      variant="default"
+                      onClick={generateInsights}
+                      disabled={insightsLoading || !results.length}
+                      title="Generate an AI analysis of the filtered assessment results"
+                      data-testid="button-generate-insights"
+                    >
+                      <Sparkles className="mr-2 h-4 w-4" />
+                      {insightsLoading ? 'Generating...' : 'Quick Report'}
+                    </Button>
                     <Button
                       variant="outline"
                       onClick={() => refetchResults()}
@@ -4173,22 +4183,13 @@ export default function Admin() {
                       <Activity className={`mr-2 h-4 w-4 ${resultsAutoRefresh ? 'animate-pulse' : ''}`} />
                       {resultsAutoRefresh ? 'Live: On' : 'Live: Off'}
                     </Button>
-                    <Button 
-                      variant="default" 
-                      onClick={generateInsights} 
-                      disabled={insightsLoading || !results.length}
-                      data-testid="button-generate-insights"
-                    >
-                      <Sparkles className="mr-2 h-4 w-4" />
-                      {insightsLoading ? 'Generating...' : 'AI Insights'}
-                    </Button>
                     <Button variant="outline" onClick={exportFilteredDataForInsights} data-testid="button-export-filtered">
                       <Download className="mr-2 h-4 w-4" />
-                      Export Data
+                      Export CSV
                     </Button>
                     <Button variant="outline" onClick={exportResultsToCSV} data-testid="button-export-results">
                       <FileSpreadsheet className="mr-2 h-4 w-4" />
-                      Export CSV
+                      Export Summary CSV
                     </Button>
                     <Button variant="outline" onClick={() => setShowAnalyticalExport(true)} data-testid="button-export-analytical">
                       <Download className="mr-2 h-4 w-4" />
@@ -5057,10 +5058,10 @@ export default function Admin() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Sparkles className="h-5 w-5 text-primary" />
-              AI Assessment Insights
+              Quick Report
             </DialogTitle>
             <DialogDescription>
-              Analysis of {results.filter(r => r.status === 'completed').length} completed assessments
+              AI analysis of {results.filter(r => r.status === 'completed').length} completed assessments
             </DialogDescription>
           </DialogHeader>
           
@@ -5214,9 +5215,9 @@ ${insightsData.recommendations.map((r, i) => `${i + 1}. ${r}`).join('\n')}
                   <ClipboardList className="mr-2 h-4 w-4" />
                   Copy Analysis
                 </Button>
-                <Button variant="outline" onClick={exportFilteredDataForInsights}>
+                <Button variant="outline" onClick={exportFilteredDataForInsights} data-testid="button-export-report-csv">
                   <Download className="mr-2 h-4 w-4" />
-                  Export Assessment Data
+                  Export CSV
                 </Button>
               </div>
             </div>
